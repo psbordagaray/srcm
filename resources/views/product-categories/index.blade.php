@@ -24,14 +24,22 @@
         </div>
 
         @if (session('success'))
-            <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-                {{ session('success') }}
+            <div
+                role="alert"
+                class="flex items-center gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-300"
+            >
+                <span aria-hidden="true">✓</span>
+                <span>{{ session('success') }}</span>
             </div>
         @endif
 
         <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-xl shadow-black/10">
             <div class="border-b border-slate-800 p-4">
-                <form method="GET" action="{{ route('product-categories.index') }}" class="flex flex-col gap-3 sm:flex-row">
+                <form
+                    method="GET"
+                    action="{{ route('product-categories.index') }}"
+                    class="flex flex-col gap-3 sm:flex-row"
+                >
                     <input
                         type="search"
                         name="search"
