@@ -8,21 +8,24 @@
             </p>
 
             <h1 class="mt-2 text-3xl font-bold text-white">
-                Nueva categoría
+                Editar categoría
             </h1>
 
             <p class="mt-2 text-slate-400">
-                Creá una nueva categoría para organizar correctamente el catálogo de SRCM.
+                Actualizá la información de la categoría.
             </p>
         </div>
 
         <div class="rounded-2xl border border-slate-800 bg-slate-900 p-8">
 
             <form
-                action="{{ route('product-categories.store') }}"
+                action="{{ route('product-categories.update', $category) }}"
                 method="POST"
                 class="space-y-6"
             >
+
+                @csrf
+                @method('PUT')
 
                 @include('product-categories._form')
 
@@ -32,7 +35,7 @@
                         type="submit"
                         class="rounded-xl bg-cyan-400 px-6 py-3 font-semibold text-slate-950 transition hover:bg-cyan-300"
                     >
-                        Guardar categoría
+                        Guardar cambios
                     </button>
 
                     <a
