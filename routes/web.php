@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +14,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+
     /*
     |--------------------------------------------------------------------------
     | Product Categories
@@ -27,6 +29,22 @@ Route::middleware('auth')->group(function () {
     Route::resource(
         'product-categories',
         ProductCategoryController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Brands
+    |--------------------------------------------------------------------------
+    */
+
+    Route::patch(
+        'brands/{brand}/toggle-active',
+        [BrandController::class, 'toggleActive']
+    )->name('brands.toggle-active');
+
+    Route::resource(
+        'brands',
+        BrandController::class
     );
 
     /*
