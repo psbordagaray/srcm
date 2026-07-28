@@ -3,6 +3,7 @@
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TechnicalModelController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -14,7 +15,6 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-
     /*
     |--------------------------------------------------------------------------
     | Product Categories
@@ -45,6 +45,22 @@ Route::middleware('auth')->group(function () {
     Route::resource(
         'brands',
         BrandController::class
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | Technical Models
+    |--------------------------------------------------------------------------
+    */
+
+    Route::patch(
+        'technical-models/{technical_model}/toggle-active',
+        [TechnicalModelController::class, 'toggleActive']
+    )->name('technical-models.toggle-active');
+
+    Route::resource(
+        'technical-models',
+        TechnicalModelController::class
     );
 
     /*
