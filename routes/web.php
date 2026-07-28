@@ -88,6 +88,10 @@ Route::middleware('auth')->group(function () {
 */
 
 Route::get(
+    '/explorer',
+    [KnowledgeController::class, 'explorer']
+)->middleware('auth')->name('knowledge.explorer');
+Route::get(
     '/knowledge/{query}',
     [KnowledgeController::class, 'show']
 )->name('knowledge.show');
