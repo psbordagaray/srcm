@@ -55,18 +55,30 @@ class ProductCategoryController extends Controller
         ]);
     }
 
-    public function update(UpdateProductCategoryRequest $request, ProductCategory $productCategory)
-    {
-        $productCategory->update([
-            'name' => $request->validated()['name'],
-            'icon' => $request->validated()['icon'],
-            'description' => $request->validated()['description'],
-            'active' => $request->validated()['active'],
-        ]);
+    public function update(
+        UpdateProductCategoryRequest $request,
+        ProductCategory $productCategory
+    ) {
+        $productCategory->update($request->validated());
 
         return redirect()
             ->route('product-categories.index')
             ->with('success', 'Categoría actualizada correctamente.');
+    }
+
+    public function toggleActive(ProductCategory $productCategory)
+    {
+        $productCategory->update([
+            'active' => ! $productCategory->active,
+        ]);
+
+        $message = $productCategory->active
+            ? 'Categoría activada correctamente.'
+            : 'Categoría inactivada correctamente.';
+
+        return redirect()
+            ->route('product-categories.index')
+            ->with('success', $message);
     }
 
     public function destroy(ProductCategory $productCategory)
