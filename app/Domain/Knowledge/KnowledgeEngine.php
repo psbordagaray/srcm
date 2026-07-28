@@ -16,6 +16,9 @@ class KnowledgeEngine
             ->with([
                 'entityType',
                 'identifiers.identifierType',
+                'assertions',
+                'outgoingCompatibilities.rightEntity',
+                'incomingCompatibilities.leftEntity',
             ])
             ->first();
 
@@ -29,6 +32,10 @@ class KnowledgeEngine
         return [
             'resolved' => true,
             'entity' => $entity,
+            'compatibilities' => [
+                'outgoing' => $entity->outgoingCompatibilities,
+                'incoming' => $entity->incomingCompatibilities,
+            ],
         ];
     }
 }

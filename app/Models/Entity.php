@@ -36,4 +36,20 @@ class Entity extends Model
     {
         return $this->hasMany(Assertion::class);
     }
+
+    public function outgoingCompatibilities(): HasMany
+    {
+        return $this->hasMany(
+            Compatibility::class,
+            'left_entity_id'
+        );
+    }
+
+    public function incomingCompatibilities(): HasMany
+    {
+        return $this->hasMany(
+            Compatibility::class,
+            'right_entity_id'
+        );
+    }
 }
