@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TechnicalModelController;
@@ -79,4 +80,15 @@ Route::middleware('auth')->group(function () {
         ->name('profile.destroy');
 });
 
+
+/*
+|--------------------------------------------------------------------------
+| Knowledge Engine
+|--------------------------------------------------------------------------
+*/
+
+Route::get(
+    '/knowledge/{query}',
+    [KnowledgeController::class, 'show']
+)->name('knowledge.show');
 require __DIR__.'/auth.php';

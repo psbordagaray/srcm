@@ -10,13 +10,17 @@ class Entity extends Model
 {
     protected $fillable = [
         'uuid',
+        'name',
         'entity_type_id',
         'active',
     ];
 
-    protected $casts = [
-        'active' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'active' => 'boolean',
+        ];
+    }
 
     public function entityType(): BelongsTo
     {
@@ -26,5 +30,10 @@ class Entity extends Model
     public function identifiers(): HasMany
     {
         return $this->hasMany(Identifier::class);
+    }
+
+    public function assertions(): HasMany
+    {
+        return $this->hasMany(Assertion::class);
     }
 }
