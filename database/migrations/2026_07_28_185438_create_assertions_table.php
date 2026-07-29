@@ -44,7 +44,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['entity_id', 'attribute']);
-            $table->index(['attribute', 'value_text']);
+            $table->index('attribute');
             $table->index('related_entity_id');
             $table->index('status');
             $table->index('active');
