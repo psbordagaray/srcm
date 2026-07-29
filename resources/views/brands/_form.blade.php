@@ -63,7 +63,10 @@
     <input
         id="website"
         name="website"
-        type="url"
+                        inputmode="url"
+                        autocapitalize="none"
+                        spellcheck="false"
+        type="text"
         value="{{ old('website', $brand->website ?? '') }}"
         maxlength="255"
         placeholder="https://www.samsung.com"

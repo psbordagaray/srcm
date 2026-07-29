@@ -2,11 +2,15 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\NormalizesOptionalWebsite;
+
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateBrandRequest extends FormRequest
 {
+    use NormalizesOptionalWebsite;
+
     /**
      * Determina si el usuario está autorizado.
      */
@@ -25,7 +29,7 @@ class UpdateBrandRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100'],
             'logo' => ['nullable', 'string', 'max:255'],
-            'website' => ['nullable', 'url', 'max:255'],
+            'website' => ['nullable', 'url:http,https', 'max:255'],
             'description' => ['nullable', 'string'],
             'active' => ['nullable', 'boolean'],
         ];
@@ -37,6 +41,9 @@ class UpdateBrandRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
+            'website' => $this->normalizeOptionalWebsite(
+                $this->input('website')
+            ),
             'active' => $this->boolean('active'),
         ]);
     }
