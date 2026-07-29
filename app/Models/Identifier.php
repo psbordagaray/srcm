@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Knowledge\IdentifierIntegrity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -19,6 +20,23 @@ class Identifier extends Model
         'is_primary' => 'boolean',
         'active' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Identifier $identifier): void {
+            $integrity = app(IdentifierIntegrity::class);
+
+            $identifier->value = trim(
+                (string) $identifier->value
+            );
+
+            $identifier->normalized_value = $integrity->normalize(
+                $identifier->value
+            );
+
+            $integrity->assertCanPersist($identifier);
+        });
+    }
 
     public function entity(): BelongsTo
     {

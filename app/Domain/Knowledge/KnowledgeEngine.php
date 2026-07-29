@@ -13,64 +13,87 @@ class KnowledgeEngine
         $query = trim($query);
 
         if ($query === '') {
-            return [
-                'status' => 'not_found',
-                'resolved' => false,
-                'query' => $query,
-                'candidates' => [],
-            ];
+            return $this->notFoundResponse($query);
         }
 
-        $exactEntity = $this->findExactEntity($query);
+        $exactUuidEntity = $this->findExactUuidEntity($query);
 
-        if ($exactEntity) {
-            return $this->buildResolvedResponse($exactEntity, $query);
+        if ($exactUuidEntity) {
+            return $this->buildResolvedResponse(
+                $exactUuidEntity,
+                $query,
+                'uuid'
+            );
+        }
+
+        $exactIdentifierEntities = $this
+            ->findExactIdentifierEntities($query);
+
+        if ($exactIdentifierEntities->count() === 1) {
+            return $this->buildResolvedResponse(
+                $exactIdentifierEntities->first(),
+                $query,
+                'identifier'
+            );
+        }
+
+        if ($exactIdentifierEntities->count() > 1) {
+            return $this->buildAmbiguousExactResponse(
+                $exactIdentifierEntities,
+                $query
+            );
         }
 
         $candidates = $this->findCandidates($query);
 
         if ($candidates->isEmpty()) {
-            return [
-                'status' => 'not_found',
-                'resolved' => false,
-                'query' => $query,
-                'candidates' => [],
-            ];
+            return $this->notFoundResponse($query);
         }
 
         return [
             'status' => 'candidates',
             'resolved' => false,
             'query' => $query,
+            'reason' => 'partial_match',
             'candidates' => $candidates->values()->all(),
         ];
     }
 
-    private function findExactEntity(string $query): ?Entity
+    private function findExactUuidEntity(string $query): ?Entity
     {
-        $normalizedQuery = mb_strtolower($query);
+        return Entity::query()
+            ->where('active', true)
+            ->whereRaw(
+                'LOWER(uuid) = ?',
+                [mb_strtolower($query)]
+            )
+            ->with($this->resolvedRelations())
+            ->first();
+    }
+
+    private function findExactIdentifierEntities(
+        string $query
+    ): Collection {
+        $normalizedQuery = mb_strtolower(trim($query));
 
         return Entity::query()
             ->where('active', true)
-            ->where(function (Builder $builder) use ($normalizedQuery) {
-                $builder
-                    ->whereRaw('LOWER(uuid) = ?', [$normalizedQuery])
-                    ->orWhereHas(
-                        'identifiers',
-                        function (Builder $identifierQuery) use (
-                            $normalizedQuery
-                        ) {
-                            $identifierQuery
-                                ->where('active', true)
-                                ->whereRaw(
-                                    'LOWER(value) = ?',
-                                    [$normalizedQuery]
-                                );
-                        }
-                    );
-            })
+            ->whereHas(
+                'identifiers',
+                function (Builder $identifierQuery) use (
+                    $normalizedQuery
+                ): void {
+                    $identifierQuery
+                        ->where('active', true)
+                        ->whereRaw(
+                            'LOWER(TRIM(value)) = ?',
+                            [$normalizedQuery]
+                        );
+                }
+            )
             ->with($this->resolvedRelations())
-            ->first();
+            ->limit(25)
+            ->get();
     }
 
     private function findCandidates(string $query): Collection
@@ -82,12 +105,15 @@ class KnowledgeEngine
             ->where('active', true)
             ->where(function (Builder $builder) use ($likeQuery) {
                 $builder
-                    ->whereRaw('LOWER(name) LIKE ?', [$likeQuery])
+                    ->whereRaw(
+                        'LOWER(name) LIKE ?',
+                        [$likeQuery]
+                    )
                     ->orWhereHas(
                         'identifiers',
-                        function (Builder $identifierQuery) use (
-                            $likeQuery
-                        ) {
+                        function (
+                            Builder $identifierQuery
+                        ) use ($likeQuery): void {
                             $identifierQuery
                                 ->where('active', true)
                                 ->whereRaw(
@@ -105,28 +131,20 @@ class KnowledgeEngine
             ])
             ->limit(25)
             ->get()
-            ->map(function (Entity $entity) use ($normalizedQuery) {
+            ->map(function (
+                Entity $entity
+            ) use ($normalizedQuery): array {
                 $match = $this->calculateCandidateMatch(
                     $entity,
                     $normalizedQuery
                 );
 
-                return [
-                    'uuid' => $entity->uuid,
-                    'name' => $entity->name,
-                    'type' => $entity->entityType?->name,
-                    'score' => $match['score'],
-                    'matched_by' => $match['matched_by'],
-                    'matched_value' => $match['matched_value'],
-                    'identifiers' => $entity->identifiers
-                        ->map(fn ($identifier) => [
-                            'value' => $identifier->value,
-                            'type' => $identifier->identifierType?->name,
-                            'is_primary' => $identifier->is_primary,
-                        ])
-                        ->values()
-                        ->all(),
-                ];
+                return $this->candidatePayload(
+                    $entity,
+                    $match['score'],
+                    $match['matched_by'],
+                    $match['matched_value']
+                );
             })
             ->sortByDesc('score');
     }
@@ -141,16 +159,28 @@ class KnowledgeEngine
             'matched_value' => $entity->name,
         ];
 
-        $normalizedName = mb_strtolower((string) $entity->name);
+        $normalizedName = mb_strtolower(
+            (string) $entity->name
+        );
 
         if ($normalizedName !== '') {
-            if (str_starts_with($normalizedName, $normalizedQuery)) {
+            if (
+                str_starts_with(
+                    $normalizedName,
+                    $normalizedQuery
+                )
+            ) {
                 $bestMatch = [
                     'score' => 80,
                     'matched_by' => 'name_starts_with',
                     'matched_value' => $entity->name,
                 ];
-            } elseif (str_contains($normalizedName, $normalizedQuery)) {
+            } elseif (
+                str_contains(
+                    $normalizedName,
+                    $normalizedQuery
+                )
+            ) {
                 $bestMatch = [
                     'score' => 60,
                     'matched_by' => 'name_contains',
@@ -164,10 +194,20 @@ class KnowledgeEngine
                 (string) $identifier->value
             );
 
-            if (str_starts_with($normalizedValue, $normalizedQuery)) {
+            if (
+                str_starts_with(
+                    $normalizedValue,
+                    $normalizedQuery
+                )
+            ) {
                 $score = 90;
                 $matchedBy = 'identifier_starts_with';
-            } elseif (str_contains($normalizedValue, $normalizedQuery)) {
+            } elseif (
+                str_contains(
+                    $normalizedValue,
+                    $normalizedQuery
+                )
+            ) {
                 $score = 70;
                 $matchedBy = 'identifier_contains';
             } else {
@@ -186,6 +226,68 @@ class KnowledgeEngine
         return $bestMatch;
     }
 
+    private function buildAmbiguousExactResponse(
+        Collection $entities,
+        string $query
+    ): array {
+        $normalizedQuery = mb_strtolower(trim($query));
+
+        return [
+            'status' => 'candidates',
+            'resolved' => false,
+            'query' => $query,
+            'reason' => 'ambiguous_exact_identifier',
+            'candidates' => $entities
+                ->map(function (
+                    Entity $entity
+                ) use ($normalizedQuery): array {
+                    $matchedIdentifier = $entity->identifiers
+                        ->first(
+                            fn ($identifier): bool =>
+                                mb_strtolower(
+                                    trim(
+                                        (string) $identifier->value
+                                    )
+                                ) === $normalizedQuery
+                        );
+
+                    return $this->candidatePayload(
+                        $entity,
+                        100,
+                        'identifier_exact',
+                        $matchedIdentifier?->value
+                    );
+                })
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function candidatePayload(
+        Entity $entity,
+        int $score,
+        string $matchedBy,
+        ?string $matchedValue
+    ): array {
+        return [
+            'uuid' => $entity->uuid,
+            'name' => $entity->name,
+            'type' => $entity->entityType?->name,
+            'score' => $score,
+            'matched_by' => $matchedBy,
+            'matched_value' => $matchedValue,
+            'identifiers' => $entity->identifiers
+                ->map(fn ($identifier) => [
+                    'value' => $identifier->value,
+                    'type' => $identifier
+                        ->identifierType?->name,
+                    'is_primary' => $identifier->is_primary,
+                ])
+                ->values()
+                ->all(),
+        ];
+    }
+
     private function resolvedRelations(): array
     {
         return [
@@ -195,7 +297,9 @@ class KnowledgeEngine
             'identifiers.identifierType',
             'assertions' => fn ($assertionQuery) =>
                 $assertionQuery->where('active', true),
-            'outgoingCompatibilities' => function ($compatibilityQuery) {
+            'outgoingCompatibilities' => function (
+                $compatibilityQuery
+            ): void {
                 $compatibilityQuery
                     ->where('active', true)
                     ->whereHas(
@@ -205,7 +309,9 @@ class KnowledgeEngine
                     )
                     ->with('rightEntity');
             },
-            'incomingCompatibilities' => function ($compatibilityQuery) {
+            'incomingCompatibilities' => function (
+                $compatibilityQuery
+            ): void {
                 $compatibilityQuery
                     ->where('active', true)
                     ->whereHas(
@@ -220,18 +326,32 @@ class KnowledgeEngine
 
     private function buildResolvedResponse(
         Entity $entity,
-        string $query
+        string $query,
+        string $matchedBy
     ): array {
         return [
             'status' => 'resolved',
             'resolved' => true,
             'query' => $query,
             'match_type' => 'exact',
+            'matched_by' => $matchedBy,
             'entity' => $entity,
             'compatibilities' => [
-                'outgoing' => $entity->outgoingCompatibilities,
-                'incoming' => $entity->incomingCompatibilities,
+                'outgoing' =>
+                    $entity->outgoingCompatibilities,
+                'incoming' =>
+                    $entity->incomingCompatibilities,
             ],
+        ];
+    }
+
+    private function notFoundResponse(string $query): array
+    {
+        return [
+            'status' => 'not_found',
+            'resolved' => false,
+            'query' => $query,
+            'candidates' => [],
         ];
     }
 }
