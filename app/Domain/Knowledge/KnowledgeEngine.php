@@ -51,23 +51,25 @@ class KnowledgeEngine
         $normalizedQuery = mb_strtolower($query);
 
         return Entity::query()
+            ->where('active', true)
             ->where(function (Builder $builder) use ($normalizedQuery) {
                 $builder
                     ->whereRaw('LOWER(uuid) = ?', [$normalizedQuery])
-                    ->orWhereHas('identifiers', function (Builder $identifierQuery) use ($normalizedQuery) {
-                        $identifierQuery->whereRaw(
-                            'LOWER(value) = ?',
-                            [$normalizedQuery]
-                        );
-                    });
+                    ->orWhereHas(
+                        'identifiers',
+                        function (Builder $identifierQuery) use (
+                            $normalizedQuery
+                        ) {
+                            $identifierQuery
+                                ->where('active', true)
+                                ->whereRaw(
+                                    'LOWER(value) = ?',
+                                    [$normalizedQuery]
+                                );
+                        }
+                    );
             })
-            ->with([
-                'entityType',
-                'identifiers.identifierType',
-                'assertions',
-                'outgoingCompatibilities.rightEntity',
-                'incomingCompatibilities.leftEntity',
-            ])
+            ->with($this->resolvedRelations())
             ->first();
     }
 
@@ -77,18 +79,28 @@ class KnowledgeEngine
         $likeQuery = '%' . $normalizedQuery . '%';
 
         return Entity::query()
+            ->where('active', true)
             ->where(function (Builder $builder) use ($likeQuery) {
                 $builder
                     ->whereRaw('LOWER(name) LIKE ?', [$likeQuery])
-                    ->orWhereHas('identifiers', function (Builder $identifierQuery) use ($likeQuery) {
-                        $identifierQuery->whereRaw(
-                            'LOWER(value) LIKE ?',
-                            [$likeQuery]
-                        );
-                    });
+                    ->orWhereHas(
+                        'identifiers',
+                        function (Builder $identifierQuery) use (
+                            $likeQuery
+                        ) {
+                            $identifierQuery
+                                ->where('active', true)
+                                ->whereRaw(
+                                    'LOWER(value) LIKE ?',
+                                    [$likeQuery]
+                                );
+                        }
+                    );
             })
             ->with([
                 'entityType',
+                'identifiers' => fn ($identifierQuery) =>
+                    $identifierQuery->where('active', true),
                 'identifiers.identifierType',
             ])
             ->limit(25)
@@ -148,7 +160,9 @@ class KnowledgeEngine
         }
 
         foreach ($entity->identifiers as $identifier) {
-            $normalizedValue = mb_strtolower($identifier->value);
+            $normalizedValue = mb_strtolower(
+                (string) $identifier->value
+            );
 
             if (str_starts_with($normalizedValue, $normalizedQuery)) {
                 $score = 90;
@@ -170,6 +184,38 @@ class KnowledgeEngine
         }
 
         return $bestMatch;
+    }
+
+    private function resolvedRelations(): array
+    {
+        return [
+            'entityType',
+            'identifiers' => fn ($identifierQuery) =>
+                $identifierQuery->where('active', true),
+            'identifiers.identifierType',
+            'assertions' => fn ($assertionQuery) =>
+                $assertionQuery->where('active', true),
+            'outgoingCompatibilities' => function ($compatibilityQuery) {
+                $compatibilityQuery
+                    ->where('active', true)
+                    ->whereHas(
+                        'rightEntity',
+                        fn (Builder $entityQuery) =>
+                            $entityQuery->where('active', true)
+                    )
+                    ->with('rightEntity');
+            },
+            'incomingCompatibilities' => function ($compatibilityQuery) {
+                $compatibilityQuery
+                    ->where('active', true)
+                    ->whereHas(
+                        'leftEntity',
+                        fn (Builder $entityQuery) =>
+                            $entityQuery->where('active', true)
+                    )
+                    ->with('leftEntity');
+            },
+        ];
     }
 
     private function buildResolvedResponse(

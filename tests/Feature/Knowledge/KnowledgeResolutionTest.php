@@ -10,6 +10,7 @@ use App\Models\Identifier;
 use App\Models\IdentifierType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -151,6 +152,215 @@ class KnowledgeResolutionTest extends TestCase
         );
     }
 
+    public function test_inactive_entities_are_hidden_from_resolution(): void
+    {
+        [$entity] = $this->createEntityWithIdentifier(
+            'ARCHIVED-REMOTE-900',
+            'Control remoto archivado'
+        );
+
+        $entity->update(['active' => false]);
+
+        $exactResult = app(KnowledgeEngine::class)->resolve(
+            'ARCHIVED-REMOTE-900'
+        );
+
+        $candidateResult = app(KnowledgeEngine::class)->resolve(
+            'Control remoto archivado'
+        );
+
+        $this->assertSame('not_found', $exactResult['status']);
+        $this->assertFalse($exactResult['resolved']);
+        $this->assertSame([], $exactResult['candidates']);
+
+        $this->assertSame('not_found', $candidateResult['status']);
+        $this->assertFalse($candidateResult['resolved']);
+        $this->assertSame([], $candidateResult['candidates']);
+    }
+
+    public function test_inactive_identifiers_are_hidden_from_resolution(): void
+    {
+        [, $identifier] = $this->createEntityWithIdentifier(
+            'HIDDEN-IDENTIFIER-77',
+            'Control remoto universal'
+        );
+
+        $identifier->update(['active' => false]);
+
+        $exactResult = app(KnowledgeEngine::class)->resolve(
+            'HIDDEN-IDENTIFIER-77'
+        );
+
+        $candidateResult = app(KnowledgeEngine::class)->resolve(
+            'HIDDEN-IDENTIFIER'
+        );
+
+        $this->assertSame('not_found', $exactResult['status']);
+        $this->assertSame([], $exactResult['candidates']);
+
+        $this->assertSame('not_found', $candidateResult['status']);
+        $this->assertSame([], $candidateResult['candidates']);
+    }
+
+    public function test_inactive_assertions_are_not_exposed(): void
+    {
+        [$entity] = $this->createEntityWithIdentifier(
+            'ASSERTION-REMOTE-1',
+            'Control con afirmaciones'
+        );
+
+        $this->insertAssertion(
+            entityId: $entity->id,
+            value: 'visible-value',
+            active: true
+        );
+
+        $this->insertAssertion(
+            entityId: $entity->id,
+            value: 'hidden-value',
+            active: false
+        );
+
+        $result = app(KnowledgeEngine::class)->resolve(
+            'ASSERTION-REMOTE-1'
+        );
+
+        $this->assertSame('resolved', $result['status']);
+        $this->assertCount(1, $result['entity']->assertions);
+        $this->assertSame(
+            'visible-value',
+            $result['entity']->assertions->first()->value_text
+        );
+        $this->assertTrue(
+            (bool) $result['entity']->assertions->first()->active
+        );
+    }
+
+    public function test_inactive_compatibilities_and_entities_are_not_exposed(): void
+    {
+        [$remote] = $this->createEntityWithIdentifier(
+            'FILTER-REMOTE-1',
+            'Control para filtrar relaciones'
+        );
+
+        [$activeTelevision] = $this->createEntityWithIdentifier(
+            'ACTIVE-TV-1',
+            'Televisor activo'
+        );
+
+        [$inactiveRelationTelevision] = $this->createEntityWithIdentifier(
+            'INACTIVE-RELATION-TV-1',
+            'Televisor con relación inactiva'
+        );
+
+        [$inactiveTelevision] = $this->createEntityWithIdentifier(
+            'INACTIVE-TV-1',
+            'Televisor inactivo'
+        );
+
+        [$inactiveSource] = $this->createEntityWithIdentifier(
+            'INACTIVE-SOURCE-1',
+            'Origen inactivo'
+        );
+
+        $inactiveTelevision->update(['active' => false]);
+        $inactiveSource->update(['active' => false]);
+
+        $this->createCompatibility(
+            leftEntityId: $remote->id,
+            rightEntityId: $activeTelevision->id,
+            active: true
+        );
+
+        $this->createCompatibility(
+            leftEntityId: $remote->id,
+            rightEntityId: $inactiveRelationTelevision->id,
+            active: false
+        );
+
+        $this->createCompatibility(
+            leftEntityId: $remote->id,
+            rightEntityId: $inactiveTelevision->id,
+            active: true
+        );
+
+        $this->createCompatibility(
+            leftEntityId: $inactiveSource->id,
+            rightEntityId: $activeTelevision->id,
+            active: true
+        );
+
+        $remoteResult = app(KnowledgeEngine::class)->resolve(
+            'FILTER-REMOTE-1'
+        );
+
+        $televisionResult = app(KnowledgeEngine::class)->resolve(
+            'ACTIVE-TV-1'
+        );
+
+        $inactiveRelationResult = app(KnowledgeEngine::class)->resolve(
+            'INACTIVE-RELATION-TV-1'
+        );
+
+        $this->assertCount(
+            1,
+            $remoteResult['compatibilities']['outgoing']
+        );
+
+        $this->assertSame(
+            $activeTelevision->uuid,
+            $remoteResult['compatibilities']['outgoing']
+                ->first()
+                ->rightEntity
+                ->uuid
+        );
+
+        $this->assertCount(
+            1,
+            $televisionResult['compatibilities']['incoming']
+        );
+
+        $this->assertSame(
+            $remote->uuid,
+            $televisionResult['compatibilities']['incoming']
+                ->first()
+                ->leftEntity
+                ->uuid
+        );
+
+        $this->assertCount(
+            0,
+            $inactiveRelationResult['compatibilities']['incoming']
+        );
+    }
+
+    public function test_authenticated_endpoint_does_not_expose_inactive_entity(): void
+    {
+        [$entity] = $this->createEntityWithIdentifier(
+            'PRIVATE-INACTIVE-1',
+            'Entidad inactiva privada'
+        );
+
+        $entity->update(['active' => false]);
+
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->getJson(
+                route(
+                    'knowledge.show',
+                    ['query' => 'PRIVATE-INACTIVE-1']
+                )
+            );
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('status', 'not_found')
+            ->assertJsonPath('resolved', false)
+            ->assertJsonPath('candidates', []);
+    }
+
     public function test_authenticated_user_can_use_knowledge_endpoint(): void
     {
         [$entity] = $this->createEntityWithIdentifier(
@@ -216,5 +426,40 @@ class KnowledgeResolutionTest extends TestCase
         ]);
 
         return [$entity, $identifier];
+    }
+
+    private function insertAssertion(
+        int $entityId,
+        string $value,
+        bool $active
+    ): void {
+        DB::table('assertions')->insert([
+            'entity_id' => $entityId,
+            'attribute' => 'test_attribute',
+            'value_type' => 'text',
+            'value_text' => $value,
+            'confidence' => 90,
+            'status' => 'verified',
+            'source' => 'Prueba automatizada',
+            'active' => $active,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function createCompatibility(
+        int $leftEntityId,
+        int $rightEntityId,
+        bool $active
+    ): Compatibility {
+        return Compatibility::create([
+            'left_entity_id' => $leftEntityId,
+            'right_entity_id' => $rightEntityId,
+            'relationship_type' => 'compatible_with',
+            'confidence' => 95,
+            'source' => 'Prueba automatizada',
+            'evidence' => 'Relación creada para verificar vigencia.',
+            'active' => $active,
+        ]);
     }
 }
