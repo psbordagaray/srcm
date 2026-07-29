@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\ProductCategoryController;
@@ -83,6 +84,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'technical-models',
             TechnicalModelController::class
         )->except(['index', 'destroy']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Immutable audit viewer
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('can:view-audit')->group(function () {
+        Route::get(
+            '/audit-logs',
+            [AuditLogController::class, 'index']
+        )->name('audit-logs.index');
+
+        Route::get(
+            '/audit-logs/{auditLog}',
+            [AuditLogController::class, 'show']
+        )->name('audit-logs.show');
     });
 });
 

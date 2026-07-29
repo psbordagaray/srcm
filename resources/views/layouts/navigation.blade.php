@@ -70,6 +70,22 @@
                 </a>
             @endforeach
         </nav>
+
+        @can('view-audit')
+            <p class="mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-600">Sistema</p>
+            <nav class="mt-3 space-y-1">
+                <a
+                    href="{{ route('audit-logs.index') }}"
+                    class="sulu-nav-item {{ request()->routeIs('audit-logs.*') ? 'sulu-nav-item-active' : '' }}"
+                >
+                    @include('components.sidebar-icon', ['name' => 'receipt'])
+                    <span>Auditoría</span>
+                    @if (request()->routeIs('audit-logs.*'))
+                        <span class="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,.9)]"></span>
+                    @endif
+                </a>
+            </nav>
+        @endcan
     </div>
 
     <div class="border-t border-white/10 p-4">

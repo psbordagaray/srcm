@@ -46,6 +46,8 @@ class VerifiedOperationalAccessTest extends TestCase
             'technical-models.toggle-active',
             'knowledge.explorer',
             'knowledge.show',
+            'audit-logs.index',
+            'audit-logs.show',
         ];
 
         foreach ($routeNames as $routeName) {

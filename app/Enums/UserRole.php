@@ -25,4 +25,9 @@ enum UserRole: string
             self::Viewer => false,
         };
     }
+
+    public function canViewAudit(): bool
+    {
+        return $this === self::Admin;
+    }
 }

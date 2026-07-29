@@ -33,5 +33,10 @@ class AppServiceProvider extends ServiceProvider
             'manage-catalog',
             fn (User $user): bool => $user->role->canManageCatalog()
         );
+
+        Gate::define(
+            'view-audit',
+            fn (User $user): bool => $user->role->canViewAudit()
+        );
     }
 }
