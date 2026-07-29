@@ -1,20 +1,58 @@
 @php
     $navigation = [
-        ['label' => 'Dashboard', 'route' => 'dashboard', 'active' => 'dashboard', 'icon' => 'dashboard'],
-        ['label' => 'Categorías', 'href' => '#', 'icon' => 'categories'],
-        ['label' => 'Marcas', 'href' => '#', 'icon' => 'tag'],
-        ['label' => 'Fabricantes', 'href' => '#', 'icon' => 'factory'],
-        ['label' => 'Productos', 'href' => '#', 'icon' => 'box'],
-        ['label' => 'Modelos de TV', 'href' => '#', 'icon' => 'tv'],
-        ['label' => 'Compatibilidades', 'href' => '#', 'icon' => 'link'],
+        [
+            'label' => 'Dashboard',
+            'route' => 'dashboard',
+            'active' => 'dashboard',
+            'icon' => 'dashboard',
+        ],
+        [
+            'label' => 'Explorador',
+            'route' => 'knowledge.explorer',
+            'active' => 'knowledge.*',
+            'icon' => 'link',
+        ],
+        [
+            'label' => 'Categorías',
+            'route' => 'product-categories.index',
+            'active' => 'product-categories.*',
+            'icon' => 'categories',
+        ],
+        [
+            'label' => 'Marcas',
+            'route' => 'brands.index',
+            'active' => 'brands.*',
+            'icon' => 'tag',
+        ],
+        [
+            'label' => 'Modelos técnicos',
+            'route' => 'technical-models.index',
+            'active' => 'technical-models.*',
+            'icon' => 'tv',
+        ],
+        [
+            'label' => 'Fabricantes',
+            'disabled' => true,
+            'icon' => 'factory',
+        ],
+        [
+            'label' => 'Productos',
+            'disabled' => true,
+            'icon' => 'box',
+        ],
+        [
+            'label' => 'Compatibilidades',
+            'disabled' => true,
+            'icon' => 'link',
+        ],
     ];
 
     $operations = [
-        ['label' => 'Inventario', 'href' => '#', 'icon' => 'inventory'],
-        ['label' => 'Clientes', 'href' => '#', 'icon' => 'users'],
-        ['label' => 'Proveedores', 'href' => '#', 'icon' => 'truck'],
-        ['label' => 'Compras', 'href' => '#', 'icon' => 'cart'],
-        ['label' => 'Ventas', 'href' => '#', 'icon' => 'receipt'],
+        ['label' => 'Inventario', 'disabled' => true, 'icon' => 'inventory'],
+        ['label' => 'Clientes', 'disabled' => true, 'icon' => 'users'],
+        ['label' => 'Proveedores', 'disabled' => true, 'icon' => 'truck'],
+        ['label' => 'Compras', 'disabled' => true, 'icon' => 'cart'],
+        ['label' => 'Ventas', 'disabled' => true, 'icon' => 'receipt'],
     ];
 @endphp
 
@@ -45,34 +83,62 @@
 
     <div class="flex-1 overflow-y-auto px-4 py-6">
         <p class="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-600">Catálogo</p>
+
         <nav class="mt-3 space-y-1">
             @foreach ($navigation as $item)
-                @php
-                    $isActive = isset($item['active']) && request()->routeIs($item['active']);
-                    $href = isset($item['route']) ? route($item['route']) : $item['href'];
-                @endphp
-                <a href="{{ $href }}" class="sulu-nav-item {{ $isActive ? 'sulu-nav-item-active' : '' }}">
-                    @include('components.sidebar-icon', ['name' => $item['icon']])
-                    <span>{{ $item['label'] }}</span>
-                    @if ($isActive)
-                        <span class="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,.9)]"></span>
-                    @endif
-                </a>
+                @if ($item['disabled'] ?? false)
+                    <span
+                        class="sulu-nav-item cursor-not-allowed opacity-40"
+                        title="Módulo pendiente de desarrollo"
+                        aria-disabled="true"
+                    >
+                        @include('components.sidebar-icon', ['name' => $item['icon']])
+                        <span>{{ $item['label'] }}</span>
+                        <span class="ml-auto text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                            Próximamente
+                        </span>
+                    </span>
+                @else
+                    @php
+                        $isActive = request()->routeIs($item['active']);
+                    @endphp
+
+                    <a
+                        href="{{ route($item['route']) }}"
+                        class="sulu-nav-item {{ $isActive ? 'sulu-nav-item-active' : '' }}"
+                    >
+                        @include('components.sidebar-icon', ['name' => $item['icon']])
+                        <span>{{ $item['label'] }}</span>
+
+                        @if ($isActive)
+                            <span class="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,.9)]"></span>
+                        @endif
+                    </a>
+                @endif
             @endforeach
         </nav>
 
         <p class="mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-600">Operaciones</p>
+
         <nav class="mt-3 space-y-1">
             @foreach ($operations as $item)
-                <a href="{{ $item['href'] }}" class="sulu-nav-item">
+                <span
+                    class="sulu-nav-item cursor-not-allowed opacity-40"
+                    title="Módulo pendiente de desarrollo"
+                    aria-disabled="true"
+                >
                     @include('components.sidebar-icon', ['name' => $item['icon']])
                     <span>{{ $item['label'] }}</span>
-                </a>
+                    <span class="ml-auto text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                        Próximamente
+                    </span>
+                </span>
             @endforeach
         </nav>
 
         @can('view-audit')
             <p class="mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-slate-600">Sistema</p>
+
             <nav class="mt-3 space-y-1">
                 <a
                     href="{{ route('audit-logs.index') }}"
@@ -80,6 +146,7 @@
                 >
                     @include('components.sidebar-icon', ['name' => 'receipt'])
                     <span>Auditoría</span>
+
                     @if (request()->routeIs('audit-logs.*'))
                         <span class="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,.9)]"></span>
                     @endif
@@ -96,6 +163,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" />
                     </svg>
                 </span>
+
                 <div class="min-w-0">
                     <p class="text-sm font-semibold text-white">SRCM v0.1</p>
                     <p class="mt-1 text-xs leading-5 text-slate-500">Base de gestión para repuestos y controles remotos.</p>
@@ -108,8 +176,10 @@
                 @include('components.sidebar-icon', ['name' => 'settings'])
                 <span>Mi perfil</span>
             </a>
+
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
+
                 <button type="submit" class="sulu-icon-button" aria-label="Cerrar sesión">
                     <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 17l5-5-5-5M15 12H3M15 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
