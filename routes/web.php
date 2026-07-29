@@ -15,7 +15,7 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'verified'])->group(function () {
     /*
     |--------------------------------------------------------------------------
     | Product Categories
@@ -79,7 +79,9 @@ Route::middleware('auth')->group(function () {
         '/knowledge/{query}',
         [KnowledgeController::class, 'show']
     )->name('knowledge.show');
+});
 
+Route::middleware('auth')->group(function () {
     /*
     |--------------------------------------------------------------------------
     | Profile
