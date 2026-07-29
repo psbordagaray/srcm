@@ -3,29 +3,40 @@
 namespace Tests\Feature\Auth;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_screen_can_be_rendered(): void
+    public function test_public_registration_route_is_not_defined(): void
     {
-        $response = $this->get('/register');
-
-        $response->assertStatus(200);
+        $this->assertFalse(Route::has('register'));
     }
 
-    public function test_new_users_can_register(): void
+    public function test_public_registration_endpoints_are_not_available(): void
     {
-        $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $email = 'unauthorized@example.com';
+
+        $this->get('/register')->assertNotFound();
+
+        $this->post('/register', [
+            'name' => 'Unauthorized User',
+            'email' => $email,
             'password' => 'password',
             'password_confirmation' => 'password',
-        ]);
+        ])->assertNotFound();
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertGuest();
+
+        $this->assertDatabaseMissing('users', [
+            'email' => $email,
+        ]);
+    }
+
+    public function test_login_screen_remains_available(): void
+    {
+        $this->get('/login')->assertOk();
     }
 }
