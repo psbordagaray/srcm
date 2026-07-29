@@ -17,12 +17,14 @@
                 </p>
             </div>
 
+            @can('manage-catalog')
             <a
                 href="{{ route('product-categories.create') }}"
                 class="inline-flex items-center justify-center rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
             >
                 Nueva categoría
             </a>
+            @endcan
 
         </div>
 
@@ -114,9 +116,11 @@
                                     Estado
                                 </th>
 
+                                @can('manage-catalog')
                                 <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-400">
                                     Acciones
                                 </th>
+                                @endcan
 
                             </tr>
 
@@ -164,6 +168,7 @@
 
                                     </td>
 
+                                    @can('manage-catalog')
                                     <td class="px-6 py-4">
 
                                         <div class="flex justify-end gap-2">
@@ -202,6 +207,7 @@
                                         </div>
 
                                     </td>
+                                    @endcan
 
                                 </tr>
 

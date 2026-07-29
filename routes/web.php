@@ -11,64 +11,31 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->name('dashboard');
+
     /*
     |--------------------------------------------------------------------------
-    | Product Categories
+    | Operational read access
     |--------------------------------------------------------------------------
     */
 
-    Route::patch(
-        'product-categories/{product_category}/toggle-active',
-        [ProductCategoryController::class, 'toggleActive']
-    )->name('product-categories.toggle-active');
-
-    Route::resource(
+    Route::get(
         'product-categories',
-        ProductCategoryController::class
-    );
+        [ProductCategoryController::class, 'index']
+    )->name('product-categories.index');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Brands
-    |--------------------------------------------------------------------------
-    */
-
-    Route::patch(
-        'brands/{brand}/toggle-active',
-        [BrandController::class, 'toggleActive']
-    )->name('brands.toggle-active');
-
-    Route::resource(
+    Route::get(
         'brands',
-        BrandController::class
-    );
+        [BrandController::class, 'index']
+    )->name('brands.index');
 
-    /*
-    |--------------------------------------------------------------------------
-    | Technical Models
-    |--------------------------------------------------------------------------
-    */
-
-    Route::patch(
-        'technical-models/{technical_model}/toggle-active',
-        [TechnicalModelController::class, 'toggleActive']
-    )->name('technical-models.toggle-active');
-
-    Route::resource(
+    Route::get(
         'technical-models',
-        TechnicalModelController::class
-    );
-
-    /*
-    |--------------------------------------------------------------------------
-    | Knowledge Engine
-    |--------------------------------------------------------------------------
-    */
+        [TechnicalModelController::class, 'index']
+    )->name('technical-models.index');
 
     Route::get(
         '/explorer',
@@ -79,15 +46,47 @@ Route::middleware(['auth', 'verified'])->group(function () {
         '/knowledge/{query}',
         [KnowledgeController::class, 'show']
     )->name('knowledge.show');
-});
 
-Route::middleware('auth')->group(function () {
     /*
     |--------------------------------------------------------------------------
-    | Profile
+    | Catalog management
     |--------------------------------------------------------------------------
     */
 
+    Route::middleware('can:manage-catalog')->group(function () {
+        Route::patch(
+            'product-categories/{product_category}/toggle-active',
+            [ProductCategoryController::class, 'toggleActive']
+        )->name('product-categories.toggle-active');
+
+        Route::resource(
+            'product-categories',
+            ProductCategoryController::class
+        )->except(['index', 'destroy']);
+
+        Route::patch(
+            'brands/{brand}/toggle-active',
+            [BrandController::class, 'toggleActive']
+        )->name('brands.toggle-active');
+
+        Route::resource(
+            'brands',
+            BrandController::class
+        )->except(['index', 'destroy']);
+
+        Route::patch(
+            'technical-models/{technical_model}/toggle-active',
+            [TechnicalModelController::class, 'toggleActive']
+        )->name('technical-models.toggle-active');
+
+        Route::resource(
+            'technical-models',
+            TechnicalModelController::class
+        )->except(['index', 'destroy']);
+    });
+});
+
+Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])
         ->name('profile.edit');
 

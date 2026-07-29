@@ -9,7 +9,7 @@ class UpdateTechnicalModelRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('manage-catalog') ?? false;
     }
 
     public function rules(): array
