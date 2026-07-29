@@ -66,6 +66,22 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Knowledge Engine
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/explorer',
+        [KnowledgeController::class, 'explorer']
+    )->name('knowledge.explorer');
+
+    Route::get(
+        '/knowledge/{query}',
+        [KnowledgeController::class, 'show']
+    )->name('knowledge.show');
+
+    /*
+    |--------------------------------------------------------------------------
     | Profile
     |--------------------------------------------------------------------------
     */
@@ -80,19 +96,4 @@ Route::middleware('auth')->group(function () {
         ->name('profile.destroy');
 });
 
-
-/*
-|--------------------------------------------------------------------------
-| Knowledge Engine
-|--------------------------------------------------------------------------
-*/
-
-Route::get(
-    '/explorer',
-    [KnowledgeController::class, 'explorer']
-)->middleware('auth')->name('knowledge.explorer');
-Route::get(
-    '/knowledge/{query}',
-    [KnowledgeController::class, 'show']
-)->name('knowledge.show');
 require __DIR__.'/auth.php';
