@@ -158,6 +158,18 @@
         @enderror
     </div>
 
+    <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-4">
+        <p class="text-sm font-semibold text-cyan-200">
+            Una sola carga
+        </p>
+
+        <p class="mt-1 text-xs leading-5 text-slate-400">
+            {{ $editing
+                ? 'Los cambios de código, nombre, categoría y estado también se sincronizarán con la ficha de conocimiento.'
+                : 'Al guardar, SRCM creará o vinculará la ficha de conocimiento y abrirá la pantalla de compatibilidades.' }}
+        </p>
+    </div>
+
     <div class="flex flex-col-reverse gap-3 border-t border-slate-800 pt-6 sm:flex-row sm:justify-end">
         <a
             href="{{ route('technical-models.index') }}"

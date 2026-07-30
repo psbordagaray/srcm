@@ -11,6 +11,7 @@ use App\Models\Identifier;
 use App\Models\ProductCategory;
 use App\Models\TechnicalModel;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -53,7 +54,11 @@ class AuditLogController extends Controller
                 'string',
                 'in:brand,compatibility,entity,identifier,product_category,technical_model',
             ],
-            'user_id' => ['nullable', 'integer', 'exists:users,id'],
+            'user_id' => [
+                'nullable',
+                'integer',
+                'exists:users,id',
+            ],
             'date_from' => ['nullable', 'date'],
             'date_to' => [
                 'nullable',
@@ -70,6 +75,29 @@ class AuditLogController extends Controller
             'product_category' => ProductCategory::class,
             'technical_model' => TechnicalModel::class,
         ];
+
+        $displayTimezone = (string) config(
+            'app.display_timezone',
+            'America/Argentina/Buenos_Aires'
+        );
+
+        $dateFromUtc = filled(
+            $filters['date_from'] ?? null
+        )
+            ? CarbonImmutable::parse(
+                $filters['date_from'].' 00:00:00',
+                $displayTimezone
+            )->utc()
+            : null;
+
+        $dateToUtc = filled(
+            $filters['date_to'] ?? null
+        )
+            ? CarbonImmutable::parse(
+                $filters['date_to'].' 23:59:59.999999',
+                $displayTimezone
+            )->utc()
+            : null;
 
         $auditLogs = AuditLog::query()
             ->when(
@@ -102,19 +130,19 @@ class AuditLogController extends Controller
                 )
             )
             ->when(
-                filled($filters['date_from'] ?? null),
-                fn (Builder $query) => $query->whereDate(
+                $dateFromUtc !== null,
+                fn (Builder $query) => $query->where(
                     'created_at',
                     '>=',
-                    $filters['date_from']
+                    $dateFromUtc
                 )
             )
             ->when(
-                filled($filters['date_to'] ?? null),
-                fn (Builder $query) => $query->whereDate(
+                $dateToUtc !== null,
+                fn (Builder $query) => $query->where(
                     'created_at',
                     '<=',
-                    $filters['date_to']
+                    $dateToUtc
                 )
             )
             ->orderByDesc('id')
@@ -131,6 +159,20 @@ class AuditLogController extends Controller
             ->orderBy('name')
             ->get(['id', 'name']);
 
+        $auditedCompatibilityCount = AuditLog::query()
+            ->where(
+                'auditable_type',
+                Compatibility::class
+            )
+            ->distinct()
+            ->count('auditable_id');
+
+        $legacyCompatibilityCount = max(
+            0,
+            Compatibility::query()->count()
+                - $auditedCompatibilityCount
+        );
+
         return view('audit-logs.index', [
             'auditLogs' => $auditLogs,
             'users' => $users,
@@ -138,16 +180,24 @@ class AuditLogController extends Controller
             'eventLabels' => self::EVENT_LABELS,
             'entityLabels' => self::ENTITY_LABELS,
             'roleLabels' => $this->roleLabels(),
+            'displayTimezone' => $displayTimezone,
+            'legacyCompatibilityCount' =>
+                $legacyCompatibilityCount,
         ]);
     }
 
-    public function show(AuditLog $auditLog): View
-    {
+    public function show(
+        AuditLog $auditLog
+    ): View {
         return view('audit-logs.show', [
             'auditLog' => $auditLog,
             'eventLabels' => self::EVENT_LABELS,
             'entityLabels' => self::ENTITY_LABELS,
             'roleLabels' => $this->roleLabels(),
+            'displayTimezone' => (string) config(
+                'app.display_timezone',
+                'America/Argentina/Buenos_Aires'
+            ),
         ]);
     }
 

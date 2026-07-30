@@ -32,4 +32,20 @@ class TechnicalModel extends Model
     {
         return $this->belongsTo(ProductCategory::class);
     }
+
+    public function knowledgeEntity(): BelongsTo
+    {
+        return $this->belongsTo(
+            Entity::class,
+            'knowledge_entity_id'
+        );
+    }
+
+    public function knowledgeIdentifier(): BelongsTo
+    {
+        return $this->belongsTo(
+            Identifier::class,
+            'knowledge_identifier_id'
+        );
+    }
 }

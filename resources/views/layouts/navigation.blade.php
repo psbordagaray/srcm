@@ -43,6 +43,7 @@
         [
             'label' => 'Compatibilidades',
             'disabled' => true,
+            'status' => 'Desde fichas',
             'icon' => 'link',
         ],
     ];
@@ -89,13 +90,13 @@
                 @if ($item['disabled'] ?? false)
                     <span
                         class="sulu-nav-item cursor-not-allowed opacity-40"
-                        title="Módulo pendiente de desarrollo"
+                        title="{{ $item['status'] ?? 'Módulo pendiente de desarrollo' }}"
                         aria-disabled="true"
                     >
                         @include('components.sidebar-icon', ['name' => $item['icon']])
                         <span>{{ $item['label'] }}</span>
                         <span class="ml-auto text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                            Próximamente
+                            {{ $item['status'] ?? 'Próximamente' }}
                         </span>
                     </span>
                 @else

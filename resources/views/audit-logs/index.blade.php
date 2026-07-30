@@ -14,12 +14,26 @@
                     Registro inmutable de altas, ediciones y cambios de estado del catálogo.
                     Esta pantalla es exclusivamente de consulta administrativa.
                 </p>
+
+                <p class="mt-2 text-xs text-slate-500">
+                    Horarios mostrados en {{ $displayTimezone }}.
+                    La base conserva UTC para mantener integridad técnica.
+                </p>
             </div>
 
             <div class="rounded-xl border border-cyan-400/20 bg-cyan-400/5 px-4 py-3 text-sm text-cyan-200">
                 {{ $auditLogs->total() }} movimientos encontrados
             </div>
         </div>
+
+        @if ($legacyCompatibilityCount > 0)
+            <div class="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                Hay {{ $legacyCompatibilityCount }}
+                {{ $legacyCompatibilityCount === 1 ? 'compatibilidad histórica' : 'compatibilidades históricas' }}
+                creada antes de activar la auditoría.
+                La relación existe, pero SRCM no inventará un evento retroactivo.
+            </div>
+        @endif
 
         <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/10">
             <form
@@ -192,7 +206,7 @@
                             @foreach ($auditLogs as $auditLog)
                                 <tr class="transition hover:bg-slate-800/40">
                                     <td class="whitespace-nowrap px-5 py-4 text-sm text-slate-300">
-                                        {{ $auditLog->created_at->format('d/m/Y H:i:s') }}
+                                        {{ $auditLog->created_at->copy()->timezone($displayTimezone)->format('d/m/Y H:i:s') }}
                                     </td>
 
                                     <td class="px-5 py-4">

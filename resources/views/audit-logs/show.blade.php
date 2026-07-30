@@ -47,7 +47,7 @@
             <div class="rounded-2xl border border-slate-800 bg-slate-900/80 p-5">
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Fecha</p>
                 <p class="mt-2 text-sm font-semibold text-white">
-                    {{ $auditLog->created_at->format('d/m/Y H:i:s') }}
+                    {{ $auditLog->created_at->copy()->timezone($displayTimezone)->format('d/m/Y H:i:s') }}
                 </p>
             </div>
 

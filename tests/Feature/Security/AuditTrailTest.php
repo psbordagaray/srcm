@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\ProductCategory;
 use App\Models\TechnicalModel;
 use App\Models\User;
+use Database\Seeders\KnowledgeFoundationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 use LogicException;
@@ -141,6 +142,10 @@ class AuditTrailTest extends TestCase
 
     public function test_categories_and_technical_models_are_audited(): void
     {
+        $this->seed(
+            KnowledgeFoundationSeeder::class
+        );
+
         $admin = User::factory()->create([
             'role' => UserRole::Admin,
         ]);
@@ -164,7 +169,7 @@ class AuditTrailTest extends TestCase
             ])
         );
 
-        $this->actingAs($admin)
+        $response = $this->actingAs($admin)
             ->post(route('technical-models.store'), [
                 'brand_id' => $brand->id,
                 'product_category_id' => $category->id,
@@ -172,8 +177,7 @@ class AuditTrailTest extends TestCase
                 'name' => 'Audited Model',
                 'description' => null,
                 'active' => true,
-            ])
-            ->assertRedirect(route('technical-models.index'));
+            ]);
 
         $this->assertDatabaseHas('audit_logs', [
             'event' => 'created',
@@ -182,8 +186,19 @@ class AuditTrailTest extends TestCase
         ]);
 
         $technicalModel = TechnicalModel::query()
+            ->with('knowledgeEntity')
             ->where('code', 'AUDIT-100')
             ->sole();
+
+        $response->assertStatus(302);
+
+        $this->assertSame(
+            route('entities.show', [
+                'entity' =>
+                    $technicalModel->knowledgeEntity->uuid,
+            ]),
+            $response->headers->get('Location')
+        );
 
         $this->assertDatabaseHas('audit_logs', [
             'event' => 'created',

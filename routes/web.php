@@ -42,6 +42,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )->name('technical-models.index');
 
     Route::get(
+        'technical-models/{technical_model}',
+        [TechnicalModelController::class, 'show']
+    )
+        ->whereNumber('technical_model')
+        ->name('technical-models.show');
+
+    Route::get(
         '/explorer',
         [KnowledgeController::class, 'explorer']
     )->name('knowledge.explorer');
@@ -141,7 +148,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource(
             'technical-models',
             TechnicalModelController::class
-        )->except(['index', 'destroy']);
+        )->except(['index', 'show', 'destroy']);
     });
 
     /*

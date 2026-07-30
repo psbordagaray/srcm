@@ -67,7 +67,6 @@ class CatalogAuthorizationTest extends TestCase
             'brands.toggle-active',
             'technical-models.create',
             'technical-models.store',
-            'technical-models.show',
             'technical-models.edit',
             'technical-models.update',
             'technical-models.toggle-active',
