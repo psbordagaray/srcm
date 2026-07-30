@@ -8,6 +8,7 @@ use App\Models\Brand;
 use App\Models\Compatibility;
 use App\Models\Entity;
 use App\Models\Identifier;
+use App\Models\Manufacturer;
 use App\Models\ProductCategory;
 use App\Models\TechnicalModel;
 use App\Models\User;
@@ -36,6 +37,7 @@ class AuditLogController extends Controller
         Compatibility::class => 'Compatibilidad',
         Entity::class => 'Entidad de conocimiento',
         Identifier::class => 'Identificador',
+        Manufacturer::class => 'Fabricante',
         ProductCategory::class => 'Categoría',
         TechnicalModel::class => 'Modelo técnico',
     ];
@@ -52,7 +54,7 @@ class AuditLogController extends Controller
             'entity' => [
                 'nullable',
                 'string',
-                'in:brand,compatibility,entity,identifier,product_category,technical_model',
+                'in:brand,compatibility,entity,identifier,manufacturer,product_category,technical_model',
             ],
             'user_id' => [
                 'nullable',
@@ -72,6 +74,7 @@ class AuditLogController extends Controller
             'compatibility' => Compatibility::class,
             'entity' => Entity::class,
             'identifier' => Identifier::class,
+            'manufacturer' => Manufacturer::class,
             'product_category' => ProductCategory::class,
             'technical_model' => TechnicalModel::class,
         ];

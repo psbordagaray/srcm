@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Compatibility;
 use App\Models\Entity;
 use App\Models\Identifier;
+use App\Models\Manufacturer;
 use App\Models\ProductCategory;
 use App\Models\TechnicalModel;
 use App\Models\User;
@@ -32,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
         Compatibility::observe(CatalogAuditObserver::class);
         Entity::observe(CatalogAuditObserver::class);
         Identifier::observe(CatalogAuditObserver::class);
+        Manufacturer::observe(CatalogAuditObserver::class);
         ProductCategory::observe(CatalogAuditObserver::class);
         TechnicalModel::observe(CatalogAuditObserver::class);
 

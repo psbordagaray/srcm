@@ -90,6 +90,7 @@
                         <option value="compatibility" @selected(($filters['entity'] ?? '') === 'compatibility')>Compatibilidad</option>
                         <option value="entity" @selected(($filters['entity'] ?? '') === 'entity')>Entidad de conocimiento</option>
                         <option value="identifier" @selected(($filters['entity'] ?? '') === 'identifier')>Identificador</option>
+                                <option value="manufacturer" @selected(($filters['entity'] ?? '') === 'manufacturer')>Fabricante</option>
                         <option value="product_category" @selected(($filters['entity'] ?? '') === 'product_category')>Categoría</option>
                         <option value="technical_model" @selected(($filters['entity'] ?? '') === 'technical_model')>Modelo técnico</option>
                     </select>

@@ -32,7 +32,8 @@
         ],
         [
             'label' => 'Fabricantes',
-            'disabled' => true,
+            'route' => 'manufacturers.index',
+            'active' => 'manufacturers.*',
             'icon' => 'factory',
         ],
         [
