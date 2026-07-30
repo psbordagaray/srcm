@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Knowledge\CreateEntityWithInitialIdentifier;
 use App\Http\Requests\StoreEntityRequest;
+use App\Models\Entity;
 use App\Models\EntityType;
 use App\Models\IdentifierType;
 use DomainException;
@@ -51,5 +52,39 @@ class EntityController extends Controller
                 'success',
                 'Entidad creada correctamente y disponible en el Explorador.'
             );
+    }
+
+    public function show(Entity $entity): View
+    {
+        $entity->load([
+            'entityType',
+            'identifiers' => function ($query): void {
+                $query
+                    ->with('identifierType')
+                    ->orderByDesc('active')
+                    ->orderByDesc('is_primary')
+                    ->orderBy('id');
+            },
+            'outgoingCompatibilities' => function ($query): void {
+                $query
+                    ->where('active', true)
+                    ->with('rightEntity.entityType')
+                    ->orderBy('id');
+            },
+            'incomingCompatibilities' => function ($query): void {
+                $query
+                    ->where('active', true)
+                    ->with('leftEntity.entityType')
+                    ->orderBy('id');
+            },
+        ]);
+
+        return view('entities.show', [
+            'entity' => $entity,
+            'identifierTypes' => IdentifierType::query()
+                ->where('active', true)
+                ->orderBy('name')
+                ->get(),
+        ]);
     }
 }

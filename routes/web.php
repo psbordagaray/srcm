@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\EntityController;
+use App\Http\Controllers\IdentifierController;
 use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
@@ -49,6 +50,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [KnowledgeController::class, 'show']
     )->name('knowledge.show');
 
+    Route::get(
+        'entities/{entity:uuid}',
+        [EntityController::class, 'show']
+    )
+        ->whereUuid('entity')
+        ->name('entities.show');
+
     /*
     |--------------------------------------------------------------------------
     | Catalog management
@@ -65,6 +73,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'entities',
             [EntityController::class, 'store']
         )->name('entities.store');
+
+        Route::post(
+            'entities/{entity:uuid}/identifiers',
+            [IdentifierController::class, 'store']
+        )
+            ->whereUuid('entity')
+            ->name('entities.identifiers.store');
+
+        Route::patch(
+            'entities/{entity:uuid}/identifiers/{identifier}/make-primary',
+            [IdentifierController::class, 'makePrimary']
+        )
+            ->whereUuid('entity')
+            ->whereNumber('identifier')
+            ->name('entities.identifiers.make-primary');
+
+        Route::patch(
+            'entities/{entity:uuid}/identifiers/{identifier}/toggle-active',
+            [IdentifierController::class, 'toggleActive']
+        )
+            ->whereUuid('entity')
+            ->whereNumber('identifier')
+            ->name('entities.identifiers.toggle-active');
+
         Route::patch(
             'product-categories/{product_category}/toggle-active',
             [ProductCategoryController::class, 'toggleActive']

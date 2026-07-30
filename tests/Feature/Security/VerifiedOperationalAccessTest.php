@@ -23,6 +23,12 @@ class VerifiedOperationalAccessTest extends TestCase
     {
         $routeNames = [
             'dashboard',
+            'entities.create',
+            'entities.store',
+            'entities.show',
+            'entities.identifiers.store',
+            'entities.identifiers.make-primary',
+            'entities.identifiers.toggle-active',
             'product-categories.index',
             'product-categories.create',
             'product-categories.store',

@@ -67,6 +67,9 @@
         const form = document.getElementById('knowledge-search-form');
         const input = document.getElementById('knowledge-query');
         const result = document.getElementById('knowledge-result');
+        const entityDetailUrlTemplate = @json(
+            route('entities.show', ['entity' => '__ENTITY_UUID__'])
+        );
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -210,18 +213,27 @@
 
             result.innerHTML = `
                 <div class="space-y-6">
-                    <div>
-                        <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-400">
-                            Identidad confirmada
-                        </p>
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-400">
+                                Identidad confirmada
+                            </p>
 
-                        <h2 class="mt-1 text-2xl font-bold text-white">
-                            ${escapeHtml(entity.name ?? entity.uuid)}
-                        </h2>
+                            <h2 class="mt-1 text-2xl font-bold text-white">
+                                ${escapeHtml(entity.name ?? entity.uuid)}
+                            </h2>
 
-                        <p class="mt-2 text-sm text-slate-400">
-                            ${escapeHtml(entity.entity_type?.name ?? 'Sin tipo')}
-                        </p>
+                            <p class="mt-2 text-sm text-slate-400">
+                                ${escapeHtml(entity.entity_type?.name ?? 'Sin tipo')}
+                            </p>
+                        </div>
+
+                        <a
+                            href="${escapeHtml(entityDetailUrl(entity.uuid))}"
+                            class="inline-flex shrink-0 items-center justify-center rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2.5 text-sm font-semibold text-cyan-300 transition hover:bg-cyan-500/20"
+                        >
+                            Abrir ficha
+                        </a>
                     </div>
 
                     <div>
@@ -314,6 +326,13 @@
                     Consulta: ${escapeHtml(query)}
                 </p>
             `;
+        }
+
+        function entityDetailUrl(uuid) {
+            return entityDetailUrlTemplate.replace(
+                '__ENTITY_UUID__',
+                encodeURIComponent(uuid)
+            );
         }
 
         function escapeHtml(value) {

@@ -46,6 +46,11 @@ class CatalogAuthorizationTest extends TestCase
     public function test_catalog_write_routes_require_manage_catalog_gate(): void
     {
         $routeNames = [
+            'entities.create',
+            'entities.store',
+            'entities.identifiers.store',
+            'entities.identifiers.make-primary',
+            'entities.identifiers.toggle-active',
             'product-categories.create',
             'product-categories.store',
             'product-categories.show',
@@ -86,6 +91,9 @@ class CatalogAuthorizationTest extends TestCase
 
     public function test_unused_destroy_routes_are_not_exposed(): void
     {
+        $this->assertFalse(Route::has('entities.destroy'));
+        $this->assertFalse(Route::has('identifiers.destroy'));
+
         $this->assertFalse(Route::has('brands.destroy'));
 
         $this->assertFalse(
