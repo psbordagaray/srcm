@@ -53,7 +53,12 @@
     $operations = [
         ['label' => 'Inventario', 'disabled' => true, 'icon' => 'inventory'],
         ['label' => 'Clientes', 'disabled' => true, 'icon' => 'users'],
-        ['label' => 'Proveedores', 'disabled' => true, 'icon' => 'truck'],
+        [
+            'label' => 'Proveedores',
+            'route' => 'suppliers.index',
+            'active' => 'suppliers.*',
+            'icon' => 'truck',
+        ],
         ['label' => 'Compras', 'disabled' => true, 'icon' => 'cart'],
         ['label' => 'Ventas', 'disabled' => true, 'icon' => 'receipt'],
     ];

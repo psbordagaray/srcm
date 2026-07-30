@@ -192,6 +192,22 @@ Ejemplo conocido:
 
 ---
 
+## Parte comercial
+
+Identidad única de una persona o empresa que mantiene relaciones comerciales con una organización usuaria de SRCM.
+
+Una parte comercial puede asumir distintos roles sin duplicarse:
+
+- cliente;
+- proveedor;
+- contacto;
+- profesional;
+- representante.
+
+Los roles cambian. La identidad permanece.
+
+---
+
 ## Proveedor
 
 Persona u organización que ofrece artículos o servicios a SULU.

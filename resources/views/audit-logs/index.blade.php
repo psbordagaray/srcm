@@ -92,6 +92,8 @@
                         <option value="identifier" @selected(($filters['entity'] ?? '') === 'identifier')>Identificador</option>
                                 <option value="manufacturer" @selected(($filters['entity'] ?? '') === 'manufacturer')>Fabricante</option>
                                 <option value="catalog_product" @selected(($filters['entity'] ?? '') === 'catalog_product')>Producto</option>
+                                <option value="business_party" @selected(($filters['entity'] ?? '') === 'business_party')>Identidad comercial</option>
+                                <option value="supplier" @selected(($filters['entity'] ?? '') === 'supplier')>Proveedor</option>
                         <option value="product_category" @selected(($filters['entity'] ?? '') === 'product_category')>Categoría</option>
                         <option value="technical_model" @selected(($filters['entity'] ?? '') === 'technical_model')>Modelo técnico</option>
                     </select>

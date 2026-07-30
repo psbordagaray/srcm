@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\CompatibilityController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\IdentifierController;
@@ -54,6 +55,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )
         ->whereNumber('product')
         ->name('products.show');
+
+    Route::get(
+        'suppliers',
+        [SupplierController::class, 'index']
+    )->name('suppliers.index');
+
+    Route::get(
+        'suppliers/{supplier}',
+        [SupplierController::class, 'show']
+    )
+        ->whereNumber('supplier')
+        ->name('suppliers.show');
 
     Route::get(
         'technical-models',
@@ -187,6 +200,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource(
             'technical-models',
             TechnicalModelController::class
+        )->except(['index', 'show', 'destroy']);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Private commerce management
+    |--------------------------------------------------------------------------
+    */
+
+    Route::middleware('can:manage-commerce')->group(function () {
+        Route::patch(
+            'suppliers/{supplier}/toggle-active',
+            [SupplierController::class, 'toggleActive']
+        )->name('suppliers.toggle-active');
+
+        Route::resource(
+            'suppliers',
+            SupplierController::class
         )->except(['index', 'show', 'destroy']);
     });
 

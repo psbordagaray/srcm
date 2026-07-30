@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\Brand;
+use App\Models\BusinessParty;
 use App\Models\CatalogProduct;
 use App\Models\Compatibility;
 use App\Models\Entity;
 use App\Models\Identifier;
 use App\Models\Manufacturer;
 use App\Models\ProductCategory;
+use App\Models\Supplier;
 use App\Models\TechnicalModel;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -35,12 +37,14 @@ class AuditLogController extends Controller
      */
     private const ENTITY_LABELS = [
         Brand::class => 'Marca',
+        BusinessParty::class => 'Identidad comercial',
         CatalogProduct::class => 'Producto',
         Compatibility::class => 'Compatibilidad',
         Entity::class => 'Entidad de conocimiento',
         Identifier::class => 'Identificador',
         Manufacturer::class => 'Fabricante',
         ProductCategory::class => 'Categoría',
+        Supplier::class => 'Proveedor',
         TechnicalModel::class => 'Modelo técnico',
     ];
 
@@ -56,7 +60,7 @@ class AuditLogController extends Controller
             'entity' => [
                 'nullable',
                 'string',
-                'in:brand,catalog_product,compatibility,entity,identifier,manufacturer,product_category,technical_model',
+                'in:brand,business_party,catalog_product,compatibility,entity,identifier,manufacturer,product_category,supplier,technical_model',
             ],
             'user_id' => [
                 'nullable',
@@ -73,12 +77,14 @@ class AuditLogController extends Controller
 
         $entityTypes = [
             'brand' => Brand::class,
+            'business_party' => BusinessParty::class,
             'catalog_product' => CatalogProduct::class,
             'compatibility' => Compatibility::class,
             'entity' => Entity::class,
             'identifier' => Identifier::class,
             'manufacturer' => Manufacturer::class,
             'product_category' => ProductCategory::class,
+            'supplier' => Supplier::class,
             'technical_model' => TechnicalModel::class,
         ];
 

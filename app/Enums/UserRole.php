@@ -26,6 +26,15 @@ enum UserRole: string
         };
     }
 
+    public function canManageCommerce(): bool
+    {
+        return match ($this) {
+            self::Admin,
+            self::Operator => true,
+            self::Viewer => false,
+        };
+    }
+
     public function canViewAudit(): bool
     {
         return $this === self::Admin;
