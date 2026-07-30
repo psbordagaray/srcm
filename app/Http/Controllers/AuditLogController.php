@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\Brand;
+use App\Models\Compatibility;
 use App\Models\Entity;
 use App\Models\Identifier;
 use App\Models\ProductCategory;
@@ -31,6 +32,7 @@ class AuditLogController extends Controller
      */
     private const ENTITY_LABELS = [
         Brand::class => 'Marca',
+        Compatibility::class => 'Compatibilidad',
         Entity::class => 'Entidad de conocimiento',
         Identifier::class => 'Identificador',
         ProductCategory::class => 'Categoría',
@@ -49,7 +51,7 @@ class AuditLogController extends Controller
             'entity' => [
                 'nullable',
                 'string',
-                'in:brand,entity,identifier,product_category,technical_model',
+                'in:brand,compatibility,entity,identifier,product_category,technical_model',
             ],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'date_from' => ['nullable', 'date'],
@@ -62,6 +64,7 @@ class AuditLogController extends Controller
 
         $entityTypes = [
             'brand' => Brand::class,
+            'compatibility' => Compatibility::class,
             'entity' => Entity::class,
             'identifier' => Identifier::class,
             'product_category' => ProductCategory::class,

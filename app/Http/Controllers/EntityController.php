@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Knowledge\CreateEntityWithInitialIdentifier;
+use App\Enums\CompatibilityType;
 use App\Http\Requests\StoreEntityRequest;
 use App\Models\Entity;
 use App\Models\EntityType;
 use App\Models\IdentifierType;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class EntityController extends Controller
@@ -54,8 +56,14 @@ class EntityController extends Controller
             );
     }
 
-    public function show(Entity $entity): View
-    {
+    public function show(
+        Request $request,
+        Entity $entity
+    ): View {
+        $canManageCatalog = $request
+            ->user()
+            ?->can('manage-catalog') ?? false;
+
         $entity->load([
             'entityType',
             'identifiers' => function ($query): void {
@@ -65,16 +73,40 @@ class EntityController extends Controller
                     ->orderByDesc('is_primary')
                     ->orderBy('id');
             },
-            'outgoingCompatibilities' => function ($query): void {
+            'outgoingCompatibilities' => function (
                 $query
-                    ->where('active', true)
+            ) use ($canManageCatalog): void {
+                $query
+                    ->when(
+                        ! $canManageCatalog,
+                        fn ($builder) => $builder
+                            ->where('active', true)
+                            ->whereHas(
+                                'rightEntity',
+                                fn ($entityQuery) =>
+                                    $entityQuery->where('active', true)
+                            )
+                    )
                     ->with('rightEntity.entityType')
+                    ->orderByDesc('active')
                     ->orderBy('id');
             },
-            'incomingCompatibilities' => function ($query): void {
+            'incomingCompatibilities' => function (
                 $query
-                    ->where('active', true)
+            ) use ($canManageCatalog): void {
+                $query
+                    ->when(
+                        ! $canManageCatalog,
+                        fn ($builder) => $builder
+                            ->where('active', true)
+                            ->whereHas(
+                                'leftEntity',
+                                fn ($entityQuery) =>
+                                    $entityQuery->where('active', true)
+                            )
+                    )
                     ->with('leftEntity.entityType')
+                    ->orderByDesc('active')
                     ->orderBy('id');
             },
         ]);
@@ -85,6 +117,8 @@ class EntityController extends Controller
                 ->where('active', true)
                 ->orderBy('name')
                 ->get(),
+            'compatibilityTypes' =>
+                CompatibilityType::cases(),
         ]);
     }
 }

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CompatibilityController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\IdentifierController;
 use App\Http\Controllers\KnowledgeController;
@@ -96,6 +97,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->whereUuid('entity')
             ->whereNumber('identifier')
             ->name('entities.identifiers.toggle-active');
+
+        Route::post(
+            'entities/{entity:uuid}/compatibilities',
+            [CompatibilityController::class, 'store']
+        )
+            ->whereUuid('entity')
+            ->name('entities.compatibilities.store');
+
+        Route::patch(
+            'entities/{entity:uuid}/compatibilities/{compatibility}/toggle-active',
+            [CompatibilityController::class, 'toggleActive']
+        )
+            ->whereUuid('entity')
+            ->whereNumber('compatibility')
+            ->name('entities.compatibilities.toggle-active');
 
         Route::patch(
             'product-categories/{product_category}/toggle-active',

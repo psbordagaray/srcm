@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Brand;
+use App\Models\Compatibility;
 use App\Models\Entity;
 use App\Models\Identifier;
 use App\Models\ProductCategory;
@@ -28,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Brand::observe(CatalogAuditObserver::class);
+        Compatibility::observe(CatalogAuditObserver::class);
         Entity::observe(CatalogAuditObserver::class);
         Identifier::observe(CatalogAuditObserver::class);
         ProductCategory::observe(CatalogAuditObserver::class);

@@ -29,6 +29,8 @@ class VerifiedOperationalAccessTest extends TestCase
             'entities.identifiers.store',
             'entities.identifiers.make-primary',
             'entities.identifiers.toggle-active',
+            'entities.compatibilities.store',
+            'entities.compatibilities.toggle-active',
             'product-categories.index',
             'product-categories.create',
             'product-categories.store',

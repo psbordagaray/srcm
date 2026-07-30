@@ -73,6 +73,7 @@
                     >
                         <option value="">Todas</option>
                         <option value="brand" @selected(($filters['entity'] ?? '') === 'brand')>Marca</option>
+                        <option value="compatibility" @selected(($filters['entity'] ?? '') === 'compatibility')>Compatibilidad</option>
                         <option value="entity" @selected(($filters['entity'] ?? '') === 'entity')>Entidad de conocimiento</option>
                         <option value="identifier" @selected(($filters['entity'] ?? '') === 'identifier')>Identificador</option>
                         <option value="product_category" @selected(($filters['entity'] ?? '') === 'product_category')>Categoría</option>

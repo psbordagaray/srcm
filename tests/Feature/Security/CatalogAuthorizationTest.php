@@ -51,6 +51,8 @@ class CatalogAuthorizationTest extends TestCase
             'entities.identifiers.store',
             'entities.identifiers.make-primary',
             'entities.identifiers.toggle-active',
+            'entities.compatibilities.store',
+            'entities.compatibilities.toggle-active',
             'product-categories.create',
             'product-categories.store',
             'product-categories.show',
@@ -93,6 +95,7 @@ class CatalogAuthorizationTest extends TestCase
     {
         $this->assertFalse(Route::has('entities.destroy'));
         $this->assertFalse(Route::has('identifiers.destroy'));
+        $this->assertFalse(Route::has('compatibilities.destroy'));
 
         $this->assertFalse(Route::has('brands.destroy'));
 
