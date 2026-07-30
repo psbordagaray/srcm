@@ -122,14 +122,53 @@
                 </section>
 
                 <section class="rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-6">
-                    <h2 class="font-bold text-cyan-200">
-                        Ofertas comerciales
-                    </h2>
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 class="font-bold text-cyan-200">
+                                Ofertas comerciales
+                            </h2>
 
-                    <p class="mt-2 text-sm leading-6 text-slate-400">
-                        En el próximo incremento esta ficha mostrará los artículos,
-                        códigos, costos y disponibilidades publicados por este proveedor.
-                    </p>
+                            <p class="mt-1 text-xs text-slate-500">
+                                {{ $supplier->offers_count }} registradas
+                            </p>
+                        </div>
+
+                        @can('manage-commerce')
+                            @if ($supplier->active)
+                                <a
+                                    href="{{ route('supplier-offers.create', ['supplier' => $supplier->id]) }}"
+                                    class="rounded-lg bg-cyan-400 px-3 py-2 text-xs font-bold text-slate-950"
+                                >
+                                    Nueva oferta
+                                </a>
+                            @endif
+                        @endcan
+                    </div>
+
+                    @if ($supplier->offers->isEmpty())
+                        <p class="mt-4 text-sm leading-6 text-slate-400">
+                            Este proveedor todavía no posee ofertas vinculadas.
+                        </p>
+                    @else
+                        <div class="mt-4 space-y-3">
+                            @foreach ($supplier->offers as $offer)
+                                <a
+                                    href="{{ route('supplier-offers.show', $offer) }}"
+                                    class="block rounded-xl border border-cyan-500/20 bg-slate-950/40 p-3"
+                                >
+                                    <p class="text-sm font-semibold text-white">
+                                        {{ $offer->product->name }}
+                                    </p>
+
+                                    <p class="mt-1 font-mono text-xs text-slate-500">
+                                        {{ $offer->supplier_code ?: $offer->product->sku }}
+                                        ·
+                                        {{ $offer->availabilityLabel() }}
+                                    </p>
+                                </a>
+                            @endforeach
+                        </div>
+                    @endif
                 </section>
             </div>
         </div>

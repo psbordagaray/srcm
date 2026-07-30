@@ -225,12 +225,15 @@ Puede contener:
 - código propio del proveedor;
 - descripción publicada;
 - costo;
-- disponibilidad;
-- URL;
-- fecha de actualización;
+- moneda;
+- disponibilidad informada;
+- URL de origen;
+- fecha de verificación;
 - condiciones comerciales.
 
 Un mismo artículo maestro puede tener muchas ofertas.
+
+Una oferta no constituye stock, compra, deuda, venta ni precio final al cliente. La disponibilidad describe lo informado por el proveedor y debe conservar su fecha de verificación.
 
 ---
 

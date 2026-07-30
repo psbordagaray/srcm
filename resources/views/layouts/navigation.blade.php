@@ -59,6 +59,12 @@
             'active' => 'suppliers.*',
             'icon' => 'truck',
         ],
+        [
+            'label' => 'Ofertas',
+            'route' => 'supplier-offers.index',
+            'active' => 'supplier-offers.*',
+            'icon' => 'truck',
+        ],
         ['label' => 'Compras', 'disabled' => true, 'icon' => 'cart'],
         ['label' => 'Ventas', 'disabled' => true, 'icon' => 'receipt'],
     ];

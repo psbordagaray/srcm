@@ -11,6 +11,7 @@ use App\Models\Identifier;
 use App\Models\Manufacturer;
 use App\Models\ProductCategory;
 use App\Models\Supplier;
+use App\Models\SupplierOffer;
 use App\Models\TechnicalModel;
 use App\Models\User;
 use App\Observers\CatalogAuditObserver;
@@ -41,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         Manufacturer::observe(CatalogAuditObserver::class);
         ProductCategory::observe(CatalogAuditObserver::class);
         Supplier::observe(CatalogAuditObserver::class);
+        SupplierOffer::observe(CatalogAuditObserver::class);
         TechnicalModel::observe(CatalogAuditObserver::class);
 
         Gate::define(

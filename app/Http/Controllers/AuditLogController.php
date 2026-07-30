@@ -13,6 +13,7 @@ use App\Models\Identifier;
 use App\Models\Manufacturer;
 use App\Models\ProductCategory;
 use App\Models\Supplier;
+use App\Models\SupplierOffer;
 use App\Models\TechnicalModel;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -45,6 +46,7 @@ class AuditLogController extends Controller
         Manufacturer::class => 'Fabricante',
         ProductCategory::class => 'Categoría',
         Supplier::class => 'Proveedor',
+        SupplierOffer::class => 'Oferta de proveedor',
         TechnicalModel::class => 'Modelo técnico',
     ];
 
@@ -60,7 +62,7 @@ class AuditLogController extends Controller
             'entity' => [
                 'nullable',
                 'string',
-                'in:brand,business_party,catalog_product,compatibility,entity,identifier,manufacturer,product_category,supplier,technical_model',
+                'in:brand,business_party,catalog_product,compatibility,entity,identifier,manufacturer,product_category,supplier,supplier_offer,technical_model',
             ],
             'user_id' => [
                 'nullable',
@@ -85,6 +87,7 @@ class AuditLogController extends Controller
             'manufacturer' => Manufacturer::class,
             'product_category' => ProductCategory::class,
             'supplier' => Supplier::class,
+            'supplier_offer' => SupplierOffer::class,
             'technical_model' => TechnicalModel::class,
         ];
 

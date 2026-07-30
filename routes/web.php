@@ -4,6 +4,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierOfferController;
 use App\Http\Controllers\CompatibilityController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\IdentifierController;
@@ -67,6 +68,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )
         ->whereNumber('supplier')
         ->name('suppliers.show');
+
+    Route::get(
+        'supplier-offers',
+        [SupplierOfferController::class, 'index']
+    )->name('supplier-offers.index');
+
+    Route::get(
+        'supplier-offers/{supplierOffer}',
+        [SupplierOfferController::class, 'show']
+    )
+        ->whereNumber('supplierOffer')
+        ->name('supplier-offers.show');
 
     Route::get(
         'technical-models',
@@ -210,6 +223,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     */
 
     Route::middleware('can:manage-commerce')->group(function () {
+        Route::patch(
+            'supplier-offers/{supplierOffer}/toggle-active',
+            [SupplierOfferController::class, 'toggleActive']
+        )->name('supplier-offers.toggle-active');
+
+        Route::resource(
+            'supplier-offers',
+            SupplierOfferController::class
+        )
+            ->parameters([
+                'supplier-offers' => 'supplierOffer',
+            ])
+            ->except(['index', 'show', 'destroy']);
+
         Route::patch(
             'suppliers/{supplier}/toggle-active',
             [SupplierController::class, 'toggleActive']

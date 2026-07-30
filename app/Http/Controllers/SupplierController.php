@@ -173,7 +173,16 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier): View
     {
-        $supplier->loadMissing('party');
+        $supplier->loadMissing([
+            'party',
+            'offers' => fn ($query) => $query
+                ->with('product')
+                ->orderByDesc('active')
+                ->orderByDesc('checked_at')
+                ->limit(10),
+        ]);
+
+        $supplier->loadCount('offers');
 
         return view(
             'suppliers.show',

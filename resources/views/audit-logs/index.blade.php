@@ -94,6 +94,7 @@
                                 <option value="catalog_product" @selected(($filters['entity'] ?? '') === 'catalog_product')>Producto</option>
                                 <option value="business_party" @selected(($filters['entity'] ?? '') === 'business_party')>Identidad comercial</option>
                                 <option value="supplier" @selected(($filters['entity'] ?? '') === 'supplier')>Proveedor</option>
+                                <option value="supplier_offer" @selected(($filters['entity'] ?? '') === 'supplier_offer')>Oferta de proveedor</option>
                         <option value="product_category" @selected(($filters['entity'] ?? '') === 'product_category')>Categoría</option>
                         <option value="technical_model" @selected(($filters['entity'] ?? '') === 'technical_model')>Modelo técnico</option>
                     </select>

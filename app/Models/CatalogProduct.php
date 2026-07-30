@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class CatalogProduct extends Model
@@ -68,6 +69,11 @@ class CatalogProduct extends Model
     public function manufacturer(): BelongsTo
     {
         return $this->belongsTo(Manufacturer::class);
+    }
+
+    public function supplierOffers(): HasMany
+    {
+        return $this->hasMany(SupplierOffer::class, 'catalog_product_id');
     }
 
     public function knowledgeEntity(): BelongsTo
