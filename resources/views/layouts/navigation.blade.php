@@ -38,7 +38,8 @@
         ],
         [
             'label' => 'Productos',
-            'disabled' => true,
+            'route' => 'products.index',
+            'active' => 'products.*',
             'icon' => 'box',
         ],
         [

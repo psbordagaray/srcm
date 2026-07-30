@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\CompatibilityController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\IdentifierController;
@@ -41,6 +42,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         'manufacturers',
         [ManufacturerController::class, 'index']
     )->name('manufacturers.index');
+
+    Route::get(
+        'products',
+        [CatalogProductController::class, 'index']
+    )->name('products.index');
+
+    Route::get(
+        'products/{product}',
+        [CatalogProductController::class, 'show']
+    )
+        ->whereNumber('product')
+        ->name('products.show');
 
     Route::get(
         'technical-models',
@@ -155,6 +168,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'manufacturers',
             ManufacturerController::class
         )->except(['index', 'destroy']);
+
+        Route::patch(
+            'products/{product}/toggle-active',
+            [CatalogProductController::class, 'toggleActive']
+        )->name('products.toggle-active');
+
+        Route::resource(
+            'products',
+            CatalogProductController::class
+        )->except(['index', 'show', 'destroy']);
 
         Route::patch(
             'technical-models/{technical_model}/toggle-active',

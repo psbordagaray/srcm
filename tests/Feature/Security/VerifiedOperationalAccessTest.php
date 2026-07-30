@@ -52,7 +52,15 @@ class VerifiedOperationalAccessTest extends TestCase
             'manufacturers.edit',
             'manufacturers.update',
             'manufacturers.toggle-active',
-            'technical-models.index',            'technical-models.create',
+            'products.index',
+            'products.create',
+            'products.store',
+            'products.show',
+            'products.edit',
+            'products.update',
+            'products.toggle-active',
+            'technical-models.index',
+            'technical-models.create',
             'technical-models.store',
             'technical-models.show',
             'technical-models.edit',
@@ -137,6 +145,10 @@ class VerifiedOperationalAccessTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('manufacturers.index'))
+            ->assertOk();
+
+        $this->actingAs($user)
+            ->get(route('products.index'))
             ->assertOk();
 
         $this->actingAs($user)

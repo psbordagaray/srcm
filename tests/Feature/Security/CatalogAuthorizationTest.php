@@ -71,7 +71,13 @@ class CatalogAuthorizationTest extends TestCase
             'manufacturers.edit',
             'manufacturers.update',
             'manufacturers.toggle-active',
-            'technical-models.create',            'technical-models.store',
+            'products.create',
+            'products.store',
+            'products.edit',
+            'products.update',
+            'products.toggle-active',
+            'technical-models.create',
+            'technical-models.store',
             'technical-models.edit',
             'technical-models.update',
             'technical-models.toggle-active',
@@ -103,6 +109,7 @@ class CatalogAuthorizationTest extends TestCase
 
         $this->assertFalse(Route::has('brands.destroy'));
         $this->assertFalse(Route::has('manufacturers.destroy'));
+        $this->assertFalse(Route::has('products.destroy'));
 
         $this->assertFalse(
             Route::has('product-categories.destroy')
@@ -129,6 +136,10 @@ class CatalogAuthorizationTest extends TestCase
 
         $this->actingAs($viewer)
             ->get(route('manufacturers.index'))
+            ->assertOk();
+
+        $this->actingAs($viewer)
+            ->get(route('products.index'))
             ->assertOk();
 
         $this->actingAs($viewer)
