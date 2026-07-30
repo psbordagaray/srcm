@@ -1,6 +1,7 @@
 <x-app-layout>
     <div class="mx-auto max-w-4xl space-y-6">
-        <div>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
             <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-400">
                 Knowledge Engine
             </p>
@@ -14,6 +15,22 @@
             </p>
         </div>
 
+            @can('manage-catalog')
+                <a
+                    href="{{ route('entities.create') }}"
+                    class="inline-flex shrink-0 items-center justify-center rounded-xl bg-cyan-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-300"
+                >
+                    Nueva entidad
+                </a>
+            @endcan
+        </div>
+
+        @if (session('success'))
+            <div class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+                {{ session('success') }}
+            </div>
+        @endif
+
         <section class="rounded-2xl border border-slate-800 bg-slate-900/80 p-6">
             <form
                 id="knowledge-search-form"
@@ -22,6 +39,8 @@
                 <input
                     id="knowledge-query"
                     name="query"
+                    value="{{ $initialQuery ?? '' }}"
+                    data-auto-search="{{ filled($initialQuery ?? null) ? 'true' : 'false' }}"
                     type="search"
                     required
                     autofocus
@@ -304,6 +323,9 @@
                 .replaceAll('>', '&gt;')
                 .replaceAll('"', '&quot;')
                 .replaceAll("'", '&#039;');
+        }
+        if (input.dataset.autoSearch === 'true') {
+            searchKnowledge(input.value);
         }
     </script>
 </x-app-layout>

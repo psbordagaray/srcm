@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\Brand;
+use App\Models\Entity;
+use App\Models\Identifier;
 use App\Models\ProductCategory;
 use App\Models\TechnicalModel;
 use App\Models\User;
@@ -29,6 +31,8 @@ class AuditLogController extends Controller
      */
     private const ENTITY_LABELS = [
         Brand::class => 'Marca',
+        Entity::class => 'Entidad de conocimiento',
+        Identifier::class => 'Identificador',
         ProductCategory::class => 'Categoría',
         TechnicalModel::class => 'Modelo técnico',
     ];
@@ -45,7 +49,7 @@ class AuditLogController extends Controller
             'entity' => [
                 'nullable',
                 'string',
-                'in:brand,product_category,technical_model',
+                'in:brand,entity,identifier,product_category,technical_model',
             ],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
             'date_from' => ['nullable', 'date'],
@@ -58,6 +62,8 @@ class AuditLogController extends Controller
 
         $entityTypes = [
             'brand' => Brand::class,
+            'entity' => Entity::class,
+            'identifier' => Identifier::class,
             'product_category' => ProductCategory::class,
             'technical_model' => TechnicalModel::class,
         ];

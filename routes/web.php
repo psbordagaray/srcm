@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\EntityController;
 use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
@@ -55,6 +56,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     */
 
     Route::middleware('can:manage-catalog')->group(function () {
+        Route::get(
+            'entities/create',
+            [EntityController::class, 'create']
+        )->name('entities.create');
+
+        Route::post(
+            'entities',
+            [EntityController::class, 'store']
+        )->name('entities.store');
         Route::patch(
             'product-categories/{product_category}/toggle-active',
             [ProductCategoryController::class, 'toggleActive']
