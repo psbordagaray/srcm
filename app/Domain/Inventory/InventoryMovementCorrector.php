@@ -4,7 +4,6 @@ namespace App\Domain\Inventory;
 
 use App\Enums\InventoryMovementStatus;
 use App\Enums\InventoryMovementType;
-use App\Enums\UserRole;
 use App\Models\InventoryMovement;
 use App\Models\InventoryMovementLine;
 use App\Models\OrganizationMembership;
@@ -177,7 +176,10 @@ final class InventoryMovementCorrector
             ->lockForUpdate()
             ->first();
 
-        if (! $membership || $membership->role !== UserRole::Admin) {
+        if (
+            ! $membership
+            || ! $membership->role->canCorrectInventory()
+        ) {
             throw new DomainException(
                 'Solo un administrador activo puede corregir movimientos.'
             );

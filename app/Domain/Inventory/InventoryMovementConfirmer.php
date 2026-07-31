@@ -266,6 +266,14 @@ final class InventoryMovementConfirmer
                 'El usuario no posee una membresía activa en la organización.'
             );
         }
+
+        if (! $membership->role->canConfirmInventoryMovement(
+            $movement->type
+        )) {
+            throw new DomainException(
+                'El rol del usuario no puede confirmar este tipo de movimiento.'
+            );
+        }
     }
 
     /**

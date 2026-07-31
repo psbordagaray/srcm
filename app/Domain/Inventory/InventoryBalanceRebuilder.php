@@ -2,7 +2,6 @@
 
 namespace App\Domain\Inventory;
 
-use App\Enums\UserRole;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\User;
@@ -111,7 +110,10 @@ final class InventoryBalanceRebuilder
             ->lockForUpdate()
             ->first();
 
-        if (! $membership || $membership->role !== UserRole::Admin) {
+        if (
+            ! $membership
+            || ! $membership->role->canRebuildInventory()
+        ) {
             throw new DomainException(
                 'Solo un administrador activo puede reconstruir saldos.'
             );

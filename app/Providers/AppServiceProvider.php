@@ -92,6 +92,26 @@ class AppServiceProvider extends ServiceProvider
                 ?? false
         );
 
+        foreach ([
+            'receive-inventory' => 'canReceiveInventory',
+            'issue-inventory' => 'canIssueInventory',
+            'transfer-inventory' => 'canTransferInventory',
+            'process-inventory-returns' =>
+                'canProcessInventoryReturns',
+            'adjust-inventory' => 'canAdjustInventory',
+            'correct-inventory' => 'canCorrectInventory',
+            'rebuild-inventory' => 'canRebuildInventory',
+        ] as $ability => $method) {
+            Gate::define(
+                $ability,
+                fn (User $user): bool =>
+                    app(CurrentOrganization::class)
+                        ->roleFor($user)
+                        ?->{$method}()
+                    ?? false
+            );
+        }
+
         Gate::define(
             'view-audit',
             fn (User $user): bool =>
