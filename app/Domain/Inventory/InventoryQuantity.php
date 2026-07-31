@@ -121,6 +121,52 @@ final class InventoryQuantity
         }
     }
 
+    public static function signed(
+        mixed $value,
+        string $label = 'La cantidad'
+    ): string {
+        $value = trim((string) $value);
+
+        if (preg_match('/^[+-]?\d+(?:\.\d+)?$/', $value) !== 1) {
+            throw new DomainException(
+                $label.' debe expresarse como un decimal válido con punto.'
+            );
+        }
+
+        try {
+            return (string) BigDecimal::of($value)->toScale(
+                self::SCALE,
+                RoundingMode::Unnecessary
+            );
+        } catch (Throwable $exception) {
+            throw new DomainException(
+                $label.' supera la precisión permitida y no puede redondearse silenciosamente.',
+                previous: $exception
+            );
+        }
+    }
+
+    public static function add(mixed $left, mixed $right): string
+    {
+        return (string) BigDecimal::of(
+            self::signed($left)
+        )->plus(
+            self::signed($right)
+        )->toScale(
+            self::SCALE,
+            RoundingMode::Unnecessary
+        );
+    }
+
+    public static function equal(mixed $left, mixed $right): bool
+    {
+        return BigDecimal::of(
+            self::signed($left)
+        )->isEqualTo(
+            self::signed($right)
+        );
+    }
+
     private static function decimal(
         mixed $value,
         int $scale,

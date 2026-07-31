@@ -33,6 +33,18 @@ final class InventoryMovementConfirmer
             $movementId,
             $actor
         ): InventoryMovement {
+            $organizationId = InventoryMovement::query()
+                ->whereKey($movementId)
+                ->value('organization_id');
+
+            if ($organizationId === null) {
+                throw new DomainException(
+                    'El movimiento no existe.'
+                );
+            }
+
+            $this->lockActiveOrganization((int) $organizationId);
+
             $lockedMovement = InventoryMovement::query()
                 ->whereKey($movementId)
                 ->lockForUpdate()
@@ -91,6 +103,21 @@ final class InventoryMovementConfirmer
         }, 3);
     }
 
+    private function lockActiveOrganization(int $organizationId): void
+    {
+        $organization = DB::table('organizations')
+            ->where('id', $organizationId)
+            ->where('active', true)
+            ->lockForUpdate()
+            ->first(['id']);
+
+        if (! $organization) {
+            throw new DomainException(
+                'La organización del movimiento no está activa.'
+            );
+        }
+    }
+
     private function guardActor(
         InventoryMovement $movement,
         User $actor
@@ -104,13 +131,14 @@ final class InventoryMovementConfirmer
             );
         }
 
-        $membershipExists = OrganizationMembership::query()
+        $membership = OrganizationMembership::query()
             ->where('organization_id', $movement->organization_id)
             ->where('user_id', $actor->id)
             ->where('active', true)
-            ->exists();
+            ->lockForUpdate()
+            ->first();
 
-        if (! $membershipExists) {
+        if (! $membership) {
             throw new DomainException(
                 'El usuario no posee una membresía activa en la organización.'
             );
