@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(KnowledgeFoundationSeeder::class);
+        $this->call(InventoryLocationSeeder::class);
 
         // User::factory(10)->create();
 

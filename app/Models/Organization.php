@@ -141,4 +141,9 @@ class Organization extends Model
     {
         return $this->hasMany(SupplierOffer::class);
     }
+
+    public function inventoryLocations(): HasMany
+    {
+        return $this->hasMany(InventoryLocation::class);
+    }
 }

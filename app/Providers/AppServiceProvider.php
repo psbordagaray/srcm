@@ -9,6 +9,7 @@ use App\Models\CatalogProduct;
 use App\Models\Compatibility;
 use App\Models\Entity;
 use App\Models\Identifier;
+use App\Models\InventoryLocation;
 use App\Models\Manufacturer;
 use App\Models\Organization;
 use App\Models\ProductCategory;
@@ -39,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         Compatibility::observe(CatalogAuditObserver::class);
         Entity::observe(CatalogAuditObserver::class);
         Identifier::observe(CatalogAuditObserver::class);
+        InventoryLocation::observe(CatalogAuditObserver::class);
         Manufacturer::observe(CatalogAuditObserver::class);
         Organization::observe(CatalogAuditObserver::class);
         ProductCategory::observe(CatalogAuditObserver::class);
@@ -69,6 +71,24 @@ class AppServiceProvider extends ServiceProvider
                 app(CurrentOrganization::class)
                     ->roleFor($user)
                     ?->canManageOrganization()
+                ?? false
+        );
+
+        Gate::define(
+            'view-inventory',
+            fn (User $user): bool =>
+                app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->canViewInventory()
+                ?? false
+        );
+
+        Gate::define(
+            'manage-inventory-locations',
+            fn (User $user): bool =>
+                app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->canManageInventoryLocations()
                 ?? false
         );
 
