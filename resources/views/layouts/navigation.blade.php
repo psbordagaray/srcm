@@ -62,7 +62,14 @@
             'icon' => 'users',
             'disabled' => $currentOrganization === null,
         ],
-        ['label' => 'Inventario', 'disabled' => true, 'icon' => 'inventory'],
+        [
+            'label' => 'Inventario',
+            'route' => 'inventory-locations.index',
+            'active' => 'inventory-locations.*',
+            'icon' => 'inventory',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('view-inventory'),
+        ],
         ['label' => 'Clientes', 'disabled' => true, 'icon' => 'users'],
         [
             'label' => 'Proveedores',

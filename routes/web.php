@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
+use App\Http\Controllers\InventoryLocationController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierOfferController;
 use App\Http\Controllers\CompatibilityController;
@@ -227,6 +228,67 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         [OrganizationController::class, 'update']
                     )->name('organization.update');
                 });
+
+            Route::middleware('can:view-inventory')
+                ->group(function () {
+                    Route::get(
+                        'inventory/locations',
+                        [
+                            InventoryLocationController::class,
+                            'index',
+                        ]
+                    )->name('inventory-locations.index');
+                });
+
+            Route::middleware(
+                'can:manage-inventory-locations'
+            )->group(function () {
+                Route::get(
+                    'inventory/locations/create',
+                    [
+                        InventoryLocationController::class,
+                        'create',
+                    ]
+                )->name('inventory-locations.create');
+
+                Route::post(
+                    'inventory/locations',
+                    [
+                        InventoryLocationController::class,
+                        'store',
+                    ]
+                )->name('inventory-locations.store');
+
+                Route::get(
+                    'inventory/locations/{inventoryLocation}/edit',
+                    [
+                        InventoryLocationController::class,
+                        'edit',
+                    ]
+                )
+                    ->whereNumber('inventoryLocation')
+                    ->name('inventory-locations.edit');
+
+                Route::put(
+                    'inventory/locations/{inventoryLocation}',
+                    [
+                        InventoryLocationController::class,
+                        'update',
+                    ]
+                )
+                    ->whereNumber('inventoryLocation')
+                    ->name('inventory-locations.update');
+
+                Route::patch(
+                    'inventory/locations/{inventoryLocation}/toggle-active',
+                    [
+                        InventoryLocationController::class,
+                        'toggleActive',
+                    ]
+                )
+                    ->whereNumber('inventoryLocation')
+                    ->name('inventory-locations.toggle-active');
+            });
 
             Route::get(
                 'suppliers',
