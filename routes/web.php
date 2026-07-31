@@ -10,9 +10,11 @@ use App\Http\Controllers\EntityController;
 use App\Http\Controllers\IdentifierController;
 use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\ManufacturerController;
+use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TechnicalModelController;
+use App\Http\Middleware\RequireOrganization;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -20,10 +22,6 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-
     /*
     |--------------------------------------------------------------------------
     | Operational read access
@@ -56,30 +54,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )
         ->whereNumber('product')
         ->name('products.show');
-
-    Route::get(
-        'suppliers',
-        [SupplierController::class, 'index']
-    )->name('suppliers.index');
-
-    Route::get(
-        'suppliers/{supplier}',
-        [SupplierController::class, 'show']
-    )
-        ->whereNumber('supplier')
-        ->name('suppliers.show');
-
-    Route::get(
-        'supplier-offers',
-        [SupplierOfferController::class, 'index']
-    )->name('supplier-offers.index');
-
-    Route::get(
-        'supplier-offers/{supplierOffer}',
-        [SupplierOfferController::class, 'show']
-    )
-        ->whereNumber('supplierOffer')
-        ->name('supplier-offers.show');
 
     Route::get(
         'technical-models',
@@ -216,55 +190,127 @@ Route::middleware(['auth', 'verified'])->group(function () {
         )->except(['index', 'show', 'destroy']);
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | Private commerce management
-    |--------------------------------------------------------------------------
-    */
-
-    Route::middleware('can:manage-commerce')->group(function () {
-        Route::patch(
-            'supplier-offers/{supplierOffer}/toggle-active',
-            [SupplierOfferController::class, 'toggleActive']
-        )->name('supplier-offers.toggle-active');
-
-        Route::resource(
-            'supplier-offers',
-            SupplierOfferController::class
-        )
-            ->parameters([
-                'supplier-offers' => 'supplierOffer',
-            ])
-            ->except(['index', 'show', 'destroy']);
-
-        Route::patch(
-            'suppliers/{supplier}/toggle-active',
-            [SupplierController::class, 'toggleActive']
-        )->name('suppliers.toggle-active');
-
-        Route::resource(
-            'suppliers',
-            SupplierController::class
-        )->except(['index', 'show', 'destroy']);
-    });
 
     /*
     |--------------------------------------------------------------------------
-    | Immutable audit viewer
+    | Organization-owned private operations
     |--------------------------------------------------------------------------
     */
 
-    Route::middleware('can:view-audit')->group(function () {
-        Route::get(
-            '/audit-logs',
-            [AuditLogController::class, 'index']
-        )->name('audit-logs.index');
+    Route::middleware(RequireOrganization::class)
+        ->group(function () {
+            Route::get('/dashboard', function () {
+                return view('dashboard');
+            })->name('dashboard');
 
-        Route::get(
-            '/audit-logs/{auditLog}',
-            [AuditLogController::class, 'show']
-        )->name('audit-logs.show');
-    });
+            Route::get(
+                '/organization',
+                [OrganizationController::class, 'show']
+            )->name('organization.show');
+
+            Route::post(
+                '/organizations/{organization}/activate',
+                [OrganizationController::class, 'activate']
+            )
+                ->whereNumber('organization')
+                ->name('organizations.activate');
+
+            Route::middleware('can:manage-organization')
+                ->group(function () {
+                    Route::get(
+                        '/organization/edit',
+                        [OrganizationController::class, 'edit']
+                    )->name('organization.edit');
+
+                    Route::put(
+                        '/organization',
+                        [OrganizationController::class, 'update']
+                    )->name('organization.update');
+                });
+
+            Route::get(
+                'suppliers',
+                [SupplierController::class, 'index']
+            )->name('suppliers.index');
+
+            Route::get(
+                'suppliers/{supplier}',
+                [SupplierController::class, 'show']
+            )
+                ->whereNumber('supplier')
+                ->name('suppliers.show');
+
+            Route::get(
+                'supplier-offers',
+                [SupplierOfferController::class, 'index']
+            )->name('supplier-offers.index');
+
+            Route::get(
+                'supplier-offers/{supplierOffer}',
+                [SupplierOfferController::class, 'show']
+            )
+                ->whereNumber('supplierOffer')
+                ->name('supplier-offers.show');
+
+            Route::middleware('can:manage-commerce')
+                ->group(function () {
+                    Route::patch(
+                        'supplier-offers/{supplierOffer}/toggle-active',
+                        [
+                            SupplierOfferController::class,
+                            'toggleActive',
+                        ]
+                    )->name('supplier-offers.toggle-active');
+
+                    Route::resource(
+                        'supplier-offers',
+                        SupplierOfferController::class
+                    )
+                        ->parameters([
+                            'supplier-offers' =>
+                                'supplierOffer',
+                        ])
+                        ->except([
+                            'index',
+                            'show',
+                            'destroy',
+                        ]);
+
+                    Route::patch(
+                        'suppliers/{supplier}/toggle-active',
+                        [
+                            SupplierController::class,
+                            'toggleActive',
+                        ]
+                    )->name('suppliers.toggle-active');
+
+                    Route::resource(
+                        'suppliers',
+                        SupplierController::class
+                    )->except([
+                        'index',
+                        'show',
+                        'destroy',
+                    ]);
+                });
+
+            Route::middleware('can:view-audit')
+                ->group(function () {
+                    Route::get(
+                        '/audit-logs',
+                        [AuditLogController::class, 'index']
+                    )->name('audit-logs.index');
+
+                    Route::get(
+                        '/audit-logs/{auditLog}',
+                        [AuditLogController::class, 'show']
+                    )
+                        ->whereNumber('auditLog')
+                        ->name('audit-logs.show');
+                });
+        });
+
+
 });
 
 Route::middleware('auth')->group(function () {

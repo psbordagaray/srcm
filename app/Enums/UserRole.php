@@ -35,6 +35,11 @@ enum UserRole: string
         };
     }
 
+    public function canManageOrganization(): bool
+    {
+        return $this === self::Admin;
+    }
+
     public function canViewAudit(): bool
     {
         return $this === self::Admin;

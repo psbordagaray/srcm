@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Commerce\SupplierManager;
+use App\Domain\Tenancy\CurrentOrganization;
 use App\Http\Requests\StoreSupplierRequest;
 use App\Http\Requests\UpdateSupplierRequest;
 use App\Models\BusinessParty;
@@ -15,8 +16,11 @@ use Illuminate\View\View;
 
 class SupplierController extends Controller
 {
-    public function index(Request $request): View
-    {
+    public function index(
+        Request $request,
+        CurrentOrganization $currentOrganization
+    ): View {
+        $organizationId = $currentOrganization->id();
         $search = trim((string) $request->query('search'));
         $type = (string) $request->query('type');
         $status = (string) $request->query('status');
@@ -37,6 +41,7 @@ class SupplierController extends Controller
         $normalizedTaxId = BusinessParty::normalizeTaxId($search);
 
         $suppliers = Supplier::query()
+            ->forOrganization($organizationId)
             ->with('party')
             ->when(
                 $search !== '',
@@ -154,7 +159,9 @@ class SupplierController extends Controller
         SupplierManager $manager
     ): RedirectResponse {
         try {
-            $supplier = $manager->create($request->validated());
+            $supplier = $manager->create(
+                $request->validated()
+            );
         } catch (DomainException $exception) {
             return back()
                 ->withInput()
@@ -167,22 +174,37 @@ class SupplierController extends Controller
             ->route('suppliers.show', $supplier)
             ->with(
                 'success',
-                'Proveedor registrado sin duplicar su identidad comercial.'
+                'Proveedor registrado dentro de la organización activa.'
             );
     }
 
-    public function show(Supplier $supplier): View
-    {
+    public function show(
+        Supplier $supplier,
+        CurrentOrganization $currentOrganization
+    ): View {
+        $this->assertCurrentOrganization(
+            $supplier,
+            $currentOrganization
+        );
+
         $supplier->loadMissing([
             'party',
             'offers' => fn ($query) => $query
+                ->forOrganization(
+                    $currentOrganization->id()
+                )
                 ->with('product')
                 ->orderByDesc('active')
                 ->orderByDesc('checked_at')
                 ->limit(10),
         ]);
 
-        $supplier->loadCount('offers');
+        $supplier->loadCount([
+            'offers' => fn ($query) => $query
+                ->forOrganization(
+                    $currentOrganization->id()
+                ),
+        ]);
 
         return view(
             'suppliers.show',
@@ -190,8 +212,15 @@ class SupplierController extends Controller
         );
     }
 
-    public function edit(Supplier $supplier): View
-    {
+    public function edit(
+        Supplier $supplier,
+        CurrentOrganization $currentOrganization
+    ): View {
+        $this->assertCurrentOrganization(
+            $supplier,
+            $currentOrganization
+        );
+
         $supplier->loadMissing('party');
 
         return view(
@@ -203,8 +232,14 @@ class SupplierController extends Controller
     public function update(
         UpdateSupplierRequest $request,
         Supplier $supplier,
-        SupplierManager $manager
+        SupplierManager $manager,
+        CurrentOrganization $currentOrganization
     ): RedirectResponse {
+        $this->assertCurrentOrganization(
+            $supplier,
+            $currentOrganization
+        );
+
         try {
             $updated = $manager->update(
                 $supplier,
@@ -228,9 +263,24 @@ class SupplierController extends Controller
 
     public function toggleActive(
         Supplier $supplier,
-        SupplierManager $manager
+        SupplierManager $manager,
+        CurrentOrganization $currentOrganization
     ): RedirectResponse {
-        $updated = $manager->toggleActive($supplier);
+        $this->assertCurrentOrganization(
+            $supplier,
+            $currentOrganization
+        );
+
+        try {
+            $updated = $manager->toggleActive(
+                $supplier
+            );
+        } catch (DomainException $exception) {
+            return back()->with(
+                'error',
+                $exception->getMessage()
+            );
+        }
 
         return redirect()
             ->route('suppliers.index')
@@ -240,5 +290,16 @@ class SupplierController extends Controller
                     ? 'Proveedor activado.'
                     : 'Proveedor inactivado.'
             );
+    }
+
+    private function assertCurrentOrganization(
+        Supplier $supplier,
+        CurrentOrganization $currentOrganization
+    ): void {
+        abort_unless(
+            (int) $supplier->organization_id
+                === $currentOrganization->id(),
+            404
+        );
     }
 }

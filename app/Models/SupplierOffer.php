@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToOrganization;
+use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class SupplierOffer extends Model
 {
+    use BelongsToOrganization;
+
     public const AVAILABILITY_UNKNOWN = 'unknown';
     public const AVAILABILITY_AVAILABLE = 'available';
     public const AVAILABILITY_LIMITED = 'limited';
@@ -15,6 +19,7 @@ class SupplierOffer extends Model
     public const AVAILABILITY_ON_REQUEST = 'on_request';
 
     protected $fillable = [
+        'organization_id',
         'supplier_id',
         'catalog_product_id',
         'supplier_code',
@@ -27,6 +32,26 @@ class SupplierOffer extends Model
         'commercial_terms',
         'active',
     ];
+
+
+    protected static function booted(): void
+    {
+        static::saving(function (SupplierOffer $offer): void {
+            $matches = Supplier::query()
+                ->whereKey($offer->supplier_id)
+                ->where(
+                    'organization_id',
+                    $offer->organization_id
+                )
+                ->exists();
+
+            if (! $matches) {
+                throw new DomainException(
+                    'El proveedor no pertenece a la organización de la oferta.'
+                );
+            }
+        });
+    }
 
     protected function casts(): array
     {

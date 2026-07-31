@@ -2,46 +2,45 @@
 
 namespace App\Models;
 
-use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
-class BusinessParty extends Model
+class Organization extends Model
 {
-    use BelongsToOrganization;
-
-    public const TYPE_PERSON = 'person';
-
-    public const TYPE_ORGANIZATION = 'organization';
-
     protected $fillable = [
-        'organization_id',
-        'party_type',
         'name',
+        'slug',
         'tax_id',
         'email',
         'phone',
         'website',
+        'active',
     ];
 
-    public function setPartyTypeAttribute(string $value): void
+    protected function casts(): array
     {
-        $this->attributes['party_type'] = Str::of($value)
-            ->trim()
-            ->lower()
-            ->toString();
+        return [
+            'active' => 'boolean',
+        ];
     }
 
     public function setNameAttribute(string $value): void
     {
-        $name = Str::of($value)
-            ->squish()
-            ->toString();
+        $name = Str::of($value)->squish()->toString();
 
         $this->attributes['name'] = $name;
         $this->attributes['normalized_name'] =
             static::normalizeName($name);
+    }
+
+    public function setSlugAttribute(string $value): void
+    {
+        $this->attributes['slug'] = Str::of($value)
+            ->slug()
+            ->lower()
+            ->toString();
     }
 
     public function setTaxIdAttribute(?string $value): void
@@ -113,8 +112,33 @@ class BusinessParty extends Model
         return preg_replace('/[^A-Z0-9]+/', '', $ascii) ?? '';
     }
 
-    public function supplier(): HasOne
+    public function memberships(): HasMany
     {
-        return $this->hasOne(Supplier::class);
+        return $this->hasMany(OrganizationMembership::class);
+    }
+
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            User::class,
+            'organization_memberships'
+        )
+            ->withPivot(['role', 'active'])
+            ->withTimestamps();
+    }
+
+    public function businessParties(): HasMany
+    {
+        return $this->hasMany(BusinessParty::class);
+    }
+
+    public function suppliers(): HasMany
+    {
+        return $this->hasMany(Supplier::class);
+    }
+
+    public function supplierOffers(): HasMany
+    {
+        return $this->hasMany(SupplierOffer::class);
     }
 }

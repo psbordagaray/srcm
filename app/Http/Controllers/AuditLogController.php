@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\Brand;
@@ -11,6 +12,7 @@ use App\Models\Compatibility;
 use App\Models\Entity;
 use App\Models\Identifier;
 use App\Models\Manufacturer;
+use App\Models\Organization;
 use App\Models\ProductCategory;
 use App\Models\Supplier;
 use App\Models\SupplierOffer;
@@ -31,6 +33,7 @@ class AuditLogController extends Controller
         'updated' => 'Edición',
         'activated' => 'Activación',
         'deactivated' => 'Inactivación',
+        'organization_switched' => 'Cambio de organización',
     ];
 
     /**
@@ -44,25 +47,29 @@ class AuditLogController extends Controller
         Entity::class => 'Entidad de conocimiento',
         Identifier::class => 'Identificador',
         Manufacturer::class => 'Fabricante',
+        Organization::class => 'Organización',
         ProductCategory::class => 'Categoría',
         Supplier::class => 'Proveedor',
         SupplierOffer::class => 'Oferta de proveedor',
         TechnicalModel::class => 'Modelo técnico',
     ];
 
-    public function index(Request $request): View
-    {
+    public function index(
+        Request $request,
+        CurrentOrganization $currentOrganization
+    ): View {
+        $organizationId = $currentOrganization->id();
         $filters = $request->validate([
             'request_id' => ['nullable', 'string', 'max:36'],
             'event' => [
                 'nullable',
                 'string',
-                'in:created,updated,activated,deactivated',
+                'in:created,updated,activated,deactivated,organization_switched',
             ],
             'entity' => [
                 'nullable',
                 'string',
-                'in:brand,business_party,catalog_product,compatibility,entity,identifier,manufacturer,product_category,supplier,supplier_offer,technical_model',
+                'in:brand,business_party,catalog_product,compatibility,entity,identifier,manufacturer,organization,product_category,supplier,supplier_offer,technical_model',
             ],
             'user_id' => [
                 'nullable',
@@ -85,6 +92,7 @@ class AuditLogController extends Controller
             'entity' => Entity::class,
             'identifier' => Identifier::class,
             'manufacturer' => Manufacturer::class,
+            'organization' => Organization::class,
             'product_category' => ProductCategory::class,
             'supplier' => Supplier::class,
             'supplier_offer' => SupplierOffer::class,
@@ -115,6 +123,13 @@ class AuditLogController extends Controller
             : null;
 
         $auditLogs = AuditLog::query()
+            ->where(function (Builder $query) use (
+                $organizationId
+            ): void {
+                $query
+                    ->where('organization_id', $organizationId)
+                    ->orWhereNull('organization_id');
+            })
             ->when(
                 filled($filters['request_id'] ?? null),
                 fn (Builder $query) => $query->where(
@@ -168,6 +183,16 @@ class AuditLogController extends Controller
             ->whereIn(
                 'id',
                 AuditLog::query()
+                    ->where(function (Builder $query) use (
+                        $organizationId
+                    ): void {
+                        $query
+                            ->where(
+                                'organization_id',
+                                $organizationId
+                            )
+                            ->orWhereNull('organization_id');
+                    })
                     ->whereNotNull('user_id')
                     ->select('user_id')
             )
@@ -175,6 +200,13 @@ class AuditLogController extends Controller
             ->get(['id', 'name']);
 
         $auditedCompatibilityCount = AuditLog::query()
+            ->where(function (Builder $query) use (
+                $organizationId
+            ): void {
+                $query
+                    ->where('organization_id', $organizationId)
+                    ->orWhereNull('organization_id');
+            })
             ->where(
                 'auditable_type',
                 Compatibility::class
@@ -202,8 +234,15 @@ class AuditLogController extends Controller
     }
 
     public function show(
-        AuditLog $auditLog
+        AuditLog $auditLog,
+        CurrentOrganization $currentOrganization
     ): View {
+        abort_unless(
+            $auditLog->organization_id === null
+                || (int) $auditLog->organization_id
+                    === $currentOrganization->id(),
+            404
+        );
         return view('audit-logs.show', [
             'auditLog' => $auditLog,
             'eventLabels' => self::EVENT_LABELS,

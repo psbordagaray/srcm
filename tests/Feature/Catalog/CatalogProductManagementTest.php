@@ -64,7 +64,6 @@ class CatalogProductManagementTest extends TestCase
     public function test_manager_creates_searchable_product_and_knowledge_atomically(): void
     {
         [$category, $brand, $manufacturer] = $this->catalogFoundation();
-        AuditLog::query()->delete();
 
         $admin = $this->user(UserRole::Admin);
 
@@ -148,7 +147,7 @@ class CatalogProductManagementTest extends TestCase
             'active' => '1',
         ])->assertRedirect();
 
-        AuditLog::query()->delete();
+        $auditCountBeforeDuplicate = AuditLog::query()->count();
 
         $this->actingAs($admin)
             ->from(route('products.create'))
@@ -164,7 +163,10 @@ class CatalogProductManagementTest extends TestCase
             ->assertSessionHasErrors('sku');
 
         $this->assertSame(1, CatalogProduct::query()->count());
-        $this->assertSame(0, AuditLog::query()->count());
+        $this->assertSame(
+            $auditCountBeforeDuplicate,
+            AuditLog::query()->count()
+        );
     }
 
     public function test_probable_duplicate_name_is_rejected(): void
@@ -212,7 +214,6 @@ class CatalogProductManagementTest extends TestCase
         ])->assertRedirect();
 
         $product = CatalogProduct::query()->firstOrFail();
-        AuditLog::query()->delete();
 
         $this->actingAs($admin)
             ->put(route('products.update', $product), [

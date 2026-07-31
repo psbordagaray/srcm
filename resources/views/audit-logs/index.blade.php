@@ -11,7 +11,7 @@
                 </h1>
 
                 <p class="mt-2 max-w-3xl text-sm text-slate-400">
-                    Registro inmutable de altas, ediciones y cambios de estado del catálogo.
+                    Registro inmutable de altas, ediciones y cambios de estado realizados dentro de la organización activa.
                     Esta pantalla es exclusivamente de consulta administrativa.
                 </p>
 
@@ -91,6 +91,7 @@
                         <option value="entity" @selected(($filters['entity'] ?? '') === 'entity')>Entidad de conocimiento</option>
                         <option value="identifier" @selected(($filters['entity'] ?? '') === 'identifier')>Identificador</option>
                                 <option value="manufacturer" @selected(($filters['entity'] ?? '') === 'manufacturer')>Fabricante</option>
+                                <option value="organization" @selected(($filters['entity'] ?? '') === 'organization')>Organización</option>
                                 <option value="catalog_product" @selected(($filters['entity'] ?? '') === 'catalog_product')>Producto</option>
                                 <option value="business_party" @selected(($filters['entity'] ?? '') === 'business_party')>Identidad comercial</option>
                                 <option value="supplier" @selected(($filters['entity'] ?? '') === 'supplier')>Proveedor</option>

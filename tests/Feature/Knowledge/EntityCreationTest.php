@@ -176,7 +176,7 @@ class EntityCreationTest extends TestCase
             'active' => true,
         ]);
 
-        DB::table('audit_logs')->delete();
+        $auditCountBeforeDuplicate = AuditLog::query()->count();
 
         $this
             ->actingAs($this->user(UserRole::Operator))
@@ -195,7 +195,10 @@ class EntityCreationTest extends TestCase
         $this->assertDatabaseMissing('entities', [
             'name' => 'Equipo que no debe persistir',
         ]);
-        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertSame(
+            $auditCountBeforeDuplicate,
+            AuditLog::query()->count()
+        );
     }
 
     public function test_inactive_reference_types_are_rejected(): void

@@ -6,6 +6,7 @@ use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\BusinessParty;
 use App\Models\CatalogProduct;
+use App\Models\Organization;
 use App\Models\ProductCategory;
 use App\Models\Supplier;
 use App\Models\SupplierOffer;
@@ -232,6 +233,8 @@ class SupplierOfferManagementTest extends TestCase
 
         return SupplierOffer::withoutEvents(
             fn () => SupplierOffer::query()->create([
+                'organization_id' =>
+                    Organization::query()->sole()->id,
                 'supplier_id' => $supplier->id,
                 'catalog_product_id' => $product->id,
                 'supplier_code' => 'PROV-001',
@@ -267,6 +270,8 @@ class SupplierOfferManagementTest extends TestCase
     ): Supplier {
         $party = BusinessParty::withoutEvents(
             fn () => BusinessParty::query()->create([
+                'organization_id' =>
+                    Organization::query()->sole()->id,
                 'party_type' => 'organization',
                 'name' => $name,
                 'tax_id' => $taxId,
@@ -277,6 +282,8 @@ class SupplierOfferManagementTest extends TestCase
 
         return Supplier::withoutEvents(
             fn () => Supplier::query()->create([
+                'organization_id' =>
+                    Organization::query()->sole()->id,
                 'business_party_id' => $party->id,
                 'active' => true,
             ])

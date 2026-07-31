@@ -1,4 +1,8 @@
 @php
+    $currentOrganization = app(
+        \App\Domain\Tenancy\CurrentOrganization::class
+    )->getOrNull();
+
     $navigation = [
         [
             'label' => 'Dashboard',
@@ -51,6 +55,13 @@
     ];
 
     $operations = [
+        [
+            'label' => 'Organización',
+            'route' => 'organization.show',
+            'active' => 'organization.*',
+            'icon' => 'users',
+            'disabled' => $currentOrganization === null,
+        ],
         ['label' => 'Inventario', 'disabled' => true, 'icon' => 'inventory'],
         ['label' => 'Clientes', 'disabled' => true, 'icon' => 'users'],
         [
@@ -84,7 +95,9 @@
             </span>
             <span>
                 <span class="block text-lg font-bold tracking-[0.2em] text-white">SULU TV</span>
-                <span class="block text-[10px] font-semibold uppercase tracking-[0.28em] text-cyan-400">Control Manager</span>
+                <span class="block max-w-40 truncate text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-400">
+                    {{ $currentOrganization?->name ?? 'Sin organización' }}
+                </span>
             </span>
         </a>
 
@@ -136,17 +149,35 @@
 
         <nav class="mt-3 space-y-1">
             @foreach ($operations as $item)
-                <span
-                    class="sulu-nav-item cursor-not-allowed opacity-40"
-                    title="Módulo pendiente de desarrollo"
-                    aria-disabled="true"
-                >
-                    @include('components.sidebar-icon', ['name' => $item['icon']])
-                    <span>{{ $item['label'] }}</span>
-                    <span class="ml-auto text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                        Próximamente
+                @if ($item['disabled'] ?? false)
+                    <span
+                        class="sulu-nav-item cursor-not-allowed opacity-40"
+                        title="{{ $item['status'] ?? 'Módulo pendiente de desarrollo' }}"
+                        aria-disabled="true"
+                    >
+                        @include('components.sidebar-icon', ['name' => $item['icon']])
+                        <span>{{ $item['label'] }}</span>
+                        <span class="ml-auto text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                            {{ $item['status'] ?? 'Próximamente' }}
+                        </span>
                     </span>
-                </span>
+                @else
+                    @php
+                        $isActive = request()->routeIs($item['active']);
+                    @endphp
+
+                    <a
+                        href="{{ route($item['route']) }}"
+                        class="sulu-nav-item {{ $isActive ? 'sulu-nav-item-active' : '' }}"
+                    >
+                        @include('components.sidebar-icon', ['name' => $item['icon']])
+                        <span>{{ $item['label'] }}</span>
+
+                        @if ($isActive)
+                            <span class="ml-auto h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_rgba(103,232,249,.9)]"></span>
+                        @endif
+                    </a>
+                @endif
             @endforeach
         </nav>
 

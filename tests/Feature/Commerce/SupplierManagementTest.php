@@ -6,6 +6,7 @@ use App\Domain\Commerce\SupplierManager;
 use App\Enums\UserRole;
 use App\Models\AuditLog;
 use App\Models\BusinessParty;
+use App\Models\Organization;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -120,6 +121,8 @@ class SupplierManagementTest extends TestCase
 
         $party = BusinessParty::withoutEvents(
             fn () => BusinessParty::query()->create([
+                'organization_id' =>
+                    Organization::query()->sole()->id,
                 'party_type' => 'person',
                 'name' => 'Ana Pérez',
                 'tax_id' => '27-12345678-1',
@@ -170,6 +173,8 @@ class SupplierManagementTest extends TestCase
     {
         $admin = $this->user(UserRole::Admin);
 
+        $this->actingAs($admin);
+
         app(SupplierManager::class)->create([
             'party_type' => 'organization',
             'name' => 'Electrónica del Sur',
@@ -204,6 +209,8 @@ class SupplierManagementTest extends TestCase
     public function test_probable_name_duplicate_is_blocked_apb(): void
     {
         $admin = $this->user(UserRole::Admin);
+
+        $this->actingAs($admin);
 
         app(SupplierManager::class)->create([
             'party_type' => 'organization',
@@ -355,6 +362,8 @@ class SupplierManagementTest extends TestCase
     {
         $party = BusinessParty::withoutEvents(
             fn () => BusinessParty::query()->create([
+                'organization_id' =>
+                    Organization::query()->sole()->id,
                 'party_type' => 'organization',
                 'name' => 'Proveedor Inicial',
                 'tax_id' => '30-22222222-2',
@@ -366,6 +375,8 @@ class SupplierManagementTest extends TestCase
 
         return Supplier::withoutEvents(
             fn () => Supplier::query()->create([
+                'organization_id' =>
+                    Organization::query()->sole()->id,
                 'business_party_id' => $party->id,
                 'notes' => 'Proveedor de prueba.',
                 'active' => true,

@@ -2,7 +2,9 @@
 
 namespace App\Domain\Audit;
 
+use App\Domain\Tenancy\CurrentOrganization;
 use App\Models\AuditLog;
+use App\Models\Organization;
 use BackedEnum;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -25,7 +27,26 @@ class AuditRecorder
 
         $user = auth()->user();
 
+        $currentOrganization = app(
+            CurrentOrganization::class
+        );
+
+        $organizationId = $model instanceof Organization
+            ? $model->getKey()
+            : $model->getAttribute('organization_id');
+
+        $organizationId ??= $currentOrganization
+            ->idOrNull($user);
+
+        $actorRole = $user
+            ? $currentOrganization->roleFor($user)
+                ?->value
+            : null;
+
+        $actorRole ??= $user?->role?->value;
+
         return AuditLog::query()->create([
+            'organization_id' => $organizationId,
             'request_id' => $hasHttpContext
                 ? $request->attributes->get('request_id')
                 : null,
@@ -33,7 +54,7 @@ class AuditRecorder
             'user_id' => $user?->getAuthIdentifier(),
             'actor_name' => $user?->name,
             'actor_email' => $user?->email,
-            'actor_role' => $user?->role?->value,
+            'actor_role' => $actorRole,
 
             'event' => $event,
             'auditable_type' => $model::class,
@@ -72,8 +93,10 @@ class AuditRecorder
 
         foreach ($values as $key => $value) {
             $values[$key] = match (true) {
-                $value instanceof BackedEnum => $value->value,
-                $value instanceof DateTimeInterface => $value->format(DATE_ATOM),
+                $value instanceof BackedEnum =>
+                    $value->value,
+                $value instanceof DateTimeInterface =>
+                    $value->format(DATE_ATOM),
                 default => $value,
             };
         }

@@ -374,19 +374,28 @@ Los eventos importantes no deben eliminarse.
 
 ## Organización
 
-Empresa o negocio que utiliza SRCM.
+Empresa o negocio que utiliza SRCM y constituye la frontera propietaria de su información privada.
+
+No debe confundirse con una `BusinessParty` de tipo `organization`: esa parte comercial representa una empresa externa que puede actuar como proveedor, cliente u otro contacto. `Organization` representa al negocio usuario de SRCM.
 
 Cada organización conserva sus propios:
 
-- usuarios;
+- miembros y roles;
+- proveedores;
+- ofertas comerciales;
 - stock;
 - costos;
 - precios;
 - clientes;
+- compras;
 - ventas;
+- ubicaciones;
+- auditoría;
 - datos internos.
 
-El catálogo maestro y el conocimiento compartido podrán estar disponibles según el plan, los permisos y las reglas de SRCM.
+Un usuario puede pertenecer a más de una organización. La organización activa determina qué información privada puede consultar o modificar durante la sesión.
+
+El catálogo maestro y el conocimiento compartido no llevan `organization_id`: permanecen separados de la información privada y podrán estar disponibles según el plan, los permisos y las reglas de SRCM.
 
 ---
 

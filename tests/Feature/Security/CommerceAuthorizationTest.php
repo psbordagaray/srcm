@@ -5,6 +5,7 @@ namespace Tests\Feature\Security;
 use App\Enums\UserRole;
 use App\Models\BusinessParty;
 use App\Models\CatalogProduct;
+use App\Models\Organization;
 use App\Models\ProductCategory;
 use App\Models\Supplier;
 use App\Models\SupplierOffer;
@@ -100,6 +101,8 @@ class CommerceAuthorizationTest extends TestCase
     {
         $party = BusinessParty::withoutEvents(
             fn () => BusinessParty::query()->create([
+                'organization_id' =>
+                    Organization::query()->sole()->id,
                 'party_type' => 'organization',
                 'name' => 'Proveedor Seguro',
                 'tax_id' => '30-33333333-3',
@@ -109,6 +112,8 @@ class CommerceAuthorizationTest extends TestCase
 
         $supplier = Supplier::withoutEvents(
             fn () => Supplier::query()->create([
+                'organization_id' =>
+                    Organization::query()->sole()->id,
                 'business_party_id' => $party->id,
                 'active' => true,
             ])
@@ -133,6 +138,8 @@ class CommerceAuthorizationTest extends TestCase
 
         $offer = SupplierOffer::withoutEvents(
             fn () => SupplierOffer::query()->create([
+                'organization_id' =>
+                    Organization::query()->sole()->id,
                 'supplier_id' => $supplier->id,
                 'catalog_product_id' => $product->id,
                 'supplier_code' => 'PROV-SEG-1',

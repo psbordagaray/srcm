@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use LogicException;
 
 class AuditLog extends Model
@@ -33,5 +34,10 @@ class AuditLog extends Model
                 'Los registros de auditoría no pueden eliminarse.'
             );
         });
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(Organization::class);
     }
 }

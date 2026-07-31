@@ -23,6 +23,10 @@ class VerifiedOperationalAccessTest extends TestCase
     {
         $routeNames = [
             'dashboard',
+            'organization.show',
+            'organization.edit',
+            'organization.update',
+            'organizations.activate',
             'entities.create',
             'entities.store',
             'entities.show',
@@ -72,7 +76,8 @@ class VerifiedOperationalAccessTest extends TestCase
             'supplier-offers.show',
             'supplier-offers.edit',
             'supplier-offers.update',
-            'supplier-offers.toggle-active',            'technical-models.index',
+            'supplier-offers.toggle-active',
+            'technical-models.index',
             'technical-models.create',
             'technical-models.store',
             'technical-models.show',
@@ -114,6 +119,10 @@ class VerifiedOperationalAccessTest extends TestCase
     public function test_unverified_user_is_redirected_from_operational_routes(): void
     {
         $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)
+            ->get(route('organization.show'))
+            ->assertRedirect(route('verification.notice'));
 
         $this->actingAs($user)
             ->get(route('brands.index'))

@@ -79,8 +79,6 @@ class EntityDetailTest extends TestCase
             ->where('slug', 'alternate-code')
             ->sole();
 
-        DB::table('audit_logs')->delete();
-
         $response = $this
             ->actingAs($this->user(UserRole::Operator))
             ->post(
@@ -127,7 +125,7 @@ class EntityDetailTest extends TestCase
             ->where('slug', 'main-code')
             ->sole();
 
-        DB::table('audit_logs')->delete();
+        $auditCountBeforeDuplicate = AuditLog::query()->count();
 
         $this
             ->actingAs($this->user(UserRole::Operator))
@@ -145,7 +143,10 @@ class EntityDetailTest extends TestCase
             ->assertSessionHasErrors('identifier_value');
 
         $this->assertDatabaseCount('identifiers', 1);
-        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertSame(
+            $auditCountBeforeDuplicate,
+            AuditLog::query()->count()
+        );
     }
 
     public function test_manager_changes_primary_atomically_and_audits_both_rows(): void
@@ -155,8 +156,6 @@ class EntityDetailTest extends TestCase
             $entity,
             'ALT-PRIMARY'
         );
-
-        DB::table('audit_logs')->delete();
 
         $this
             ->actingAs($this->user(UserRole::Admin))
@@ -228,7 +227,8 @@ class EntityDetailTest extends TestCase
         $entity = $this->entity();
         $primary = $entity->identifiers()->sole();
 
-        DB::table('audit_logs')->delete();
+        $auditCountBeforeRejectedDeactivation =
+            AuditLog::query()->count();
 
         $this
             ->actingAs($this->user(UserRole::Operator))
@@ -243,7 +243,10 @@ class EntityDetailTest extends TestCase
             ->assertSessionHasErrors('identifier_action');
 
         $this->assertTrue($primary->fresh()->active);
-        $this->assertDatabaseCount('audit_logs', 0);
+        $this->assertSame(
+            $auditCountBeforeRejectedDeactivation,
+            AuditLog::query()->count()
+        );
     }
 
     public function test_non_primary_identifier_can_be_deactivated_and_reactivated(): void

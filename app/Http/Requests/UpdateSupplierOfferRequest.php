@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Tenancy\CurrentOrganization;
 use App\Models\SupplierOffer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -71,7 +72,15 @@ class UpdateSupplierOfferRequest extends FormRequest
             'supplier_id' => [
                 'required',
                 'integer',
-                Rule::exists('suppliers', 'id')->where('active', true),
+                Rule::exists('suppliers', 'id')
+                    ->where(
+                        fn ($query) => $query
+                            ->where('active', true)
+                            ->where(
+                                'organization_id',
+                                app(CurrentOrganization::class)->id()
+                            )
+                    ),
             ],
             'catalog_product_id' => [
                 'required',
