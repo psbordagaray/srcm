@@ -103,6 +103,129 @@ final class InventoryMovementConfirmer
         }, 3);
     }
 
+    /**
+     * @return array{InventoryMovement, InventoryMovement}
+     */
+    public function confirmCorrectionPair(
+        InventoryMovement|int $reversal,
+        InventoryMovement|int $replacement,
+        User $actor
+    ): array {
+        $reversalId = $reversal instanceof InventoryMovement
+            ? (int) $reversal->getKey()
+            : $reversal;
+        $replacementId = $replacement instanceof InventoryMovement
+            ? (int) $replacement->getKey()
+            : $replacement;
+
+        if ($reversalId === $replacementId) {
+            throw new DomainException(
+                'El reverso y el reemplazo deben ser movimientos diferentes.'
+            );
+        }
+
+        return DB::transaction(function () use (
+            $reversalId,
+            $replacementId,
+            $actor
+        ): array {
+            $movementIds = [$reversalId, $replacementId];
+            $organizationIds = InventoryMovement::query()
+                ->whereIn('id', $movementIds)
+                ->pluck('organization_id');
+
+            if (
+                $organizationIds->count() !== 2
+                || $organizationIds->unique()->count() !== 1
+            ) {
+                throw new DomainException(
+                    'El reverso y el reemplazo deben existir en una misma organización.'
+                );
+            }
+
+            $organizationId = (int) $organizationIds->first();
+            $this->lockActiveOrganization($organizationId);
+
+            $locked = InventoryMovement::query()
+                ->where('organization_id', $organizationId)
+                ->whereIn('id', $movementIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            $lockedReversal = $locked->get($reversalId);
+            $lockedReplacement = $locked->get($replacementId);
+
+            if (! $lockedReversal || ! $lockedReplacement) {
+                throw new DomainException(
+                    'No pudieron bloquearse ambos movimientos de corrección.'
+                );
+            }
+
+            if ($lockedReversal->type !== InventoryMovementType::Reversal) {
+                throw new DomainException(
+                    'El primer movimiento de la corrección debe ser un reverso.'
+                );
+            }
+
+            foreach ([$lockedReversal, $lockedReplacement] as $movement) {
+                $this->guardActor($movement, $actor);
+
+                if ($movement->status !== InventoryMovementStatus::Draft) {
+                    throw new DomainException(
+                        'Ambos movimientos de la corrección deben estar en borrador.'
+                    );
+                }
+            }
+
+            $lines = InventoryMovementLine::query()
+                ->where('organization_id', $organizationId)
+                ->whereIn('inventory_movement_id', $movementIds)
+                ->orderBy('inventory_movement_id')
+                ->orderBy('sequence')
+                ->lockForUpdate()
+                ->get()
+                ->groupBy('inventory_movement_id');
+
+            foreach ([$lockedReversal, $lockedReplacement] as $movement) {
+                $movementLines = $lines->get(
+                    $movement->id,
+                    collect()
+                )->values();
+
+                if ($movementLines->isEmpty()) {
+                    throw new DomainException(
+                        'La corrección no admite movimientos sin líneas.'
+                    );
+                }
+
+                $this->validateLines($movement, $movementLines);
+                $movement->setRelation('lines', $movementLines);
+            }
+
+            $this->projector->applyMany([
+                $lockedReversal,
+                $lockedReplacement,
+            ]);
+
+            $confirmedAt = now();
+
+            foreach ([$lockedReversal, $lockedReplacement] as $movement) {
+                $movement->forceFill([
+                    'status' => InventoryMovementStatus::Confirmed,
+                    'confirmed_at' => $confirmedAt,
+                    'confirmed_by_user_id' => $actor->id,
+                ])->save();
+            }
+
+            return [
+                $lockedReversal->refresh()->load('lines'),
+                $lockedReplacement->refresh()->load('lines'),
+            ];
+        }, 3);
+    }
+
     private function lockActiveOrganization(int $organizationId): void
     {
         $organization = DB::table('organizations')

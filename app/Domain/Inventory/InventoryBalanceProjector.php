@@ -11,15 +11,51 @@ final class InventoryBalanceProjector
 {
     public function apply(InventoryMovement $movement): void
     {
-        $effects = $movement->lines
-            ->flatMap(
-                fn (InventoryMovementLine $line): array =>
-                    $this->effectsForLine($line)
-            )
-            ->sortBy('key', SORT_STRING)
-            ->values();
+        $this->applyMany([$movement]);
+    }
+
+    /**
+     * @param iterable<InventoryMovement> $movements
+     */
+    public function applyMany(iterable $movements): void
+    {
+        $effects = [];
+
+        foreach ($movements as $movement) {
+            foreach ($movement->lines as $line) {
+                foreach ($this->effectsForLine($line) as $effect) {
+                    $key = $effect['key'];
+
+                    if (! isset($effects[$key])) {
+                        $effects[$key] = $effect;
+
+                        continue;
+                    }
+
+                    if (
+                        $effects[$key]['base_unit_code']
+                            !== $effect['base_unit_code']
+                    ) {
+                        throw new DomainException(
+                            'Una confirmación agrupada contiene unidades base incompatibles.'
+                        );
+                    }
+
+                    $effects[$key]['delta'] = InventoryQuantity::add(
+                        $effects[$key]['delta'],
+                        $effect['delta']
+                    );
+                }
+            }
+        }
+
+        ksort($effects, SORT_STRING);
 
         foreach ($effects as $effect) {
+            if (InventoryQuantity::equal($effect['delta'], '0')) {
+                continue;
+            }
+
             $this->applyEffect($effect);
         }
     }
