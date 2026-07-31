@@ -2,9 +2,13 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
+use App\Models\Organization;
+use App\Models\OrganizationMembership;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -18,11 +22,38 @@ class DatabaseSeeder extends Seeder
         $this->call(KnowledgeFoundationSeeder::class);
         $this->call(InventoryLocationSeeder::class);
 
-        // User::factory(10)->create();
+        if (! app()->environment(['local', 'testing'])) {
+            return;
+        }
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        $testUser = User::query()->firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => Hash::make('password'),
+            ]
+        );
+
+        $organization = Organization::query()
+            ->where('slug', 'sulu-tv')
+            ->firstOrFail();
+
+        OrganizationMembership::query()->updateOrCreate(
+            [
+                'organization_id' => $organization->getKey(),
+                'user_id' => $testUser->getKey(),
+            ],
+            [
+                'role' => UserRole::Admin->value,
+                'active' => true,
+            ]
+        );
+
+        $testUser->forceFill([
+            'role' => UserRole::Admin->value,
+            'email_verified_at' =>
+                $testUser->email_verified_at ?? now(),
+            'current_organization_id' => $organization->getKey(),
+        ])->saveQuietly();
     }
 }
