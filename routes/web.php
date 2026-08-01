@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
+use App\Http\Controllers\InventoryAvailabilityController;
 use App\Http\Controllers\InventoryLocationController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierOfferController;
@@ -239,6 +240,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ]
                     )->name('inventory-locations.index');
                 });
+
+            Route::middleware(
+                'can:view-inventory-availability'
+            )->group(function () {
+                Route::get(
+                    'inventory/availability',
+                    [
+                        InventoryAvailabilityController::class,
+                        'index',
+                    ]
+                )->name('inventory-availability.index');
+            });
 
             Route::middleware(
                 'can:manage-inventory-locations'
