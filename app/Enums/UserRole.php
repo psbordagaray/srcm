@@ -45,6 +45,11 @@ enum UserRole: string
         return true;
     }
 
+    public function canViewInventoryAvailability(): bool
+    {
+        return $this->canViewInventory();
+    }
+
     public function canManageInventoryLocations(): bool
     {
         return $this === self::Admin;

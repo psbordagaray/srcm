@@ -167,6 +167,32 @@ final class InventoryQuantity
         );
     }
 
+    public static function nonNegative(mixed $value): string
+    {
+        $quantity = self::signed($value);
+
+        if (BigDecimal::of($quantity)->isNegative()) {
+            return self::signed('0');
+        }
+
+        return $quantity;
+    }
+
+    public static function deficit(mixed $value): string
+    {
+        $quantity = self::signed($value);
+        $decimal = BigDecimal::of($quantity);
+
+        if (! $decimal->isNegative()) {
+            return self::signed('0');
+        }
+
+        return (string) $decimal->negated()->toScale(
+            self::SCALE,
+            RoundingMode::Unnecessary
+        );
+    }
+
     private static function decimal(
         mixed $value,
         int $scale,

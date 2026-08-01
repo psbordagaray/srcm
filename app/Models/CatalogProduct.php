@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Domain\Inventory\InventoryQuantity;
+use App\Enums\InventoryBaseUnit;
+use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,14 +19,35 @@ class CatalogProduct extends Model
         'sku',
         'name',
         'description',
+        'base_unit_code',
+        'quantity_scale',
         'active',
     ];
+
+    protected $attributes = [
+        'base_unit_code' => 'unit',
+        'quantity_scale' => 0,
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(
+            fn (CatalogProduct $product) =>
+                $product->assertInventoryQuantityRules()
+        );
+    }
 
     protected function casts(): array
     {
         return [
             'active' => 'boolean',
+            'quantity_scale' => 'integer',
         ];
+    }
+
+    public function setBaseUnitCodeAttribute(string $value): void
+    {
+        $this->attributes['base_unit_code'] = Str::lower(trim($value));
     }
 
     public function setSkuAttribute(string $value): void
@@ -76,6 +100,29 @@ class CatalogProduct extends Model
         return $this->hasMany(SupplierOffer::class, 'catalog_product_id');
     }
 
+    public function inventoryMovementLines(): HasMany
+    {
+        return $this->hasMany(
+            InventoryMovementLine::class,
+            'catalog_product_id'
+        );
+    }
+
+    public function baseUnit(): InventoryBaseUnit
+    {
+        return InventoryBaseUnit::tryFrom(
+            (string) $this->base_unit_code
+        ) ?? throw new DomainException(
+            'La unidad base configurada no está admitida.'
+        );
+    }
+
+    public function allowsFractionalQuantity(): bool
+    {
+        return $this->baseUnit()->allowsFractionalQuantity()
+            && (int) $this->quantity_scale > 0;
+    }
+
     public function knowledgeEntity(): BelongsTo
     {
         return $this->belongsTo(
@@ -90,5 +137,45 @@ class CatalogProduct extends Model
             Identifier::class,
             'knowledge_identifier_id'
         );
+    }
+
+    private function assertInventoryQuantityRules(): void
+    {
+        $unit = InventoryBaseUnit::tryFrom(
+            (string) $this->base_unit_code
+        );
+        $scale = (int) $this->quantity_scale;
+
+        if (! $unit) {
+            throw new DomainException(
+                'La unidad base configurada no está admitida.'
+            );
+        }
+
+        if ($scale < 0 || $scale > InventoryQuantity::SCALE) {
+            throw new DomainException(
+                'La precisión del producto debe estar entre 0 y '
+                .InventoryQuantity::SCALE.'.'
+            );
+        }
+
+        if (! $unit->allowsFractionalQuantity() && $scale !== 0) {
+            throw new DomainException(
+                'Un artículo contado por unidad no admite fracciones.'
+            );
+        }
+
+        if (
+            $this->exists
+            && $this->isDirty([
+                'base_unit_code',
+                'quantity_scale',
+            ])
+            && $this->inventoryMovementLines()->exists()
+        ) {
+            throw new DomainException(
+                'La unidad y precisión no pueden cambiarse después del primer movimiento.'
+            );
+        }
     }
 }

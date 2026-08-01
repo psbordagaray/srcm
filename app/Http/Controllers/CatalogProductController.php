@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\InventoryBaseUnit;
 use App\Domain\Knowledge\CatalogProductKnowledgeManager;
 use App\Http\Requests\StoreCatalogProductRequest;
 use App\Http\Requests\UpdateCatalogProductRequest;
@@ -181,11 +182,13 @@ class CatalogProductController extends Controller
      *     categories: \Illuminate\Database\Eloquent\Collection,
      *     brands: \Illuminate\Database\Eloquent\Collection,
      *     manufacturers: \Illuminate\Database\Eloquent\Collection
+     *     baseUnits: list<InventoryBaseUnit>
      * }
      */
     private function formOptions(?CatalogProduct $product = null): array
     {
         return [
+            'baseUnits' => InventoryBaseUnit::cases(),
             'categories' => ProductCategory::query()
                 ->where(function (Builder $query) use ($product): void {
                     $query->where('active', true);

@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Inventory\InventoryQuantity;
+use App\Enums\InventoryBaseUnit;
 use App\Models\CatalogProduct;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -36,6 +38,12 @@ class StoreCatalogProductRequest extends FormRequest
             'manufacturer_id' => $this->filled('manufacturer_id')
                 ? $this->integer('manufacturer_id')
                 : null,
+            'base_unit_code' => Str::lower(
+                trim((string) $this->input('base_unit_code', 'unit'))
+            ),
+            'quantity_scale' => $this->filled('quantity_scale')
+                ? $this->integer('quantity_scale')
+                : 0,
             'active' => $this->boolean('active'),
         ]);
     }
@@ -64,6 +72,15 @@ class StoreCatalogProductRequest extends FormRequest
             'sku' => ['required', 'string', 'max:120'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
+            'base_unit_code' => [
+                'required',
+                Rule::enum(InventoryBaseUnit::class),
+            ],
+            'quantity_scale' => [
+                'required',
+                'integer',
+                'between:0,'.InventoryQuantity::SCALE,
+            ],
             'active' => ['required', 'boolean'],
         ];
     }
@@ -72,6 +89,22 @@ class StoreCatalogProductRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $unit = InventoryBaseUnit::from(
+                (string) $this->input('base_unit_code')
+            );
+
+            if (
+                ! $unit->allowsFractionalQuantity()
+                && $this->integer('quantity_scale') !== 0
+            ) {
+                $validator->errors()->add(
+                    'quantity_scale',
+                    'Un artículo contado por unidad no admite fracciones.'
+                );
+
                 return;
             }
 
@@ -130,6 +163,10 @@ class StoreCatalogProductRequest extends FormRequest
             'manufacturer_id.exists' => 'El fabricante no existe o está inactivo.',
             'sku.required' => 'El SKU o código principal es obligatorio.',
             'name.required' => 'El nombre canónico es obligatorio.',
+            'base_unit_code.required' => 'La unidad base es obligatoria.',
+            'base_unit_code.enum' => 'La unidad base seleccionada no está admitida.',
+            'quantity_scale.required' => 'La precisión de cantidad es obligatoria.',
+            'quantity_scale.between' => 'La precisión debe estar entre 0 y '.InventoryQuantity::SCALE.' decimales.',
             'active.required' => 'El estado es obligatorio.',
         ];
     }

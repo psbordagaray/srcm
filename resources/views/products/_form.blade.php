@@ -158,6 +158,68 @@
         @enderror
     </div>
 
+    <div class="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+        <div class="grid gap-6 md:grid-cols-2">
+            <div>
+                <label for="base_unit_code" class="mb-2 block text-sm font-semibold text-slate-200">
+                    Unidad base de inventario
+                </label>
+
+                <select
+                    id="base_unit_code"
+                    name="base_unit_code"
+                    required
+                    class="w-full rounded-xl border-slate-700 bg-slate-950 text-white focus:border-cyan-400 focus:ring-cyan-400"
+                >
+                    @foreach ($baseUnits as $baseUnit)
+                        <option
+                            value="{{ $baseUnit->value }}"
+                            @selected((string) old('base_unit_code', $product->base_unit_code ?? 'unit') === $baseUnit->value)
+                        >
+                            {{ $baseUnit->label() }} ({{ $baseUnit->value }})
+                        </option>
+                    @endforeach
+                </select>
+
+                @error('base_unit_code')
+                    <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label for="quantity_scale" class="mb-2 block text-sm font-semibold text-slate-200">
+                    Precisión de cantidad
+                </label>
+
+                <select
+                    id="quantity_scale"
+                    name="quantity_scale"
+                    required
+                    class="w-full rounded-xl border-slate-700 bg-slate-950 text-white focus:border-cyan-400 focus:ring-cyan-400"
+                >
+                    @for ($scale = 0; $scale <= 6; $scale++)
+                        <option
+                            value="{{ $scale }}"
+                            @selected((string) old('quantity_scale', $product->quantity_scale ?? 0) === (string) $scale)
+                        >
+                            {{ $scale === 0 ? 'Solo cantidades enteras' : $scale.' decimal'.($scale === 1 ? '' : 'es') }}
+                        </option>
+                    @endfor
+                </select>
+
+                @error('quantity_scale')
+                    <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+
+        <p class="mt-3 text-xs leading-5 text-slate-400">
+            La venta fraccionada se habilita por artículo: elegí litro, metro o kilogramo y una precisión mayor que cero.
+            Para SULU y demás artículos indivisibles, conservá Unidad y Solo cantidades enteras.
+            Esta configuración queda fija desde el primer movimiento.
+        </p>
+    </div>
+
     <div>
         <label for="active" class="mb-2 block text-sm font-semibold text-slate-200">
             Estado
@@ -202,6 +264,7 @@
 
     <div class="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-4 text-xs leading-5 text-amber-100">
         Precio, costo, stock, proveedor, garantía, condición y ubicación no pertenecen al artículo maestro.
+        La unidad base y su precisión sí forman parte de su identidad operativa.
     </div>
 
     <div class="flex flex-col-reverse gap-3 border-t border-slate-800 pt-6 sm:flex-row sm:justify-end">

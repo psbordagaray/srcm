@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Inventory\InventoryQuantity;
+use App\Enums\InventoryBaseUnit;
 use App\Models\CatalogProduct;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
@@ -17,6 +19,14 @@ class UpdateCatalogProductRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $product = $this->route('product');
+        $currentBaseUnit = $product instanceof CatalogProduct
+            ? $product->base_unit_code
+            : InventoryBaseUnit::Unit->value;
+        $currentScale = $product instanceof CatalogProduct
+            ? (int) $product->quantity_scale
+            : 0;
+
         $this->merge([
             'sku' => Str::of((string) $this->input('sku'))
                 ->squish()
@@ -36,6 +46,13 @@ class UpdateCatalogProductRequest extends FormRequest
             'manufacturer_id' => $this->filled('manufacturer_id')
                 ? $this->integer('manufacturer_id')
                 : null,
+            'base_unit_code' => Str::lower(trim((string) $this->input(
+                'base_unit_code',
+                $currentBaseUnit
+            ))),
+            'quantity_scale' => $this->filled('quantity_scale')
+                ? $this->integer('quantity_scale')
+                : $currentScale,
             'active' => $this->boolean('active'),
         ]);
     }
@@ -64,6 +81,15 @@ class UpdateCatalogProductRequest extends FormRequest
             'sku' => ['required', 'string', 'max:120'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:5000'],
+            'base_unit_code' => [
+                'required',
+                Rule::enum(InventoryBaseUnit::class),
+            ],
+            'quantity_scale' => [
+                'required',
+                'integer',
+                'between:0,'.InventoryQuantity::SCALE,
+            ],
             'active' => ['required', 'boolean'],
         ];
     }
@@ -81,6 +107,40 @@ class UpdateCatalogProductRequest extends FormRequest
                 $validator->errors()->add(
                     'sku',
                     'No se pudo resolver el producto solicitado.'
+                );
+
+                return;
+            }
+
+            $unit = InventoryBaseUnit::from(
+                (string) $this->input('base_unit_code')
+            );
+
+            if (
+                ! $unit->allowsFractionalQuantity()
+                && $this->integer('quantity_scale') !== 0
+            ) {
+                $validator->errors()->add(
+                    'quantity_scale',
+                    'Un artículo contado por unidad no admite fracciones.'
+                );
+
+                return;
+            }
+
+            $quantityRulesChanged =
+                $product->base_unit_code
+                    !== $unit->value
+                || (int) $product->quantity_scale
+                    !== $this->integer('quantity_scale');
+
+            if (
+                $quantityRulesChanged
+                && $product->inventoryMovementLines()->exists()
+            ) {
+                $validator->errors()->add(
+                    'base_unit_code',
+                    'La unidad y precisión no pueden cambiarse después del primer movimiento.'
                 );
 
                 return;
@@ -143,6 +203,10 @@ class UpdateCatalogProductRequest extends FormRequest
             'manufacturer_id.exists' => 'El fabricante no existe o está inactivo.',
             'sku.required' => 'El SKU o código principal es obligatorio.',
             'name.required' => 'El nombre canónico es obligatorio.',
+            'base_unit_code.required' => 'La unidad base es obligatoria.',
+            'base_unit_code.enum' => 'La unidad base seleccionada no está admitida.',
+            'quantity_scale.required' => 'La precisión de cantidad es obligatoria.',
+            'quantity_scale.between' => 'La precisión debe estar entre 0 y '.InventoryQuantity::SCALE.' decimales.',
             'active.required' => 'El estado es obligatorio.',
         ];
     }

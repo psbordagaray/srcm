@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Inventory\InventoryQuantity;
 use App\Enums\InventoryLocationType;
 use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
@@ -220,6 +221,21 @@ class InventoryLocation extends Model
         if ($this->children()->active()->exists()) {
             throw new DomainException(
                 'No puede inactivar una ubicación con descendientes activos.'
+            );
+        }
+
+        $hasNonZeroBalance = InventoryBalance::query()
+            ->forOrganization((int) $this->organization_id)
+            ->where('inventory_location_id', $this->getKey())
+            ->get(['quantity'])
+            ->contains(
+                fn (InventoryBalance $balance): bool =>
+                    ! InventoryQuantity::equal($balance->quantity, '0')
+            );
+
+        if ($hasNonZeroBalance) {
+            throw new DomainException(
+                'No puede inactivar una ubicación con saldo físico distinto de cero.'
             );
         }
     }

@@ -92,6 +92,15 @@ class AppServiceProvider extends ServiceProvider
                 ?? false
         );
 
+        Gate::define(
+            'view-inventory-availability',
+            fn (User $user): bool =>
+                app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->canViewInventoryAvailability()
+                ?? false
+        );
+
         foreach ([
             'receive-inventory' => 'canReceiveInventory',
             'issue-inventory' => 'canIssueInventory',
