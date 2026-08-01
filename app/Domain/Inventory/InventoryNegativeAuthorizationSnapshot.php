@@ -24,4 +24,23 @@ final readonly class InventoryNegativeAuthorizationSnapshot
 
         return false;
     }
+
+    /**
+     * @return array<string, InventoryNegativePositionSnapshot>
+     */
+    public function positionsByKey(int $organizationId): array
+    {
+        $indexed = [];
+
+        foreach ($this->positions as $position) {
+            $indexed[implode(':', [
+                $organizationId,
+                $position->catalogProductId,
+                $position->inventoryLocationId,
+                $position->condition->value,
+            ])] = $position;
+        }
+
+        return $indexed;
+    }
 }

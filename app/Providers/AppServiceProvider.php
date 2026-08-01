@@ -114,6 +114,10 @@ class AppServiceProvider extends ServiceProvider
                 'canRequestInventoryNegative',
             'override-inventory-negative' =>
                 'canOverrideInventoryNegative',
+            'view-inventory-negative-incidents' =>
+                'canViewInventoryNegativeIncidents',
+            'review-inventory-negative-incidents' =>
+                'canReviewInventoryNegativeIncidents',
         ] as $ability => $method) {
             Gate::define(
                 $ability,

@@ -121,6 +121,18 @@ final class InventoryQuantity
         }
     }
 
+    public static function isPositive(mixed $value): bool
+    {
+        try {
+            return BigDecimal::of((string) $value)->isPositive();
+        } catch (Throwable $exception) {
+            throw new DomainException(
+                'El efecto del movimiento no es una cantidad decimal válida.',
+                previous: $exception
+            );
+        }
+    }
+
     public static function signed(
         mixed $value,
         string $label = 'La cantidad'

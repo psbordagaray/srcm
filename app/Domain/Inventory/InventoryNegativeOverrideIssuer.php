@@ -142,6 +142,27 @@ final class InventoryNegativeOverrideIssuer
                 );
             }
 
+            $conflictingOverride = InventoryNegativeOverride::query()
+                ->where('organization_id', $organizationId)
+                ->where('inventory_movement_id', $movement->id)
+                ->where(
+                    'inventory_negative_request_id',
+                    '!=',
+                    $lockedRequest->id
+                )
+                ->where(
+                    'status',
+                    InventoryNegativeOverrideStatus::Active->value
+                )
+                ->lockForUpdate()
+                ->first(['id']);
+
+            if ($conflictingOverride) {
+                throw new DomainException(
+                    'El movimiento ya posee otro Override activo.'
+                );
+            }
+
             $override = InventoryNegativeOverride::query()->create([
                 'organization_id' => $organizationId,
                 'inventory_negative_request_id' => $lockedRequest->id,
@@ -237,11 +258,34 @@ final class InventoryNegativeOverrideIssuer
                 );
             }
 
+            $normalizedReason = $this->reason($reason);
+            $request = InventoryNegativeRequest::query()
+                ->whereKey($locked->inventory_negative_request_id)
+                ->where('organization_id', $organizationId)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                ! $request
+                || $request->status
+                    !== InventoryNegativeRequestStatus::Approved
+            ) {
+                throw new DomainException(
+                    'El Override no posee una solicitud aprobada revocable.'
+                );
+            }
+
             $locked->forceFill([
                 'status' => InventoryNegativeOverrideStatus::Revoked,
                 'revoked_by_user_id' => $administrator->id,
                 'revoked_at' => now(),
-                'revocation_reason' => $this->reason($reason),
+                'revocation_reason' => $normalizedReason,
+            ])->save();
+            $request->forceFill([
+                'status' => InventoryNegativeRequestStatus::Invalidated,
+                'invalidated_at' => now(),
+                'invalidation_reason' =>
+                    'Override revocado: '.$normalizedReason,
             ])->save();
 
             return $locked->refresh();

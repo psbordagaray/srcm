@@ -100,6 +100,16 @@ enum UserRole: string
         return $this === self::Admin;
     }
 
+    public function canViewInventoryNegativeIncidents(): bool
+    {
+        return $this === self::Admin;
+    }
+
+    public function canReviewInventoryNegativeIncidents(): bool
+    {
+        return $this === self::Admin;
+    }
+
     public function canDraftInventoryMovement(
         InventoryMovementType $type
     ): bool {

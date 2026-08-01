@@ -150,6 +150,7 @@ class InventoryNegativeRequest extends Model
             ],
             InventoryNegativeRequestStatus::Approved => [
                 InventoryNegativeRequestStatus::Fulfilled,
+                InventoryNegativeRequestStatus::Invalidated,
             ],
             default => [],
         };

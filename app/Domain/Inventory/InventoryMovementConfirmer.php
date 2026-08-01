@@ -4,10 +4,15 @@ namespace App\Domain\Inventory;
 
 use App\Enums\InventoryMovementStatus;
 use App\Enums\InventoryMovementType;
+use App\Enums\InventoryNegativeOverrideStatus;
+use App\Enums\InventoryNegativeRequestStatus;
 use App\Models\CatalogProduct;
 use App\Models\InventoryLocation;
 use App\Models\InventoryMovement;
 use App\Models\InventoryMovementLine;
+use App\Models\InventoryNegativeIncident;
+use App\Models\InventoryNegativeOverride;
+use App\Models\InventoryNegativeRequest;
 use App\Models\OrganizationMembership;
 use App\Models\User;
 use DomainException;
@@ -17,8 +22,222 @@ use Illuminate\Support\Facades\DB;
 final class InventoryMovementConfirmer
 {
     public function __construct(
-        private readonly InventoryBalanceProjector $projector
+        private readonly InventoryBalanceProjector $projector,
+        private readonly InventoryNegativeSnapshotBuilder $negativeSnapshots,
+        private readonly InventoryNegativeIncidentRecorder $negativeIncidents
     ) {
+    }
+
+    public function confirmWithNegativeOverride(
+        InventoryMovement|int $movement,
+        InventoryNegativeOverride|int $override,
+        User $actor
+    ): InventoryNegativeConfirmationResult {
+        $movementId = $movement instanceof InventoryMovement
+            ? (int) $movement->getKey()
+            : $movement;
+        $overrideId = $override instanceof InventoryNegativeOverride
+            ? (int) $override->getKey()
+            : $override;
+
+        return DB::transaction(function () use (
+            $movementId,
+            $overrideId,
+            $actor
+        ): InventoryNegativeConfirmationResult {
+            $organizationId = (int) $actor->current_organization_id;
+
+            if ($organizationId <= 0) {
+                throw new DomainException(
+                    'El usuario no posee una organización activa.'
+                );
+            }
+
+            $this->lockActiveOrganization($organizationId);
+
+            $lockedMovement = InventoryMovement::query()
+                ->whereKey($movementId)
+                ->where('organization_id', $organizationId)
+                ->lockForUpdate()
+                ->first();
+            $lockedOverride = InventoryNegativeOverride::query()
+                ->whereKey($overrideId)
+                ->where('organization_id', $organizationId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedMovement || ! $lockedOverride) {
+                throw new DomainException(
+                    'El movimiento o el Override no existen en la organización activa.'
+                );
+            }
+
+            $lockedRequest = InventoryNegativeRequest::query()
+                ->whereKey(
+                    $lockedOverride->inventory_negative_request_id
+                )
+                ->where('organization_id', $organizationId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedRequest) {
+                throw new DomainException(
+                    'El Override no posee una solicitud válida.'
+                );
+            }
+
+            $this->guardActor($lockedMovement, $actor);
+            $this->guardNegativeAuthorizationLinks(
+                $lockedMovement,
+                $lockedRequest,
+                $lockedOverride,
+                $actor
+            );
+
+            if (
+                $lockedMovement->status
+                    === InventoryMovementStatus::Confirmed
+            ) {
+                return $this->completedNegativeConfirmation(
+                    $lockedMovement,
+                    $lockedRequest,
+                    $lockedOverride
+                );
+            }
+
+            if (
+                $lockedOverride->status
+                    === InventoryNegativeOverrideStatus::Invalidated
+                && $lockedRequest->status
+                    === InventoryNegativeRequestStatus::Invalidated
+            ) {
+                return new InventoryNegativeConfirmationResult(
+                    movement: $lockedMovement,
+                    request: $lockedRequest,
+                    override: $lockedOverride,
+                    incident: null,
+                    invalidated: true
+                );
+            }
+
+            if (
+                $lockedOverride->status
+                    !== InventoryNegativeOverrideStatus::Active
+                || $lockedRequest->status
+                    !== InventoryNegativeRequestStatus::Approved
+            ) {
+                throw new DomainException(
+                    'La autorización negativa no está activa y aprobada.'
+                );
+            }
+
+            if (
+                $lockedMovement->status
+                    !== InventoryMovementStatus::Draft
+            ) {
+                return $this->invalidateNegativeAuthorization(
+                    $lockedMovement,
+                    $lockedRequest,
+                    $lockedOverride,
+                    'El movimiento dejó de estar disponible como borrador.'
+                );
+            }
+
+            try {
+                $snapshot = $this->negativeSnapshots->build(
+                    $lockedMovement
+                );
+            } catch (DomainException) {
+                return $this->invalidateNegativeAuthorization(
+                    $lockedMovement,
+                    $lockedRequest,
+                    $lockedOverride,
+                    'El movimiento ya no puede reproducir el snapshot autorizado.'
+                );
+            }
+
+            if (
+                ! $snapshot->requiresOverride()
+                || ! hash_equals(
+                    $lockedOverride->movement_fingerprint,
+                    $snapshot->movementFingerprint
+                )
+                || ! hash_equals(
+                    $lockedOverride->snapshot_fingerprint,
+                    $snapshot->snapshotFingerprint
+                )
+                || ! hash_equals(
+                    $lockedRequest->movement_fingerprint,
+                    $snapshot->movementFingerprint
+                )
+                || ! hash_equals(
+                    $lockedRequest->snapshot_fingerprint,
+                    $snapshot->snapshotFingerprint
+                )
+            ) {
+                return $this->invalidateNegativeAuthorization(
+                    $lockedMovement,
+                    $lockedRequest,
+                    $lockedOverride,
+                    'El movimiento o los saldos cambiaron después de la aprobación.'
+                );
+            }
+
+            $lines = InventoryMovementLine::query()
+                ->where('organization_id', $organizationId)
+                ->where('inventory_movement_id', $lockedMovement->id)
+                ->orderBy('sequence')
+                ->lockForUpdate()
+                ->get();
+
+            if ($lines->isEmpty()) {
+                return $this->invalidateNegativeAuthorization(
+                    $lockedMovement,
+                    $lockedRequest,
+                    $lockedOverride,
+                    'El movimiento perdió sus líneas autorizadas.'
+                );
+            }
+
+            $this->validateLines($lockedMovement, $lines);
+            $lockedMovement->setRelation('lines', $lines);
+
+            $this->projector->applyAuthorizedNegative(
+                $lockedMovement,
+                $snapshot
+            );
+
+            $incident = $this->negativeIncidents->record(
+                $lockedMovement,
+                $lockedRequest,
+                $lockedOverride,
+                $snapshot,
+                $actor
+            );
+            $confirmedAt = now();
+
+            $lockedMovement->forceFill([
+                'status' => InventoryMovementStatus::Confirmed,
+                'confirmed_at' => $confirmedAt,
+                'confirmed_by_user_id' => $actor->id,
+            ])->save();
+            $lockedOverride->forceFill([
+                'status' => InventoryNegativeOverrideStatus::Consumed,
+                'consumed_at' => $confirmedAt,
+            ])->save();
+            $lockedRequest->forceFill([
+                'status' => InventoryNegativeRequestStatus::Fulfilled,
+                'fulfilled_at' => $confirmedAt,
+            ])->save();
+
+            return new InventoryNegativeConfirmationResult(
+                movement: $lockedMovement->refresh()->load('lines'),
+                request: $lockedRequest->refresh()->load('lines'),
+                override: $lockedOverride->refresh(),
+                incident: $incident,
+                invalidated: false
+            );
+        }, 3);
     }
 
     public function confirm(
@@ -65,6 +284,28 @@ final class InventoryMovementConfirmer
             ) {
                 throw new DomainException(
                     'Solo un movimiento borrador puede confirmarse.'
+                );
+            }
+
+            $activeOverride = InventoryNegativeOverride::query()
+                ->where(
+                    'organization_id',
+                    $lockedMovement->organization_id
+                )
+                ->where(
+                    'inventory_movement_id',
+                    $lockedMovement->id
+                )
+                ->where(
+                    'status',
+                    InventoryNegativeOverrideStatus::Active->value
+                )
+                ->lockForUpdate()
+                ->first(['id']);
+
+            if ($activeOverride) {
+                throw new DomainException(
+                    'El movimiento posee un Override activo y requiere el flujo explícito de confirmación excepcional.'
                 );
             }
 
@@ -224,6 +465,118 @@ final class InventoryMovementConfirmer
                 $lockedReplacement->refresh()->load('lines'),
             ];
         }, 3);
+    }
+
+    private function guardNegativeAuthorizationLinks(
+        InventoryMovement $movement,
+        InventoryNegativeRequest $request,
+        InventoryNegativeOverride $override,
+        User $actor
+    ): void {
+        if (
+            (int) $request->inventory_movement_id
+                !== (int) $movement->id
+            || (int) $override->inventory_movement_id
+                !== (int) $movement->id
+            || (int) $override->inventory_negative_request_id
+                !== (int) $request->id
+            || (int) $request->requested_by_user_id
+                !== (int) $override->authorized_user_id
+            || (int) $movement->created_by_user_id
+                !== (int) $override->authorized_user_id
+        ) {
+            throw new DomainException(
+                'El Override no corresponde al movimiento y solicitante exactos.'
+            );
+        }
+
+        if ((int) $override->authorized_user_id !== (int) $actor->id) {
+            throw new DomainException(
+                'El Override sólo puede consumirlo el usuario autorizado.'
+            );
+        }
+
+        if (
+            ! hash_equals(
+                $request->movement_fingerprint,
+                $override->movement_fingerprint
+            )
+            || ! hash_equals(
+                $request->snapshot_fingerprint,
+                $override->snapshot_fingerprint
+            )
+        ) {
+            throw new DomainException(
+                'La solicitud y el Override conservan huellas diferentes.'
+            );
+        }
+    }
+
+    private function completedNegativeConfirmation(
+        InventoryMovement $movement,
+        InventoryNegativeRequest $request,
+        InventoryNegativeOverride $override
+    ): InventoryNegativeConfirmationResult {
+        if (
+            $override->status
+                !== InventoryNegativeOverrideStatus::Consumed
+            || $request->status
+                !== InventoryNegativeRequestStatus::Fulfilled
+        ) {
+            throw new DomainException(
+                'La confirmación existente no cerró su autorización negativa.'
+            );
+        }
+
+        $incident = InventoryNegativeIncident::query()
+            ->where('organization_id', $movement->organization_id)
+            ->where('inventory_movement_id', $movement->id)
+            ->where('inventory_negative_request_id', $request->id)
+            ->where('inventory_negative_override_id', $override->id)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $incident) {
+            throw new DomainException(
+                'La confirmación negativa existente no posee incidencia.'
+            );
+        }
+
+        return new InventoryNegativeConfirmationResult(
+            movement: $movement->load('lines'),
+            request: $request->load('lines'),
+            override: $override,
+            incident: $incident->load(['lines', 'statusHistory']),
+            invalidated: false
+        );
+    }
+
+    private function invalidateNegativeAuthorization(
+        InventoryMovement $movement,
+        InventoryNegativeRequest $request,
+        InventoryNegativeOverride $override,
+        string $reason
+    ): InventoryNegativeConfirmationResult {
+        $invalidatedAt = now();
+
+        $override->forceFill([
+            'status' => InventoryNegativeOverrideStatus::Invalidated,
+            'invalidated_at' => $invalidatedAt,
+            'invalidation_reason' => $reason,
+        ])->save();
+        $request->forceFill([
+            'status' => InventoryNegativeRequestStatus::Invalidated,
+            'invalidated_at' => $invalidatedAt,
+            'invalidation_reason' => $reason,
+        ])->save();
+
+        return new InventoryNegativeConfirmationResult(
+            movement: $movement->refresh()->load('lines'),
+            request: $request->refresh()->load('lines'),
+            override: $override->refresh(),
+            incident: null,
+            invalidated: true
+        );
     }
 
     private function lockActiveOrganization(int $organizationId): void

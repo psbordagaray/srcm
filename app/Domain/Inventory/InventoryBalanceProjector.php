@@ -14,10 +14,34 @@ final class InventoryBalanceProjector
         $this->applyMany([$movement]);
     }
 
+    public function applyAuthorizedNegative(
+        InventoryMovement $movement,
+        InventoryNegativeAuthorizationSnapshot $snapshot
+    ): void {
+        if (! $snapshot->requiresOverride()) {
+            throw new DomainException(
+                'La autorización no contiene ningún déficit incremental.'
+            );
+        }
+
+        $this->applyManyInternal([$movement], $snapshot);
+    }
+
     /**
      * @param iterable<InventoryMovement> $movements
      */
     public function applyMany(iterable $movements): void
+    {
+        $this->applyManyInternal($movements);
+    }
+
+    /**
+     * @param iterable<InventoryMovement> $movements
+     */
+    private function applyManyInternal(
+        iterable $movements,
+        ?InventoryNegativeAuthorizationSnapshot $snapshot = null
+    ): void
     {
         $effects = [];
 
@@ -51,12 +75,68 @@ final class InventoryBalanceProjector
 
         ksort($effects, SORT_STRING);
 
-        foreach ($effects as $effect) {
+        $authorized = [];
+
+        if ($snapshot) {
+            $organizationIds = collect($effects)
+                ->pluck('organization_id')
+                ->unique();
+
+            if ($organizationIds->count() !== 1) {
+                throw new DomainException(
+                    'La autorización sólo puede proyectar una organización.'
+                );
+            }
+
+            $authorized = $snapshot->positionsByKey(
+                (int) $organizationIds->first()
+            );
+
+            foreach ($authorized as $key => $position) {
+                if (! $position->createsNegative) {
+                    continue;
+                }
+
+                $effect = $effects[$key] ?? null;
+                $expectedDelta = InventoryQuantity::subtract(
+                    $position->incomingQuantity,
+                    $position->requestedQuantity
+                );
+
+                if (
+                    ! $effect
+                    || ! InventoryQuantity::isNegative($effect['delta'])
+                    || ! InventoryQuantity::equal(
+                        $effect['delta'],
+                        $expectedDelta
+                    )
+                    || ! InventoryQuantity::equal(
+                        InventoryQuantity::add(
+                            $position->currentQuantity,
+                            $effect['delta']
+                        ),
+                        $position->projectedQuantity
+                    )
+                ) {
+                    throw new DomainException(
+                        'El efecto negativo no coincide con el snapshot autorizado.'
+                    );
+                }
+            }
+        }
+
+        foreach ($effects as $key => $effect) {
             if (InventoryQuantity::equal($effect['delta'], '0')) {
                 continue;
             }
 
-            $this->applyEffect($effect);
+            $position = $authorized[$key] ?? null;
+
+            $this->applyEffect(
+                $effect,
+                $position?->createsNegative === true,
+                $position
+            );
         }
     }
 
@@ -147,7 +227,11 @@ final class InventoryBalanceProjector
      *     delta: string
      * } $effect
      */
-    private function applyEffect(array $effect): void
+    private function applyEffect(
+        array $effect,
+        bool $allowNegative = false,
+        ?InventoryNegativePositionSnapshot $authorizedPosition = null
+    ): void
     {
         $now = now();
         $dimension = [
@@ -184,6 +268,18 @@ final class InventoryBalanceProjector
             );
         }
 
+        if (
+            $authorizedPosition
+            && ! InventoryQuantity::equal(
+                $balance->quantity,
+                $authorizedPosition->currentQuantity
+            )
+        ) {
+            throw new DomainException(
+                'El saldo cambió después de emitir el Override.'
+            );
+        }
+
         $bindings = [
             $effect['delta'],
             $now,
@@ -191,7 +287,10 @@ final class InventoryBalanceProjector
         ];
         $negativeGuard = '';
 
-        if (InventoryQuantity::isNegative($effect['delta'])) {
+        if (
+            InventoryQuantity::isNegative($effect['delta'])
+            && ! $allowNegative
+        ) {
             $negativeGuard = ' AND quantity + ? >= 0';
             $bindings[] = $effect['delta'];
         }

@@ -107,6 +107,8 @@ final class InventoryNegativeRequestManager
                     'current_quantity' => $position->currentQuantity,
                     'requested_quantity' =>
                         $position->requestedQuantity,
+                    'incoming_quantity' =>
+                        $position->incomingQuantity,
                     'projected_quantity' =>
                         $position->projectedQuantity,
                     'current_deficit' => $position->currentDeficit,

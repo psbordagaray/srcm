@@ -42,9 +42,12 @@ final class InventoryNegativeSnapshotBuilder
         ]);
 
         $effects = [];
+        $incoming = [];
 
         foreach ($lines as $line) {
             if ($line->source_location_id === null) {
+                $this->addIncoming($incoming, $line);
+
                 continue;
             }
 
@@ -80,6 +83,8 @@ final class InventoryNegativeSnapshotBuilder
                     $effects[$key]['requested_quantity'],
                     $line->base_quantity
                 );
+
+            $this->addIncoming($incoming, $line);
         }
 
         if ($effects === []) {
@@ -112,12 +117,23 @@ final class InventoryNegativeSnapshotBuilder
             $requested = InventoryQuantity::positive(
                 $effect['requested_quantity']
             );
-            $projected = InventoryQuantity::subtract(
-                $current,
-                $requested
+            $incomingQuantity = InventoryQuantity::signed(
+                $incoming[$this->positionKey(
+                    $effect['catalog_product_id'],
+                    $effect['inventory_location_id'],
+                    $effect['condition']->value
+                )]['quantity'] ?? '0'
+            );
+            $projected = InventoryQuantity::add(
+                InventoryQuantity::subtract($current, $requested),
+                $incomingQuantity
             );
             $currentDeficit = InventoryQuantity::deficit($current);
             $projectedDeficit = InventoryQuantity::deficit($projected);
+            $incrementalDeficit = InventoryQuantity::subtract(
+                $projectedDeficit,
+                $currentDeficit
+            );
 
             if (
                 $balance
@@ -135,22 +151,23 @@ final class InventoryNegativeSnapshotBuilder
                 condition: $effect['condition'],
                 currentQuantity: $current,
                 requestedQuantity: $requested,
+                incomingQuantity: $incomingQuantity,
                 projectedQuantity: $projected,
                 currentDeficit: $currentDeficit,
                 projectedDeficit: $projectedDeficit,
-                incrementalDeficit: InventoryQuantity::subtract(
-                    $projectedDeficit,
-                    $currentDeficit
-                ),
+                incrementalDeficit: $incrementalDeficit,
                 baseUnitCode: $effect['base_unit_code'],
                 balanceVersion: (int) ($balance?->version ?? 0),
-                createsNegative: InventoryQuantity::isNegative($projected),
+                createsNegative: InventoryQuantity::isPositive(
+                    $incrementalDeficit
+                ),
             );
         }
 
         return new InventoryNegativeAuthorizationSnapshot(
             movementFingerprint: $movementFingerprint,
             snapshotFingerprint: $this->hash([
+                'snapshot_version' => 2,
                 'movement_fingerprint' => $movementFingerprint,
                 'positions' => array_map(
                     fn (InventoryNegativePositionSnapshot $position): array =>
@@ -160,6 +177,50 @@ final class InventoryNegativeSnapshotBuilder
             ]),
             positions: $positions,
         );
+    }
+
+    /**
+     * @param array<string, array{quantity: string, base_unit_code: string}> $incoming
+     */
+    private function addIncoming(
+        array &$incoming,
+        InventoryMovementLine $line
+    ): void {
+        if ($line->destination_location_id === null) {
+            return;
+        }
+
+        $key = $this->positionKey(
+            (int) $line->catalog_product_id,
+            (int) $line->destination_location_id,
+            $line->condition->value
+        );
+
+        if (! isset($incoming[$key])) {
+            $incoming[$key] = [
+                'quantity' => '0.000000',
+                'base_unit_code' => $line->base_unit_code,
+            ];
+        }
+
+        if ($incoming[$key]['base_unit_code'] !== $line->base_unit_code) {
+            throw new DomainException(
+                'Una posición contiene unidades base incompatibles.'
+            );
+        }
+
+        $incoming[$key]['quantity'] = InventoryQuantity::add(
+            $incoming[$key]['quantity'],
+            $line->base_quantity
+        );
+    }
+
+    private function positionKey(
+        int $productId,
+        int $locationId,
+        string $condition
+    ): string {
+        return implode(':', [$productId, $locationId, $condition]);
     }
 
     /**

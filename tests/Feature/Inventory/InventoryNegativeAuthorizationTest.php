@@ -73,6 +73,21 @@ class InventoryNegativeAuthorizationTest extends TestCase
         $this->assertFalse(
             Gate::forUser($operator)->allows('override-inventory-negative')
         );
+        $this->assertTrue(
+            Gate::forUser($admin)->allows(
+                'view-inventory-negative-incidents'
+            )
+        );
+        $this->assertTrue(
+            Gate::forUser($admin)->allows(
+                'review-inventory-negative-incidents'
+            )
+        );
+        $this->assertFalse(
+            Gate::forUser($operator)->allows(
+                'view-inventory-negative-incidents'
+            )
+        );
     }
 
     public function test_request_is_idempotent_and_snapshots_all_sources(): void
@@ -136,6 +151,7 @@ class InventoryNegativeAuthorizationTest extends TestCase
 
         $this->assertSame('5.000000', $negative->current_quantity);
         $this->assertSame('6.500000', $negative->requested_quantity);
+        $this->assertSame('0.000000', $negative->incoming_quantity);
         $this->assertSame('-1.500000', $negative->projected_quantity);
         $this->assertSame('1.500000', $negative->incremental_deficit);
         $this->assertSame($firstBalance->version, $negative->balance_version);
@@ -229,6 +245,21 @@ class InventoryNegativeAuthorizationTest extends TestCase
         );
         $this->assertDatabaseCount('inventory_negative_overrides', 1);
 
+        $competingRequest = app(InventoryNegativeRequestManager::class)
+            ->request(
+                $movement,
+                'Solicitud competidora',
+                $operator
+            );
+        $this->assertDomainFailure(
+            fn () => $issuer->issue($competingRequest, $admin)
+        );
+        $this->assertSame(
+            InventoryNegativeRequestStatus::Pending,
+            $competingRequest->refresh()->status
+        );
+        $this->assertDatabaseCount('inventory_negative_overrides', 1);
+
         $this->assertDomainFailure(
             fn () => app(InventoryMovementConfirmer::class)
                 ->confirm($movement, $operator)
@@ -238,6 +269,24 @@ class InventoryNegativeAuthorizationTest extends TestCase
             $movement->refresh()->status
         );
         $this->assertSame('1.000000', $balance->refresh()->quantity);
+        $this->assertSame(
+            InventoryNegativeOverrideStatus::Active,
+            $first->override->refresh()->status
+        );
+
+        $balance->forceFill([
+            'quantity' => '10.000000',
+            'version' => $balance->version + 1,
+        ])->save();
+
+        $this->assertDomainFailure(
+            fn () => app(InventoryMovementConfirmer::class)
+                ->confirm($movement, $operator)
+        );
+        $this->assertSame(
+            InventoryMovementStatus::Draft,
+            $movement->refresh()->status
+        );
         $this->assertSame(
             InventoryNegativeOverrideStatus::Active,
             $first->override->refresh()->status
@@ -396,6 +445,10 @@ class InventoryNegativeAuthorizationTest extends TestCase
         );
         $this->assertSame($admin->id, $revoked->revoked_by_user_id);
         $this->assertSame('Decisión retirada', $revoked->revocation_reason);
+        $this->assertSame(
+            InventoryNegativeRequestStatus::Invalidated,
+            $approvedRequest->refresh()->status
+        );
     }
 
     public function test_database_rejects_authorization_tampering(): void
