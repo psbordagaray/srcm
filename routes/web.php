@@ -5,6 +5,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\InventoryAvailabilityController;
 use App\Http\Controllers\InventoryLocationController;
+use App\Http\Controllers\InventoryNegativeIncidentController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierOfferController;
 use App\Http\Controllers\CompatibilityController;
@@ -251,6 +252,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'index',
                     ]
                 )->name('inventory-availability.index');
+            });
+
+            Route::middleware(
+                'can:view-inventory-negative-incidents'
+            )->group(function () {
+                Route::get(
+                    'inventory/negative-incidents',
+                    [
+                        InventoryNegativeIncidentController::class,
+                        'index',
+                    ]
+                )->name('inventory-negative-incidents.index');
             });
 
             Route::middleware(

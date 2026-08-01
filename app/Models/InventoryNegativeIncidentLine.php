@@ -97,6 +97,22 @@ class InventoryNegativeIncidentLine extends Model
         );
     }
 
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(
+            CatalogProduct::class,
+            'catalog_product_id'
+        );
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(
+            InventoryLocation::class,
+            'inventory_location_id'
+        );
+    }
+
     public function regularizations(): HasMany
     {
         return $this->hasMany(

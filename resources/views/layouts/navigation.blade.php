@@ -80,6 +80,17 @@
             'disabled' => $currentOrganization === null
                 || ! request()->user()?->can('view-inventory'),
         ],
+        [
+            'label' => 'Stock negativo',
+            'route' => 'inventory-negative-incidents.index',
+            'active' => 'inventory-negative-incidents.*',
+            'icon' => 'receipt',
+            'status' => 'Solo admin',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can(
+                    'view-inventory-negative-incidents'
+                ),
+        ],
         ['label' => 'Clientes', 'disabled' => true, 'icon' => 'users'],
         [
             'label' => 'Proveedores',
