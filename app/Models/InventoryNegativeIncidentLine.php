@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Domain\Inventory\InventoryQuantity;
 use App\Enums\InventoryCondition;
 use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InventoryNegativeIncidentLine extends Model
 {
@@ -34,10 +36,32 @@ class InventoryNegativeIncidentLine extends Model
 
     protected static function booted(): void
     {
-        static::updating(function (): void {
-            throw new DomainException(
-                'La línea de incidencia aún no admite regularizaciones.'
-            );
+        static::updating(function (self $line): void {
+            if ($line->isDirty(array_diff(
+                array_keys($line->getAttributes()),
+                ['pending_deficit', 'regularized_at', 'updated_at']
+            ))) {
+                throw new DomainException(
+                    'El origen de una línea de incidencia es inmutable.'
+                );
+            }
+
+            $previous = $line->getRawOriginal('pending_deficit');
+            $pending = $line->pending_deficit;
+
+            if (
+                ! InventoryQuantity::lessThanOrEqual($pending, $previous)
+                || InventoryQuantity::equal($pending, $previous)
+                || InventoryQuantity::isNegative($pending)
+                || (
+                    InventoryQuantity::equal($pending, '0')
+                    !== ($line->regularized_at !== null)
+                )
+            ) {
+                throw new DomainException(
+                    'La regularización de la línea es inválida.'
+                );
+            }
         });
 
         static::deleting(function (): void {
@@ -70,6 +94,14 @@ class InventoryNegativeIncidentLine extends Model
         return $this->belongsTo(
             InventoryNegativeIncident::class,
             'inventory_negative_incident_id'
+        );
+    }
+
+    public function regularizations(): HasMany
+    {
+        return $this->hasMany(
+            InventoryNegativeRegularization::class,
+            'inventory_negative_incident_line_id'
         );
     }
 }

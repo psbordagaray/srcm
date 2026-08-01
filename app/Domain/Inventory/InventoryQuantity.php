@@ -191,6 +191,27 @@ final class InventoryQuantity
         );
     }
 
+    public static function lessThanOrEqual(
+        mixed $left,
+        mixed $right
+    ): bool {
+        return BigDecimal::of(
+            self::signed($left)
+        )->isLessThanOrEqualTo(
+            self::signed($right)
+        );
+    }
+
+    public static function minimum(mixed $left, mixed $right): string
+    {
+        $left = self::signed($left);
+        $right = self::signed($right);
+
+        return BigDecimal::of($left)->isLessThanOrEqualTo($right)
+            ? $left
+            : $right;
+    }
+
     public static function nonNegative(mixed $value): string
     {
         $quantity = self::signed($value);

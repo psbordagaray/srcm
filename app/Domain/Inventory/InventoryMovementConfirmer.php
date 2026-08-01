@@ -24,7 +24,8 @@ final class InventoryMovementConfirmer
     public function __construct(
         private readonly InventoryBalanceProjector $projector,
         private readonly InventoryNegativeSnapshotBuilder $negativeSnapshots,
-        private readonly InventoryNegativeIncidentRecorder $negativeIncidents
+        private readonly InventoryNegativeIncidentRecorder $negativeIncidents,
+        private readonly InventoryNegativeRegularizer $negativeRegularizer
     ) {
     }
 
@@ -214,6 +215,10 @@ final class InventoryMovementConfirmer
                 $snapshot,
                 $actor
             );
+            $this->negativeRegularizer->apply(
+                [$lockedMovement],
+                $actor
+            );
             $confirmedAt = now();
 
             $lockedMovement->forceFill([
@@ -333,6 +338,10 @@ final class InventoryMovementConfirmer
             $lockedMovement->setRelation('lines', $lines);
 
             $this->projector->apply($lockedMovement);
+            $this->negativeRegularizer->apply(
+                [$lockedMovement],
+                $actor
+            );
 
             $lockedMovement->forceFill([
                 'status' => InventoryMovementStatus::Confirmed,
@@ -449,6 +458,10 @@ final class InventoryMovementConfirmer
                 $lockedReversal,
                 $lockedReplacement,
             ]);
+            $this->negativeRegularizer->apply([
+                $lockedReversal,
+                $lockedReplacement,
+            ], $actor);
 
             $confirmedAt = now();
 
