@@ -23,6 +23,33 @@
             </a>
         </div>
 
+        @if(session('success'))
+            <div
+                role="status"
+                class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100"
+            >
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div
+                role="alert"
+                class="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100"
+            >
+                {{ session('error') }}
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div
+                role="alert"
+                class="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100"
+            >
+                {{ $errors->first() }}
+            </div>
+        @endif
+
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <article class="sulu-card p-5">
                 <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">
@@ -273,6 +300,120 @@
                                     </tbody>
                                 </table>
                             </div>
+
+                            @can('review-inventory-negative-incidents')
+                                <div class="mt-5 rounded-xl border border-slate-800 bg-slate-950/40 p-4">
+                                    <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                                        <div>
+                                            <h3 class="text-sm font-semibold text-white">
+                                                Gestión administrativa
+                                            </h3>
+
+                                            @if($incident->reviewed_at !== null)
+                                                <p class="mt-1 text-xs text-slate-400">
+                                                    Revisó {{ $incident->reviewedBy?->name ?? 'Usuario ausente' }} el {{ $incident->reviewed_at->format('d/m/Y H:i') }}.
+                                                </p>
+                                                <p class="mt-1 text-xs text-slate-300">
+                                                    {{ $incident->review_reason }}
+                                                </p>
+                                            @endif
+
+                                            @if($incident->resolved_at !== null)
+                                                <p class="mt-1 text-xs text-emerald-300">
+                                                    Cerró {{ $incident->resolvedBy?->name ?? 'Usuario ausente' }} el {{ $incident->resolved_at->format('d/m/Y H:i') }}.
+                                                </p>
+                                                <p class="mt-1 text-xs text-slate-300">
+                                                    {{ $incident->resolution_reason }}
+                                                </p>
+                                            @elseif($row['pendingLines'] > 0)
+                                                <p class="mt-1 text-xs text-slate-400">
+                                                    El cierre se habilita cuando todas las líneas queden físicamente regularizadas.
+                                                </p>
+                                            @else
+                                                <p class="mt-1 text-xs text-emerald-300">
+                                                    La incidencia ya admite cierre administrativo.
+                                                </p>
+                                            @endif
+                                        </div>
+
+                                        <div class="grid w-full gap-3 xl:max-w-2xl xl:grid-cols-2">
+                                            @if($row['canReview'])
+                                                <details class="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+                                                    <summary class="cursor-pointer text-sm font-semibold text-amber-200">
+                                                        Marcar en revisión
+                                                    </summary>
+
+                                                    <form
+                                                        method="POST"
+                                                        action="{{ route('inventory-negative-incidents.review', ['inventoryNegativeIncident' => $incident->public_id]) }}"
+                                                        class="mt-3 space-y-3"
+                                                    >
+                                                        @csrf
+                                                        @method('PATCH')
+
+                                                        <label class="block text-xs font-semibold text-slate-300">
+                                                            Motivo de revisión
+                                                            <textarea
+                                                                name="reason"
+                                                                rows="3"
+                                                                required
+                                                                minlength="10"
+                                                                maxlength="1000"
+                                                                class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white placeholder:text-slate-500 focus:border-amber-400 focus:ring-amber-400"
+                                                                placeholder="Describí el control administrativo realizado."
+                                                            ></textarea>
+                                                        </label>
+
+                                                        <button
+                                                            type="submit"
+                                                            class="rounded-xl bg-amber-300 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-amber-200"
+                                                        >
+                                                            Confirmar revisión
+                                                        </button>
+                                                    </form>
+                                                </details>
+                                            @endif
+
+                                            @if($row['canResolve'])
+                                                <details class="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3">
+                                                    <summary class="cursor-pointer text-sm font-semibold text-emerald-200">
+                                                        Cerrar incidencia
+                                                    </summary>
+
+                                                    <form
+                                                        method="POST"
+                                                        action="{{ route('inventory-negative-incidents.resolve', ['inventoryNegativeIncident' => $incident->public_id]) }}"
+                                                        class="mt-3 space-y-3"
+                                                    >
+                                                        @csrf
+                                                        @method('PATCH')
+
+                                                        <label class="block text-xs font-semibold text-slate-300">
+                                                            Motivo de resolución
+                                                            <textarea
+                                                                name="reason"
+                                                                rows="3"
+                                                                required
+                                                                minlength="10"
+                                                                maxlength="1000"
+                                                                class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white placeholder:text-slate-500 focus:border-emerald-400 focus:ring-emerald-400"
+                                                                placeholder="Documentá el cierre administrativo."
+                                                            ></textarea>
+                                                        </label>
+
+                                                        <button
+                                                            type="submit"
+                                                            class="rounded-xl bg-emerald-300 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-emerald-200"
+                                                        >
+                                                            Confirmar cierre
+                                                        </button>
+                                                    </form>
+                                                </details>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endcan
                         </article>
                     @endforeach
                 </div>

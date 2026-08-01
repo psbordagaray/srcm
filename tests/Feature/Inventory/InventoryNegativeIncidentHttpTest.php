@@ -360,6 +360,296 @@ class InventoryNegativeIncidentHttpTest extends TestCase
         );
     }
 
+    public function test_admin_may_mark_an_incident_under_review_with_attribution(): void
+    {
+        $organization = $this->organization();
+        $operator = $this->user($organization, UserRole::Operator);
+        $admin = $this->user($organization, UserRole::Admin);
+        $product = $this->product(
+            'Incidencia para revisión HTTP',
+            'NEG-UI-REVIEW'
+        );
+        $location = $this->location($organization);
+
+        $this->balance(
+            $organization,
+            $product,
+            $location,
+            InventoryCondition::New
+        );
+        $incident = $this->incident(
+            $operator,
+            $admin,
+            $product,
+            $location,
+            '2',
+            InventoryCondition::New,
+            'negative:http:review'
+        );
+
+        $this->actingAs($admin)
+            ->patch($this->reviewRoute($incident), [
+                'reason' => '  Control   documental iniciado  ',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas(
+                'success',
+                'La incidencia quedó marcada en revisión.'
+            );
+
+        $incident->refresh();
+
+        $this->assertSame(
+            InventoryNegativeIncidentStatus::UnderReview,
+            $incident->status
+        );
+        $this->assertSame($admin->id, $incident->reviewed_by_user_id);
+        $this->assertNotNull($incident->reviewed_at);
+        $this->assertSame(
+            'Control documental iniciado',
+            $incident->review_reason
+        );
+        $this->assertDatabaseHas(
+            'inventory_negative_incident_status_histories',
+            [
+                'organization_id' => $organization->id,
+                'inventory_negative_incident_id' => $incident->id,
+                'from_status' =>
+                    InventoryNegativeIncidentStatus::Open->value,
+                'to_status' =>
+                    InventoryNegativeIncidentStatus::UnderReview->value,
+                'changed_by_user_id' => $admin->id,
+                'reason' => 'Control documental iniciado',
+            ]
+        );
+
+        $this->actingAs($admin)
+            ->get(route('inventory-negative-incidents.index'))
+            ->assertOk()
+            ->assertSee('En revisión')
+            ->assertSee('Control documental iniciado')
+            ->assertSee($admin->name);
+    }
+
+    public function test_resolution_rejects_invalid_reason_and_pending_deficit(): void
+    {
+        $organization = $this->organization();
+        $operator = $this->user($organization, UserRole::Operator);
+        $admin = $this->user($organization, UserRole::Admin);
+        $product = $this->product(
+            'Incidencia todavía pendiente',
+            'NEG-UI-PENDING-CLOSE'
+        );
+        $location = $this->location($organization);
+
+        $this->balance(
+            $organization,
+            $product,
+            $location,
+            InventoryCondition::New
+        );
+        $incident = $this->incident(
+            $operator,
+            $admin,
+            $product,
+            $location,
+            '3',
+            InventoryCondition::New,
+            'negative:http:pending-close'
+        );
+
+        $this->actingAs($admin)
+            ->patch($this->resolveRoute($incident), ['reason' => 'breve'])
+            ->assertSessionHasErrors('reason');
+
+        $this->actingAs($admin)
+            ->patch($this->resolveRoute($incident), [
+                'reason' => 'Intento de cierre aún no regularizado',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas(
+                'error',
+                'La incidencia debe estar físicamente regularizada antes de resolverse.'
+            );
+
+        $incident->refresh();
+
+        $this->assertSame(
+            InventoryNegativeIncidentStatus::Open,
+            $incident->status
+        );
+        $this->assertNull($incident->resolved_by_user_id);
+        $this->assertNull($incident->resolved_at);
+        $this->assertNull($incident->resolution_reason);
+        $this->assertSame(
+            1,
+            $incident->statusHistory()->count()
+        );
+    }
+
+    public function test_regularized_incident_may_be_resolved_once(): void
+    {
+        $organization = $this->organization();
+        $operator = $this->user($organization, UserRole::Operator);
+        $admin = $this->user($organization, UserRole::Admin);
+        $product = $this->product(
+            'Incidencia regularizada para cierre',
+            'NEG-UI-CLOSE'
+        );
+        $location = $this->location($organization);
+
+        $this->balance(
+            $organization,
+            $product,
+            $location,
+            InventoryCondition::New
+        );
+        $incident = $this->incident(
+            $operator,
+            $admin,
+            $product,
+            $location,
+            '2',
+            InventoryCondition::New,
+            'negative:http:close'
+        );
+
+        $this->actingAs($admin)
+            ->patch($this->reviewRoute($incident), [
+                'reason' => 'Revisión previa al ingreso regularizador',
+            ])
+            ->assertSessionHas('success');
+
+        $receipt = $this->movement(
+            $operator,
+            $product,
+            $location,
+            '2',
+            InventoryCondition::New,
+            'negative:http:close:receipt',
+            InventoryMovementType::Receipt
+        );
+        app(InventoryMovementConfirmer::class)->confirm(
+            $receipt,
+            $operator
+        );
+
+        $incident->refresh();
+        $this->assertNotNull($incident->regularized_at);
+        $this->assertSame(
+            '0.000000',
+            $incident->lines()->firstOrFail()->pending_deficit
+        );
+
+        $payload = [
+            'reason' => 'Saldo repuesto y documentación controlada',
+        ];
+
+        $this->actingAs($admin)
+            ->patch($this->resolveRoute($incident), $payload)
+            ->assertRedirect()
+            ->assertSessionHas(
+                'success',
+                'La incidencia quedó resuelta administrativamente.'
+            );
+
+        $incident->refresh();
+        $this->assertSame(
+            InventoryNegativeIncidentStatus::Resolved,
+            $incident->status
+        );
+        $this->assertSame($admin->id, $incident->resolved_by_user_id);
+        $this->assertNotNull($incident->resolved_at);
+        $this->assertSame(
+            $payload['reason'],
+            $incident->resolution_reason
+        );
+
+        $historyCount = $incident->statusHistory()->count();
+
+        $this->actingAs($admin)
+            ->patch($this->resolveRoute($incident), $payload)
+            ->assertSessionHas('success');
+
+        $this->assertSame(
+            $historyCount,
+            $incident->statusHistory()->count()
+        );
+        $this->assertDatabaseHas(
+            'inventory_negative_incident_status_histories',
+            [
+                'inventory_negative_incident_id' => $incident->id,
+                'from_status' =>
+                    InventoryNegativeIncidentStatus::UnderReview->value,
+                'to_status' =>
+                    InventoryNegativeIncidentStatus::Resolved->value,
+                'changed_by_user_id' => $admin->id,
+                'reason' => $payload['reason'],
+            ]
+        );
+    }
+
+    public function test_transition_routes_reject_non_admin_and_foreign_tenant(): void
+    {
+        $organization = $this->organization();
+        $other = $this->newOrganization('Tenant ajeno al cierre');
+        $operator = $this->user($organization, UserRole::Operator);
+        $admin = $this->user($organization, UserRole::Admin);
+        $foreignAdmin = $this->user($other, UserRole::Admin);
+        $product = $this->product(
+            'Incidencia protegida por tenant',
+            'NEG-UI-SCOPED-ACTION'
+        );
+        $location = $this->location($organization);
+
+        $this->balance(
+            $organization,
+            $product,
+            $location,
+            InventoryCondition::New
+        );
+        $incident = $this->incident(
+            $operator,
+            $admin,
+            $product,
+            $location,
+            '1',
+            InventoryCondition::New,
+            'negative:http:scoped-action'
+        );
+        $payload = ['reason' => 'Control de acceso administrativo'];
+
+        $this->actingAs($operator)
+            ->patch($this->reviewRoute($incident), $payload)
+            ->assertForbidden();
+
+        $this->actingAs($foreignAdmin)
+            ->patch($this->reviewRoute($incident), $payload)
+            ->assertNotFound();
+
+        $this->assertSame(
+            InventoryNegativeIncidentStatus::Open,
+            $incident->refresh()->status
+        );
+
+        foreach (['review', 'resolve'] as $action) {
+            $route = app('router')->getRoutes()->getByName(
+                'inventory-negative-incidents.'.$action
+            );
+
+            $this->assertNotNull($route);
+            $this->assertSame(['PATCH'], $route->methods());
+            $this->assertContains(
+                RequireOrganization::class,
+                $route->gatherMiddleware()
+            );
+            $this->assertContains(
+                'can:review-inventory-negative-incidents',
+                $route->gatherMiddleware()
+            );
+        }
+    }
+
     private function organization(): Organization
     {
         return Organization::query()
@@ -508,24 +798,49 @@ class InventoryNegativeIncidentHttpTest extends TestCase
         InventoryLocation $location,
         string $quantity,
         InventoryCondition $condition,
-        string $key
+        string $key,
+        InventoryMovementType $type = InventoryMovementType::Issue
     ): InventoryMovement {
         return app(InventoryMovementCreator::class)->create(
             new InventoryMovementDraftData(
-                type: InventoryMovementType::Issue,
+                type: $type,
                 effectiveAt: now(),
-                reason: 'Salida excepcional para panel de incidencias',
+                reason: $type === InventoryMovementType::Receipt
+                    ? 'Ingreso para regularización de incidencia'
+                    : 'Salida excepcional para panel de incidencias',
                 idempotencyKey: $key,
                 lines: [new InventoryMovementLineData(
                     catalogProductId: $product->id,
                     condition: $condition,
                     enteredQuantity: $quantity,
                     enteredUnitCode: $product->base_unit_code,
-                    sourceLocationId: $location->id,
-                    destinationLocationId: null
+                    sourceLocationId:
+                        $type === InventoryMovementType::Receipt
+                            ? null
+                            : $location->id,
+                    destinationLocationId:
+                        $type === InventoryMovementType::Receipt
+                            ? $location->id
+                            : null
                 )]
             ),
             $actor
         );
+    }
+
+    private function reviewRoute(
+        InventoryNegativeIncident $incident
+    ): string {
+        return route('inventory-negative-incidents.review', [
+            'inventoryNegativeIncident' => $incident->public_id,
+        ]);
+    }
+
+    private function resolveRoute(
+        InventoryNegativeIncident $incident
+    ): string {
+        return route('inventory-negative-incidents.resolve', [
+            'inventoryNegativeIncident' => $incident->public_id,
+        ]);
     }
 }

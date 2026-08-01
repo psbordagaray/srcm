@@ -267,6 +267,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
             });
 
             Route::middleware(
+                'can:review-inventory-negative-incidents'
+            )->group(function () {
+                Route::patch(
+                    'inventory/negative-incidents/{inventoryNegativeIncident:public_id}/review',
+                    [
+                        InventoryNegativeIncidentController::class,
+                        'review',
+                    ]
+                )
+                    ->whereUuid('inventoryNegativeIncident')
+                    ->name('inventory-negative-incidents.review');
+
+                Route::patch(
+                    'inventory/negative-incidents/{inventoryNegativeIncident:public_id}/resolve',
+                    [
+                        InventoryNegativeIncidentController::class,
+                        'resolve',
+                    ]
+                )
+                    ->whereUuid('inventoryNegativeIncident')
+                    ->name('inventory-negative-incidents.resolve');
+            });
+
+            Route::middleware(
                 'can:manage-inventory-locations'
             )->group(function () {
                 Route::get(

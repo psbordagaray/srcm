@@ -3,19 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Inventory\InventoryQuantity;
+use App\Domain\Inventory\InventoryNegativeIncidentLifecycle;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\InventoryBaseUnit;
 use App\Enums\InventoryCondition;
 use App\Enums\InventoryNegativeIncidentStatus;
 use App\Enums\InventoryNegativeOverrideStatus;
 use App\Enums\InventoryNegativeRequestStatus;
+use App\Http\Requests\TransitionInventoryNegativeIncidentRequest;
 use App\Models\CatalogProduct;
 use App\Models\InventoryLocation;
 use App\Models\InventoryNegativeIncident;
 use App\Models\InventoryNegativeIncidentLine;
 use App\Models\InventoryNegativeOverride;
 use App\Models\InventoryNegativeRequest;
+use DomainException;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -56,6 +60,8 @@ class InventoryNegativeIncidentController extends Controller
             ->with([
                 'requestedBy:id,name',
                 'grantedBy:id,name',
+                'reviewedBy:id,name',
+                'resolvedBy:id,name',
                 'lines.product',
                 'lines.location:id,name',
             ]);
@@ -141,6 +147,52 @@ class InventoryNegativeIncidentController extends Controller
                 'attention',
                 'locationId'
             )
+        );
+    }
+
+    public function review(
+        TransitionInventoryNegativeIncidentRequest $request,
+        InventoryNegativeIncident $inventoryNegativeIncident,
+        InventoryNegativeIncidentLifecycle $lifecycle
+    ): RedirectResponse {
+        try {
+            $lifecycle->markUnderReview(
+                $inventoryNegativeIncident,
+                (string) $request->validated('reason'),
+                $request->user()
+            );
+        } catch (DomainException $exception) {
+            return back()
+                ->withInput()
+                ->with('error', $exception->getMessage());
+        }
+
+        return back()->with(
+            'success',
+            'La incidencia quedó marcada en revisión.'
+        );
+    }
+
+    public function resolve(
+        TransitionInventoryNegativeIncidentRequest $request,
+        InventoryNegativeIncident $inventoryNegativeIncident,
+        InventoryNegativeIncidentLifecycle $lifecycle
+    ): RedirectResponse {
+        try {
+            $lifecycle->resolve(
+                $inventoryNegativeIncident,
+                (string) $request->validated('reason'),
+                $request->user()
+            );
+        } catch (DomainException $exception) {
+            return back()
+                ->withInput()
+                ->with('error', $exception->getMessage());
+        }
+
+        return back()->with(
+            'success',
+            'La incidencia quedó resuelta administrativamente.'
         );
     }
 
@@ -328,6 +380,18 @@ class InventoryNegativeIncidentController extends Controller
             'statusClass' => $this->statusClass($incident->status),
             'openedAt' => $incident->opened_at->format('d/m/Y H:i'),
             'pendingLines' => $lines->where('pending', true)->count(),
+            'canReview' => $incident->status
+                === InventoryNegativeIncidentStatus::Open,
+            'canResolve' => in_array(
+                $incident->status,
+                [
+                    InventoryNegativeIncidentStatus::Open,
+                    InventoryNegativeIncidentStatus::UnderReview,
+                ],
+                true
+            )
+                && $lines->where('pending', true)->isEmpty()
+                && $incident->regularized_at !== null,
             'lines' => $lines,
         ];
     }
