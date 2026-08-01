@@ -90,6 +90,16 @@ enum UserRole: string
         return $this === self::Admin;
     }
 
+    public function canRequestInventoryNegative(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
+    public function canOverrideInventoryNegative(): bool
+    {
+        return $this === self::Admin;
+    }
+
     public function canDraftInventoryMovement(
         InventoryMovementType $type
     ): bool {

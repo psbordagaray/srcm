@@ -110,6 +110,10 @@ class AppServiceProvider extends ServiceProvider
             'adjust-inventory' => 'canAdjustInventory',
             'correct-inventory' => 'canCorrectInventory',
             'rebuild-inventory' => 'canRebuildInventory',
+            'request-inventory-negative' =>
+                'canRequestInventoryNegative',
+            'override-inventory-negative' =>
+                'canOverrideInventoryNegative',
         ] as $ability => $method) {
             Gate::define(
                 $ability,

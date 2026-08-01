@@ -158,6 +158,18 @@ final class InventoryQuantity
         );
     }
 
+    public static function subtract(mixed $left, mixed $right): string
+    {
+        return (string) BigDecimal::of(
+            self::signed($left)
+        )->minus(
+            self::signed($right)
+        )->toScale(
+            self::SCALE,
+            RoundingMode::Unnecessary
+        );
+    }
+
     public static function equal(mixed $left, mixed $right): bool
     {
         return BigDecimal::of(
