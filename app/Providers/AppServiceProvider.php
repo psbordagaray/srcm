@@ -105,6 +105,8 @@ class AppServiceProvider extends ServiceProvider
             'receive-inventory' => 'canReceiveInventory',
             'issue-inventory' => 'canIssueInventory',
             'transfer-inventory' => 'canTransferInventory',
+            'draft-inventory-movements' =>
+                'canDraftAnyInventoryMovement',
             'process-inventory-returns' =>
                 'canProcessInventoryReturns',
             'adjust-inventory' => 'canAdjustInventory',

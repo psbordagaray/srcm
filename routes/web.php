@@ -5,6 +5,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\InventoryAvailabilityController;
 use App\Http\Controllers\InventoryLocationController;
+use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\InventoryNegativeIncidentController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierOfferController;
@@ -234,6 +235,24 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::middleware('can:view-inventory')
                 ->group(function () {
                     Route::get(
+                        'inventory/movements',
+                        [
+                            InventoryMovementController::class,
+                            'index',
+                        ]
+                    )->name('inventory-movements.index');
+
+                    Route::patch(
+                        'inventory/movements/{inventoryMovement:public_id}/confirm',
+                        [
+                            InventoryMovementController::class,
+                            'confirm',
+                        ]
+                    )
+                        ->whereUuid('inventoryMovement')
+                        ->name('inventory-movements.confirm');
+
+                    Route::get(
                         'inventory/locations',
                         [
                             InventoryLocationController::class,
@@ -241,6 +260,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ]
                     )->name('inventory-locations.index');
                 });
+
+            Route::middleware(
+                'can:draft-inventory-movements'
+            )->group(function () {
+                Route::get(
+                    'inventory/movements/create',
+                    [
+                        InventoryMovementController::class,
+                        'create',
+                    ]
+                )->name('inventory-movements.create');
+
+                Route::post(
+                    'inventory/movements',
+                    [
+                        InventoryMovementController::class,
+                        'store',
+                    ]
+                )->name('inventory-movements.store');
+            });
 
             Route::middleware(
                 'can:view-inventory-availability'

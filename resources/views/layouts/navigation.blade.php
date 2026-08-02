@@ -63,6 +63,14 @@
             'disabled' => $currentOrganization === null,
         ],
         [
+            'label' => 'Movimientos',
+            'route' => 'inventory-movements.index',
+            'active' => 'inventory-movements.*',
+            'icon' => 'receipt',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('view-inventory'),
+        ],
+        [
             'label' => 'Disponibilidad',
             'route' => 'inventory-availability.index',
             'active' => 'inventory-availability.*',

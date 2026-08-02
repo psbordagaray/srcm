@@ -131,6 +131,17 @@ enum UserRole: string
         };
     }
 
+    public function canDraftAnyInventoryMovement(): bool
+    {
+        foreach (InventoryMovementType::cases() as $type) {
+            if ($this->canDraftInventoryMovement($type)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function canConfirmInventoryMovement(
         InventoryMovementType $type
     ): bool {
