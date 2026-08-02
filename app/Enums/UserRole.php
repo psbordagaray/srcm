@@ -50,6 +50,21 @@ enum UserRole: string
         return $this !== self::Viewer;
     }
 
+    public function canRecordServiceDiagnostics(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
+    public function canIssueServiceQuotes(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
+    public function canRecordServiceQuoteDecisions(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
     public function canCancelServiceOrders(): bool
     {
         return $this === self::Admin;

@@ -55,12 +55,20 @@ class ServiceOrder extends Model
                 'created_by_user_id',
                 'received_at',
                 'promised_at',
-                'status',
                 'idempotency_key',
                 'metadata',
             ])) {
                 throw new DomainException(
                     'La orden recibida es inmutable hasta registrar una transición.'
+                );
+            }
+
+            if (
+                $order->isDirty('status')
+                && ! $order->allowsTransitionTo($order->status)
+            ) {
+                throw new DomainException(
+                    'La transición solicitada no es válida para la orden.'
                 );
             }
         });
@@ -138,8 +146,43 @@ class ServiceOrder extends Model
             ->orderBy('id');
     }
 
+    public function diagnostics(): HasMany
+    {
+        return $this->hasMany(ServiceDiagnostic::class)
+            ->orderBy('revision');
+    }
+
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(ServiceQuote::class)
+            ->orderBy('revision');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function allowsTransitionTo(ServiceOrderStatus $target): bool
+    {
+        $original = ServiceOrderStatus::from(
+            (string) $this->getRawOriginal('status')
+        );
+
+        return match ($original) {
+            ServiceOrderStatus::Received =>
+                $target === ServiceOrderStatus::Diagnosing,
+            ServiceOrderStatus::Diagnosing =>
+                $target === ServiceOrderStatus::AwaitingApproval,
+            ServiceOrderStatus::AwaitingApproval => in_array(
+                $target,
+                [
+                    ServiceOrderStatus::InProgress,
+                    ServiceOrderStatus::Diagnosing,
+                ],
+                true
+            ),
+            default => false,
+        };
     }
 }

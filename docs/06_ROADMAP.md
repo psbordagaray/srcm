@@ -23,9 +23,9 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
 - Importación Excel/CSV
 - Usuarios y permisos
 - Reparaciones Core
-  - activos e identificadores técnicos
-  - órdenes de servicio e ingreso documentado
-  - diagnóstico y presupuestos versionados
+  - activos e identificadores técnicos — Core 1 completado
+  - órdenes de servicio e ingreso documentado — Core 1 completado
+  - diagnóstico y presupuestos versionados — Core 2 completado
   - trabajo propio y tercerizado
   - repuestos y compras afectados a la orden
   - custodia, control de calidad, entrega y garantías
