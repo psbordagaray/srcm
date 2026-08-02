@@ -118,6 +118,21 @@
                                     </dl>
 
                                     <div class="flex max-w-md flex-col gap-2 xl:items-end">
+                                        @if($movement->reversal && $movement->replacement)
+                                            <div class="rounded-xl border border-amber-400/25 bg-amber-400/5 px-3 py-2 text-xs text-amber-100">
+                                                <span class="font-semibold">Movimiento corregido</span>
+                                                <span class="mt-1 block text-amber-200/70">Reverso #{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($movement->reversal->public_id, 0, 8)) }} · Reemplazo #{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($movement->replacement->public_id, 0, 8)) }}</span>
+                                            </div>
+                                        @elseif($movement->reverses)
+                                            <a href="{{ route('inventory-movements.index', ['search' => $movement->reverses->public_id]) }}" class="rounded-xl border border-violet-400/25 bg-violet-400/5 px-3 py-2 text-xs font-semibold text-violet-200 transition hover:bg-violet-400/10">
+                                                Revierte #{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($movement->reverses->public_id, 0, 8)) }}
+                                            </a>
+                                        @elseif($movement->replaces)
+                                            <a href="{{ route('inventory-movements.index', ['search' => $movement->replaces->public_id]) }}" class="rounded-xl border border-cyan-400/25 bg-cyan-400/5 px-3 py-2 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-400/10">
+                                                Reemplaza #{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($movement->replaces->public_id, 0, 8)) }}
+                                            </a>
+                                        @endif
+
                                         @if($row['negativeAuthorization'])
                                             <a href="{{ route('inventory-negative-authorizations.index', ['search' => $row['negativeAuthorization']->public_id]) }}" class="inline-flex items-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/5 px-3 py-2 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/10">
                                                 Solicitud #{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($row['negativeAuthorization']->public_id, 0, 8)) }}
@@ -150,6 +165,12 @@
                                                     <button type="submit" class="rounded-xl border border-amber-400/40 px-4 py-2 text-sm font-bold text-amber-100 transition hover:bg-amber-400/10">Enviar a Administración</button>
                                                 </form>
                                             </details>
+                                        @endif
+
+                                        @if($row['canCorrect'])
+                                            <a href="{{ route('inventory-movements.corrections.create', $movement) }}" class="rounded-xl border border-amber-400/40 px-4 py-2 text-sm font-bold text-amber-100 transition hover:bg-amber-400/10">
+                                                Corregir movimiento
+                                            </a>
                                         @endif
                                     </div>
                                 </div>

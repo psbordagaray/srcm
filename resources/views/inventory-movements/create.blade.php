@@ -1,17 +1,30 @@
 <x-app-layout>
     @php
-        $oldLines = old('lines', [[
-            'condition' => 'new',
-            'entered_quantity' => '',
-        ]]);
+        $correctionOriginal = $correctionOriginal ?? null;
+        $isCorrection = $correctionOriginal !== null;
+        $oldLines = old('lines', $isCorrection
+            ? $correctionLines
+            : [[
+                'condition' => 'new',
+                'entered_quantity' => '',
+            ]]);
+        $defaultType = $isCorrection
+            ? $correctionOriginal->type->value
+            : '';
+        $defaultEffectiveAt = $isCorrection
+            ? $correctionOriginal->effective_at->format('Y-m-d\TH:i')
+            : now()->format('Y-m-d\TH:i');
+        $defaultReference = $isCorrection
+            ? $correctionOriginal->source_reference
+            : null;
     @endphp
 
     <div class="mx-auto max-w-7xl space-y-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">Inventario · Libro operativo</p>
-                <h1 class="mt-1 text-2xl font-bold text-white">Nuevo movimiento</h1>
-                <p class="mt-2 text-sm text-slate-400">Creá un borrador verificable. El stock no cambia hasta su confirmación.</p>
+                <p class="text-sm font-semibold uppercase tracking-[0.2em] {{ $isCorrection ? 'text-amber-300' : 'text-cyan-300' }}">Inventario · {{ $isCorrection ? 'Corrección controlada' : 'Libro operativo' }}</p>
+                <h1 class="mt-1 text-2xl font-bold text-white">{{ $isCorrection ? 'Corregir movimiento confirmado' : 'Nuevo movimiento' }}</h1>
+                <p class="mt-2 text-sm text-slate-400">{{ $isCorrection ? 'Definí el contenido correcto. SRCM generará el reverso exacto y confirmará el reemplazo en una sola transacción.' : 'Creá un borrador verificable. El stock no cambia hasta su confirmación.' }}</p>
             </div>
             <a href="{{ route('inventory-movements.index') }}" class="inline-flex items-center justify-center rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white">Volver al libro</a>
         </div>
@@ -35,7 +48,24 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('inventory-movements.store') }}" class="space-y-6" data-movement-form>
+        @if($isCorrection)
+            <section class="rounded-2xl border border-amber-400/20 bg-amber-400/[0.04] p-5">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-amber-300">Original inmutable</p>
+                        <p class="mt-2 font-mono text-sm font-bold text-white">#{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($correctionOriginal->public_id, 0, 8)) }} · {{ $correctionOriginal->type->label() }}</p>
+                        <p class="mt-2 text-sm text-slate-300">{{ $correctionOriginal->reason }}</p>
+                    </div>
+                    <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
+                        <div><dt class="text-slate-500">Fecha original</dt><dd class="mt-1 font-semibold text-slate-300">{{ $correctionOriginal->effective_at->format('d/m/Y H:i') }}</dd></div>
+                        <div><dt class="text-slate-500">Líneas</dt><dd class="mt-1 font-semibold text-slate-300">{{ $correctionOriginal->lines->count() }}</dd></div>
+                    </dl>
+                </div>
+                <p class="mt-4 border-t border-amber-400/10 pt-4 text-xs leading-5 text-amber-100/80">El original nunca se edita ni se elimina. Al confirmar, el sistema crea un reverso espejo y un movimiento de reemplazo; si el efecto final no es válido, toda la operación se revierte.</p>
+            </section>
+        @endif
+
+        <form method="POST" action="{{ $isCorrection ? route('inventory-movements.corrections.store', $correctionOriginal) : route('inventory-movements.store') }}" class="space-y-6" data-movement-form>
             @csrf
             <input type="hidden" name="idempotency_key" value="{{ old('idempotency_key', $idempotencyKey) }}">
 
@@ -47,24 +77,24 @@
                         <select name="type" required data-movement-type class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white focus:border-cyan-400 focus:ring-cyan-400">
                             <option value="">Seleccionar tipo</option>
                             @foreach($types as $movementType)
-                                <option value="{{ $movementType->value }}" @selected(old('type') === $movementType->value)>{{ $movementType->label() }}</option>
+                                <option value="{{ $movementType->value }}" @selected(old('type', $defaultType) === $movementType->value)>{{ $movementType->label() }}</option>
                             @endforeach
                         </select>
                     </label>
 
                     <label class="block">
                         <span class="text-sm font-semibold text-slate-300">Fecha efectiva</span>
-                        <input type="datetime-local" name="effective_at" value="{{ old('effective_at', now()->format('Y-m-d\TH:i')) }}" required class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white focus:border-cyan-400 focus:ring-cyan-400">
+                        <input type="datetime-local" name="effective_at" value="{{ old('effective_at', $defaultEffectiveAt) }}" required class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white focus:border-cyan-400 focus:ring-cyan-400">
                     </label>
 
                     <label class="block lg:col-span-2">
-                        <span class="text-sm font-semibold text-slate-300">Motivo</span>
-                        <textarea name="reason" rows="3" required minlength="5" maxlength="2000" placeholder="Explicá por qué se realiza este movimiento." class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400">{{ old('reason') }}</textarea>
+                        <span class="text-sm font-semibold text-slate-300">{{ $isCorrection ? 'Motivo obligatorio de la corrección' : 'Motivo' }}</span>
+                        <textarea name="reason" rows="3" required minlength="5" maxlength="2000" placeholder="{{ $isCorrection ? 'Explicá qué estaba mal y cuál es la información correcta.' : 'Explicá por qué se realiza este movimiento.' }}" class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400">{{ old('reason') }}</textarea>
                     </label>
 
                     <label class="block lg:col-span-2">
                         <span class="text-sm font-semibold text-slate-300">Referencia externa</span>
-                        <input type="text" name="source_reference" value="{{ old('source_reference') }}" maxlength="255" placeholder="Factura, remito, orden o referencia opcional" class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400">
+                        <input type="text" name="source_reference" value="{{ old('source_reference', $defaultReference) }}" maxlength="255" placeholder="Factura, remito, orden o referencia opcional" class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400">
                     </label>
                 </div>
             </section>
@@ -86,7 +116,7 @@
             </section>
 
             <div class="flex flex-wrap gap-4">
-                <button type="submit" @disabled($products->isEmpty() || $locations->isEmpty()) class="rounded-xl bg-cyan-400 px-6 py-3 font-bold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-40">Guardar borrador</button>
+                <button type="submit" @disabled($products->isEmpty() || $locations->isEmpty()) class="rounded-xl {{ $isCorrection ? 'bg-amber-300 hover:bg-amber-200' : 'bg-cyan-400 hover:bg-cyan-300' }} px-6 py-3 font-bold text-slate-950 transition disabled:cursor-not-allowed disabled:opacity-40">{{ $isCorrection ? 'Aplicar corrección atómica' : 'Guardar borrador' }}</button>
                 <a href="{{ route('inventory-movements.index') }}" class="rounded-xl border border-slate-700 px-6 py-3 font-semibold text-white transition hover:border-slate-500">Cancelar</a>
             </div>
         </form>

@@ -283,6 +283,30 @@ Route::middleware(['auth', 'verified'])->group(function () {
             });
 
             Route::middleware(
+                'can:correct-inventory'
+            )->group(function () {
+                Route::get(
+                    'inventory/movements/{inventoryMovement:public_id}/correction',
+                    [
+                        InventoryMovementController::class,
+                        'correction',
+                    ]
+                )
+                    ->whereUuid('inventoryMovement')
+                    ->name('inventory-movements.corrections.create');
+
+                Route::post(
+                    'inventory/movements/{inventoryMovement:public_id}/correction',
+                    [
+                        InventoryMovementController::class,
+                        'correct',
+                    ]
+                )
+                    ->whereUuid('inventoryMovement')
+                    ->name('inventory-movements.corrections.store');
+            });
+
+            Route::middleware(
                 'can:view-inventory-availability'
             )->group(function () {
                 Route::get(
