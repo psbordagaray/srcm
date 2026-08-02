@@ -6,6 +6,7 @@ use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\InventoryAvailabilityController;
 use App\Http\Controllers\InventoryLocationController;
 use App\Http\Controllers\InventoryMovementController;
+use App\Http\Controllers\InventoryNegativeAuthorizationController;
 use App\Http\Controllers\InventoryNegativeIncidentController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierOfferController;
@@ -291,6 +292,77 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'index',
                     ]
                 )->name('inventory-availability.index');
+            });
+
+            Route::middleware(
+                'can:view-inventory-negative-authorizations'
+            )->group(function () {
+                Route::get(
+                    'inventory/negative-authorizations',
+                    [
+                        InventoryNegativeAuthorizationController::class,
+                        'index',
+                    ]
+                )->name('inventory-negative-authorizations.index');
+            });
+
+            Route::middleware(
+                'can:request-inventory-negative'
+            )->group(function () {
+                Route::post(
+                    'inventory/movements/{inventoryMovement:public_id}/negative-request',
+                    [
+                        InventoryNegativeAuthorizationController::class,
+                        'store',
+                    ]
+                )
+                    ->whereUuid('inventoryMovement')
+                    ->name('inventory-negative-authorizations.store');
+
+                Route::patch(
+                    'inventory/movements/{inventoryMovement:public_id}/negative-overrides/{inventoryNegativeOverride:public_id}/confirm',
+                    [
+                        InventoryNegativeAuthorizationController::class,
+                        'confirm',
+                    ]
+                )
+                    ->whereUuid('inventoryMovement')
+                    ->whereUuid('inventoryNegativeOverride')
+                    ->name('inventory-negative-authorizations.confirm');
+            });
+
+            Route::middleware(
+                'can:override-inventory-negative'
+            )->group(function () {
+                Route::patch(
+                    'inventory/negative-authorizations/{inventoryNegativeRequest:public_id}/approve',
+                    [
+                        InventoryNegativeAuthorizationController::class,
+                        'approve',
+                    ]
+                )
+                    ->whereUuid('inventoryNegativeRequest')
+                    ->name('inventory-negative-authorizations.approve');
+
+                Route::patch(
+                    'inventory/negative-authorizations/{inventoryNegativeRequest:public_id}/reject',
+                    [
+                        InventoryNegativeAuthorizationController::class,
+                        'reject',
+                    ]
+                )
+                    ->whereUuid('inventoryNegativeRequest')
+                    ->name('inventory-negative-authorizations.reject');
+
+                Route::patch(
+                    'inventory/negative-overrides/{inventoryNegativeOverride:public_id}/revoke',
+                    [
+                        InventoryNegativeAuthorizationController::class,
+                        'revoke',
+                    ]
+                )
+                    ->whereUuid('inventoryNegativeOverride')
+                    ->name('inventory-negative-authorizations.revoke');
             });
 
             Route::middleware(

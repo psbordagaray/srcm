@@ -12,6 +12,8 @@ use App\Enums\InventoryBaseUnit;
 use App\Enums\InventoryCondition;
 use App\Enums\InventoryMovementStatus;
 use App\Enums\InventoryMovementType;
+use App\Enums\InventoryNegativeOverrideStatus;
+use App\Enums\InventoryNegativeRequestStatus;
 use App\Http\Requests\ConfirmInventoryMovementRequest;
 use App\Http\Requests\StoreInventoryMovementRequest;
 use App\Models\CatalogProduct;
@@ -51,6 +53,7 @@ class InventoryMovementController extends Controller
                 'lines.product:id,sku,name,base_unit_code,quantity_scale',
                 'lines.sourceLocation:id,name',
                 'lines.destinationLocation:id,name',
+                'negativeAuthorizationRequest.override',
             ]);
 
         if ($type !== '') {
@@ -71,25 +74,56 @@ class InventoryMovementController extends Controller
 
         $movements->setCollection(
             $movements->getCollection()->map(
-                fn (InventoryMovement $movement): array => [
-                    'movement' => $movement,
-                    'shortId' => Str::upper(Str::substr(
-                        (string) $movement->public_id,
-                        0,
-                        8
-                    )),
-                    'statusClass' => $this->statusClass(
-                        $movement->status
-                    ),
-                    'canConfirm' => $movement->status
+                function (InventoryMovement $movement) use (
+                    $role,
+                    $request
+                ): array {
+                    $authorization =
+                        $movement->negativeAuthorizationRequest;
+                    $override = $authorization?->override;
+                    $activeOverride = $override?->status
+                        === InventoryNegativeOverrideStatus::Active;
+                    $canConfirm = $movement->status
                         === InventoryMovementStatus::Draft
                         && ($role?->canConfirmInventoryMovement(
                             $movement->type
-                        ) ?? false),
-                    'lines' => $movement->lines->map(
-                        fn ($line): array => $this->lineForDisplay($line)
-                    ),
-                ]
+                        ) ?? false);
+                    $canRequest = $canConfirm
+                        && ($role?->canRequestInventoryNegative() ?? false)
+                        && $movement->type->requiresSource()
+                        && (int) $movement->created_by_user_id
+                            === (int) $request->user()->id
+                        && (
+                            $authorization === null
+                            || in_array($authorization->status, [
+                                InventoryNegativeRequestStatus::Rejected,
+                                InventoryNegativeRequestStatus::Invalidated,
+                            ], true)
+                        );
+
+                    return [
+                        'movement' => $movement,
+                        'shortId' => Str::upper(Str::substr(
+                            (string) $movement->public_id,
+                            0,
+                            8
+                        )),
+                        'statusClass' => $this->statusClass(
+                            $movement->status
+                        ),
+                        'canConfirm' => $canConfirm && ! $activeOverride,
+                        'canRequestNegative' => $canRequest,
+                        'negativeAuthorization' => $authorization,
+                        'canConfirmWithOverride' => $canConfirm
+                            && $activeOverride
+                            && (int) $override->authorized_user_id
+                                === (int) $request->user()->id,
+                        'lines' => $movement->lines->map(
+                            fn ($line): array =>
+                                $this->lineForDisplay($line)
+                        ),
+                    ];
+                }
             )
         );
 

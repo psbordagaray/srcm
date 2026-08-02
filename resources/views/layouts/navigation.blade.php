@@ -81,6 +81,16 @@
                 ),
         ],
         [
+            'label' => 'Overrides',
+            'route' => 'inventory-negative-authorizations.index',
+            'active' => 'inventory-negative-authorizations.*',
+            'icon' => 'receipt',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can(
+                    'view-inventory-negative-authorizations'
+                ),
+        ],
+        [
             'label' => 'Ubicaciones',
             'route' => 'inventory-locations.index',
             'active' => 'inventory-locations.*',

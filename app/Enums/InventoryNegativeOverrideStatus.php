@@ -8,4 +8,14 @@ enum InventoryNegativeOverrideStatus: string
     case Consumed = 'consumed';
     case Revoked = 'revoked';
     case Invalidated = 'invalidated';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Active => 'Activo',
+            self::Consumed => 'Consumido',
+            self::Revoked => 'Revocado',
+            self::Invalidated => 'Invalidado',
+        };
+    }
 }

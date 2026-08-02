@@ -85,6 +85,22 @@ class InventoryMovement extends Model
             ->orderBy('sequence');
     }
 
+    public function negativeAuthorizationRequest(): HasOne
+    {
+        return $this->hasOne(
+            InventoryNegativeRequest::class,
+            'inventory_movement_id'
+        )->latestOfMany();
+    }
+
+    public function inventoryNegativeOverrides(): HasMany
+    {
+        return $this->hasMany(
+            InventoryNegativeOverride::class,
+            'inventory_movement_id'
+        );
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');

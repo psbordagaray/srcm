@@ -72,4 +72,20 @@ class InventoryNegativeRequestLine extends Model
             'inventory_negative_request_id'
         );
     }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(
+            CatalogProduct::class,
+            'catalog_product_id'
+        );
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(
+            InventoryLocation::class,
+            'inventory_location_id'
+        );
+    }
 }

@@ -100,6 +100,12 @@ enum UserRole: string
         return $this === self::Admin;
     }
 
+    public function canViewInventoryNegativeAuthorizations(): bool
+    {
+        return $this->canRequestInventoryNegative()
+            || $this->canOverrideInventoryNegative();
+    }
+
     public function canViewInventoryNegativeIncidents(): bool
     {
         return $this === self::Admin;

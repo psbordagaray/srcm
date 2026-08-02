@@ -116,6 +116,8 @@ class AppServiceProvider extends ServiceProvider
                 'canRequestInventoryNegative',
             'override-inventory-negative' =>
                 'canOverrideInventoryNegative',
+            'view-inventory-negative-authorizations' =>
+                'canViewInventoryNegativeAuthorizations',
             'view-inventory-negative-incidents' =>
                 'canViewInventoryNegativeIncidents',
             'review-inventory-negative-incidents' =>

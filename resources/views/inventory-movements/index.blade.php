@@ -117,13 +117,41 @@
                                         @endif
                                     </dl>
 
-                                    @if($row['canConfirm'])
-                                        <form method="POST" action="{{ route('inventory-movements.confirm', $movement) }}" onsubmit="return confirm('¿Confirmar este movimiento? El libro y los saldos se actualizarán de forma atómica.');">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" class="rounded-xl bg-emerald-300 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-emerald-200">Confirmar y proyectar</button>
-                                        </form>
-                                    @endif
+                                    <div class="flex max-w-md flex-col gap-2 xl:items-end">
+                                        @if($row['negativeAuthorization'])
+                                            <a href="{{ route('inventory-negative-authorizations.index', ['search' => $row['negativeAuthorization']->public_id]) }}" class="inline-flex items-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/5 px-3 py-2 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/10">
+                                                Solicitud #{{ \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($row['negativeAuthorization']->public_id, 0, 8)) }}
+                                                · {{ $row['negativeAuthorization']->status->label() }}
+                                            </a>
+                                        @endif
+
+                                        @if($row['canConfirm'])
+                                            <form method="POST" action="{{ route('inventory-movements.confirm', $movement) }}" onsubmit="return confirm('¿Confirmar este movimiento? El libro y los saldos se actualizarán de forma atómica.');">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="rounded-xl bg-emerald-300 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-emerald-200">Confirmar y proyectar</button>
+                                            </form>
+                                        @endif
+
+                                        @if($row['canConfirmWithOverride'])
+                                            <form method="POST" action="{{ route('inventory-negative-authorizations.confirm', [$movement, $row['negativeAuthorization']->override]) }}" onsubmit="return confirm('¿Consumir el Override? El movimiento se confirmará y la incidencia negativa quedará registrada.');">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="rounded-xl bg-red-300 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-red-200">Confirmar con Override</button>
+                                            </form>
+                                        @endif
+
+                                        @if($row['canRequestNegative'])
+                                            <details class="w-full rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 xl:w-96">
+                                                <summary class="cursor-pointer text-sm font-semibold text-amber-200">Solicitar Override por stock insuficiente</summary>
+                                                <form method="POST" action="{{ route('inventory-negative-authorizations.store', $movement) }}" class="mt-3 space-y-3">
+                                                    @csrf
+                                                    <textarea name="reason" rows="3" required minlength="10" maxlength="2000" placeholder="Motivo excepcional verificable..." class="block w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white placeholder:text-slate-500 focus:border-amber-400 focus:ring-amber-400"></textarea>
+                                                    <button type="submit" class="rounded-xl border border-amber-400/40 px-4 py-2 text-sm font-bold text-amber-100 transition hover:bg-amber-400/10">Enviar a Administración</button>
+                                                </form>
+                                            </details>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
 
