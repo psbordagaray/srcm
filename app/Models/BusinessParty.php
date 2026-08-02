@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\BelongsToOrganization;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
@@ -116,5 +117,21 @@ class BusinessParty extends Model
     public function supplier(): HasOne
     {
         return $this->hasOne(Supplier::class);
+    }
+
+    public function serviceOrdersAsCustomer(): HasMany
+    {
+        return $this->hasMany(
+            ServiceOrder::class,
+            'customer_business_party_id'
+        );
+    }
+
+    public function serviceOrdersAsOwner(): HasMany
+    {
+        return $this->hasMany(
+            ServiceOrder::class,
+            'owner_business_party_id'
+        );
     }
 }

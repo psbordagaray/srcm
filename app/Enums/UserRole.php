@@ -35,6 +35,26 @@ enum UserRole: string
         };
     }
 
+    public function canViewServiceOrders(): bool
+    {
+        return true;
+    }
+
+    public function canCreateServiceOrders(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
+    public function canManageServiceOrders(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
+    public function canCancelServiceOrders(): bool
+    {
+        return $this === self::Admin;
+    }
+
     public function canManageOrganization(): bool
     {
         return $this === self::Admin;
