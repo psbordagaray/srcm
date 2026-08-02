@@ -65,6 +65,21 @@ enum UserRole: string
         return $this->canManageServiceOrders();
     }
 
+    public function canPlanServiceWork(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
+    public function canExecuteServiceWork(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
+    public function canTransferServiceCustody(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
     public function canCancelServiceOrders(): bool
     {
         return $this === self::Admin;

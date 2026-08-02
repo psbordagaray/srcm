@@ -134,4 +134,12 @@ class BusinessParty extends Model
             'owner_business_party_id'
         );
     }
+
+    public function serviceWorkItemsAsProvider(): HasMany
+    {
+        return $this->hasMany(
+            ServiceWorkItem::class,
+            'provider_business_party_id'
+        );
+    }
 }

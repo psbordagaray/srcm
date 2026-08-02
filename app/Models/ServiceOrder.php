@@ -158,6 +158,12 @@ class ServiceOrder extends Model
             ->orderBy('revision');
     }
 
+    public function workItems(): HasMany
+    {
+        return $this->hasMany(ServiceWorkItem::class)
+            ->orderBy('sequence');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
@@ -182,6 +188,17 @@ class ServiceOrder extends Model
                 ],
                 true
             ),
+            ServiceOrderStatus::InProgress => in_array(
+                $target,
+                [
+                    ServiceOrderStatus::WithExternalProvider,
+                    ServiceOrderStatus::QualityControl,
+                    ServiceOrderStatus::Diagnosing,
+                ],
+                true
+            ),
+            ServiceOrderStatus::WithExternalProvider =>
+                $target === ServiceOrderStatus::InProgress,
             default => false,
         };
     }

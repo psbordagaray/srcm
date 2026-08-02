@@ -156,4 +156,9 @@ class Organization extends Model
     {
         return $this->hasMany(ServiceOrder::class);
     }
+
+    public function serviceWorkItems(): HasMany
+    {
+        return $this->hasMany(ServiceWorkItem::class);
+    }
 }
