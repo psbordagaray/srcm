@@ -7,6 +7,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ServiceDelivery extends Model
 {
@@ -86,5 +87,10 @@ class ServiceDelivery extends Model
     {
         return $this->hasMany(ServiceWarrantyGrant::class)
             ->orderBy('id');
+    }
+
+    public function commerceSale(): HasOne
+    {
+        return $this->hasOne(CommerceSale::class);
     }
 }

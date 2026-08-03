@@ -186,4 +186,9 @@ class Organization extends Model
     {
         return $this->hasMany(ServiceWarrantyGrant::class);
     }
+
+    public function commerceSales(): HasMany
+    {
+        return $this->hasMany(CommerceSale::class);
+    }
 }

@@ -35,6 +35,16 @@ enum UserRole: string
         };
     }
 
+    public function canRecordCommerceSale(): bool
+    {
+        return $this->canManageCommerce();
+    }
+
+    public function canViewCommerceSales(): bool
+    {
+        return true;
+    }
+
     public function canViewServiceOrders(): bool
     {
         return true;

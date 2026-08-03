@@ -116,6 +116,14 @@ class CatalogProduct extends Model
         );
     }
 
+    public function commerceSaleLines(): HasMany
+    {
+        return $this->hasMany(
+            CommerceSaleLine::class,
+            'catalog_product_id'
+        );
+    }
+
     public function baseUnit(): InventoryBaseUnit
     {
         return InventoryBaseUnit::tryFrom(

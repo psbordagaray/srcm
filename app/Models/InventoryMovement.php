@@ -85,6 +85,11 @@ class InventoryMovement extends Model
             ->orderBy('sequence');
     }
 
+    public function commerceSale(): HasOne
+    {
+        return $this->hasOne(CommerceSale::class);
+    }
+
     public function negativeAuthorizationRequest(): HasOne
     {
         return $this->hasOne(

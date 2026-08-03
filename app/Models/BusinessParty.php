@@ -150,4 +150,12 @@ class BusinessParty extends Model
             'recipient_business_party_id'
         );
     }
+
+    public function commerceSales(): HasMany
+    {
+        return $this->hasMany(
+            CommerceSale::class,
+            'customer_business_party_id'
+        );
+    }
 }

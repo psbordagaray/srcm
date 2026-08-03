@@ -7,6 +7,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ServiceQuoteOption extends Model
 {
@@ -49,5 +50,10 @@ class ServiceQuoteOption extends Model
     {
         return $this->hasMany(ServiceQuoteLine::class)
             ->orderBy('position');
+    }
+
+    public function commerceSale(): HasOne
+    {
+        return $this->hasOne(CommerceSale::class);
     }
 }

@@ -6,6 +6,7 @@ use App\Enums\ServiceOrderStatus;
 use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -185,6 +186,18 @@ class ServiceOrder extends Model
     public function delivery(): HasOne
     {
         return $this->hasOne(ServiceDelivery::class);
+    }
+
+    public function commerceSale(): HasOne
+    {
+        return $this->hasOne(CommerceSale::class);
+    }
+
+    public function scopeUnsettledDelivered(Builder $query): Builder
+    {
+        return $query
+            ->where('status', ServiceOrderStatus::Delivered->value)
+            ->whereDoesntHave('commerceSale');
     }
 
     public function createdBy(): BelongsTo

@@ -30,7 +30,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
   - repuestos y compras afectados a la orden — Core 4 completado
   - custodia con especialistas y resultado atribuible — Core 3 completado
   - control de calidad, entrega y garantía atribuible — Core 5 completado
-  - venta mixta y controles antifraude
+  - venta mixta, pagos y controles antifraude — Core 6 completado
 
 ---
 

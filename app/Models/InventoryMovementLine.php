@@ -104,6 +104,14 @@ class InventoryMovementLine extends Model
         return $this->hasOne(ServicePartConsumption::class);
     }
 
+    public function commerceSaleLine(): HasOne
+    {
+        return $this->hasOne(
+            CommerceSaleLine::class,
+            'inventory_movement_line_id'
+        );
+    }
+
     private function guardOrganization(): void
     {
         if (

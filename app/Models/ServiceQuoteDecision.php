@@ -7,6 +7,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ServiceQuoteDecision extends Model
 {
@@ -61,5 +62,10 @@ class ServiceQuoteDecision extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by_user_id');
+    }
+
+    public function commerceSale(): HasOne
+    {
+        return $this->hasOne(CommerceSale::class);
     }
 }
