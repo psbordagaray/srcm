@@ -77,6 +77,11 @@ class AppServiceProvider extends ServiceProvider
         foreach ([
             'view-service-orders' => 'canViewServiceOrders',
             'create-service-orders' => 'canCreateServiceOrders',
+            'record-service-diagnostics' =>
+                'canRecordServiceDiagnostics',
+            'issue-service-quotes' => 'canIssueServiceQuotes',
+            'record-service-quote-decisions' =>
+                'canRecordServiceQuoteDecisions',
         ] as $ability => $method) {
             Gate::define(
                 $ability,

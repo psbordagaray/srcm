@@ -135,7 +135,7 @@ class ServiceOrderHttpTest extends TestCase
         $this->actingAs($operator)
             ->get(route('service-orders.show', $order))
             ->assertOk()
-            ->assertSee('OT #1')
+            ->assertSee('Orden #1')
             ->assertSee('Motorola E22i')
             ->assertSee('35 812345 678901 2')
             ->assertSee('Cliente Motorola Web')
@@ -167,7 +167,7 @@ class ServiceOrderHttpTest extends TestCase
             $this->actingAs($operator)
                 ->get(route('service-orders.index', ['search' => $search]))
                 ->assertOk()
-                ->assertSee('OT #1')
+                ->assertSee('Orden #1')
                 ->assertSee('E22i');
         }
 
@@ -175,14 +175,14 @@ class ServiceOrderHttpTest extends TestCase
             ->get(route('service-orders.index', [
                 'asset_type' => ServiceAssetType::Notebook->value,
             ]))
-            ->assertDontSee('OT #1');
+            ->assertDontSee('Orden #1');
 
         $this->actingAs($operator)
             ->get(route('service-orders.index', [
                 'asset_type' => ServiceAssetType::MobilePhone->value,
                 'status' => ServiceOrderStatus::Received->value,
             ]))
-            ->assertSee('OT #1');
+            ->assertSee('Orden #1');
     }
 
     public function test_index_and_record_are_isolated_between_organizations(): void

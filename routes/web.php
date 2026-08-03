@@ -18,6 +18,7 @@ use App\Http\Controllers\ManufacturerController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ServiceAssessmentController;
 use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\TechnicalModelController;
 use App\Http\Middleware\RequireOrganization;
@@ -261,6 +262,78 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         [ServiceOrderController::class, 'store']
                     )->name('service-orders.store');
                 });
+
+            Route::middleware('can:record-service-diagnostics')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/diagnostics/create',
+                        [
+                            ServiceAssessmentController::class,
+                            'createDiagnostic',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.diagnostics.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/diagnostics',
+                        [
+                            ServiceAssessmentController::class,
+                            'storeDiagnostic',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.diagnostics.store');
+                });
+
+            Route::middleware('can:issue-service-quotes')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/quotes/create',
+                        [
+                            ServiceAssessmentController::class,
+                            'createQuote',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.quotes.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/quotes',
+                        [
+                            ServiceAssessmentController::class,
+                            'storeQuote',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.quotes.store');
+                });
+
+            Route::middleware(
+                'can:record-service-quote-decisions'
+            )->group(function () {
+                Route::get(
+                    'service/orders/{serviceOrder:public_id}/quotes/{serviceQuote}/decision',
+                    [
+                        ServiceAssessmentController::class,
+                        'createDecision',
+                    ]
+                )
+                    ->whereUuid('serviceOrder')
+                    ->whereNumber('serviceQuote')
+                    ->name('service-orders.quotes.decisions.create');
+
+                Route::post(
+                    'service/orders/{serviceOrder:public_id}/quotes/{serviceQuote}/decision',
+                    [
+                        ServiceAssessmentController::class,
+                        'storeDecision',
+                    ]
+                )
+                    ->whereUuid('serviceOrder')
+                    ->whereNumber('serviceQuote')
+                    ->name('service-orders.quotes.decisions.store');
+            });
 
             Route::middleware('can:view-inventory')
                 ->group(function () {

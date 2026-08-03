@@ -32,6 +32,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
   - control de calidad, entrega y garantía atribuible — Core 5 completado
   - venta mixta, pagos y controles antifraude — Core 6 completado
   - recepción web, buscador y expediente operativo inicial — UI 1 completada
+  - diagnóstico, presupuesto versionado y decisión del cliente — UI 2 completada
 
 ---
 

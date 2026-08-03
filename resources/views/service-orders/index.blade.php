@@ -87,7 +87,7 @@
                             <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <span class="font-mono text-sm font-bold text-cyan-300">OT #{{ $order->order_number }}</span>
+                                        <span class="font-mono text-sm font-bold text-cyan-300">Orden #{{ $order->order_number }}</span>
                                         <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold {{ $statusClasses[$order->status->value] }}">{{ $order->status->label() }}</span>
                                         <span class="inline-flex rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-300">{{ $order->asset->asset_type->label() }}</span>
                                     </div>
