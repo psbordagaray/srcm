@@ -176,6 +176,17 @@ class ServiceOrder extends Model
             ->orderBy('id');
     }
 
+    public function qualityInspections(): HasMany
+    {
+        return $this->hasMany(ServiceQualityInspection::class)
+            ->orderBy('revision');
+    }
+
+    public function delivery(): HasOne
+    {
+        return $this->hasOne(ServiceDelivery::class);
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
@@ -214,6 +225,16 @@ class ServiceOrder extends Model
                 $target === ServiceOrderStatus::InProgress,
             ServiceOrderStatus::WithExternalProvider =>
                 $target === ServiceOrderStatus::InProgress,
+            ServiceOrderStatus::QualityControl => in_array(
+                $target,
+                [
+                    ServiceOrderStatus::InProgress,
+                    ServiceOrderStatus::ReadyForDelivery,
+                ],
+                true
+            ),
+            ServiceOrderStatus::ReadyForDelivery =>
+                $target === ServiceOrderStatus::Delivered,
             default => false,
         };
     }

@@ -7,6 +7,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ServiceWorkReport extends Model
 {
@@ -57,5 +58,10 @@ class ServiceWorkReport extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by_user_id');
+    }
+
+    public function warrantyGrant(): HasOne
+    {
+        return $this->hasOne(ServiceWarrantyGrant::class);
     }
 }

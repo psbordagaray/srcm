@@ -171,4 +171,19 @@ class Organization extends Model
     {
         return $this->hasMany(ServicePartPurchase::class);
     }
+
+    public function serviceQualityInspections(): HasMany
+    {
+        return $this->hasMany(ServiceQualityInspection::class);
+    }
+
+    public function serviceDeliveries(): HasMany
+    {
+        return $this->hasMany(ServiceDelivery::class);
+    }
+
+    public function serviceWarrantyGrants(): HasMany
+    {
+        return $this->hasMany(ServiceWarrantyGrant::class);
+    }
 }

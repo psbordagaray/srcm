@@ -95,6 +95,16 @@ enum UserRole: string
         return $this->canManageServiceOrders();
     }
 
+    public function canInspectServiceQuality(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
+    public function canDeliverServiceOrders(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
     public function canCancelServiceOrders(): bool
     {
         return $this === self::Admin;

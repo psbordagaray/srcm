@@ -142,4 +142,12 @@ class BusinessParty extends Model
             'provider_business_party_id'
         );
     }
+
+    public function receivedServiceDeliveries(): HasMany
+    {
+        return $this->hasMany(
+            ServiceDelivery::class,
+            'recipient_business_party_id'
+        );
+    }
 }
