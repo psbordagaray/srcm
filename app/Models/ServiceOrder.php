@@ -164,6 +164,18 @@ class ServiceOrder extends Model
             ->orderBy('sequence');
     }
 
+    public function partRequirements(): HasMany
+    {
+        return $this->hasMany(ServicePartRequirement::class);
+    }
+
+    public function partPurchases(): HasMany
+    {
+        return $this->hasMany(ServicePartPurchase::class)
+            ->orderBy('purchased_at')
+            ->orderBy('id');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
@@ -191,12 +203,15 @@ class ServiceOrder extends Model
             ServiceOrderStatus::InProgress => in_array(
                 $target,
                 [
+                    ServiceOrderStatus::AwaitingParts,
                     ServiceOrderStatus::WithExternalProvider,
                     ServiceOrderStatus::QualityControl,
                     ServiceOrderStatus::Diagnosing,
                 ],
                 true
             ),
+            ServiceOrderStatus::AwaitingParts =>
+                $target === ServiceOrderStatus::InProgress,
             ServiceOrderStatus::WithExternalProvider =>
                 $target === ServiceOrderStatus::InProgress,
             default => false,

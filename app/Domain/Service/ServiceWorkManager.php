@@ -2,6 +2,7 @@
 
 namespace App\Domain\Service;
 
+use App\Domain\Inventory\InventoryQuantity;
 use App\Enums\ServiceCustodyEventType;
 use App\Enums\ServiceOrderStatus;
 use App\Enums\ServiceQuoteDecisionType;
@@ -14,6 +15,8 @@ use App\Models\OrganizationMembership;
 use App\Models\ServiceCustodyEvent;
 use App\Models\ServiceOrder;
 use App\Models\ServiceOrderStatusHistory;
+use App\Models\ServicePartConsumption;
+use App\Models\ServicePartRequirement;
 use App\Models\ServiceQuoteDecision;
 use App\Models\ServiceQuoteOption;
 use App\Models\ServiceWorkCustodyLink;
@@ -469,6 +472,13 @@ final class ServiceWorkManager
                 );
             }
 
+            if ($data->outcome === ServiceWorkOutcome::Completed) {
+                $this->guardRequiredPartsConsumed(
+                    $organizationId,
+                    $item
+                );
+            }
+
             if (
                 $data->outcome === ServiceWorkOutcome::Unresolved
                 && $order->workItems()
@@ -733,6 +743,37 @@ final class ServiceWorkManager
             throw new DomainException(
                 'La organización no posee actualmente la custodia del activo.'
             );
+        }
+    }
+
+    private function guardRequiredPartsConsumed(
+        int $organizationId,
+        ServiceWorkItem $item
+    ): void {
+        $requirements = ServicePartRequirement::query()
+            ->forOrganization($organizationId)
+            ->where('service_work_item_id', $item->id)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($requirements as $requirement) {
+            $consumed = (string) ServicePartConsumption::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'service_part_requirement_id',
+                    $requirement->id
+                )
+                ->sum('quantity');
+
+            if (! InventoryQuantity::lessThanOrEqual(
+                $requirement->required_quantity,
+                $consumed
+            )) {
+                throw new DomainException(
+                    'El trabajo no puede completarse con repuestos requeridos sin consumir.'
+                );
+            }
         }
     }
 

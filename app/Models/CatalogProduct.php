@@ -108,6 +108,14 @@ class CatalogProduct extends Model
         );
     }
 
+    public function servicePartRequirements(): HasMany
+    {
+        return $this->hasMany(
+            ServicePartRequirement::class,
+            'catalog_product_id'
+        );
+    }
+
     public function baseUnit(): InventoryBaseUnit
     {
         return InventoryBaseUnit::tryFrom(
@@ -171,7 +179,10 @@ class CatalogProduct extends Model
                 'base_unit_code',
                 'quantity_scale',
             ])
-            && $this->inventoryMovementLines()->exists()
+            && (
+                $this->inventoryMovementLines()->exists()
+                || $this->servicePartRequirements()->exists()
+            )
         ) {
             throw new DomainException(
                 'La unidad y precisión no pueden cambiarse después del primer movimiento.'

@@ -80,6 +80,21 @@ enum UserRole: string
         return $this->canManageServiceOrders();
     }
 
+    public function canPlanServiceParts(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
+    public function canRecordServicePartPurchases(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
+    public function canConsumeServiceParts(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
     public function canCancelServiceOrders(): bool
     {
         return $this === self::Admin;

@@ -27,7 +27,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
   - órdenes de servicio e ingreso documentado — Core 1 completado
   - diagnóstico y presupuestos versionados — Core 2 completado
   - trabajo propio y tercerizado — Core 3 completado
-  - repuestos y compras afectados a la orden
+  - repuestos y compras afectados a la orden — Core 4 completado
   - custodia con especialistas, resultado y garantía atribuible — Core 3 completado
   - control de calidad y entrega al cliente
   - venta mixta y controles antifraude

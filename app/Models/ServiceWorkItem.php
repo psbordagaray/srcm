@@ -158,4 +158,9 @@ class ServiceWorkItem extends Model
     {
         return $this->hasOne(ServiceWorkReport::class);
     }
+
+    public function partRequirements(): HasMany
+    {
+        return $this->hasMany(ServicePartRequirement::class);
+    }
 }

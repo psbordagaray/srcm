@@ -7,6 +7,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ServiceQuoteLine extends Model
 {
@@ -49,5 +50,10 @@ class ServiceQuoteLine extends Model
             ServiceQuoteOption::class,
             'service_quote_option_id'
         );
+    }
+
+    public function partRequirement(): HasOne
+    {
+        return $this->hasOne(ServicePartRequirement::class);
     }
 }

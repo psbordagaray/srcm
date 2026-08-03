@@ -161,4 +161,14 @@ class Organization extends Model
     {
         return $this->hasMany(ServiceWorkItem::class);
     }
+
+    public function servicePartRequirements(): HasMany
+    {
+        return $this->hasMany(ServicePartRequirement::class);
+    }
+
+    public function servicePartPurchases(): HasMany
+    {
+        return $this->hasMany(ServicePartPurchase::class);
+    }
 }

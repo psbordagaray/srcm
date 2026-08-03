@@ -9,6 +9,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class InventoryMovementLine extends Model
@@ -68,7 +69,10 @@ class InventoryMovementLine extends Model
 
     public function movement(): BelongsTo
     {
-        return $this->belongsTo(InventoryMovement::class);
+        return $this->belongsTo(
+            InventoryMovement::class,
+            'inventory_movement_id'
+        );
     }
 
     public function product(): BelongsTo
@@ -93,6 +97,11 @@ class InventoryMovementLine extends Model
             InventoryLocation::class,
             'destination_location_id'
         );
+    }
+
+    public function servicePartConsumption(): HasOne
+    {
+        return $this->hasOne(ServicePartConsumption::class);
     }
 
     private function guardOrganization(): void
