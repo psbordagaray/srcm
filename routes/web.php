@@ -18,6 +18,7 @@ use App\Http\Controllers\ManufacturerController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\TechnicalModelController;
 use App\Http\Middleware\RequireOrganization;
 use Illuminate\Support\Facades\Route;
@@ -231,6 +232,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         '/organization',
                         [OrganizationController::class, 'update']
                     )->name('organization.update');
+                });
+
+            Route::middleware('can:view-service-orders')
+                ->group(function () {
+                    Route::get(
+                        'service/orders',
+                        [ServiceOrderController::class, 'index']
+                    )->name('service-orders.index');
+
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}',
+                        [ServiceOrderController::class, 'show']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.show');
+                });
+
+            Route::middleware('can:create-service-orders')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/create',
+                        [ServiceOrderController::class, 'create']
+                    )->name('service-orders.create');
+
+                    Route::post(
+                        'service/orders',
+                        [ServiceOrderController::class, 'store']
+                    )->name('service-orders.store');
                 });
 
             Route::middleware('can:view-inventory')

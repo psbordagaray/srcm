@@ -63,6 +63,14 @@
             'disabled' => $currentOrganization === null,
         ],
         [
+            'label' => 'Reparaciones',
+            'route' => 'service-orders.index',
+            'active' => 'service-orders.*',
+            'icon' => 'repair',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('view-service-orders'),
+        ],
+        [
             'label' => 'Movimientos',
             'route' => 'inventory-movements.index',
             'active' => 'inventory-movements.*',
