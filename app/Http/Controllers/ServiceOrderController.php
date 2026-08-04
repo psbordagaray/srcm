@@ -53,13 +53,10 @@ class ServiceOrderController extends Controller
                 'intake',
                 'intakeLocation',
             ])
-            ->when($status !== '', fn (Builder $query): Builder =>
-                $query->where('status', $status)
+            ->when($status !== '', fn (Builder $query): Builder => $query->where('status', $status)
             )
-            ->when($assetType !== '', fn (Builder $query): Builder =>
-                $query->whereHas('asset', fn (Builder $asset): Builder =>
-                    $asset->where('asset_type', $assetType)
-                )
+            ->when($assetType !== '', fn (Builder $query): Builder => $query->whereHas('asset', fn (Builder $asset): Builder => $asset->where('asset_type', $assetType)
+            )
             )
             ->when($search !== '', function (Builder $query) use (
                 $search,
@@ -211,34 +208,26 @@ class ServiceOrderController extends Controller
                     modelName: $validated['model_name'],
                     identifiers: collect(
                         $validated['identifiers'] ?? []
-                    )->map(fn (array $identifier):
-                        ServiceAssetIdentifierData =>
-                            new ServiceAssetIdentifierData(
-                                ServiceIdentifierType::from(
-                                    $identifier['type']
-                                ),
-                                $identifier['value']
-                            )
+                    )->map(fn (array $identifier): ServiceAssetIdentifierData => new ServiceAssetIdentifierData(
+                        ServiceIdentifierType::from(
+                            $identifier['type']
+                        ),
+                        $identifier['value']
+                    )
                     )->values()->all(),
                     intakeLocationId: $validated['intake_location_id'],
-                    customerReportedIssue:
-                        $validated['customer_reported_issue'],
+                    customerReportedIssue: $validated['customer_reported_issue'],
                     idempotencyKey: $validated['idempotency_key'],
-                    customerBusinessPartyId:
-                        $validated['customer_business_party_id'] ?? null,
+                    customerBusinessPartyId: $validated['customer_business_party_id'] ?? null,
                     customerName: $validated['customer_name'] ?? null,
-                    ownerBusinessPartyId:
-                        $validated['owner_business_party_id'] ?? null,
+                    ownerBusinessPartyId: $validated['owner_business_party_id'] ?? null,
                     ownerName: $validated['owner_name'] ?? null,
                     color: $validated['color'] ?? null,
-                    intakeObservations:
-                        $validated['intake_observations'] ?? null,
-                    receivedAccessories:
-                        $validated['received_accessories'] ?? null,
+                    intakeObservations: $validated['intake_observations'] ?? null,
+                    receivedAccessories: $validated['received_accessories'] ?? null,
                     contactAvailable: (bool)
                         $validated['contact_available'],
-                    contactReference:
-                        $validated['contact_reference'] ?? null,
+                    contactReference: $validated['contact_reference'] ?? null,
                     promisedAt: filled($validated['promised_at'] ?? null)
                         ? CarbonImmutable::parse(
                             $validated['promised_at'],
@@ -299,6 +288,12 @@ class ServiceOrderController extends Controller
             'qualityInspections',
             'delivery.warranties',
             'commerceSale',
+            'cancellationRequest.requester',
+            'cancellationRequest.requestedBy',
+            'cancellationRequest.resolution.resolvedBy',
+            'cancellationRequest.resolution.returnRecord.recipient',
+            'cancellationRequest.resolution.returnRecord.returnedBy',
+            'cancellationRequest.resolution.returnRecord.custodyEvent',
         ]);
 
         return view('service-orders.show', [
@@ -313,30 +308,18 @@ class ServiceOrderController extends Controller
     private function statusClasses(): array
     {
         return [
-            ServiceOrderStatus::Received->value =>
-                'border-sky-400/30 bg-sky-400/10 text-sky-300',
-            ServiceOrderStatus::Diagnosing->value =>
-                'border-violet-400/30 bg-violet-400/10 text-violet-300',
-            ServiceOrderStatus::AwaitingApproval->value =>
-                'border-amber-400/30 bg-amber-400/10 text-amber-300',
-            ServiceOrderStatus::AwaitingParts->value =>
-                'border-orange-400/30 bg-orange-400/10 text-orange-300',
-            ServiceOrderStatus::InProgress->value =>
-                'border-cyan-400/30 bg-cyan-400/10 text-cyan-300',
-            ServiceOrderStatus::WithExternalProvider->value =>
-                'border-fuchsia-400/30 bg-fuchsia-400/10 text-fuchsia-300',
-            ServiceOrderStatus::QualityControl->value =>
-                'border-indigo-400/30 bg-indigo-400/10 text-indigo-300',
-            ServiceOrderStatus::ReadyForDelivery->value =>
-                'border-emerald-400/30 bg-emerald-400/10 text-emerald-300',
-            ServiceOrderStatus::Delivered->value =>
-                'border-slate-500/30 bg-slate-500/10 text-slate-300',
-            ServiceOrderStatus::CancellationPending->value =>
-                'border-rose-400/30 bg-rose-400/10 text-rose-300',
-            ServiceOrderStatus::ReadyForReturn->value =>
-                'border-orange-400/30 bg-orange-400/10 text-orange-300',
-            ServiceOrderStatus::Cancelled->value =>
-                'border-red-400/30 bg-red-400/10 text-red-300',
+            ServiceOrderStatus::Received->value => 'border-sky-400/30 bg-sky-400/10 text-sky-300',
+            ServiceOrderStatus::Diagnosing->value => 'border-violet-400/30 bg-violet-400/10 text-violet-300',
+            ServiceOrderStatus::AwaitingApproval->value => 'border-amber-400/30 bg-amber-400/10 text-amber-300',
+            ServiceOrderStatus::AwaitingParts->value => 'border-orange-400/30 bg-orange-400/10 text-orange-300',
+            ServiceOrderStatus::InProgress->value => 'border-cyan-400/30 bg-cyan-400/10 text-cyan-300',
+            ServiceOrderStatus::WithExternalProvider->value => 'border-fuchsia-400/30 bg-fuchsia-400/10 text-fuchsia-300',
+            ServiceOrderStatus::QualityControl->value => 'border-indigo-400/30 bg-indigo-400/10 text-indigo-300',
+            ServiceOrderStatus::ReadyForDelivery->value => 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300',
+            ServiceOrderStatus::Delivered->value => 'border-slate-500/30 bg-slate-500/10 text-slate-300',
+            ServiceOrderStatus::CancellationPending->value => 'border-rose-400/30 bg-rose-400/10 text-rose-300',
+            ServiceOrderStatus::ReadyForReturn->value => 'border-orange-400/30 bg-orange-400/10 text-orange-300',
+            ServiceOrderStatus::Cancelled->value => 'border-red-400/30 bg-red-400/10 text-red-300',
         ];
     }
 }

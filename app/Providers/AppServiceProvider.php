@@ -28,7 +28,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->scoped(
             CurrentOrganization::class,
-            fn () => new CurrentOrganization()
+            fn () => new CurrentOrganization
         );
     }
 
@@ -52,71 +52,66 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define(
             'manage-catalog',
-            fn (User $user): bool =>
-                $user->role->canManageCatalog()
+            fn (User $user): bool => $user->role->canManageCatalog()
         );
 
         Gate::define(
             'manage-commerce',
-            fn (User $user): bool =>
-                app(CurrentOrganization::class)
-                    ->roleFor($user)
-                    ?->canManageCommerce()
+            fn (User $user): bool => app(CurrentOrganization::class)
+                ->roleFor($user)
+                ?->canManageCommerce()
                 ?? false
         );
 
         Gate::define(
             'manage-organization',
-            fn (User $user): bool =>
-                app(CurrentOrganization::class)
-                    ->roleFor($user)
-                    ?->canManageOrganization()
+            fn (User $user): bool => app(CurrentOrganization::class)
+                ->roleFor($user)
+                ?->canManageOrganization()
                 ?? false
         );
 
         foreach ([
             'view-service-orders' => 'canViewServiceOrders',
             'create-service-orders' => 'canCreateServiceOrders',
-            'record-service-diagnostics' =>
-                'canRecordServiceDiagnostics',
+            'record-service-diagnostics' => 'canRecordServiceDiagnostics',
             'issue-service-quotes' => 'canIssueServiceQuotes',
-            'record-service-quote-decisions' =>
-                'canRecordServiceQuoteDecisions',
+            'record-service-quote-decisions' => 'canRecordServiceQuoteDecisions',
+            'request-service-cancellation' => 'canRequestServiceCancellation',
+            'resolve-service-cancellation' => 'canResolveServiceCancellation',
+            'transfer-service-custody' => 'canTransferServiceCustody',
+            'return-cancelled-service-order' => 'canReturnCancelledServiceOrder',
         ] as $ability => $method) {
             Gate::define(
                 $ability,
-                fn (User $user): bool =>
-                    app(CurrentOrganization::class)
-                        ->roleFor($user)
-                        ?->{$method}()
+                fn (User $user): bool => app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->{$method}()
                     ?? false
             );
         }
 
         Gate::define(
             'view-inventory',
-            fn (User $user): bool =>
-                app(CurrentOrganization::class)
-                    ->roleFor($user)
-                    ?->canViewInventory()
+            fn (User $user): bool => app(CurrentOrganization::class)
+                ->roleFor($user)
+                ?->canViewInventory()
                 ?? false
         );
 
         Gate::define(
             'manage-inventory-locations',
-            fn (User $user): bool =>
-                app(CurrentOrganization::class)
-                    ->roleFor($user)
-                    ?->canManageInventoryLocations()
+            fn (User $user): bool => app(CurrentOrganization::class)
+                ->roleFor($user)
+                ?->canManageInventoryLocations()
                 ?? false
         );
 
         Gate::define(
             'view-inventory-availability',
-            fn (User $user): bool =>
-                app(CurrentOrganization::class)
-                    ->roleFor($user)
-                    ?->canViewInventoryAvailability()
+            fn (User $user): bool => app(CurrentOrganization::class)
+                ->roleFor($user)
+                ?->canViewInventoryAvailability()
                 ?? false
         );
 
@@ -124,40 +119,31 @@ class AppServiceProvider extends ServiceProvider
             'receive-inventory' => 'canReceiveInventory',
             'issue-inventory' => 'canIssueInventory',
             'transfer-inventory' => 'canTransferInventory',
-            'draft-inventory-movements' =>
-                'canDraftAnyInventoryMovement',
-            'process-inventory-returns' =>
-                'canProcessInventoryReturns',
+            'draft-inventory-movements' => 'canDraftAnyInventoryMovement',
+            'process-inventory-returns' => 'canProcessInventoryReturns',
             'adjust-inventory' => 'canAdjustInventory',
             'correct-inventory' => 'canCorrectInventory',
             'rebuild-inventory' => 'canRebuildInventory',
-            'request-inventory-negative' =>
-                'canRequestInventoryNegative',
-            'override-inventory-negative' =>
-                'canOverrideInventoryNegative',
-            'view-inventory-negative-authorizations' =>
-                'canViewInventoryNegativeAuthorizations',
-            'view-inventory-negative-incidents' =>
-                'canViewInventoryNegativeIncidents',
-            'review-inventory-negative-incidents' =>
-                'canReviewInventoryNegativeIncidents',
+            'request-inventory-negative' => 'canRequestInventoryNegative',
+            'override-inventory-negative' => 'canOverrideInventoryNegative',
+            'view-inventory-negative-authorizations' => 'canViewInventoryNegativeAuthorizations',
+            'view-inventory-negative-incidents' => 'canViewInventoryNegativeIncidents',
+            'review-inventory-negative-incidents' => 'canReviewInventoryNegativeIncidents',
         ] as $ability => $method) {
             Gate::define(
                 $ability,
-                fn (User $user): bool =>
-                    app(CurrentOrganization::class)
-                        ->roleFor($user)
-                        ?->{$method}()
+                fn (User $user): bool => app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->{$method}()
                     ?? false
             );
         }
 
         Gate::define(
             'view-audit',
-            fn (User $user): bool =>
-                app(CurrentOrganization::class)
-                    ->roleFor($user)
-                    ?->canViewAudit()
+            fn (User $user): bool => app(CurrentOrganization::class)
+                ->roleFor($user)
+                ?->canViewAudit()
                 ?? false
         );
     }

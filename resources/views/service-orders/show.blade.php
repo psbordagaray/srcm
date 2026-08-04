@@ -37,6 +37,8 @@
             <div role="status" class="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">{{ session('success') }}</div>
         @endif
 
+        @include('service-orders._cancellation', ['order' => $order])
+
         <div class="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(20rem,0.8fr)]">
             <div class="space-y-6">
                 <section class="sulu-card p-6">

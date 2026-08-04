@@ -3,23 +3,24 @@
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
+use App\Http\Controllers\CompatibilityController;
+use App\Http\Controllers\EntityController;
+use App\Http\Controllers\IdentifierController;
 use App\Http\Controllers\InventoryAvailabilityController;
 use App\Http\Controllers\InventoryLocationController;
 use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\InventoryNegativeAuthorizationController;
 use App\Http\Controllers\InventoryNegativeIncidentController;
-use App\Http\Controllers\SupplierController;
-use App\Http\Controllers\SupplierOfferController;
-use App\Http\Controllers\CompatibilityController;
-use App\Http\Controllers\EntityController;
-use App\Http\Controllers\IdentifierController;
 use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\ManufacturerController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceAssessmentController;
+use App\Http\Controllers\ServiceCancellationController;
 use App\Http\Controllers\ServiceOrderController;
+use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierOfferController;
 use App\Http\Controllers\TechnicalModelController;
 use App\Http\Middleware\RequireOrganization;
 use Illuminate\Support\Facades\Route;
@@ -197,7 +198,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         )->except(['index', 'show', 'destroy']);
     });
 
-
     /*
     |--------------------------------------------------------------------------
     | Organization-owned private operations
@@ -334,6 +334,104 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->whereNumber('serviceQuote')
                     ->name('service-orders.quotes.decisions.store');
             });
+
+            Route::middleware('can:request-service-cancellation')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/cancellation/request',
+                        [
+                            ServiceCancellationController::class,
+                            'createRequest',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.cancellation.request.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/cancellation/request',
+                        [
+                            ServiceCancellationController::class,
+                            'storeRequest',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.cancellation.request.store');
+                });
+
+            Route::middleware('can:transfer-service-custody')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/cancellation/work-items/{serviceWorkItem}/recall',
+                        [
+                            ServiceCancellationController::class,
+                            'createRecall',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.cancellation.recall.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/cancellation/work-items/{serviceWorkItem}/recall',
+                        [
+                            ServiceCancellationController::class,
+                            'storeRecall',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.cancellation.recall.store');
+                });
+
+            Route::middleware('can:resolve-service-cancellation')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/cancellation/requests/{serviceCancellationRequest}/resolution',
+                        [
+                            ServiceCancellationController::class,
+                            'createResolution',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceCancellationRequest')
+                        ->name('service-orders.cancellation.resolution.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/cancellation/requests/{serviceCancellationRequest}/resolution',
+                        [
+                            ServiceCancellationController::class,
+                            'storeResolution',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceCancellationRequest')
+                        ->name('service-orders.cancellation.resolution.store');
+                });
+
+            Route::middleware('can:return-cancelled-service-order')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/cancellation/resolutions/{serviceCancellationResolution}/return',
+                        [
+                            ServiceCancellationController::class,
+                            'createReturn',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceCancellationResolution')
+                        ->name('service-orders.cancellation.return.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/cancellation/resolutions/{serviceCancellationResolution}/return',
+                        [
+                            ServiceCancellationController::class,
+                            'storeReturn',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceCancellationResolution')
+                        ->name('service-orders.cancellation.return.store');
+                });
 
             Route::middleware('can:view-inventory')
                 ->group(function () {
@@ -616,8 +714,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         SupplierOfferController::class
                     )
                         ->parameters([
-                            'supplier-offers' =>
-                                'supplierOffer',
+                            'supplier-offers' => 'supplierOffer',
                         ])
                         ->except([
                             'index',
@@ -658,7 +755,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->name('audit-logs.show');
                 });
         });
-
 
 });
 
