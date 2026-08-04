@@ -38,6 +38,7 @@
         @endif
 
         @include('service-orders._cancellation', ['order' => $order])
+        @include('service-orders._warranty', ['order' => $order])
 
         <div class="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(20rem,0.8fr)]">
             <div class="space-y-6">

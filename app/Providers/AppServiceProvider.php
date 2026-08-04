@@ -81,6 +81,9 @@ class AppServiceProvider extends ServiceProvider
             'resolve-service-cancellation' => 'canResolveServiceCancellation',
             'transfer-service-custody' => 'canTransferServiceCustody',
             'return-cancelled-service-order' => 'canReturnCancelledServiceOrder',
+            'register-service-warranty-claims' => 'canRegisterServiceWarrantyClaims',
+            'resolve-service-warranty-claims' => 'canResolveServiceWarrantyClaims',
+            'return-service-warranty-claims' => 'canReturnServiceWarrantyClaims',
         ] as $ability => $method) {
             Gate::define(
                 $ability,

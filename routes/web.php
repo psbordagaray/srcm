@@ -19,6 +19,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceAssessmentController;
 use App\Http\Controllers\ServiceCancellationController;
 use App\Http\Controllers\ServiceOrderController;
+use App\Http\Controllers\ServiceWarrantyClaimController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierOfferController;
 use App\Http\Controllers\TechnicalModelController;
@@ -431,6 +432,81 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereUuid('serviceOrder')
                         ->whereNumber('serviceCancellationResolution')
                         ->name('service-orders.cancellation.return.store');
+                });
+
+            Route::middleware('can:register-service-warranty-claims')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/warranties/{serviceWarrantyGrant}/claims/create',
+                        [
+                            ServiceWarrantyClaimController::class,
+                            'createRegistration',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWarrantyGrant')
+                        ->name('service-orders.warranty-claims.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/warranties/{serviceWarrantyGrant}/claims',
+                        [
+                            ServiceWarrantyClaimController::class,
+                            'storeRegistration',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWarrantyGrant')
+                        ->name('service-orders.warranty-claims.store');
+                });
+
+            Route::middleware('can:resolve-service-warranty-claims')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/warranty-claims/{serviceWarrantyClaim:public_id}/resolution',
+                        [
+                            ServiceWarrantyClaimController::class,
+                            'createResolution',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereUuid('serviceWarrantyClaim')
+                        ->name('service-orders.warranty-claims.resolution.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/warranty-claims/{serviceWarrantyClaim:public_id}/resolution',
+                        [
+                            ServiceWarrantyClaimController::class,
+                            'storeResolution',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereUuid('serviceWarrantyClaim')
+                        ->name('service-orders.warranty-claims.resolution.store');
+                });
+
+            Route::middleware('can:return-service-warranty-claims')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/warranty-claims/{serviceWarrantyClaim:public_id}/return',
+                        [
+                            ServiceWarrantyClaimController::class,
+                            'createReturn',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereUuid('serviceWarrantyClaim')
+                        ->name('service-orders.warranty-claims.return.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/warranty-claims/{serviceWarrantyClaim:public_id}/return',
+                        [
+                            ServiceWarrantyClaimController::class,
+                            'storeReturn',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereUuid('serviceWarrantyClaim')
+                        ->name('service-orders.warranty-claims.return.store');
                 });
 
             Route::middleware('can:view-inventory')

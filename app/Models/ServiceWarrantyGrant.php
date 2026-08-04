@@ -44,7 +44,10 @@ class ServiceWarrantyGrant extends Model
 
     public function delivery(): BelongsTo
     {
-        return $this->belongsTo(ServiceDelivery::class);
+        return $this->belongsTo(
+            ServiceDelivery::class,
+            'service_delivery_id'
+        );
     }
 
     public function claims(): HasMany

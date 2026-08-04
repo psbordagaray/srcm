@@ -220,6 +220,14 @@ class ServiceOrder extends Model
         );
     }
 
+    public function serviceWarrantyClaims(): HasMany
+    {
+        return $this->hasMany(
+            ServiceWarrantyClaim::class,
+            'corrective_service_order_id'
+        )->orderBy('id');
+    }
+
     public function scopeUnsettledDelivered(Builder $query): Builder
     {
         return $query

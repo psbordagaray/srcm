@@ -36,6 +36,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
   - cancelación posterior a aprobación, resolución y devolución trazable — Core 7 completado
   - superficie HTTP/UI de cancelación posterior a aprobación — Core 8 completado
   - reclamos de garantía, reingreso y orden correctiva trazable — Core 9 completado
+  - superficie HTTP/UI de reclamos de garantía y devolución — Core 10 completado
 
 ---
 
