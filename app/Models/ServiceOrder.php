@@ -148,6 +148,13 @@ class ServiceOrder extends Model
             ->orderBy('id');
     }
 
+    public function evidences(): HasMany
+    {
+        return $this->hasMany(ServiceEvidence::class)
+            ->orderBy('captured_at')
+            ->orderBy('id');
+    }
+
     public function diagnostics(): HasMany
     {
         return $this->hasMany(ServiceDiagnostic::class)

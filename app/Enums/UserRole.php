@@ -50,6 +50,21 @@ enum UserRole: string
         return true;
     }
 
+    public function canViewServiceEvidence(): bool
+    {
+        return $this->canViewServiceOrders();
+    }
+
+    public function canUploadServiceEvidence(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
+    public function canVerifyServiceEvidence(): bool
+    {
+        return $this->canViewServiceEvidence();
+    }
+
     public function canCreateServiceOrders(): bool
     {
         return $this !== self::Viewer;
