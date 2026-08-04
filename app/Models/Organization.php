@@ -191,4 +191,19 @@ class Organization extends Model
     {
         return $this->hasMany(CommerceSale::class);
     }
+
+    public function serviceCancellationRequests(): HasMany
+    {
+        return $this->hasMany(ServiceCancellationRequest::class);
+    }
+
+    public function serviceCancellationResolutions(): HasMany
+    {
+        return $this->hasMany(ServiceCancellationResolution::class);
+    }
+
+    public function serviceCancellationReturns(): HasMany
+    {
+        return $this->hasMany(ServiceCancellationReturn::class);
+    }
 }

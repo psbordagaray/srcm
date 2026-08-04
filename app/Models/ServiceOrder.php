@@ -193,6 +193,16 @@ class ServiceOrder extends Model
         return $this->hasOne(CommerceSale::class);
     }
 
+    public function cancellationRequest(): HasOne
+    {
+        return $this->hasOne(ServiceCancellationRequest::class);
+    }
+
+    public function cancellationReturn(): HasOne
+    {
+        return $this->hasOne(ServiceCancellationReturn::class);
+    }
+
     public function scopeUnsettledDelivered(Builder $query): Builder
     {
         return $query
@@ -210,6 +220,19 @@ class ServiceOrder extends Model
         $original = ServiceOrderStatus::from(
             (string) $this->getRawOriginal('status')
         );
+
+        if ($target === ServiceOrderStatus::CancellationPending) {
+            return ! in_array(
+                $original,
+                [
+                    ServiceOrderStatus::Delivered,
+                    ServiceOrderStatus::CancellationPending,
+                    ServiceOrderStatus::ReadyForReturn,
+                    ServiceOrderStatus::Cancelled,
+                ],
+                true
+            );
+        }
 
         return match ($original) {
             ServiceOrderStatus::Received =>
@@ -248,7 +271,25 @@ class ServiceOrder extends Model
             ),
             ServiceOrderStatus::ReadyForDelivery =>
                 $target === ServiceOrderStatus::Delivered,
+            ServiceOrderStatus::CancellationPending =>
+                $target === ServiceOrderStatus::ReadyForReturn,
+            ServiceOrderStatus::ReadyForReturn =>
+                $target === ServiceOrderStatus::Cancelled,
             default => false,
         };
+    }
+
+    public function canRequestCancellation(): bool
+    {
+        return ! in_array(
+            $this->status,
+            [
+                ServiceOrderStatus::Delivered,
+                ServiceOrderStatus::CancellationPending,
+                ServiceOrderStatus::ReadyForReturn,
+                ServiceOrderStatus::Cancelled,
+            ],
+            true
+        );
     }
 }

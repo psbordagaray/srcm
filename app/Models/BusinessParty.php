@@ -158,4 +158,20 @@ class BusinessParty extends Model
             'customer_business_party_id'
         );
     }
+
+    public function requestedServiceCancellations(): HasMany
+    {
+        return $this->hasMany(
+            ServiceCancellationRequest::class,
+            'requester_business_party_id'
+        );
+    }
+
+    public function receivedServiceCancellationReturns(): HasMany
+    {
+        return $this->hasMany(
+            ServiceCancellationReturn::class,
+            'recipient_business_party_id'
+        );
+    }
 }

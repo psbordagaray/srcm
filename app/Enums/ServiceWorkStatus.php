@@ -9,6 +9,7 @@ enum ServiceWorkStatus: string
     case WithProvider = 'with_provider';
     case Completed = 'completed';
     case Unresolved = 'unresolved';
+    case Cancelled = 'cancelled';
 
     public function label(): string
     {
@@ -18,11 +19,16 @@ enum ServiceWorkStatus: string
             self::WithProvider => 'Con especialista externo',
             self::Completed => 'Completado',
             self::Unresolved => 'Sin solución',
+            self::Cancelled => 'Cancelado',
         };
     }
 
     public function isTerminal(): bool
     {
-        return in_array($this, [self::Completed, self::Unresolved], true);
+        return in_array(
+            $this,
+            [self::Completed, self::Unresolved, self::Cancelled],
+            true
+        );
     }
 }

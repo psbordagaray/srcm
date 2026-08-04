@@ -120,6 +120,21 @@ enum UserRole: string
         return $this === self::Admin;
     }
 
+    public function canRequestServiceCancellation(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
+    public function canResolveServiceCancellation(): bool
+    {
+        return $this->canCancelServiceOrders();
+    }
+
+    public function canReturnCancelledServiceOrder(): bool
+    {
+        return $this->canDeliverServiceOrders();
+    }
+
     public function canManageOrganization(): bool
     {
         return $this === self::Admin;

@@ -93,16 +93,24 @@ class ServiceWorkItem extends Model
                 [
                     ServiceWorkStatus::InProgress,
                     ServiceWorkStatus::WithProvider,
+                    ServiceWorkStatus::Cancelled,
                 ],
                 true
             ),
-            ServiceWorkStatus::WithProvider =>
-                $target === ServiceWorkStatus::InProgress,
+            ServiceWorkStatus::WithProvider => in_array(
+                $target,
+                [
+                    ServiceWorkStatus::InProgress,
+                    ServiceWorkStatus::Cancelled,
+                ],
+                true
+            ),
             ServiceWorkStatus::InProgress => in_array(
                 $target,
                 [
                     ServiceWorkStatus::Completed,
                     ServiceWorkStatus::Unresolved,
+                    ServiceWorkStatus::Cancelled,
                 ],
                 true
             ),

@@ -13,6 +13,8 @@ enum ServiceOrderStatus: string
     case QualityControl = 'quality_control';
     case ReadyForDelivery = 'ready_for_delivery';
     case Delivered = 'delivered';
+    case CancellationPending = 'cancellation_pending';
+    case ReadyForReturn = 'ready_for_return';
     case Cancelled = 'cancelled';
 
     public function label(): string
@@ -27,7 +29,9 @@ enum ServiceOrderStatus: string
             self::QualityControl => 'En control de calidad',
             self::ReadyForDelivery => 'Lista para entregar',
             self::Delivered => 'Entregada',
-            self::Cancelled => 'Cancelada',
+            self::CancellationPending => 'Cancelación solicitada',
+            self::ReadyForReturn => 'Lista para devolver',
+            self::Cancelled => 'Cancelada y devuelta',
         };
     }
 }

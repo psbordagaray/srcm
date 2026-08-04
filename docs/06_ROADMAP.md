@@ -33,6 +33,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
   - venta mixta, pagos y controles antifraude — Core 6 completado
   - recepción web, buscador y expediente operativo inicial — UI 1 completada
   - diagnóstico, presupuesto versionado y decisión del cliente — UI 2 completada
+  - cancelación posterior a aprobación, resolución y devolución trazable — Core 7 completado
 
 ---
 
