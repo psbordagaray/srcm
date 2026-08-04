@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ServiceWarrantyGrant extends Model
 {
@@ -44,6 +45,14 @@ class ServiceWarrantyGrant extends Model
     public function delivery(): BelongsTo
     {
         return $this->belongsTo(ServiceDelivery::class);
+    }
+
+    public function claims(): HasMany
+    {
+        return $this->hasMany(
+            ServiceWarrantyClaim::class,
+            'service_warranty_grant_id'
+        )->orderBy('id');
     }
 
     public function workReport(): BelongsTo

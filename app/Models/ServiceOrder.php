@@ -3,10 +3,11 @@
 namespace App\Models;
 
 use App\Enums\ServiceOrderStatus;
+use App\Enums\ServiceWarrantyClaimOutcome;
 use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -203,6 +204,22 @@ class ServiceOrder extends Model
         return $this->hasOne(ServiceCancellationReturn::class);
     }
 
+    public function warrantyClaimsAsOriginal(): HasMany
+    {
+        return $this->hasMany(
+            ServiceWarrantyClaim::class,
+            'original_service_order_id'
+        )->orderBy('id');
+    }
+
+    public function warrantyClaimAsCorrective(): HasOne
+    {
+        return $this->hasOne(
+            ServiceWarrantyClaim::class,
+            'corrective_service_order_id'
+        );
+    }
+
     public function scopeUnsettledDelivered(Builder $query): Builder
     {
         return $query
@@ -222,23 +239,50 @@ class ServiceOrder extends Model
         );
 
         if ($target === ServiceOrderStatus::CancellationPending) {
-            return ! in_array(
-                $original,
+            return ! $this->warrantyClaimAsCorrective()->exists()
+                && ! in_array(
+                    $original,
+                    [
+                        ServiceOrderStatus::Delivered,
+                        ServiceOrderStatus::CancellationPending,
+                        ServiceOrderStatus::ReadyForReturn,
+                        ServiceOrderStatus::Cancelled,
+                    ],
+                    true
+                );
+        }
+
+        if (
+            $original === ServiceOrderStatus::Received
+            && in_array(
+                $target,
                 [
-                    ServiceOrderStatus::Delivered,
-                    ServiceOrderStatus::CancellationPending,
+                    ServiceOrderStatus::InProgress,
                     ServiceOrderStatus::ReadyForReturn,
-                    ServiceOrderStatus::Cancelled,
                 ],
                 true
-            );
+            )
+        ) {
+            $claim = $this->warrantyClaimAsCorrective()
+                ->with('resolution')
+                ->first();
+
+            if (! $claim?->resolution) {
+                return false;
+            }
+
+            return match ($target) {
+                ServiceOrderStatus::InProgress => $claim->resolution->outcome
+                    ->authorizesCorrectiveWork(),
+                ServiceOrderStatus::ReadyForReturn => $claim->resolution->outcome
+                        === ServiceWarrantyClaimOutcome::Rejected,
+                default => false,
+            };
         }
 
         return match ($original) {
-            ServiceOrderStatus::Received =>
-                $target === ServiceOrderStatus::Diagnosing,
-            ServiceOrderStatus::Diagnosing =>
-                $target === ServiceOrderStatus::AwaitingApproval,
+            ServiceOrderStatus::Received => $target === ServiceOrderStatus::Diagnosing,
+            ServiceOrderStatus::Diagnosing => $target === ServiceOrderStatus::AwaitingApproval,
             ServiceOrderStatus::AwaitingApproval => in_array(
                 $target,
                 [
@@ -257,10 +301,8 @@ class ServiceOrder extends Model
                 ],
                 true
             ),
-            ServiceOrderStatus::AwaitingParts =>
-                $target === ServiceOrderStatus::InProgress,
-            ServiceOrderStatus::WithExternalProvider =>
-                $target === ServiceOrderStatus::InProgress,
+            ServiceOrderStatus::AwaitingParts => $target === ServiceOrderStatus::InProgress,
+            ServiceOrderStatus::WithExternalProvider => $target === ServiceOrderStatus::InProgress,
             ServiceOrderStatus::QualityControl => in_array(
                 $target,
                 [
@@ -269,18 +311,19 @@ class ServiceOrder extends Model
                 ],
                 true
             ),
-            ServiceOrderStatus::ReadyForDelivery =>
-                $target === ServiceOrderStatus::Delivered,
-            ServiceOrderStatus::CancellationPending =>
-                $target === ServiceOrderStatus::ReadyForReturn,
-            ServiceOrderStatus::ReadyForReturn =>
-                $target === ServiceOrderStatus::Cancelled,
+            ServiceOrderStatus::ReadyForDelivery => $target === ServiceOrderStatus::Delivered,
+            ServiceOrderStatus::CancellationPending => $target === ServiceOrderStatus::ReadyForReturn,
+            ServiceOrderStatus::ReadyForReturn => $target === ServiceOrderStatus::Cancelled,
             default => false,
         };
     }
 
     public function canRequestCancellation(): bool
     {
+        if ($this->warrantyClaimAsCorrective()->exists()) {
+            return false;
+        }
+
         return ! in_array(
             $this->status,
             [

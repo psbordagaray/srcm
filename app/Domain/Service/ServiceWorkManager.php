@@ -6,6 +6,7 @@ use App\Domain\Inventory\InventoryQuantity;
 use App\Enums\ServiceCustodyEventType;
 use App\Enums\ServiceOrderStatus;
 use App\Enums\ServiceQuoteDecisionType;
+use App\Enums\ServiceWarrantyClaimStatus;
 use App\Enums\ServiceWorkCustodyDirection;
 use App\Enums\ServiceWorkExecutionMode;
 use App\Enums\ServiceWorkOutcome;
@@ -19,6 +20,7 @@ use App\Models\ServicePartConsumption;
 use App\Models\ServicePartRequirement;
 use App\Models\ServiceQuoteDecision;
 use App\Models\ServiceQuoteOption;
+use App\Models\ServiceWarrantyClaimResolution;
 use App\Models\ServiceWorkCustodyLink;
 use App\Models\ServiceWorkItem;
 use App\Models\ServiceWorkReport;
@@ -109,8 +111,7 @@ final class ServiceWorkManager
                 'title' => $normalized['title'],
                 'description' => $normalized['description'],
                 'execution_mode' => $data->executionMode,
-                'provider_business_party_id' =>
-                    $data->providerBusinessPartyId,
+                'provider_business_party_id' => $data->providerBusinessPartyId,
                 'assigned_user_id' => $data->assignedUserId,
                 'status' => ServiceWorkStatus::Planned,
                 'created_by_user_id' => $actor->id,
@@ -133,6 +134,122 @@ final class ServiceWorkManager
             );
 
             return $item->load('statusHistory');
+        }, 3);
+    }
+
+    public function planWarranty(
+        ServiceWarrantyWorkItemData $data,
+        User $actor
+    ): ServiceWorkItem {
+        $normalized = $this->normalizeWarrantyWorkItem($data);
+
+        return DB::transaction(function () use (
+            $data,
+            $actor,
+            $normalized
+        ): ServiceWorkItem {
+            $organizationId = $this->organizationId($actor);
+            $this->guardActor($organizationId, $actor, 'plan');
+
+            $existing = ServiceWorkItem::query()
+                ->forOrganization($organizationId)
+                ->where('idempotency_key', $normalized['idempotency_key'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing) {
+                $this->guardFingerprint(
+                    $existing->fingerprint,
+                    $normalized['fingerprint'],
+                    'trabajo de garantía'
+                );
+
+                return $existing->load([
+                    'statusHistory',
+                    'warrantyResolution.claim',
+                ]);
+            }
+
+            $order = $this->lockedOrder(
+                $organizationId,
+                $data->serviceOrderId
+            );
+
+            if ($order->status !== ServiceOrderStatus::InProgress) {
+                throw new DomainException(
+                    'La orden correctiva debe estar autorizada para planificar trabajos.'
+                );
+            }
+
+            $resolution = ServiceWarrantyClaimResolution::query()
+                ->forOrganization($organizationId)
+                ->with('claim')
+                ->whereKey($data->serviceWarrantyClaimResolutionId)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                ! $resolution
+                || ! $resolution->outcome->authorizesCorrectiveWork()
+                || ! $resolution->claim
+                || $resolution->claim->status
+                    !== ServiceWarrantyClaimStatus::InCorrectiveWork
+                || (int) $resolution->claim->corrective_service_order_id
+                    !== $order->id
+            ) {
+                throw new DomainException(
+                    'El trabajo no pertenece a una resolución de garantía vigente.'
+                );
+            }
+
+            $this->guardAssignment(
+                $organizationId,
+                $data->executionMode,
+                $data->providerBusinessPartyId,
+                $data->assignedUserId
+            );
+
+            $plannedAt = CarbonImmutable::now();
+            $sequence = ((int) ServiceWorkItem::query()
+                ->forOrganization($organizationId)
+                ->where('service_order_id', $order->id)
+                ->max('sequence')) + 1;
+
+            $item = ServiceWorkItem::query()->create([
+                'organization_id' => $organizationId,
+                'service_order_id' => $order->id,
+                'service_quote_option_id' => null,
+                'service_warranty_claim_resolution_id' => $resolution->id,
+                'sequence' => $sequence,
+                'title' => $normalized['title'],
+                'description' => $normalized['description'],
+                'execution_mode' => $data->executionMode,
+                'provider_business_party_id' => $data->providerBusinessPartyId,
+                'assigned_user_id' => $data->assignedUserId,
+                'status' => ServiceWorkStatus::Planned,
+                'created_by_user_id' => $actor->id,
+                'planned_at' => $plannedAt,
+                'idempotency_key' => $normalized['idempotency_key'],
+                'fingerprint' => $normalized['fingerprint'],
+            ]);
+
+            $this->appendWorkHistory(
+                $item,
+                null,
+                ServiceWorkStatus::Planned,
+                $actor,
+                'Trabajo incorporado al alcance cubierto por garantía.',
+                $plannedAt,
+                $this->derivedKey(
+                    $normalized['idempotency_key'],
+                    'planned'
+                )
+            );
+
+            return $item->load([
+                'statusHistory',
+                'warrantyResolution.claim',
+            ]);
         }, 3);
     }
 
@@ -269,8 +386,7 @@ final class ServiceWorkManager
                 'to_holder_name' => $provider->name,
                 'location_id' => null,
                 'condition_notes' => $normalized['condition_notes'],
-                'accessories_snapshot' =>
-                    $normalized['accessories_snapshot'],
+                'accessories_snapshot' => $normalized['accessories_snapshot'],
                 'recorded_by_user_id' => $actor->id,
                 'occurred_at' => $occurredAt,
             ]);
@@ -387,8 +503,7 @@ final class ServiceWorkManager
                 'to_holder_name' => (string) $organization->name,
                 'location_id' => $order->intake_location_id,
                 'condition_notes' => $normalized['condition_notes'],
-                'accessories_snapshot' =>
-                    $normalized['accessories_snapshot'],
+                'accessories_snapshot' => $normalized['accessories_snapshot'],
                 'recorded_by_user_id' => $actor->id,
                 'occurred_at' => $occurredAt,
             ]);
@@ -566,8 +681,31 @@ final class ServiceWorkManager
                 'La descripción'
             ),
             'execution_mode' => $data->executionMode->value,
-            'provider_business_party_id' =>
-                $data->providerBusinessPartyId,
+            'provider_business_party_id' => $data->providerBusinessPartyId,
+            'assigned_user_id' => $data->assignedUserId,
+            'idempotency_key' => $this->idempotencyKey(
+                $data->idempotencyKey
+            ),
+        ];
+        $normalized['fingerprint'] = $this->fingerprint($normalized);
+
+        return $normalized;
+    }
+
+    /** @return array<string, mixed> */
+    private function normalizeWarrantyWorkItem(
+        ServiceWarrantyWorkItemData $data
+    ): array {
+        $normalized = [
+            'service_order_id' => $data->serviceOrderId,
+            'service_warranty_claim_resolution_id' => $data->serviceWarrantyClaimResolutionId,
+            'title' => $this->required($data->title, 'El título'),
+            'description' => $this->required(
+                $data->description,
+                'La descripción'
+            ),
+            'execution_mode' => $data->executionMode->value,
+            'provider_business_party_id' => $data->providerBusinessPartyId,
             'assigned_user_id' => $data->assignedUserId,
             'idempotency_key' => $this->idempotencyKey(
                 $data->idempotencyKey
@@ -936,8 +1074,7 @@ final class ServiceWorkManager
         $allowed = match ($action) {
             'plan' => $membership?->role->canPlanServiceWork(),
             'execute' => $membership?->role->canExecuteServiceWork(),
-            'custody' =>
-                $membership?->role->canTransferServiceCustody(),
+            'custody' => $membership?->role->canTransferServiceCustody(),
             default => false,
         };
 

@@ -24,6 +24,10 @@ use JsonException;
 
 final class ServiceCompletionManager
 {
+    public function __construct(
+        private readonly ServiceWarrantyClaimManager $warrantyClaimManager
+    ) {}
+
     public function inspect(
         ServiceQualityInspectionData $data,
         User $actor
@@ -92,8 +96,7 @@ final class ServiceCompletionManager
                 'failed_check_count' => $normalized['failed_check_count'],
                 'checks' => $normalized['checks'],
                 'condition_notes' => $normalized['condition_notes'],
-                'accessories_snapshot' =>
-                    $normalized['accessories_snapshot'],
+                'accessories_snapshot' => $normalized['accessories_snapshot'],
                 'rework_reason' => $normalized['rework_reason'],
                 'notes' => $normalized['notes'],
                 'inspected_by_user_id' => $actor->id,
@@ -208,8 +211,7 @@ final class ServiceCompletionManager
                 'service_order_id' => $order->id,
                 'event_type' => ServiceCustodyEventType::Delivered,
                 'from_holder_type' => 'organization',
-                'from_holder_reference' =>
-                    $latestCustody->to_holder_reference,
+                'from_holder_reference' => $latestCustody->to_holder_reference,
                 'from_holder_name' => $latestCustody->to_holder_name,
                 'to_holder_type' => $recipient
                     ? 'business_party'
@@ -220,8 +222,7 @@ final class ServiceCompletionManager
                 'to_holder_name' => $normalized['recipient_name'],
                 'location_id' => null,
                 'condition_notes' => $normalized['condition_notes'],
-                'accessories_snapshot' =>
-                    $normalized['accessories_snapshot'],
+                'accessories_snapshot' => $normalized['accessories_snapshot'],
                 'recorded_by_user_id' => $actor->id,
                 'occurred_at' => $deliveredAt,
             ]);
@@ -233,11 +234,9 @@ final class ServiceCompletionManager
                 'recipient_business_party_id' => $recipient?->id,
                 'recipient_name' => $normalized['recipient_name'],
                 'recipient_document' => $normalized['recipient_document'],
-                'customer_conformity' =>
-                    $normalized['customer_conformity'],
+                'customer_conformity' => $normalized['customer_conformity'],
                 'condition_notes' => $normalized['condition_notes'],
-                'accessories_snapshot' =>
-                    $normalized['accessories_snapshot'],
+                'accessories_snapshot' => $normalized['accessories_snapshot'],
                 'notes' => $normalized['notes'],
                 'delivered_by_user_id' => $actor->id,
                 'delivered_at' => $deliveredAt,
@@ -250,6 +249,10 @@ final class ServiceCompletionManager
                 $order,
                 $delivery,
                 $deliveredAt
+            );
+            $this->warrantyClaimManager->closeAfterDelivery(
+                $delivery,
+                $actor
             );
             $this->transitionOrder(
                 $order,
@@ -375,10 +378,8 @@ final class ServiceCompletionManager
 
         $normalized = [
             'service_order_id' => $data->serviceOrderId,
-            'service_quality_inspection_id' =>
-                $data->serviceQualityInspectionId,
-            'recipient_business_party_id' =>
-                $data->recipientBusinessPartyId,
+            'service_quality_inspection_id' => $data->serviceQualityInspectionId,
+            'recipient_business_party_id' => $data->recipientBusinessPartyId,
             'recipient_name' => $this->required(
                 $data->recipientName,
                 'El nombre del receptor'

@@ -21,6 +21,7 @@ class ServiceWorkItem extends Model
         'organization_id',
         'service_order_id',
         'service_quote_option_id',
+        'service_warranty_claim_resolution_id',
         'sequence',
         'title',
         'description',
@@ -41,6 +42,7 @@ class ServiceWorkItem extends Model
                 'organization_id',
                 'service_order_id',
                 'service_quote_option_id',
+                'service_warranty_claim_resolution_id',
                 'sequence',
                 'title',
                 'description',
@@ -128,6 +130,14 @@ class ServiceWorkItem extends Model
         return $this->belongsTo(
             ServiceQuoteOption::class,
             'service_quote_option_id'
+        );
+    }
+
+    public function warrantyResolution(): BelongsTo
+    {
+        return $this->belongsTo(
+            ServiceWarrantyClaimResolution::class,
+            'service_warranty_claim_resolution_id'
         );
     }
 

@@ -8,8 +8,8 @@ use DateTimeInterface;
 final readonly class ServiceOrderIntakeData
 {
     /**
-     * @param list<ServiceAssetIdentifierData> $identifiers
-     * @param array<string, mixed> $metadata
+     * @param  list<ServiceAssetIdentifierData>  $identifiers
+     * @param  array<string, mixed>  $metadata
      */
     public function __construct(
         public ServiceAssetType $assetType,
@@ -29,6 +29,7 @@ final readonly class ServiceOrderIntakeData
         public bool $contactAvailable = false,
         public ?string $contactReference = null,
         public ?DateTimeInterface $promisedAt = null,
-        public array $metadata = []
+        public array $metadata = [],
+        public ?int $serviceAssetId = null
     ) {}
 }

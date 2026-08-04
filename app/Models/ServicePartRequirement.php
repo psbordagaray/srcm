@@ -19,6 +19,7 @@ class ServicePartRequirement extends Model
         'service_order_id',
         'service_work_item_id',
         'service_quote_line_id',
+        'service_warranty_claim_resolution_id',
         'catalog_product_id',
         'condition',
         'source',
@@ -68,6 +69,14 @@ class ServicePartRequirement extends Model
         return $this->belongsTo(
             ServiceQuoteLine::class,
             'service_quote_line_id'
+        );
+    }
+
+    public function warrantyResolution(): BelongsTo
+    {
+        return $this->belongsTo(
+            ServiceWarrantyClaimResolution::class,
+            'service_warranty_claim_resolution_id'
         );
     }
 

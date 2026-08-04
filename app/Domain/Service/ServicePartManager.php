@@ -11,6 +11,7 @@ use App\Enums\InventoryMovementType;
 use App\Enums\ServiceOrderStatus;
 use App\Enums\ServicePartSource;
 use App\Enums\ServiceQuoteLineType;
+use App\Enums\ServiceWarrantyClaimStatus;
 use App\Enums\ServiceWorkStatus;
 use App\Models\CatalogProduct;
 use App\Models\OrganizationMembership;
@@ -21,6 +22,7 @@ use App\Models\ServicePartPurchase;
 use App\Models\ServicePartPurchaseLine;
 use App\Models\ServicePartRequirement;
 use App\Models\ServiceQuoteLine;
+use App\Models\ServiceWarrantyClaimResolution;
 use App\Models\ServiceWorkItem;
 use App\Models\Supplier;
 use App\Models\User;
@@ -38,8 +40,7 @@ final class ServicePartManager
     public function __construct(
         private readonly InventoryMovementCreator $movementCreator,
         private readonly InventoryMovementConfirmer $movementConfirmer
-    ) {
-    }
+    ) {}
 
     public function plan(
         ServicePartRequirementData $data,
@@ -179,6 +180,141 @@ final class ServicePartManager
         }, 3);
     }
 
+    public function planWarranty(
+        ServiceWarrantyPartRequirementData $data,
+        User $actor
+    ): ServicePartRequirement {
+        $normalized = $this->normalizeWarrantyRequirement($data);
+
+        return DB::transaction(function () use (
+            $data,
+            $actor,
+            $normalized
+        ): ServicePartRequirement {
+            $organizationId = $this->organizationId($actor);
+            $this->guardActor($organizationId, $actor, 'plan');
+
+            $existing = ServicePartRequirement::query()
+                ->forOrganization($organizationId)
+                ->where('idempotency_key', $normalized['idempotency_key'])
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing) {
+                $this->guardFingerprint(
+                    $existing->fingerprint,
+                    $normalized['fingerprint'],
+                    'necesidad de repuesto de garantía'
+                );
+
+                return $existing->load([
+                    'workItem',
+                    'warrantyResolution.claim',
+                    'product',
+                ]);
+            }
+
+            $workItem = $this->lockedWorkItem(
+                $organizationId,
+                $data->serviceWorkItemId
+            );
+            $order = $this->lockedOrder(
+                $organizationId,
+                (int) $workItem->service_order_id
+            );
+
+            if (! in_array($order->status, [
+                ServiceOrderStatus::InProgress,
+                ServiceOrderStatus::AwaitingParts,
+            ], true) || ! in_array($workItem->status, [
+                ServiceWorkStatus::Planned,
+                ServiceWorkStatus::InProgress,
+            ], true)) {
+                throw new DomainException(
+                    'La orden o el trabajo no admiten repuestos de garantía.'
+                );
+            }
+
+            $resolution = ServiceWarrantyClaimResolution::query()
+                ->forOrganization($organizationId)
+                ->with('claim')
+                ->whereKey($data->serviceWarrantyClaimResolutionId)
+                ->lockForUpdate()
+                ->first();
+            $product = CatalogProduct::query()
+                ->whereKey($data->catalogProductId)
+                ->where('active', true)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                ! $resolution
+                || ! $resolution->outcome->authorizesCorrectiveWork()
+                || ! $resolution->claim
+                || $resolution->claim->status
+                    !== ServiceWarrantyClaimStatus::InCorrectiveWork
+                || (int) $resolution->claim->corrective_service_order_id
+                    !== $order->id
+                || (int) $workItem->service_warranty_claim_resolution_id
+                    !== $resolution->id
+                || $workItem->service_quote_option_id !== null
+            ) {
+                throw new DomainException(
+                    'El repuesto no pertenece al alcance correctivo de garantía.'
+                );
+            }
+
+            if (! $product) {
+                throw new DomainException(
+                    'El producto usado como repuesto no existe o está inactivo.'
+                );
+            }
+
+            InventoryQuantity::assertFitsScale(
+                $normalized['required_quantity'],
+                (int) $product->quantity_scale,
+                'La cantidad requerida'
+            );
+
+            $plannedAt = CarbonImmutable::now();
+            $requirement = ServicePartRequirement::query()->create([
+                'organization_id' => $organizationId,
+                'service_order_id' => $order->id,
+                'service_work_item_id' => $workItem->id,
+                'service_quote_line_id' => null,
+                'service_warranty_claim_resolution_id' => $resolution->id,
+                'catalog_product_id' => $product->id,
+                'condition' => $data->condition,
+                'source' => $data->source,
+                'required_quantity' => $normalized['required_quantity'],
+                'base_unit_code' => $product->base_unit_code,
+                'created_by_user_id' => $actor->id,
+                'planned_at' => $plannedAt,
+                'idempotency_key' => $normalized['idempotency_key'],
+                'fingerprint' => $normalized['fingerprint'],
+            ]);
+
+            if (
+                $data->source === ServicePartSource::DirectPurchase
+                && $order->status === ServiceOrderStatus::InProgress
+            ) {
+                $this->transitionOrder(
+                    $order,
+                    ServiceOrderStatus::AwaitingParts,
+                    $actor,
+                    'La garantía espera un repuesto comprado específicamente.',
+                    $plannedAt
+                );
+            }
+
+            return $requirement->load([
+                'workItem',
+                'warrantyResolution.claim',
+                'product',
+            ]);
+        }, 3);
+    }
+
     public function recordPurchase(
         ServicePartPurchaseData $data,
         User $actor
@@ -299,11 +435,9 @@ final class ServicePartManager
                 'supplier_id' => $supplier->id,
                 'currency_code' => $normalized['currency_code'],
                 'parts_total_minor' => $normalized['parts_total_minor'],
-                'logistics_cost_minor' =>
-                    $normalized['logistics_cost_minor'],
+                'logistics_cost_minor' => $normalized['logistics_cost_minor'],
                 'grand_total_minor' => $normalized['grand_total_minor'],
-                'document_reference' =>
-                    $normalized['document_reference'],
+                'document_reference' => $normalized['document_reference'],
                 'notes' => $normalized['notes'],
                 'purchased_by_user_id' => $actor->id,
                 'purchased_at' => $normalized['purchased_at'],
@@ -315,8 +449,7 @@ final class ServicePartManager
                 ServicePartPurchaseLine::query()->create([
                     'organization_id' => $organizationId,
                     'service_part_purchase_id' => $purchase->id,
-                    'service_part_requirement_id' =>
-                        $line['service_part_requirement_id'],
+                    'service_part_requirement_id' => $line['service_part_requirement_id'],
                     'sequence' => $index + 1,
                     'quantity' => $line['quantity'],
                     'unit_cost_minor' => $line['unit_cost_minor'],
@@ -456,8 +589,7 @@ final class ServicePartManager
                             'stock-issue'
                         ),
                         lines: [new InventoryMovementLineData(
-                            catalogProductId:
-                                (int) $requirement->catalog_product_id,
+                            catalogProductId: (int) $requirement->catalog_product_id,
                             condition: $requirement->condition,
                             enteredQuantity: $normalized['quantity'],
                             enteredUnitCode: $requirement->base_unit_code,
@@ -468,8 +600,7 @@ final class ServicePartManager
                         sourceId: (string) $order->id,
                         sourceReference: $order->order_number,
                         metadata: [
-                            'service_part_requirement_id' =>
-                                $requirement->id,
+                            'service_part_requirement_id' => $requirement->id,
                             'service_work_item_id' => $workItem->id,
                         ]
                     ),
@@ -570,6 +701,28 @@ final class ServicePartManager
     }
 
     /** @return array<string, mixed> */
+    private function normalizeWarrantyRequirement(
+        ServiceWarrantyPartRequirementData $data
+    ): array {
+        $normalized = [
+            'service_work_item_id' => $data->serviceWorkItemId,
+            'service_warranty_claim_resolution_id' => $data->serviceWarrantyClaimResolutionId,
+            'catalog_product_id' => $data->catalogProductId,
+            'condition' => $data->condition->value,
+            'source' => $data->source->value,
+            'required_quantity' => InventoryQuantity::positive(
+                $data->requiredQuantity
+            ),
+            'idempotency_key' => $this->idempotencyKey(
+                $data->idempotencyKey
+            ),
+        ];
+        $normalized['fingerprint'] = $this->fingerprint($normalized);
+
+        return $normalized;
+    }
+
+    /** @return array<string, mixed> */
     private function normalizePurchase(
         ServicePartPurchaseData $data
     ): array {
@@ -629,8 +782,7 @@ final class ServicePartManager
 
             $partsTotal += $lineTotal;
             $lines[] = [
-                'service_part_requirement_id' =>
-                    $line->servicePartRequirementId,
+                'service_part_requirement_id' => $line->servicePartRequirementId,
                 'quantity' => $quantity,
                 'unit_cost_minor' => $line->unitCostMinor,
                 'line_total_minor' => $lineTotal,
@@ -653,10 +805,8 @@ final class ServicePartManager
             'lines' => $lines,
             'parts_total_minor' => $partsTotal,
             'logistics_cost_minor' => $data->logisticsCostMinor,
-            'grand_total_minor' =>
-                $partsTotal + $data->logisticsCostMinor,
-            'document_reference' =>
-                $this->optional($data->documentReference),
+            'grand_total_minor' => $partsTotal + $data->logisticsCostMinor,
+            'document_reference' => $this->optional($data->documentReference),
             'notes' => $this->optional($data->notes),
             'idempotency_key' => $this->idempotencyKey(
                 $data->idempotencyKey
@@ -672,12 +822,10 @@ final class ServicePartManager
         ServicePartConsumptionData $data
     ): array {
         $normalized = [
-            'service_part_requirement_id' =>
-                $data->servicePartRequirementId,
+            'service_part_requirement_id' => $data->servicePartRequirementId,
             'quantity' => InventoryQuantity::positive($data->quantity),
             'source_location_id' => $data->sourceLocationId,
-            'service_part_purchase_line_id' =>
-                $data->servicePartPurchaseLineId,
+            'service_part_purchase_line_id' => $data->servicePartPurchaseLineId,
             'idempotency_key' => $this->idempotencyKey(
                 $data->idempotencyKey
             ),
@@ -783,10 +931,8 @@ final class ServicePartManager
             ->first();
         $allowed = match ($action) {
             'plan' => $membership?->role->canPlanServiceParts(),
-            'purchase' =>
-                $membership?->role->canRecordServicePartPurchases(),
-            'consume' =>
-                $membership?->role->canConsumeServiceParts(),
+            'purchase' => $membership?->role->canRecordServicePartPurchases(),
+            'consume' => $membership?->role->canConsumeServiceParts(),
             default => false,
         };
 

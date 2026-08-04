@@ -168,16 +168,11 @@ final class ServiceOrderIntakeManager
                 'identifiers_snapshot' => $identifierSnapshot,
                 'customer_name_snapshot' => $customerName,
                 'owner_name_snapshot' => $ownerName,
-                'customer_reported_issue' =>
-                    $normalized['customer_reported_issue'],
-                'intake_observations' =>
-                    $normalized['intake_observations'],
-                'received_accessories' =>
-                    $normalized['received_accessories'],
-                'contact_available' =>
-                    $normalized['contact_available'],
-                'contact_reference' =>
-                    $normalized['contact_reference'],
+                'customer_reported_issue' => $normalized['customer_reported_issue'],
+                'intake_observations' => $normalized['intake_observations'],
+                'received_accessories' => $normalized['received_accessories'],
+                'contact_available' => $normalized['contact_available'],
+                'contact_reference' => $normalized['contact_reference'],
                 'recorded_by_user_id' => $actor->id,
                 'recorded_at' => $receivedAt,
             ]);
@@ -211,10 +206,8 @@ final class ServiceOrderIntakeManager
                 'to_holder_reference' => (string) $organization->slug,
                 'to_holder_name' => (string) $organization->name,
                 'location_id' => $location->id,
-                'condition_notes' =>
-                    $normalized['intake_observations'],
-                'accessories_snapshot' =>
-                    $normalized['received_accessories'],
+                'condition_notes' => $normalized['intake_observations'],
+                'accessories_snapshot' => $normalized['received_accessories'],
                 'recorded_by_user_id' => $actor->id,
                 'occurred_at' => $receivedAt,
             ]);
@@ -286,7 +279,7 @@ final class ServiceOrderIntakeManager
     }
 
     /**
-     * @param array<string, mixed> $normalized
+     * @param  array<string, mixed>  $normalized
      */
     private function resolveAsset(
         int $organizationId,
@@ -314,7 +307,20 @@ final class ServiceOrderIntakeManager
             );
         }
 
-        $assetId = array_key_first($assetIds);
+        $explicitAssetId = $normalized['service_asset_id'] ?? null;
+        $identifiedAssetId = array_key_first($assetIds);
+
+        if (
+            $explicitAssetId !== null
+            && $identifiedAssetId !== null
+            && (int) $explicitAssetId !== (int) $identifiedAssetId
+        ) {
+            throw new DomainException(
+                'El activo indicado contradice los identificadores informados.'
+            );
+        }
+
+        $assetId = $explicitAssetId ?? $identifiedAssetId;
 
         if ($assetId === null) {
             $asset = ServiceAsset::query()->create([
@@ -330,7 +336,13 @@ final class ServiceOrderIntakeManager
                 ->forOrganization($organizationId)
                 ->whereKey($assetId)
                 ->lockForUpdate()
-                ->firstOrFail();
+                ->first();
+
+            if (! $asset) {
+                throw new DomainException(
+                    'El activo indicado no pertenece a la organización activa.'
+                );
+            }
 
             if (
                 $asset->asset_type->value !== $normalized['asset_type']
@@ -465,6 +477,12 @@ final class ServiceOrderIntakeManager
             );
         }
 
+        if ($data->serviceAssetId !== null && $data->serviceAssetId <= 0) {
+            throw new DomainException(
+                'El activo existente indicado para el reingreso es inválido.'
+            );
+        }
+
         $identifiers = $this->normalizeIdentifiers($data->identifiers);
         $metadata = $this->canonicalize($data->metadata);
         unset($metadata['_intake_fingerprint']);
@@ -472,18 +490,14 @@ final class ServiceOrderIntakeManager
         $normalized = [
             'asset_type' => $data->assetType->value,
             'brand_name' => $brandName,
-            'normalized_brand_name' =>
-                ServiceAsset::normalizeName($brandName),
+            'normalized_brand_name' => ServiceAsset::normalizeName($brandName),
             'model_name' => $modelName,
-            'normalized_model_name' =>
-                ServiceAsset::normalizeName($modelName),
+            'normalized_model_name' => ServiceAsset::normalizeName($modelName),
             'identifiers' => $identifiers,
             'intake_location_id' => $data->intakeLocationId,
-            'customer_business_party_id' =>
-                $data->customerBusinessPartyId,
+            'customer_business_party_id' => $data->customerBusinessPartyId,
             'customer_name' => $customerName,
-            'owner_business_party_id' =>
-                $data->ownerBusinessPartyId,
+            'owner_business_party_id' => $data->ownerBusinessPartyId,
             'owner_name' => $ownerName,
             'color' => $color,
             'customer_reported_issue' => $reportedIssue,
@@ -496,6 +510,10 @@ final class ServiceOrderIntakeManager
             'idempotency_key' => $idempotencyKey,
             'metadata' => $metadata,
         ];
+
+        if ($data->serviceAssetId !== null) {
+            $normalized['service_asset_id'] = $data->serviceAssetId;
+        }
 
         try {
             $normalized['fingerprint'] = hash(
@@ -518,7 +536,7 @@ final class ServiceOrderIntakeManager
     }
 
     /**
-     * @param list<ServiceAssetIdentifierData> $identifiers
+     * @param  list<ServiceAssetIdentifierData>  $identifiers
      * @return list<array{type: string, value: string, normalized_value: string}>
      */
     private function normalizeIdentifiers(array $identifiers): array
@@ -579,8 +597,7 @@ final class ServiceOrderIntakeManager
 
         usort(
             $normalized,
-            fn (array $first, array $second): int =>
-                [$first['type'], $first['normalized_value']]
+            fn (array $first, array $second): int => [$first['type'], $first['normalized_value']]
                 <=> [$second['type'], $second['normalized_value']]
         );
 
@@ -602,7 +619,7 @@ final class ServiceOrderIntakeManager
     }
 
     /**
-     * @param array<string, mixed> $value
+     * @param  array<string, mixed>  $value
      * @return array<string, mixed>
      */
     private function canonicalize(array $value): array

@@ -8,6 +8,7 @@ enum ServiceCustodyEventType: string
     case Transferred = 'transferred';
     case Returned = 'returned';
     case Delivered = 'delivered';
+    case WarrantyReturned = 'warranty_returned';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum ServiceCustodyEventType: string
             self::Transferred => 'Transferido',
             self::Returned => 'Retornado',
             self::Delivered => 'Entregado',
+            self::WarrantyReturned => 'Devuelto por garantía',
         };
     }
 }

@@ -89,6 +89,14 @@ class ServiceDelivery extends Model
             ->orderBy('id');
     }
 
+    public function warrantyClaims(): HasMany
+    {
+        return $this->hasMany(
+            ServiceWarrantyClaim::class,
+            'original_service_delivery_id'
+        )->orderBy('id');
+    }
+
     public function commerceSale(): HasOne
     {
         return $this->hasOne(CommerceSale::class);

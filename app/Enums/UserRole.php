@@ -135,6 +135,21 @@ enum UserRole: string
         return $this->canDeliverServiceOrders();
     }
 
+    public function canRegisterServiceWarrantyClaims(): bool
+    {
+        return $this->canManageServiceOrders();
+    }
+
+    public function canResolveServiceWarrantyClaims(): bool
+    {
+        return $this === self::Admin;
+    }
+
+    public function canReturnServiceWarrantyClaims(): bool
+    {
+        return $this->canDeliverServiceOrders();
+    }
+
     public function canManageOrganization(): bool
     {
         return $this === self::Admin;
@@ -220,19 +235,14 @@ enum UserRole: string
         InventoryMovementType $type
     ): bool {
         return match ($type) {
-            InventoryMovementType::Receipt =>
-                $this->canReceiveInventory(),
-            InventoryMovementType::Issue =>
-                $this->canIssueInventory(),
-            InventoryMovementType::Transfer =>
-                $this->canTransferInventory(),
+            InventoryMovementType::Receipt => $this->canReceiveInventory(),
+            InventoryMovementType::Issue => $this->canIssueInventory(),
+            InventoryMovementType::Transfer => $this->canTransferInventory(),
             InventoryMovementType::CustomerReturn,
-            InventoryMovementType::SupplierReturn =>
-                $this->canProcessInventoryReturns(),
+            InventoryMovementType::SupplierReturn => $this->canProcessInventoryReturns(),
             InventoryMovementType::InitialBalance,
             InventoryMovementType::PositiveAdjustment,
-            InventoryMovementType::NegativeAdjustment =>
-                $this->canAdjustInventory(),
+            InventoryMovementType::NegativeAdjustment => $this->canAdjustInventory(),
             InventoryMovementType::Reversal => false,
         };
     }
