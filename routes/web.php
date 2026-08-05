@@ -18,6 +18,7 @@ use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceAssessmentController;
 use App\Http\Controllers\ServiceCancellationController;
+use App\Http\Controllers\ServiceEvidenceController;
 use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\ServiceWarrantyClaimController;
 use App\Http\Controllers\SupplierController;
@@ -507,6 +508,57 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereUuid('serviceOrder')
                         ->whereUuid('serviceWarrantyClaim')
                         ->name('service-orders.warranty-claims.return.store');
+                });
+
+            Route::middleware('can:view-service-evidence')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/evidences/{evidencePublicId}/download',
+                        [
+                            ServiceEvidenceController::class,
+                            'download',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereUuid('evidencePublicId')
+                        ->name('service-orders.evidences.download');
+                });
+
+            Route::middleware('can:upload-service-evidence')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/evidences/create',
+                        [
+                            ServiceEvidenceController::class,
+                            'create',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.evidences.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/evidences',
+                        [
+                            ServiceEvidenceController::class,
+                            'store',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.evidences.store');
+                });
+
+            Route::middleware('can:verify-service-evidence')
+                ->group(function () {
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/evidences/{evidencePublicId}/verify',
+                        [
+                            ServiceEvidenceController::class,
+                            'verify',
+                        ]
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereUuid('evidencePublicId')
+                        ->name('service-orders.evidences.verify');
                 });
 
             Route::middleware('can:view-inventory')

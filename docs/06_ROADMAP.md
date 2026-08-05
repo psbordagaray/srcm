@@ -38,6 +38,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
   - reclamos de garantía, reingreso y orden correctiva trazable — Core 9 completado
   - superficie HTTP/UI de reclamos de garantía y devolución — Core 10 completado
   - evidencias privadas, fotografías y archivos inmutables — Core 11 completado
+  - superficie HTTP/UI segura de evidencias privadas — Core 12 completado
 
 ---
 

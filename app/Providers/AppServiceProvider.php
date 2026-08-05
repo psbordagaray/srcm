@@ -84,6 +84,9 @@ class AppServiceProvider extends ServiceProvider
             'register-service-warranty-claims' => 'canRegisterServiceWarrantyClaims',
             'resolve-service-warranty-claims' => 'canResolveServiceWarrantyClaims',
             'return-service-warranty-claims' => 'canReturnServiceWarrantyClaims',
+            'view-service-evidence' => 'canViewServiceEvidence',
+            'upload-service-evidence' => 'canUploadServiceEvidence',
+            'verify-service-evidence' => 'canVerifyServiceEvidence',
         ] as $ability => $method) {
             Gate::define(
                 $ability,

@@ -307,6 +307,7 @@ class ServiceOrderController extends Controller
             'warrantyClaimAsCorrective.returnRecord.recipient',
             'warrantyClaimAsCorrective.returnRecord.returnedBy',
             'warrantyClaimAsCorrective.returnRecord.custodyEvent',
+            'evidences.uploadedBy',
             'commerceSale',
             'cancellationRequest.requester',
             'cancellationRequest.requestedBy',
