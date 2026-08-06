@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
+use App\Http\Controllers\CommerceSaleController;
 use App\Http\Controllers\CompatibilityController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\IdentifierController;
@@ -240,6 +241,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )->name('organization.update');
                 });
 
+            Route::middleware('can:view-commerce-sales')
+                ->group(function () {
+                    Route::get(
+                        'commerce/sales',
+                        [CommerceSaleController::class, 'index']
+                    )->name('commerce-sales.index');
+
+                    Route::get(
+                        'commerce/sales/{commerceSale:public_id}',
+                        [CommerceSaleController::class, 'show']
+                    )
+                        ->whereUuid('commerceSale')
+                        ->name('commerce-sales.show');
+                });
+
+            Route::middleware('can:record-commerce-sales')
+                ->group(function () {
+                    Route::get(
+                        'commerce/sales/create',
+                        [CommerceSaleController::class, 'create']
+                    )->name('commerce-sales.create');
+
+                    Route::post(
+                        'commerce/sales',
+                        [CommerceSaleController::class, 'store']
+                    )->name('commerce-sales.store');
+                });
             Route::middleware('can:view-service-orders')
                 ->group(function () {
                     Route::get(

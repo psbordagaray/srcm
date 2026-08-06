@@ -131,7 +131,14 @@
             'icon' => 'truck',
         ],
         ['label' => 'Compras', 'disabled' => true, 'icon' => 'cart'],
-        ['label' => 'Ventas', 'disabled' => true, 'icon' => 'receipt'],
+        [
+            'label' => 'Ventas',
+            'route' => 'commerce-sales.index',
+            'active' => 'commerce-sales.*',
+            'icon' => 'receipt',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('view-commerce-sales'),
+        ],
     ];
 @endphp
 

@@ -42,6 +42,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
   - superficie HTTP/UI de trabajo propio, tercerizado y custodia — Core 13 completado
   - superficie HTTP/UI de repuestos, compras afectadas y consumos — Core 14 completado
   - superficie HTTP/UI de control de calidad, entrega y garantías — Core 15 completado
+  - superficie HTTP/UI de venta, cobro y cierre comercial — Core 16 completado
 
 ---
 

@@ -63,6 +63,19 @@ class AppServiceProvider extends ServiceProvider
                 ?? false
         );
 
+        foreach ([
+            'view-commerce-sales' => 'canViewCommerceSales',
+            'record-commerce-sales' => 'canRecordCommerceSale',
+        ] as $ability => $method) {
+            Gate::define(
+                $ability,
+                fn (User $user): bool => app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->{$method}()
+                    ?? false
+            );
+        }
+
         Gate::define(
             'manage-organization',
             fn (User $user): bool => app(CurrentOrganization::class)
