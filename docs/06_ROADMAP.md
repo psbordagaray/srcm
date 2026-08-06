@@ -40,6 +40,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
   - evidencias privadas, fotografías y archivos inmutables — Core 11 completado
   - superficie HTTP/UI segura de evidencias privadas — Core 12 completado
   - superficie HTTP/UI de trabajo propio, tercerizado y custodia — Core 13 completado
+  - superficie HTTP/UI de repuestos, compras afectadas y consumos — Core 14 completado
 
 ---
 

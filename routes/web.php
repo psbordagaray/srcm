@@ -20,6 +20,7 @@ use App\Http\Controllers\ServiceAssessmentController;
 use App\Http\Controllers\ServiceCancellationController;
 use App\Http\Controllers\ServiceEvidenceController;
 use App\Http\Controllers\ServiceOrderController;
+use App\Http\Controllers\ServicePartController;
 use App\Http\Controllers\ServiceWarrantyClaimController;
 use App\Http\Controllers\ServiceWorkController;
 use App\Http\Controllers\SupplierController;
@@ -415,6 +416,60 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereUuid('serviceOrder')
                         ->whereNumber('serviceWorkItem')
                         ->name('service-orders.work-items.return.store');
+                });
+            Route::middleware('can:plan-service-parts')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/work-items/{serviceWorkItem}/part-requirements/create',
+                        [ServicePartController::class, 'createRequirement']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.part-requirements.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/work-items/{serviceWorkItem}/part-requirements',
+                        [ServicePartController::class, 'storeRequirement']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.part-requirements.store');
+                });
+
+            Route::middleware('can:record-service-part-purchases')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/part-purchases/create',
+                        [ServicePartController::class, 'createPurchase']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.part-purchases.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/part-purchases',
+                        [ServicePartController::class, 'storePurchase']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.part-purchases.store');
+                });
+
+            Route::middleware('can:consume-service-parts')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/part-requirements/{servicePartRequirement}/consume',
+                        [ServicePartController::class, 'createConsumption']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('servicePartRequirement')
+                        ->name('service-orders.part-requirements.consume.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/part-requirements/{servicePartRequirement}/consume',
+                        [ServicePartController::class, 'storeConsumption']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('servicePartRequirement')
+                        ->name('service-orders.part-requirements.consume.store');
                 });
             Route::middleware('can:request-service-cancellation')
                 ->group(function () {

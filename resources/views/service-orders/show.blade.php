@@ -122,6 +122,7 @@
                 @endif
 
                 @include('service-orders._work', ['order' => $order])
+                @include('service-orders._parts', ['order' => $order])
             </div>
 
             <div class="space-y-6">
