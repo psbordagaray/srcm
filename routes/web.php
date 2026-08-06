@@ -21,6 +21,7 @@ use App\Http\Controllers\ServiceCancellationController;
 use App\Http\Controllers\ServiceEvidenceController;
 use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\ServiceWarrantyClaimController;
+use App\Http\Controllers\ServiceWorkController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SupplierOfferController;
 use App\Http\Controllers\TechnicalModelController;
@@ -337,6 +338,84 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('service-orders.quotes.decisions.store');
             });
 
+            Route::middleware('can:plan-service-work')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/work-items/create',
+                        [ServiceWorkController::class, 'create']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.work-items.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/work-items',
+                        [ServiceWorkController::class, 'store']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.work-items.store');
+                });
+
+            Route::middleware('can:execute-service-work')
+                ->group(function () {
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/work-items/{serviceWorkItem}/start',
+                        [ServiceWorkController::class, 'start']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.work-items.start');
+
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/work-items/{serviceWorkItem}/report',
+                        [ServiceWorkController::class, 'createReport']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.work-items.report.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/work-items/{serviceWorkItem}/report',
+                        [ServiceWorkController::class, 'storeReport']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.work-items.report.store');
+                });
+
+            Route::middleware('can:transfer-service-custody')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/work-items/{serviceWorkItem}/dispatch',
+                        [ServiceWorkController::class, 'createDispatch']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.work-items.dispatch.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/work-items/{serviceWorkItem}/dispatch',
+                        [ServiceWorkController::class, 'storeDispatch']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.work-items.dispatch.store');
+
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/work-items/{serviceWorkItem}/return',
+                        [ServiceWorkController::class, 'createReturn']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.work-items.return.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/work-items/{serviceWorkItem}/return',
+                        [ServiceWorkController::class, 'storeReturn']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->whereNumber('serviceWorkItem')
+                        ->name('service-orders.work-items.return.store');
+                });
             Route::middleware('can:request-service-cancellation')
                 ->group(function () {
                     Route::get(

@@ -77,6 +77,8 @@ class AppServiceProvider extends ServiceProvider
             'record-service-diagnostics' => 'canRecordServiceDiagnostics',
             'issue-service-quotes' => 'canIssueServiceQuotes',
             'record-service-quote-decisions' => 'canRecordServiceQuoteDecisions',
+            'plan-service-work' => 'canPlanServiceWork',
+            'execute-service-work' => 'canExecuteServiceWork',
             'request-service-cancellation' => 'canRequestServiceCancellation',
             'resolve-service-cancellation' => 'canResolveServiceCancellation',
             'transfer-service-custody' => 'canTransferServiceCustody',

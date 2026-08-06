@@ -121,9 +121,7 @@
                     </section>
                 @endif
 
-                @if($order->workItems->isNotEmpty())
-                    <section class="sulu-card p-6"><h2 class="text-lg font-bold text-white">Trabajos del expediente</h2><div class="mt-5 space-y-4">@foreach($order->workItems as $work)<article class="rounded-xl border border-slate-800 bg-slate-950/50 p-4"><div class="flex flex-wrap items-center justify-between gap-3"><div><p class="text-sm font-semibold text-white">{{ $work->sequence }}. {{ $work->title }}</p><p class="mt-1 text-xs text-slate-500">{{ $work->execution_mode->label() }}{{ $work->provider ? ' · '.$work->provider->name : '' }}</p></div><span class="rounded-full bg-slate-800 px-2.5 py-1 text-xs font-semibold text-slate-300">{{ $work->status->label() }}</span></div></article>@endforeach</div></section>
-                @endif
+                @include('service-orders._work', ['order' => $order])
             </div>
 
             <div class="space-y-6">
