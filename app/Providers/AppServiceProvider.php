@@ -82,6 +82,8 @@ class AppServiceProvider extends ServiceProvider
             'plan-service-parts' => 'canPlanServiceParts',
             'record-service-part-purchases' => 'canRecordServicePartPurchases',
             'consume-service-parts' => 'canConsumeServiceParts',
+            'inspect-service-quality' => 'canInspectServiceQuality',
+            'deliver-service-orders' => 'canDeliverServiceOrders',
             'request-service-cancellation' => 'canRequestServiceCancellation',
             'resolve-service-cancellation' => 'canResolveServiceCancellation',
             'transfer-service-custody' => 'canTransferServiceCustody',

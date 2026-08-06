@@ -18,6 +18,7 @@ use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceAssessmentController;
 use App\Http\Controllers\ServiceCancellationController;
+use App\Http\Controllers\ServiceCompletionController;
 use App\Http\Controllers\ServiceEvidenceController;
 use App\Http\Controllers\ServiceOrderController;
 use App\Http\Controllers\ServicePartController;
@@ -470,6 +471,39 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereUuid('serviceOrder')
                         ->whereNumber('servicePartRequirement')
                         ->name('service-orders.part-requirements.consume.store');
+                });
+            Route::middleware('can:inspect-service-quality')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/quality-inspections/create',
+                        [ServiceCompletionController::class, 'createQuality']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.quality-inspections.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/quality-inspections',
+                        [ServiceCompletionController::class, 'storeQuality']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.quality-inspections.store');
+                });
+
+            Route::middleware('can:deliver-service-orders')
+                ->group(function () {
+                    Route::get(
+                        'service/orders/{serviceOrder:public_id}/delivery/create',
+                        [ServiceCompletionController::class, 'createDelivery']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.delivery.create');
+
+                    Route::post(
+                        'service/orders/{serviceOrder:public_id}/delivery',
+                        [ServiceCompletionController::class, 'storeDelivery']
+                    )
+                        ->whereUuid('serviceOrder')
+                        ->name('service-orders.delivery.store');
                 });
             Route::middleware('can:request-service-cancellation')
                 ->group(function () {

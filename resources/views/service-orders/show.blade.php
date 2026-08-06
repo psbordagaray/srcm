@@ -123,6 +123,7 @@
 
                 @include('service-orders._work', ['order' => $order])
                 @include('service-orders._parts', ['order' => $order])
+                @include('service-orders._completion', ['order' => $order])
             </div>
 
             <div class="space-y-6">
