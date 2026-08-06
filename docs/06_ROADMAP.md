@@ -18,6 +18,10 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
 - Clientes
 - Proveedores
 - Compras
+  - auditoría de fundación — completada
+  - proveedores y ofertas — fundación existente
+  - compras directas afectadas a Reparaciones — fundación existente y congelada
+  - órdenes generales, recepciones parciales y costos — ADR 24 aceptada; implementación pendiente
 - Ventas
 - Búsqueda
 - Importación Excel/CSV
