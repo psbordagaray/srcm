@@ -76,6 +76,22 @@ class AppServiceProvider extends ServiceProvider
             );
         }
 
+        foreach ([
+            'view-purchases' => 'canViewPurchases',
+            'draft-purchase-orders' => 'canDraftPurchaseOrders',
+            'issue-purchase-orders' => 'canIssuePurchaseOrders',
+            'receive-purchases' => 'canReceivePurchases',
+            'cancel-purchase-orders' => 'canCancelPurchaseOrders',
+        ] as $ability => $method) {
+            Gate::define(
+                $ability,
+                fn (User $user): bool => app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->{$method}()
+                    ?? false
+            );
+        }
+
         Gate::define(
             'manage-organization',
             fn (User $user): bool => app(CurrentOrganization::class)

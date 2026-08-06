@@ -165,6 +165,31 @@ enum UserRole: string
         return $this->canDeliverServiceOrders();
     }
 
+    public function canViewPurchases(): bool
+    {
+        return true;
+    }
+
+    public function canDraftPurchaseOrders(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
+    public function canIssuePurchaseOrders(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
+    public function canReceivePurchases(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
+    public function canCancelPurchaseOrders(): bool
+    {
+        return $this === self::Admin;
+    }
+
     public function canManageOrganization(): bool
     {
         return $this === self::Admin;
