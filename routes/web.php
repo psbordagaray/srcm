@@ -6,6 +6,7 @@ use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\CommerceSaleController;
 use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseReceiptController;
 use App\Http\Controllers\CompatibilityController;
@@ -216,9 +217,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(RequireOrganization::class)
         ->group(function () {
-            Route::get('/dashboard', function () {
-                return view('dashboard');
-            })->name('dashboard');
+            Route::get(
+                '/dashboard',
+                [DashboardController::class, 'index']
+            )->name('dashboard');
 
             Route::get(
                 '/organization',

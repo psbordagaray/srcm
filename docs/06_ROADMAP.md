@@ -8,6 +8,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
 ## Núcleo
 
 - Dashboard
+  - tablero operativo por organización — ADR 27 aceptada; Bloque 1 implementado
 - Organizaciones
 - Personas
   - directorio general de identidades — ADR 26 aceptada; Bloque 1 implementado
