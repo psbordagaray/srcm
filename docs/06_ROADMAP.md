@@ -27,6 +27,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
   - órdenes generales, recepciones parciales y costos — ADR 24 aceptada; Bloques 1 y 2 completados
 - Ventas
 - Búsqueda
+  - búsqueda global operativa — ADR 28 aceptada; Bloque 1 implementado
 - Importación Excel/CSV
 - Usuarios y permisos
 - Reparaciones Core

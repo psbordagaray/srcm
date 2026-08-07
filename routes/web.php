@@ -7,6 +7,7 @@ use App\Http\Controllers\CommerceSaleController;
 use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseReceiptController;
 use App\Http\Controllers\CompatibilityController;
@@ -221,6 +222,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 '/dashboard',
                 [DashboardController::class, 'index']
             )->name('dashboard');
+
+            Route::get(
+                '/search',
+                [GlobalSearchController::class, 'index']
+            )->name('global-search.index');
 
             Route::get(
                 '/organization',
