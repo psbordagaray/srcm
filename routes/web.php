@@ -22,6 +22,7 @@ use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\ManufacturerController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\ProductCategoryController;
+use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceAssessmentController;
 use App\Http\Controllers\ServiceCancellationController;
@@ -198,6 +199,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'products',
             CatalogProductController::class
         )->except(['index', 'show', 'destroy']);
+
+        Route::get(
+            'imports/products',
+            [ProductImportController::class, 'create']
+        )->name('product-imports.create');
+
+        Route::get(
+            'imports/products/template',
+            [ProductImportController::class, 'template']
+        )->name('product-imports.template');
+
+        Route::post(
+            'imports/products/preview',
+            [ProductImportController::class, 'preview']
+        )->name('product-imports.preview');
+
+        Route::post(
+            'imports/products',
+            [ProductImportController::class, 'store']
+        )->name('product-imports.store');
 
         Route::patch(
             'technical-models/{technical_model}/toggle-active',

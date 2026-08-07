@@ -50,6 +50,13 @@
             'route' => 'products.index',
             'active' => 'products.*',
             'icon' => 'box',
+        ],        [
+            'label' => 'Importar productos',
+            'route' => 'product-imports.create',
+            'active' => 'product-imports.*',
+            'icon' => 'box',
+            'disabled' => ! request()->user()?->can('manage-catalog'),
+            'status' => 'Sin permiso',
         ],
         [
             'label' => 'Compatibilidades',

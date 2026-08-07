@@ -29,6 +29,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
 - Búsqueda
   - búsqueda global operativa — ADR 28 aceptada; Bloque 1 implementado
 - Importación Excel/CSV
+  - productos CSV/XLSX con previsualización y confirmación atómica — ADR 29 aceptada; Bloque 1 implementado
 - Usuarios y permisos
 - Reparaciones Core
   - activos e identificadores técnicos — Core 1 completado
