@@ -130,7 +130,14 @@
             'active' => 'supplier-offers.*',
             'icon' => 'truck',
         ],
-        ['label' => 'Compras', 'disabled' => true, 'icon' => 'cart'],
+        [
+            'label' => 'Compras',
+            'route' => 'purchase-orders.index',
+            'active' => 'purchase-orders.*',
+            'icon' => 'cart',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('view-purchases'),
+        ],
         [
             'label' => 'Ventas',
             'route' => 'commerce-sales.index',

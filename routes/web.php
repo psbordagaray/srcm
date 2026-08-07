@@ -4,6 +4,8 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\CommerceSaleController;
+use App\Http\Controllers\PurchaseOrderController;
+use App\Http\Controllers\PurchaseReceiptController;
 use App\Http\Controllers\CompatibilityController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\IdentifierController;
@@ -267,6 +269,84 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'commerce/sales',
                         [CommerceSaleController::class, 'store']
                     )->name('commerce-sales.store');
+                });
+            Route::middleware('can:view-purchases')
+                ->group(function () {
+                    Route::get(
+                        'purchases',
+                        [PurchaseOrderController::class, 'index']
+                    )->name('purchase-orders.index');
+
+                    Route::get(
+                        'purchases/{purchaseOrder}',
+                        [PurchaseOrderController::class, 'show']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->name('purchase-orders.show');
+                });
+
+            Route::middleware('can:draft-purchase-orders')
+                ->group(function () {
+                    Route::get(
+                        'purchases/create',
+                        [PurchaseOrderController::class, 'create']
+                    )->name('purchase-orders.create');
+
+                    Route::post(
+                        'purchases',
+                        [PurchaseOrderController::class, 'store']
+                    )->name('purchase-orders.store');
+
+                    Route::get(
+                        'purchases/{purchaseOrder}/edit',
+                        [PurchaseOrderController::class, 'edit']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->name('purchase-orders.edit');
+
+                    Route::put(
+                        'purchases/{purchaseOrder}',
+                        [PurchaseOrderController::class, 'update']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->name('purchase-orders.update');
+                });
+
+            Route::middleware('can:issue-purchase-orders')
+                ->group(function () {
+                    Route::post(
+                        'purchases/{purchaseOrder}/issue',
+                        [PurchaseOrderController::class, 'issue']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->name('purchase-orders.issue');
+                });
+
+            Route::middleware('can:receive-purchases')
+                ->group(function () {
+                    Route::get(
+                        'purchases/{purchaseOrder}/receipts/create',
+                        [PurchaseReceiptController::class, 'create']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->name('purchase-orders.receipts.create');
+
+                    Route::post(
+                        'purchases/{purchaseOrder}/receipts',
+                        [PurchaseReceiptController::class, 'store']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->name('purchase-orders.receipts.store');
+                });
+
+            Route::middleware('can:cancel-purchase-orders')
+                ->group(function () {
+                    Route::post(
+                        'purchases/{purchaseOrder}/cancel',
+                        [PurchaseOrderController::class, 'cancel']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->name('purchase-orders.cancel');
                 });
             Route::middleware('can:view-service-orders')
                 ->group(function () {
