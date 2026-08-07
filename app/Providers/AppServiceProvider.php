@@ -54,7 +54,10 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define(
             'manage-catalog',
-            fn (User $user): bool => $user->role->canManageCatalog()
+            fn (User $user): bool => app(CurrentOrganization::class)
+                ->roleFor($user)
+                ?->canManageCatalog()
+                ?? false
         );
 
         Gate::define(
@@ -126,6 +129,18 @@ class AppServiceProvider extends ServiceProvider
                 ?->canManageOrganization()
                 ?? false
         );
+        foreach ([
+            'view-organization-members' => 'canViewOrganizationMembers',
+            'manage-organization-members' => 'canManageOrganizationMembers',
+        ] as $ability => $method) {
+            Gate::define(
+                $ability,
+                fn (User $user): bool => app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->{$method}()
+                    ?? false
+            );
+        }
 
         foreach ([
             'view-service-orders' => 'canViewServiceOrders',

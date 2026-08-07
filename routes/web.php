@@ -21,6 +21,7 @@ use App\Http\Controllers\InventoryNegativeIncidentController;
 use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\ManufacturerController;
 use App\Http\Controllers\OrganizationController;
+use App\Http\Controllers\OrganizationMemberController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ProfileController;
@@ -272,6 +273,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         '/organization',
                         [OrganizationController::class, 'update']
                     )->name('organization.update');
+                });
+            Route::middleware('can:view-organization-members')
+                ->group(function () {
+                    Route::get(
+                        '/organization/members',
+                        [OrganizationMemberController::class, 'index']
+                    )->name('organization-members.index');
+                });
+
+            Route::middleware('can:manage-organization-members')
+                ->group(function () {
+                    Route::post(
+                        '/organization/members',
+                        [OrganizationMemberController::class, 'store']
+                    )->name('organization-members.store');
+
+                    Route::patch(
+                        '/organization/members/{membership}/role',
+                        [OrganizationMemberController::class, 'updateRole']
+                    )
+                        ->whereNumber('membership')
+                        ->name('organization-members.update-role');
+
+                    Route::patch(
+                        '/organization/members/{membership}/toggle-active',
+                        [OrganizationMemberController::class, 'toggleActive']
+                    )
+                        ->whereNumber('membership')
+                        ->name('organization-members.toggle-active');
                 });
 
             Route::middleware('can:view-business-parties')

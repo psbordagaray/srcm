@@ -73,6 +73,15 @@
             'active' => 'organization.*',
             'icon' => 'users',
             'disabled' => $currentOrganization === null,
+        ],        [
+            'label' => 'Usuarios y permisos',
+            'route' => 'organization-members.index',
+            'active' => 'organization-members.*',
+            'icon' => 'users',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can(
+                    'view-organization-members'
+                ),
         ],
         [
             'label' => 'Reparaciones',

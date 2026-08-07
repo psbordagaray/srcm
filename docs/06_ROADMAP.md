@@ -31,6 +31,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
 - Importación Excel/CSV
   - productos CSV/XLSX con previsualización y confirmación atómica — ADR 29 aceptada; Bloque 1 implementado
 - Usuarios y permisos
+  - membresías y roles por organización — ADR 30 aceptada; Bloque 1 implementado
 - Reparaciones Core
   - activos e identificadores técnicos — Core 1 completado
   - órdenes de servicio e ingreso documentado — Core 1 completado

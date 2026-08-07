@@ -214,6 +214,15 @@ enum UserRole: string
     {
         return $this === self::Admin;
     }
+    public function canViewOrganizationMembers(): bool
+    {
+        return true;
+    }
+
+    public function canManageOrganizationMembers(): bool
+    {
+        return $this === self::Admin;
+    }
 
     public function canViewInventory(): bool
     {
