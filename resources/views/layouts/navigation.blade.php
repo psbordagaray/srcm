@@ -118,6 +118,14 @@
                 ),
         ],
         [
+            'label' => 'Personas',
+            'route' => 'business-parties.index',
+            'active' => 'business-parties.*',
+            'icon' => 'users',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('view-business-parties'),
+        ],
+        [
             'label' => 'Clientes',
             'route' => 'customers.index',
             'active' => 'customers.*',

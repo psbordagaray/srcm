@@ -4,6 +4,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\CommerceSaleController;
+use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseReceiptController;
@@ -244,6 +245,47 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )->name('organization.update');
                 });
 
+            Route::middleware('can:view-business-parties')
+                ->group(function () {
+                    Route::get(
+                        'business-parties',
+                        [BusinessPartyController::class, 'index']
+                    )->name('business-parties.index');
+
+                    Route::get(
+                        'business-parties/{businessParty}',
+                        [BusinessPartyController::class, 'show']
+                    )
+                        ->whereNumber('businessParty')
+                        ->name('business-parties.show');
+                });
+
+            Route::middleware('can:manage-business-parties')
+                ->group(function () {
+                    Route::get(
+                        'business-parties/create',
+                        [BusinessPartyController::class, 'create']
+                    )->name('business-parties.create');
+
+                    Route::post(
+                        'business-parties',
+                        [BusinessPartyController::class, 'store']
+                    )->name('business-parties.store');
+
+                    Route::get(
+                        'business-parties/{businessParty}/edit',
+                        [BusinessPartyController::class, 'edit']
+                    )
+                        ->whereNumber('businessParty')
+                        ->name('business-parties.edit');
+
+                    Route::put(
+                        'business-parties/{businessParty}',
+                        [BusinessPartyController::class, 'update']
+                    )
+                        ->whereNumber('businessParty')
+                        ->name('business-parties.update');
+                });
             Route::middleware('can:view-customers')
                 ->group(function () {
                     Route::get(

@@ -55,6 +55,16 @@ enum UserRole: string
         return $this !== self::Viewer;
     }
 
+    public function canViewBusinessParties(): bool
+    {
+        return true;
+    }
+
+    public function canManageBusinessParties(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
     public function canViewServiceOrders(): bool
     {
         return true;

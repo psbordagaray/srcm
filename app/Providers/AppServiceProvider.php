@@ -66,6 +66,18 @@ class AppServiceProvider extends ServiceProvider
         );
 
         foreach ([
+            'view-business-parties' => 'canViewBusinessParties',
+            'manage-business-parties' => 'canManageBusinessParties',
+        ] as $ability => $method) {
+            Gate::define(
+                $ability,
+                fn (User $user): bool => app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->{$method}()
+                    ?? false
+            );
+        }
+        foreach ([
             'view-customers' => 'canViewCustomers',
             'manage-customers' => 'canManageCustomers',
         ] as $ability => $method) {

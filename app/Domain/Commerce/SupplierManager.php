@@ -3,7 +3,6 @@
 namespace App\Domain\Commerce;
 
 use App\Domain\Tenancy\CurrentOrganization;
-use App\Models\BusinessParty;
 use App\Models\Supplier;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -11,21 +10,13 @@ use Illuminate\Support\Facades\DB;
 class SupplierManager
 {
     public function __construct(
-        private readonly CurrentOrganization $currentOrganization
+        private readonly CurrentOrganization $currentOrganization,
+        private readonly BusinessPartyIdentityManager $identityManager
     ) {
     }
 
     /**
-     * @param array{
-     *     party_type: string,
-     *     name: string,
-     *     tax_id: ?string,
-     *     email: ?string,
-     *     phone: ?string,
-     *     website: ?string,
-     *     notes: ?string,
-     *     active: bool|int|string
-     * } $data
+     * @param  array<string, mixed>  $data
      */
     public function create(array $data): Supplier
     {
@@ -35,38 +26,22 @@ class SupplierManager
             $data,
             $organizationId
         ): Supplier {
-            $party = $this->findAdoptableParty(
-                $organizationId,
-                $data
-            );
+            $party = $this->identityManager
+                ->resolveOrCreate($data);
 
-            if ($party) {
-                if (
-                    Supplier::query()
-                        ->forOrganization($organizationId)
-                        ->where(
-                            'business_party_id',
-                            $party->getKey()
-                        )
-                        ->lockForUpdate()
-                        ->exists()
-                ) {
-                    throw new DomainException(
-                        'Esta identidad comercial ya está registrada como proveedor en la organización activa.'
-                    );
-                }
-
-                $this->enrichMissingPartyData($party, $data);
-            } else {
-                $this->assertNewIdentityIsSafe(
-                    $organizationId,
-                    $data
+            if (
+                Supplier::query()
+                    ->forOrganization($organizationId)
+                    ->where(
+                        'business_party_id',
+                        $party->getKey()
+                    )
+                    ->lockForUpdate()
+                    ->exists()
+            ) {
+                throw new DomainException(
+                    'Esta identidad comercial ya está registrada como proveedor en la organización activa.'
                 );
-
-                $party = BusinessParty::query()->create([
-                    'organization_id' => $organizationId,
-                    ...$this->partyData($data),
-                ]);
             }
 
             return Supplier::query()
@@ -81,16 +56,7 @@ class SupplierManager
     }
 
     /**
-     * @param array{
-     *     party_type: string,
-     *     name: string,
-     *     tax_id: ?string,
-     *     email: ?string,
-     *     phone: ?string,
-     *     website: ?string,
-     *     notes: ?string,
-     *     active: bool|int|string
-     * } $data
+     * @param  array<string, mixed>  $data
      */
     public function update(
         Supplier $supplier,
@@ -115,19 +81,10 @@ class SupplierManager
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $party = BusinessParty::query()
-                ->forOrganization($organizationId)
-                ->whereKey($locked->business_party_id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $this->assertUpdatedIdentityIsSafe(
-                $organizationId,
-                $party,
+            $this->identityManager->update(
+                $locked->party,
                 $data
             );
-
-            $party->update($this->partyData($data));
 
             $locked->update([
                 'notes' => $data['notes'] ?? null,
@@ -164,189 +121,6 @@ class SupplierManager
 
             return $locked->fresh('party');
         });
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     */
-    private function findAdoptableParty(
-        int $organizationId,
-        array $data
-    ): ?BusinessParty {
-        $normalizedTaxId = BusinessParty::normalizeTaxId(
-            (string) ($data['tax_id'] ?? '')
-        );
-
-        $email = mb_strtolower(trim(
-            (string) ($data['email'] ?? '')
-        ));
-
-        $taxMatch = $normalizedTaxId !== ''
-            ? BusinessParty::query()
-                ->forOrganization($organizationId)
-                ->where(
-                    'normalized_tax_id',
-                    $normalizedTaxId
-                )
-                ->lockForUpdate()
-                ->first()
-            : null;
-
-        $emailMatches = $email !== ''
-            ? BusinessParty::query()
-                ->forOrganization($organizationId)
-                ->where('email', $email)
-                ->lockForUpdate()
-                ->get()
-            : collect();
-
-        $emailMatch = $emailMatches->count() === 1
-            ? $emailMatches->first()
-            : null;
-
-        if (
-            $taxMatch
-            && $emailMatch
-            && $taxMatch->getKey() !== $emailMatch->getKey()
-        ) {
-            throw new DomainException(
-                'El documento fiscal y el correo apuntan a identidades comerciales diferentes dentro de la organización activa.'
-            );
-        }
-
-        $candidate = $taxMatch ?? $emailMatch;
-
-        if (! $candidate) {
-            return null;
-        }
-
-        if ($candidate->party_type !== $data['party_type']) {
-            throw new DomainException(
-                'La identidad encontrada posee otro tipo de parte comercial.'
-            );
-        }
-
-        if (
-            $candidate->normalized_name
-            !== BusinessParty::normalizeName($data['name'])
-        ) {
-            throw new DomainException(
-                'Existe una identidad con el mismo documento o correo, pero con otro nombre. Requiere revisión manual.'
-            );
-        }
-
-        return $candidate;
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     */
-    private function assertNewIdentityIsSafe(
-        int $organizationId,
-        array $data
-    ): void {
-        $probableMatches = BusinessParty::query()
-            ->forOrganization($organizationId)
-            ->where('party_type', $data['party_type'])
-            ->where(
-                'normalized_name',
-                BusinessParty::normalizeName($data['name'])
-            )
-            ->lockForUpdate()
-            ->get();
-
-        if ($probableMatches->isNotEmpty()) {
-            throw new DomainException(
-                'Ya existe una parte comercial con un nombre equivalente en la organización activa. Agregá documento fiscal o correo para vincularla sin duplicar.'
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     */
-    private function assertUpdatedIdentityIsSafe(
-        int $organizationId,
-        BusinessParty $party,
-        array $data
-    ): void {
-        $normalizedTaxId = BusinessParty::normalizeTaxId(
-            (string) ($data['tax_id'] ?? '')
-        );
-
-        if (
-            $normalizedTaxId !== ''
-            && BusinessParty::query()
-                ->forOrganization($organizationId)
-                ->whereKeyNot($party->getKey())
-                ->where(
-                    'normalized_tax_id',
-                    $normalizedTaxId
-                )
-                ->exists()
-        ) {
-            throw new DomainException(
-                'El documento fiscal ya pertenece a otra identidad comercial de esta organización.'
-            );
-        }
-
-        if (
-            BusinessParty::query()
-                ->forOrganization($organizationId)
-                ->whereKeyNot($party->getKey())
-                ->where('party_type', $data['party_type'])
-                ->where(
-                    'normalized_name',
-                    BusinessParty::normalizeName($data['name'])
-                )
-                ->exists()
-        ) {
-            throw new DomainException(
-                'Ya existe otra parte comercial con un nombre equivalente en esta organización.'
-            );
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     */
-    private function enrichMissingPartyData(
-        BusinessParty $party,
-        array $data
-    ): void {
-        $updates = [];
-
-        foreach (
-            ['tax_id', 'email', 'phone', 'website']
-            as $field
-        ) {
-            if (
-                blank($party->{$field})
-                && filled($data[$field] ?? null)
-            ) {
-                $updates[$field] = $data[$field];
-            }
-        }
-
-        if ($updates !== []) {
-            $party->update($updates);
-        }
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function partyData(array $data): array
-    {
-        return [
-            'party_type' => $data['party_type'],
-            'name' => $data['name'],
-            'tax_id' => $data['tax_id'] ?? null,
-            'email' => $data['email'] ?? null,
-            'phone' => $data['phone'] ?? null,
-            'website' => $data['website'] ?? null,
-        ];
     }
 
     private function assertSupplierBelongsToOrganization(

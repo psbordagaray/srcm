@@ -10,6 +10,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
 - Dashboard
 - Organizaciones
 - Personas
+  - directorio general de identidades — ADR 26 aceptada; Bloque 1 implementado
 - Marcas
 - Modelos técnicos
 - Productos
