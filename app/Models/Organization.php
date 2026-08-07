@@ -137,6 +137,11 @@ class Organization extends Model
         return $this->hasMany(Supplier::class);
     }
 
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
+    }
+
     public function supplierOffers(): HasMany
     {
         return $this->hasMany(SupplierOffer::class);

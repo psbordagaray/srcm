@@ -4,6 +4,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\CommerceSaleController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseReceiptController;
 use App\Http\Controllers\CompatibilityController;
@@ -243,6 +244,54 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )->name('organization.update');
                 });
 
+            Route::middleware('can:view-customers')
+                ->group(function () {
+                    Route::get(
+                        'customers',
+                        [CustomerController::class, 'index']
+                    )->name('customers.index');
+
+                    Route::get(
+                        'customers/{customer}',
+                        [CustomerController::class, 'show']
+                    )
+                        ->whereNumber('customer')
+                        ->name('customers.show');
+                });
+
+            Route::middleware('can:manage-customers')
+                ->group(function () {
+                    Route::get(
+                        'customers/create',
+                        [CustomerController::class, 'create']
+                    )->name('customers.create');
+
+                    Route::post(
+                        'customers',
+                        [CustomerController::class, 'store']
+                    )->name('customers.store');
+
+                    Route::get(
+                        'customers/{customer}/edit',
+                        [CustomerController::class, 'edit']
+                    )
+                        ->whereNumber('customer')
+                        ->name('customers.edit');
+
+                    Route::put(
+                        'customers/{customer}',
+                        [CustomerController::class, 'update']
+                    )
+                        ->whereNumber('customer')
+                        ->name('customers.update');
+
+                    Route::patch(
+                        'customers/{customer}/toggle-active',
+                        [CustomerController::class, 'toggleActive']
+                    )
+                        ->whereNumber('customer')
+                        ->name('customers.toggle-active');
+                });
             Route::middleware('can:view-commerce-sales')
                 ->group(function () {
                     Route::get(

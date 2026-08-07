@@ -16,12 +16,13 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
 - Identificadores
 - Stock
 - Clientes
+  - identidad comercial y rol Cliente — ADR 25 aceptada; Bloque 1 implementado
 - Proveedores
 - Compras
   - auditoría de fundación — completada
   - proveedores y ofertas — fundación existente
   - compras directas afectadas a Reparaciones — fundación existente y congelada
-  - órdenes generales, recepciones parciales y costos — ADR 24 aceptada; implementación pendiente
+  - órdenes generales, recepciones parciales y costos — ADR 24 aceptada; Bloques 1 y 2 completados
 - Ventas
 - Búsqueda
 - Importación Excel/CSV

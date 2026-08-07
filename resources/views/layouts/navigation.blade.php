@@ -117,7 +117,14 @@
                     'view-inventory-negative-incidents'
                 ),
         ],
-        ['label' => 'Clientes', 'disabled' => true, 'icon' => 'users'],
+        [
+            'label' => 'Clientes',
+            'route' => 'customers.index',
+            'active' => 'customers.*',
+            'icon' => 'users',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('view-customers'),
+        ],
         [
             'label' => 'Proveedores',
             'route' => 'suppliers.index',

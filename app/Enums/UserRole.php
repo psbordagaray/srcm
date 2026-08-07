@@ -45,6 +45,16 @@ enum UserRole: string
         return true;
     }
 
+    public function canViewCustomers(): bool
+    {
+        return true;
+    }
+
+    public function canManageCustomers(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
     public function canViewServiceOrders(): bool
     {
         return true;

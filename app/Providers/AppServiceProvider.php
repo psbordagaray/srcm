@@ -6,6 +6,7 @@ use App\Domain\Tenancy\CurrentOrganization;
 use App\Models\Brand;
 use App\Models\BusinessParty;
 use App\Models\CatalogProduct;
+use App\Models\Customer;
 use App\Models\Compatibility;
 use App\Models\Entity;
 use App\Models\Identifier;
@@ -37,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
         Brand::observe(CatalogAuditObserver::class);
         BusinessParty::observe(CatalogAuditObserver::class);
         CatalogProduct::observe(CatalogAuditObserver::class);
+        Customer::observe(CatalogAuditObserver::class);
         Compatibility::observe(CatalogAuditObserver::class);
         Entity::observe(CatalogAuditObserver::class);
         Identifier::observe(CatalogAuditObserver::class);
@@ -62,6 +64,19 @@ class AppServiceProvider extends ServiceProvider
                 ?->canManageCommerce()
                 ?? false
         );
+
+        foreach ([
+            'view-customers' => 'canViewCustomers',
+            'manage-customers' => 'canManageCustomers',
+        ] as $ability => $method) {
+            Gate::define(
+                $ability,
+                fn (User $user): bool => app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->{$method}()
+                    ?? false
+            );
+        }
 
         foreach ([
             'view-commerce-sales' => 'canViewCommerceSales',

@@ -119,6 +119,11 @@ class BusinessParty extends Model
         return $this->hasOne(Supplier::class);
     }
 
+    public function customer(): HasOne
+    {
+        return $this->hasOne(Customer::class);
+    }
+
     public function serviceOrdersAsCustomer(): HasMany
     {
         return $this->hasMany(
