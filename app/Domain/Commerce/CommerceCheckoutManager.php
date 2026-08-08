@@ -35,7 +35,8 @@ final class CommerceCheckoutManager
 {
     public function __construct(
         private readonly InventoryMovementCreator $movementCreator,
-        private readonly InventoryMovementConfirmer $movementConfirmer
+        private readonly InventoryMovementConfirmer $movementConfirmer,
+        private readonly OrganizationProductPriceReader $prices
     ) {
     }
 
@@ -83,7 +84,10 @@ final class CommerceCheckoutManager
                 $normalized['currency_code']
             );
             $products = $this->productEvidence(
-                $normalized['product_lines']
+                $normalized['product_lines'],
+                $organizationId,
+                $normalized['currency_code'],
+                $soldAt
             );
 
             if ($service === null && $products['lines'] === []) {
@@ -176,6 +180,7 @@ final class CommerceCheckoutManager
                     'line_total_minor' => $line->line_total_minor,
                     'service_quote_line_id' => $line->id,
                     'catalog_product_id' => null,
+                    'organization_product_price_id' => null,
                     'inventory_movement_line_id' => null,
                 ]);
             }
@@ -194,6 +199,8 @@ final class CommerceCheckoutManager
                     'line_total_minor' => $line['line_total_minor'],
                     'service_quote_line_id' => null,
                     'catalog_product_id' => $line['catalog_product_id'],
+                    'organization_product_price_id' =>
+                        $line['organization_product_price_id'],
                     'inventory_movement_line_id' =>
                         $movementLines?->get($index)?->id,
                 ]);
@@ -318,8 +325,12 @@ final class CommerceCheckoutManager
     }
 
     /** @param list<array<string, mixed>> $lines */
-    private function productEvidence(array $lines): array
-    {
+    private function productEvidence(
+        array $lines,
+        int $organizationId,
+        string $currencyCode,
+        CarbonImmutable $soldAt
+    ): array {
         if ($lines === []) {
             return ['lines' => [], 'subtotal_minor' => 0];
         }
@@ -343,6 +354,21 @@ final class CommerceCheckoutManager
                 );
             }
 
+            $organizationPrice = null;
+
+            if ($line['unit_price_minor'] === null) {
+                $organizationPrice = $this->prices->priceAt(
+                    $organizationId,
+                    (int) $line['catalog_product_id'],
+                    $currencyCode,
+                    $soldAt
+                );
+                $line['unit_price_minor'] =
+                    (int) $organizationPrice->amount_minor;
+            }
+
+            $line['organization_product_price_id'] =
+                $organizationPrice?->id;
             $line['description'] = $product->name;
             $line['unit_code'] = $product->base_unit_code;
             $line['line_total_minor'] = $this->lineTotalMinor(
@@ -487,7 +513,10 @@ final class CommerceCheckoutManager
             if (
                 $line->catalogProductId <= 0
                 || $line->sourceLocationId <= 0
-                || $line->unitPriceMinor < 0
+                || (
+                    $line->unitPriceMinor !== null
+                    && $line->unitPriceMinor < 0
+                )
             ) {
                 throw new DomainException(
                     'Una línea de producto contiene datos inválidos.'

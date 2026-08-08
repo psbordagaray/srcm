@@ -39,6 +39,18 @@
     @endphp
 
     <div class="space-y-6">
+        @can('override-inventory-negative')
+            @if(($summary['pending_negative_requests'] ?? 0) > 0)
+                <a href="{{ route('inventory-negative-authorizations.index', ['status' => 'pending']) }}" class="flex items-center justify-between gap-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-5 py-4 text-amber-50 shadow-lg shadow-amber-950/10 transition hover:bg-amber-400/15">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Autorización requerida</p>
+                        <p class="mt-1 font-semibold">{{ $summary['pending_negative_requests'] }} Override{{ $summary['pending_negative_requests'] === 1 ? '' : 's' }} pendiente{{ $summary['pending_negative_requests'] === 1 ? '' : 's' }} de revisión</p>
+                    </div>
+                    <span class="rounded-lg border border-amber-300/30 px-3 py-2 text-xs font-bold">Revisar</span>
+                </a>
+            @endif
+        @endcan
+
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <a
                 href="{{ route('service-orders.index') }}"

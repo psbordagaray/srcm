@@ -22,6 +22,7 @@ use App\Http\Controllers\KnowledgeController;
 use App\Http\Controllers\ManufacturerController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationMemberController;
+use App\Http\Controllers\OrganizationProductPriceController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ProfileController;
@@ -420,6 +421,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         [CommerceSaleController::class, 'store']
                     )->name('commerce-sales.store');
                 });
+
+            Route::put(
+                'products/{product}/commercial-price',
+                [OrganizationProductPriceController::class, 'update']
+            )
+                ->middleware('can:manage-commerce-prices')
+                ->whereNumber('product')
+                ->name('organization-product-prices.update');
+
             Route::middleware('can:view-purchases')
                 ->group(function () {
                     Route::get(

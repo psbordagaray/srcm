@@ -11,7 +11,7 @@ final readonly class CommerceProductLineData
         public int $sourceLocationId,
         public InventoryCondition $condition,
         public string $quantity,
-        public int $unitPriceMinor,
+        public ?int $unitPriceMinor,
         public ?string $description = null
     ) {
     }

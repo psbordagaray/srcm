@@ -28,7 +28,6 @@ class StoreCommerceSaleRequest extends FormRequest
             ->filter(fn (array $line): bool => filled($line['catalog_product_id'] ?? null)
                 || filled($line['source_location_id'] ?? null)
                 || filled($line['quantity'] ?? null)
-                || filled($line['unit_price'] ?? null)
             )
             ->map(fn (array $line): array => [
                 'catalog_product_id' => filled(
@@ -46,9 +45,6 @@ class StoreCommerceSaleRequest extends FormRequest
                 )),
                 'quantity' => trim(
                     (string) ($line['quantity'] ?? '')
-                ),
-                'unit_price' => $this->money(
-                    (string) ($line['unit_price'] ?? '')
                 ),
             ])
             ->values()
@@ -129,19 +125,12 @@ class StoreCommerceSaleRequest extends FormRequest
             'max:18',
             'regex:/^(?=.*[1-9])\d{1,14}(?:[.,]\d{1,2})?$/',
         ];
-        $nonNegativeMoney = [
-            'required',
-            'string',
-            'max:18',
-            'regex:/^\d{1,14}(?:[.,]\d{1,2})?$/',
-        ];
 
         return [
             'currency_code' => [
                 'required',
                 'string',
-                'size:3',
-                'regex:/^[A-Z]{3}$/',
+                Rule::in(['ARS', 'USD']),
             ],
             'service_order_id' => [
                 'nullable',
@@ -198,7 +187,6 @@ class StoreCommerceSaleRequest extends FormRequest
                 'max:20',
                 'regex:/^(?=.*[1-9])\d{1,12}(?:\.\d{1,6})?$/',
             ],
-            'product_lines.*.unit_price' => $nonNegativeMoney,
             'payments' => [
                 'required',
                 'array',
@@ -300,12 +288,12 @@ class StoreCommerceSaleRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'currency_code.in' => 'La moneda de la venta debe ser ARS o USD.',
             'service_order_id.exists' => 'La reparación no pertenece a la organización activa o no fue entregada.',
             'customer_business_party_id.exists' => 'El cliente no pertenece a la organización activa.',
             'product_lines.*.catalog_product_id.exists' => 'El producto no existe o está inactivo.',
             'product_lines.*.source_location_id.exists' => 'La ubicación no pertenece a la organización activa o está inactiva.',
             'product_lines.*.quantity.regex' => 'La cantidad debe ser positiva y admitir hasta seis decimales.',
-            'product_lines.*.unit_price.regex' => 'El precio no puede ser negativo y admite hasta dos decimales.',
             'payments.min' => 'La venta requiere al menos un medio de pago.',
             'payments.*.amount.regex' => 'Cada pago debe ser positivo y admitir hasta dos decimales.',
             'idempotency_key.regex' => 'La clave de seguridad comercial no es válida.',

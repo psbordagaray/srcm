@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Commerce\OrganizationProductPriceReader;
+use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\InventoryBaseUnit;
 use App\Domain\Knowledge\CatalogProductKnowledgeManager;
 use App\Http\Requests\StoreCatalogProductRequest;
@@ -122,10 +124,20 @@ class CatalogProductController extends Controller
         );
     }
 
-    public function edit(CatalogProduct $product): View
-    {
+    public function edit(
+        CatalogProduct $product,
+        CurrentOrganization $currentOrganization,
+        OrganizationProductPriceReader $priceReader
+    ): View {
+        $organization = $currentOrganization->get(request()->user());
+
         return view('products.edit', [
             'product' => $product,
+            'currentOrganization' => $organization,
+            'currentPrices' => $priceReader->currentForProduct(
+                (int) $organization->getKey(),
+                (int) $product->getKey()
+            ),
             ...$this->formOptions($product),
         ]);
     }
@@ -194,7 +206,7 @@ class CatalogProductController extends Controller
                     $query->where('active', true);
 
                     if ($product) {
-                        $query->orWhereKey($product->product_category_id);
+                        $query->orWhere('id', $product->product_category_id);
                     }
                 })
                 ->orderBy('name')
@@ -204,7 +216,7 @@ class CatalogProductController extends Controller
                     $query->where('active', true);
 
                     if ($product?->brand_id) {
-                        $query->orWhereKey($product->brand_id);
+                        $query->orWhere('id', $product->brand_id);
                     }
                 })
                 ->orderBy('name')
@@ -214,7 +226,7 @@ class CatalogProductController extends Controller
                     $query->where('active', true);
 
                     if ($product?->manufacturer_id) {
-                        $query->orWhereKey($product->manufacturer_id);
+                        $query->orWhere('id', $product->manufacturer_id);
                     }
                 })
                 ->orderBy('name')

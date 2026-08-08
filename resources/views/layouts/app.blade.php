@@ -70,7 +70,10 @@
                                 </span>
                                 <span class="hidden xl:block">
                                     <span class="block text-sm font-semibold text-white">{{ Auth::user()->name }}</span>
-                                    <span class="block text-xs text-slate-500">{{ Auth::user()->role->label() }}</span>
+                                    <span class="block text-xs text-slate-500">{{ app(\App\Domain\Tenancy\CurrentOrganization::class)
+                                        ->roleFor(Auth::user())
+                                        ?->label()
+                                        ?? Auth::user()->role->label() }}</span>
                                 </span>
                             </a>
                         </div>

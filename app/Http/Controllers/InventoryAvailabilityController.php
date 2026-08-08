@@ -112,7 +112,10 @@ class InventoryAvailabilityController extends Controller
                     ),
                     'inactive' => ! $position->productActive
                         || ! $position->locationActive,
-                    default => true,
+                    default => ! InventoryQuantity::equal(
+                        $position->physicalQuantity,
+                        '0'
+                    ),
                 };
             })
             ->map(fn (InventoryAvailabilityPosition $position): array => [

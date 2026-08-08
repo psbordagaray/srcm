@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Domain\Commerce\CommerceCheckoutData;
 use App\Domain\Commerce\CommerceCheckoutManager;
+use App\Domain\Commerce\CommerceSalePolicyGuard;
+use App\Domain\Commerce\OrganizationProductPriceReader;
 use App\Domain\Commerce\CommercePaymentData;
 use App\Domain\Commerce\CommerceProductLineData;
 use App\Domain\Tenancy\CurrentOrganization;
@@ -125,7 +127,9 @@ class CommerceSaleController extends Controller
 
     public function create(
         Request $request,
-        CurrentOrganization $currentOrganization
+        CurrentOrganization $currentOrganization,
+        OrganizationProductPriceReader $priceReader,
+        CommerceSalePolicyGuard $salePolicy
     ): View {
         $organizationId = $currentOrganization->id($request->user());
         $unsettledOrders = ServiceOrder::query()
@@ -160,6 +164,11 @@ class CommerceSaleController extends Controller
             'selectedServiceOrder' => $selectedServiceOrder,
             'customers' => BusinessParty::query()
                 ->forOrganization($organizationId)
+                ->whereHas(
+                    'customer',
+                    fn (Builder $customer): Builder =>
+                        $customer->where('active', true)
+                )
                 ->orderBy('name')
                 ->get(['id', 'name', 'tax_id']),
             'products' => CatalogProduct::query()
@@ -179,17 +188,41 @@ class CommerceSaleController extends Controller
                 ->get(['id', 'name']),
             'paymentMethods' => CommercePaymentMethod::cases(),
             'conditions' => InventoryCondition::cases(),
+            'productPrices' => $priceReader->matrix(
+                $priceReader->currentForProducts($organizationId)
+            ),
+            'availabilityMatrix' =>
+                $salePolicy->availabilityMatrix($request->user()),
             'idempotencyKey' => 'service-ui:commerce-sale:'.Str::uuid(),
         ]);
     }
 
     public function store(
         StoreCommerceSaleRequest $request,
-        CommerceCheckoutManager $manager
+        CommerceCheckoutManager $manager,
+        CommerceSalePolicyGuard $salePolicy
     ): RedirectResponse {
         $validated = $request->validated();
+        $validatedProductLines =
+            $validated['product_lines'] ?? [];
 
         try {
+            $stockShortage = $salePolicy->stockShortageMessage(
+                $validatedProductLines,
+                $request->user()
+            );
+
+            if ($stockShortage !== null) {
+                throw new DomainException($stockShortage);
+            }
+
+            $soldAt = filled($validated['sold_at'] ?? null)
+                ? CarbonImmutable::parse(
+                    $validated['sold_at'],
+                    config('app.timezone')
+                )
+                : CarbonImmutable::now();
+
             $sale = $manager->checkout(
                 new CommerceCheckoutData(
                     currencyCode: $validated['currency_code'],
@@ -217,24 +250,9 @@ class CommerceSaleController extends Controller
                         )
                         ->values()
                         ->all(),
-                    productLines: collect(
-                        $validated['product_lines'] ?? []
-                    )
-                        ->map(
-                            fn (array $line): CommerceProductLineData => new CommerceProductLineData(
-                                catalogProductId: $line['catalog_product_id'],
-                                sourceLocationId: $line['source_location_id'],
-                                condition: InventoryCondition::from(
-                                    $line['condition']
-                                ),
-                                quantity: $line['quantity'],
-                                unitPriceMinor: $this->moneyMinor(
-                                    $line['unit_price']
-                                )
-                            )
-                        )
-                        ->values()
-                        ->all(),
+                    productLines: $salePolicy->productLines(
+                        $validatedProductLines
+                    ),
                     serviceOrderId: $validated['service_order_id'] ?? null,
                     customerBusinessPartyId: $validated[
                             'customer_business_party_id'
@@ -242,20 +260,24 @@ class CommerceSaleController extends Controller
                     customerName: $validated['customer_name'] ?? null,
                     customerDocument: $validated['customer_document'] ?? null,
                     notes: $validated['notes'] ?? null,
-                    soldAt: filled($validated['sold_at'] ?? null)
-                        ? CarbonImmutable::parse(
-                            $validated['sold_at'],
-                            config('app.timezone')
-                        )
-                        : null
+                    soldAt: $soldAt
                 ),
                 $request->user()
             );
         } catch (DomainException $exception) {
+            $message = $exception->getMessage();
+
+            if (str_starts_with($message, 'Saldo insuficiente.')) {
+                $message = $salePolicy->stockShortageMessage(
+                    $validatedProductLines,
+                    $request->user()
+                ) ?? 'El stock cambió mientras se confirmaba la venta. Revisá la disponibilidad e intentá nuevamente.';
+            }
+
             return back()
                 ->withInput()
                 ->withErrors([
-                    'commerce' => $exception->getMessage(),
+                    'commerce' => $message,
                 ]);
         }
 

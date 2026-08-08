@@ -23,6 +23,7 @@ class CommerceSaleLine extends Model
         'line_total_minor',
         'service_quote_line_id',
         'catalog_product_id',
+        'organization_product_price_id',
         'inventory_movement_line_id',
     ];
 
@@ -62,6 +63,14 @@ class CommerceSaleLine extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(CatalogProduct::class, 'catalog_product_id');
+    }
+
+    public function organizationProductPrice(): BelongsTo
+    {
+        return $this->belongsTo(
+            OrganizationProductPrice::class,
+            'organization_product_price_id'
+        );
     }
 
     public function inventoryMovementLine(): BelongsTo

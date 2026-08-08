@@ -106,6 +106,14 @@ class AppServiceProvider extends ServiceProvider
             );
         }
 
+        Gate::define(
+            'manage-commerce-prices',
+            fn (User $user): bool => app(CurrentOrganization::class)
+                ->roleFor($user)
+                ?->canManageCommercePrices()
+                ?? false
+        );
+
         foreach ([
             'view-purchases' => 'canViewPurchases',
             'draft-purchase-orders' => 'canDraftPurchaseOrders',

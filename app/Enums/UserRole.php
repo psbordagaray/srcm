@@ -40,6 +40,11 @@ enum UserRole: string
         return $this->canManageCommerce();
     }
 
+    public function canManageCommercePrices(): bool
+    {
+        return $this === self::Admin;
+    }
+
     public function canViewCommerceSales(): bool
     {
         return true;

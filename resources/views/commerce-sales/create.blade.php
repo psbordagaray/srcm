@@ -16,7 +16,6 @@
                 'source_location_id' => '',
                 'condition' => \App\Enums\InventoryCondition::New->value,
                 'quantity' => '1',
-                'unit_price' => '',
             ]];
         }
 
@@ -55,15 +54,17 @@
             action="{{ route('commerce-sales.store') }}"
             class="space-y-6"
             x-data="{
+                currencyCode: {{ \Illuminate\Support\Js::from(old('currency_code', 'ARS')) }},
                 productLines: {{ \Illuminate\Support\Js::from(array_values($productRows)) }},
                 payments: {{ \Illuminate\Support\Js::from(array_values($paymentRows)) }},
+                productPrices: {{ \Illuminate\Support\Js::from($productPrices) }},
+                availability: {{ \Illuminate\Support\Js::from($availabilityMatrix) }},
                 addProduct() {
                     this.productLines.push({
                         catalog_product_id: '',
                         source_location_id: '',
                         condition: 'new',
-                        quantity: '1',
-                        unit_price: ''
+                        quantity: '1'
                     });
                 },
                 addPayment() {
@@ -74,6 +75,56 @@
                         notes: '',
                         paid_at: ''
                     });
+                },
+                priceMinor(productId) {
+                    return Number(
+                        this.productPrices[this.currencyCode]?.[Number(productId)]
+                        ?? 0
+                    );
+                },
+                money(minor) {
+                    return new Intl.NumberFormat('es-AR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }).format(Number(minor || 0) / 100);
+                },
+                lineSubtotalMinor(line) {
+                    const quantity = Number(
+                        String(line.quantity || '0').replace(',', '.')
+                    );
+
+                    if (! Number.isFinite(quantity) || quantity <= 0) {
+                        return 0;
+                    }
+
+                    return Math.round(
+                        this.priceMinor(line.catalog_product_id) * quantity
+                    );
+                },
+                productsSubtotalMinor() {
+                    return this.productLines.reduce(
+                        (total, line) =>
+                            total + this.lineSubtotalMinor(line),
+                        0
+                    );
+                },
+                availabilityKey(line, locationId) {
+                    return [
+                        line.catalog_product_id,
+                        locationId,
+                        line.condition || 'new'
+                    ].join(':');
+                },
+                locationLabel(line, locationId, name) {
+                    if (! line.catalog_product_id) {
+                        return name;
+                    }
+
+                    const row = this.availability[
+                        this.availabilityKey(line, locationId)
+                    ];
+
+                    return `${name} (${row?.display ?? '0'} disponibles)`;
                 }
             }"
         >
@@ -110,7 +161,10 @@
 
                     <div>
                         <label for="currency_code" class="text-sm font-semibold text-slate-200">Moneda</label>
-                        <input id="currency_code" name="currency_code" type="text" required maxlength="3" value="{{ old('currency_code', 'ARS') }}" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono uppercase text-slate-100 focus:border-amber-400 focus:ring-amber-400">
+                        <select id="currency_code" name="currency_code" x-model="currencyCode" required class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-slate-100 focus:border-amber-400 focus:ring-amber-400">
+                            <option value="ARS">ARS · Pesos argentinos</option>
+                            <option value="USD">USD · Dólares estadounidenses</option>
+                        </select>
                     </div>
                 </div>
 
@@ -202,13 +256,13 @@
                                     <select :name="`product_lines[${index}][source_location_id]`" x-model="line.source_location_id" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-cyan-400 focus:ring-cyan-400">
                                         <option value="">Seleccionar</option>
                                         @foreach($locations as $location)
-                                            <option value="{{ $location->id }}">{{ $location->name }}</option>
+                                            <option value="{{ $location->id }}" x-text='locationLabel(line, {{ $location->id }}, {{ \Illuminate\Support\Js::from($location->name) }})'></option>
                                         @endforeach
                                     </select>
                                 </div>
                             </div>
 
-                            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 <div>
                                     <label class="text-xs font-semibold text-slate-400">Condición</label>
                                     <select :name="`product_lines[${index}][condition]`" x-model="line.condition" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-cyan-400 focus:ring-cyan-400">
@@ -222,12 +276,22 @@
                                     <input :name="`product_lines[${index}][quantity]`" x-model="line.quantity" type="text" inputmode="decimal" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-slate-100 focus:border-cyan-400 focus:ring-cyan-400">
                                 </div>
                                 <div>
-                                    <label class="text-xs font-semibold text-slate-400">Precio unitario</label>
-                                    <input :name="`product_lines[${index}][unit_price]`" x-model="line.unit_price" type="text" inputmode="decimal" placeholder="0,00" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-slate-100 focus:border-cyan-400 focus:ring-cyan-400">
+                                    <label class="text-xs font-semibold text-slate-400">Precio vigente</label>
+                                    <div class="mt-2 min-h-[42px] rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2.5 font-mono text-sm font-bold" :class="priceMinor(line.catalog_product_id) > 0 ? 'text-emerald-300' : 'text-amber-300'" x-text="priceMinor(line.catalog_product_id) > 0 ? `${currencyCode} ${money(priceMinor(line.catalog_product_id))}` : 'Sin precio vigente'"></div>
+                                    <p class="mt-1 text-[11px] text-slate-600">Se obtiene de la política comercial; el vendedor no lo escribe.</p>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-400">Subtotal</label>
+                                    <div class="mt-2 min-h-[42px] rounded-xl border border-cyan-400/10 bg-cyan-400/[0.04] px-3 py-2.5 font-mono text-sm font-bold text-cyan-200" x-text="`${currencyCode} ${money(lineSubtotalMinor(line))}`"></div>
                                 </div>
                             </div>
                         </article>
                     </template>
+                </div>
+
+                <div class="mt-5 flex items-center justify-between rounded-xl border border-cyan-400/15 bg-cyan-400/[0.04] px-4 py-3">
+                    <span class="text-sm font-semibold text-slate-300">Subtotal automático de productos</span>
+                    <span class="font-mono text-lg font-bold text-cyan-200" x-text="`${currencyCode} ${money(productsSubtotalMinor())}`"></span>
                 </div>
             </section>
 

@@ -6,12 +6,14 @@ use App\Domain\Inventory\InventoryAvailabilityReader;
 use App\Domain\Inventory\InventoryQuantity;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\CommerceSaleStatus;
+use App\Enums\InventoryNegativeRequestStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\ServiceOrderStatus;
 use App\Models\AuditLog;
 use App\Models\BusinessParty;
 use App\Models\CommerceSale;
 use App\Models\Customer;
+use App\Models\InventoryNegativeRequest;
 use App\Models\PurchaseOrder;
 use App\Models\ServiceOrder;
 use App\Models\Supplier;
@@ -156,6 +158,14 @@ final class DashboardReader
                     ->unique()
                     ->count(),
                 'deficit_positions' => $deficitPositions->count(),
+                'pending_negative_requests' =>
+                    InventoryNegativeRequest::query()
+                        ->forOrganization($organizationId)
+                        ->where(
+                            'status',
+                            InventoryNegativeRequestStatus::Pending->value
+                        )
+                        ->count(),
                 'identities' => BusinessParty::query()
                     ->forOrganization($organizationId)
                     ->count(),

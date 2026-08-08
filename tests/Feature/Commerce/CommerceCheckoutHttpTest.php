@@ -44,6 +44,7 @@ use App\Models\CommerceSale;
 use App\Models\InventoryLocation;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
+use App\Models\OrganizationProductPrice;
 use App\Models\ProductCategory;
 use App\Models\ServiceOrder;
 use App\Models\User;
@@ -201,6 +202,12 @@ class CommerceCheckoutHttpTest extends TestCase
             $fixture['location'],
             '3'
         );
+        $this->setPrice(
+            $fixture['organization'],
+            $fixture['actor'],
+            $product,
+            750000
+        );
 
         $this->actingAs($fixture['actor'])
             ->post(route('commerce-sales.store'), [
@@ -288,6 +295,12 @@ class CommerceCheckoutHttpTest extends TestCase
             'FUN-HTTP'
         );
         $this->seedStock($actor, $product, $location, '2');
+        $this->setPrice(
+            $organization,
+            $actor,
+            $product,
+            900000
+        );
         $base = [
             'currency_code' => 'ARS',
             'service_order_id' => null,
@@ -569,6 +582,25 @@ class CommerceCheckoutHttpTest extends TestCase
             'customer' => $customer,
             'location' => $location,
         ];
+    }
+
+    private function setPrice(
+        Organization $organization,
+        User $actor,
+        CatalogProduct $product,
+        int $amountMinor
+    ): void {
+        OrganizationProductPrice::query()->create([
+            'organization_id' => $organization->id,
+            'catalog_product_id' => $product->id,
+            'currency_code' => 'ARS',
+            'amount_minor' => $amountMinor,
+            'valid_from' => now()->subSecond(),
+            'valid_until' => null,
+            'is_current' => true,
+            'reason' => 'Fixture HTTP',
+            'created_by_user_id' => $actor->id,
+        ]);
     }
 
     private function seedStock(
