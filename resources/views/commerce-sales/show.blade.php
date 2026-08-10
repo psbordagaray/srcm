@@ -88,13 +88,68 @@
                                     <p class="font-mono text-lg font-bold text-white">$ {{ number_format($payment->amount_minor / 100, 2, ',', '.') }}</p>
                                 </div>
 
-                                @if($payment->reference || $payment->notes)
-                                    <div class="mt-3 border-t border-emerald-500/10 pt-3 text-xs text-slate-400">
+                                @if(
+                                    $payment->reference
+                                    || $payment->card_brand
+                                    || $payment->card_network
+                                    || $payment->card_last4
+                                    || $payment->installments
+                                    || $payment->processor
+                                    || $payment->external_operation_id
+                                    || $payment->authorization_code
+                                    || $payment->provider_status
+                                    || $payment->notes
+                                )
+                                    <div class="mt-3 space-y-2 border-t border-emerald-500/10 pt-3 text-xs text-slate-400">
                                         @if($payment->reference)
                                             <p><strong>Referencia:</strong> {{ $payment->reference }}</p>
                                         @endif
+
+                                        @if(
+                                            $payment->card_brand
+                                            || $payment->card_network
+                                            || $payment->card_last4
+                                            || $payment->installments
+                                        )
+                                            <p>
+                                                <strong>Tarjeta:</strong>
+                                                {{ $payment->card_brand ?: 'Marca no informada' }}
+                                                @if($payment->card_network)
+                                                    · red {{ $payment->card_network }}
+                                                @endif
+                                                @if($payment->card_last4)
+                                                    · •••• {{ $payment->card_last4 }}
+                                                @endif
+                                                @if($payment->installments)
+                                                    · {{ $payment->installments }} cuota{{ $payment->installments === 1 ? '' : 's' }}
+                                                @endif
+                                            </p>
+                                        @endif
+
+                                        @if($payment->processor)
+                                            <p><strong>Procesador / proveedor:</strong> {{ $payment->processor }}</p>
+                                        @endif
+                                        @if($payment->external_operation_id)
+                                            <p><strong>Operación externa:</strong> {{ $payment->external_operation_id }}</p>
+                                        @endif
+                                        @if($payment->authorization_code)
+                                            <p><strong>Autorización:</strong> {{ $payment->authorization_code }}</p>
+                                        @endif
+                                        @if($payment->provider_status)
+                                            <p><strong>Estado informado:</strong> {{ $payment->provider_status }}</p>
+                                        @endif
                                         @if($payment->notes)
-                                            <p class="{{ $payment->reference ? 'mt-2' : '' }}">{{ $payment->notes }}</p>
+                                            <p><strong>Notas:</strong> {{ $payment->notes }}</p>
+                                        @endif
+
+                                        @if(
+                                            $payment->processor
+                                            || $payment->external_operation_id
+                                            || $payment->provider_status
+                                        )
+                                            <p class="pt-1 text-[11px] text-slate-500">
+                                                Snapshot declarado al cobrar; no equivale a acreditación ni conciliación.
+                                            </p>
                                         @endif
                                     </div>
                                 @endif

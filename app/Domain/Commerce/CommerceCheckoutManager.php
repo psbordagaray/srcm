@@ -224,6 +224,16 @@ final class CommerceCheckoutManager
                     'method' => $payment['method'],
                     'amount_minor' => $payment['amount_minor'],
                     'reference' => $payment['reference'],
+                    'card_brand' => $payment['card_brand'],
+                    'card_network' => $payment['card_network'],
+                    'card_last4' => $payment['card_last4'],
+                    'installments' => $payment['installments'],
+                    'processor' => $payment['processor'],
+                    'external_operation_id' =>
+                        $payment['external_operation_id'],
+                    'authorization_code' =>
+                        $payment['authorization_code'],
+                    'provider_status' => $payment['provider_status'],
                     'notes' => $payment['notes'],
                     'received_by_user_id' => $actor->id,
                     'paid_at' => $paidAt,
@@ -548,7 +558,51 @@ final class CommerceCheckoutManager
                 );
             }
 
-            $reference = $this->optional($payment->reference);
+            $reference = $this->paymentText(
+                $payment->reference,
+                255,
+                'La referencia del pago'
+            );
+            $notes = $this->paymentText(
+                $payment->notes,
+                2000,
+                'Las notas del pago'
+            );
+            $cardBrand = $this->paymentText(
+                $payment->cardBrand,
+                50,
+                'La marca de tarjeta'
+            );
+            $cardNetwork = $this->paymentText(
+                $payment->cardNetwork,
+                50,
+                'La red de tarjeta'
+            );
+            $cardLast4 = $this->paymentText(
+                $payment->cardLast4,
+                4,
+                'Los últimos 4 de tarjeta'
+            );
+            $processor = $this->paymentText(
+                $payment->processor,
+                100,
+                'El procesador del pago'
+            );
+            $externalOperationId = $this->paymentText(
+                $payment->externalOperationId,
+                191,
+                'La operación externa'
+            );
+            $authorizationCode = $this->paymentText(
+                $payment->authorizationCode,
+                100,
+                'El código de autorización'
+            );
+            $providerStatus = $this->paymentText(
+                $payment->providerStatus,
+                50,
+                'El estado informado por el proveedor'
+            );
 
             if ($payment->amountMinor <= 0) {
                 throw new DomainException(
@@ -562,11 +616,77 @@ final class CommerceCheckoutManager
                 );
             }
 
+            if (
+                $cardLast4 !== null
+                && preg_match('/^\d{4}$/D', $cardLast4) !== 1
+            ) {
+                throw new DomainException(
+                    'Los últimos 4 de tarjeta deben contener exactamente cuatro dígitos.'
+                );
+            }
+
+            if (
+                $payment->installments !== null
+                && (
+                    $payment->installments < 1
+                    || $payment->installments > 120
+                )
+            ) {
+                throw new DomainException(
+                    'La cantidad de cuotas debe estar entre 1 y 120.'
+                );
+            }
+
+            $isCard = in_array(
+                $payment->method,
+                [
+                    CommercePaymentMethod::DebitCard,
+                    CommercePaymentMethod::CreditCard,
+                ],
+                true
+            );
+
+            if (
+                ! $isCard
+                && (
+                    $cardBrand !== null
+                    || $cardNetwork !== null
+                    || $cardLast4 !== null
+                    || $payment->installments !== null
+                )
+            ) {
+                throw new DomainException(
+                    'Los datos de tarjeta sólo pueden asociarse a un pago con tarjeta.'
+                );
+            }
+
+            if (
+                $payment->method === CommercePaymentMethod::Cash
+                && (
+                    $processor !== null
+                    || $externalOperationId !== null
+                    || $authorizationCode !== null
+                    || $providerStatus !== null
+                )
+            ) {
+                throw new DomainException(
+                    'El efectivo no admite evidencia de procesador u operación externa.'
+                );
+            }
+
             $payments[] = [
                 'method' => $payment->method->value,
                 'amount_minor' => $payment->amountMinor,
                 'reference' => $reference,
-                'notes' => $this->optional($payment->notes),
+                'card_brand' => $cardBrand,
+                'card_network' => $cardNetwork,
+                'card_last4' => $cardLast4,
+                'installments' => $payment->installments,
+                'processor' => $processor,
+                'external_operation_id' => $externalOperationId,
+                'authorization_code' => $authorizationCode,
+                'provider_status' => $providerStatus,
+                'notes' => $notes,
                 'paid_at' => $payment->paidAt
                     ? CarbonImmutable::instance($payment->paidAt)
                         ->toIso8601String()
@@ -595,6 +715,22 @@ final class CommerceCheckoutManager
         $normalized['fingerprint'] = $this->fingerprint($normalized);
 
         return $normalized;
+    }
+
+    private function paymentText(
+        ?string $value,
+        int $maxLength,
+        string $label
+    ): ?string {
+        $value = $this->optional($value);
+
+        if ($value !== null && mb_strlen($value) > $maxLength) {
+            throw new DomainException(
+                "{$label} supera la longitud admitida."
+            );
+        }
+
+        return $value;
     }
 
     private function quantity(string $value): string

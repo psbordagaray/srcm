@@ -110,7 +110,18 @@
                 editingProductIndex: null,
                 productDraftError: '',
                 cartQuantityError: '',
-                payments: {{ \Illuminate\Support\Js::from(array_values($paymentRows)) }}.map(payment => ({ ...payment, _manual: true })),
+                payments: {{ \Illuminate\Support\Js::from(array_values($paymentRows)) }}.map(payment => ({
+                    card_brand: '',
+                    card_network: '',
+                    card_last4: '',
+                    installments: '',
+                    processor: '',
+                    external_operation_id: '',
+                    authorization_code: '',
+                    provider_status: '',
+                    ...payment,
+                    _manual: true
+                })),
                 serviceTotals: {{ \Illuminate\Support\Js::from($serviceTotals) }},
                 serviceCurrencies: {{ \Illuminate\Support\Js::from($serviceCurrencies) }},
                 paymentMethodLabels: {{ \Illuminate\Support\Js::from($paymentMethodLabels) }},
@@ -184,6 +195,14 @@
                         method,
                         amount: '',
                         reference: '',
+                        card_brand: '',
+                        card_network: '',
+                        card_last4: '',
+                        installments: '',
+                        processor: '',
+                        external_operation_id: '',
+                        authorization_code: '',
+                        provider_status: '',
                         notes: '',
                         paid_at: '',
                         _manual: true
@@ -291,6 +310,59 @@
                 },
                 paymentRequiresReference(method) {
                     return Boolean(method) && method !== 'cash';
+                },
+                paymentIsCard(method) {
+                    return method === 'debit_card'
+                        || method === 'credit_card';
+                },
+                paymentHasStructuredEvidence(payment) {
+                    return [
+                        payment.card_brand,
+                        payment.card_network,
+                        payment.card_last4,
+                        payment.installments,
+                        payment.processor,
+                        payment.external_operation_id,
+                        payment.authorization_code,
+                        payment.provider_status
+                    ].some(value => String(value ?? '').trim() !== '');
+                },
+                paymentEvidenceSummary(payment) {
+                    const parts = [];
+
+                    if (payment.card_brand) {
+                        parts.push(`Marca ${payment.card_brand}`);
+                    }
+
+                    if (payment.card_network) {
+                        parts.push(`Red ${payment.card_network}`);
+                    }
+
+                    if (payment.card_last4) {
+                        parts.push(`•••• ${payment.card_last4}`);
+                    }
+
+                    if (payment.installments) {
+                        parts.push(`${payment.installments} cuota${Number(payment.installments) === 1 ? '' : 's'}`);
+                    }
+
+                    if (payment.processor) {
+                        parts.push(`Procesador ${payment.processor}`);
+                    }
+
+                    if (payment.external_operation_id) {
+                        parts.push(`Operación ${payment.external_operation_id}`);
+                    }
+
+                    if (payment.authorization_code) {
+                        parts.push(`Aut. ${payment.authorization_code}`);
+                    }
+
+                    if (payment.provider_status) {
+                        parts.push(`Estado ${payment.provider_status}`);
+                    }
+
+                    return parts.join(' · ');
                 },
                 paymentComplete(payment) {
                     if (
@@ -2304,14 +2376,159 @@
                                             </div>
                                         </div>
 
+                                        <div
+                                            x-show="payment.method && payment.method !== 'cash'"
+                                            x-cloak
+                                            class="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4"
+                                            data-sale-payment-structured-evidence
+                                        >
+                                            <div data-sale-payment-evidence-source-guidance>
+                                                <div class="flex flex-wrap items-start justify-between gap-3">
+                                                    <div>
+                                                        <p class="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Evidencia del cobro</p>
+                                                        <p class="mt-1 text-xs text-slate-400">Snapshot declarado al cobrar. No significa acreditado ni conciliado.</p>
+                                                    </div>
+                                                    <span class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-[11px] font-bold text-slate-400">Nunca PAN/CVV</span>
+                                                </div>
+
+                                                <div class="mt-4 grid gap-3 md:grid-cols-2">
+                                                    <div class="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.05] p-4">
+                                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                                            <p class="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-300">Automática / API</p>
+                                                            <span class="rounded-md border border-amber-400/25 bg-amber-400/10 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-amber-200">Pendiente de integración</span>
+                                                        </div>
+                                                        <p class="mt-2 text-xs leading-5 text-slate-400">
+                                                            Cuando el procesador esté conectado, SRCM completará la metadata segura automáticamente y la mostrará como evidencia de solo lectura. El operador no deberá transcribirla.
+                                                        </p>
+                                                    </div>
+
+                                                    <div class="rounded-xl border border-slate-700 bg-slate-950/55 p-4">
+                                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                                            <p class="text-[11px] font-black uppercase tracking-[0.16em] text-slate-300">Respaldo manual</p>
+                                                            <span class="rounded-md border border-cyan-400/25 bg-cyan-400/10 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-cyan-200">Disponible hoy</span>
+                                                        </div>
+                                                        <p class="mt-2 text-xs leading-5 text-slate-400">
+                                                            Usalo solamente cuando el proveedor o la entidad no pueda consultarse automáticamente. Lo informado quedará como snapshot declarado del cobro.
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mt-4 flex items-center gap-2 border-t border-cyan-400/10 pt-4">
+                                                    <span class="h-2 w-2 rounded-full bg-cyan-300"></span>
+                                                    <p class="text-[11px] font-black uppercase tracking-[0.15em] text-cyan-200">Carga manual de respaldo</p>
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                x-show="paymentIsCard(payment.method)"
+                                                class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+                                            >
+                                                <div>
+                                                    <label class="text-xs font-bold text-slate-400">Marca</label>
+                                                    <input
+                                                        :name="`payments[${index}][card_brand]`"
+                                                        x-model="payment.card_brand"
+                                                        type="text"
+                                                        maxlength="50"
+                                                        placeholder="Visa, Mastercard…"
+                                                        class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+                                                    >
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-bold text-slate-400">Red</label>
+                                                    <input
+                                                        :name="`payments[${index}][card_network]`"
+                                                        x-model="payment.card_network"
+                                                        type="text"
+                                                        maxlength="50"
+                                                        placeholder="Red informada"
+                                                        class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+                                                    >
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-bold text-slate-400">Últimos 4</label>
+                                                    <input
+                                                        :name="`payments[${index}][card_last4]`"
+                                                        x-model="payment.card_last4"
+                                                        type="text"
+                                                        inputmode="numeric"
+                                                        maxlength="4"
+                                                        pattern="[0-9]{4}"
+                                                        placeholder="4242"
+                                                        class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+                                                    >
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-bold text-slate-400">Cuotas</label>
+                                                    <input
+                                                        :name="`payments[${index}][installments]`"
+                                                        x-model="payment.installments"
+                                                        type="number"
+                                                        min="1"
+                                                        max="120"
+                                                        step="1"
+                                                        placeholder="1"
+                                                        class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+                                                    >
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                                <div>
+                                                    <label class="text-xs font-bold text-slate-400">Procesador / proveedor</label>
+                                                    <input
+                                                        :name="`payments[${index}][processor]`"
+                                                        x-model="payment.processor"
+                                                        type="text"
+                                                        maxlength="100"
+                                                        placeholder="Mercado Pago, Payway…"
+                                                        class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+                                                    >
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-bold text-slate-400">Operación externa</label>
+                                                    <input
+                                                        :name="`payments[${index}][external_operation_id]`"
+                                                        x-model="payment.external_operation_id"
+                                                        type="text"
+                                                        maxlength="191"
+                                                        placeholder="Operación #…"
+                                                        class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+                                                    >
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-bold text-slate-400">Autorización</label>
+                                                    <input
+                                                        :name="`payments[${index}][authorization_code]`"
+                                                        x-model="payment.authorization_code"
+                                                        type="text"
+                                                        maxlength="100"
+                                                        placeholder="Código opcional"
+                                                        class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+                                                    >
+                                                </div>
+                                                <div>
+                                                    <label class="text-xs font-bold text-slate-400">Estado informado</label>
+                                                    <input
+                                                        :name="`payments[${index}][provider_status]`"
+                                                        x-model="payment.provider_status"
+                                                        type="text"
+                                                        maxlength="50"
+                                                        placeholder="approved, pending…"
+                                                        class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+                                                    >
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="mt-4">
-                                            <label class="text-xs font-bold text-slate-400">Notas / evidencia disponible</label>
+                                            <label class="text-xs font-bold text-slate-400">Notas internas del cobro</label>
                                             <input
                                                 :name="`payments[${index}][notes]`"
                                                 x-model="payment.notes"
                                                 type="text"
                                                 maxlength="2000"
-                                                placeholder="Observación operativa; la evidencia estructurada llegará en P2."
+                                                placeholder="Observación operativa opcional."
                                                 class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400"
                                             >
                                         </div>
@@ -2382,6 +2599,12 @@
                                                 class="mt-2 text-sm text-slate-400"
                                             >
                                                 Referencia: <span class="font-mono text-slate-200" x-text="payment.reference"></span>
+                                            </p>
+                                            <p
+                                                x-show="paymentHasStructuredEvidence(payment)"
+                                                class="mt-2 text-sm leading-6 text-cyan-200"
+                                            >
+                                                Evidencia: <span x-text="paymentEvidenceSummary(payment)"></span>
                                             </p>
                                         </div>
                                     </template>

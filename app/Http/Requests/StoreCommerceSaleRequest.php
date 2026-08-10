@@ -55,8 +55,20 @@ class StoreCommerceSaleRequest extends FormRequest
             )
             ->filter(fn (array $payment): bool => filled($payment['amount'] ?? null)
                 || filled($payment['reference'] ?? null)
+                || filled($payment['card_brand'] ?? null)
+                || filled($payment['card_network'] ?? null)
+                || filled($payment['card_last4'] ?? null)
+                || filled($payment['installments'] ?? null)
+                || filled($payment['processor'] ?? null)
+                || filled($payment['external_operation_id'] ?? null)
+                || filled($payment['authorization_code'] ?? null)
+                || filled($payment['provider_status'] ?? null)
                 || filled($payment['notes'] ?? null)
                 || filled($payment['paid_at'] ?? null)
+                || filled($payment['pan'] ?? null)
+                || filled($payment['card_number'] ?? null)
+                || filled($payment['cvv'] ?? null)
+                || filled($payment['security_code'] ?? null)
             )
             ->map(fn (array $payment): array => [
                 'method' => strtolower(trim(
@@ -67,6 +79,42 @@ class StoreCommerceSaleRequest extends FormRequest
                 ),
                 'reference' => $this->optional(
                     (string) ($payment['reference'] ?? '')
+                ),
+                'card_brand' => $this->optional(
+                    (string) ($payment['card_brand'] ?? '')
+                ),
+                'card_network' => $this->optional(
+                    (string) ($payment['card_network'] ?? '')
+                ),
+                'card_last4' => $this->optional(
+                    (string) ($payment['card_last4'] ?? '')
+                ),
+                'installments' => $this->optional(
+                    (string) ($payment['installments'] ?? '')
+                ),
+                'processor' => $this->optional(
+                    (string) ($payment['processor'] ?? '')
+                ),
+                'external_operation_id' => $this->optional(
+                    (string) ($payment['external_operation_id'] ?? '')
+                ),
+                'authorization_code' => $this->optional(
+                    (string) ($payment['authorization_code'] ?? '')
+                ),
+                'provider_status' => $this->optional(
+                    (string) ($payment['provider_status'] ?? '')
+                ),
+                'pan' => $this->optional(
+                    (string) ($payment['pan'] ?? '')
+                ),
+                'card_number' => $this->optional(
+                    (string) ($payment['card_number'] ?? '')
+                ),
+                'cvv' => $this->optional(
+                    (string) ($payment['cvv'] ?? '')
+                ),
+                'security_code' => $this->optional(
+                    (string) ($payment['security_code'] ?? '')
                 ),
                 'notes' => $this->optional(
                     (string) ($payment['notes'] ?? '')
@@ -203,6 +251,51 @@ class StoreCommerceSaleRequest extends FormRequest
                 'string',
                 'max:255',
             ],
+            'payments.*.card_brand' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+            'payments.*.card_network' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+            'payments.*.card_last4' => [
+                'nullable',
+                'string',
+                'regex:/^\d{4}$/',
+            ],
+            'payments.*.installments' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:120',
+            ],
+            'payments.*.processor' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'payments.*.external_operation_id' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'payments.*.authorization_code' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'payments.*.provider_status' => [
+                'nullable',
+                'string',
+                'max:50',
+            ],
+            'payments.*.pan' => ['prohibited'],
+            'payments.*.card_number' => ['prohibited'],
+            'payments.*.cvv' => ['prohibited'],
+            'payments.*.security_code' => ['prohibited'],
             'payments.*.notes' => [
                 'nullable',
                 'string',
@@ -281,6 +374,45 @@ class StoreCommerceSaleRequest extends FormRequest
                         'El medio de pago seleccionado requiere una referencia.'
                     );
                 }
+
+                $isCard = in_array(
+                    $method,
+                    [
+                        CommercePaymentMethod::DebitCard,
+                        CommercePaymentMethod::CreditCard,
+                    ],
+                    true
+                );
+                $hasCardEvidence = collect([
+                    $payment['card_brand'] ?? null,
+                    $payment['card_network'] ?? null,
+                    $payment['card_last4'] ?? null,
+                    $payment['installments'] ?? null,
+                ])->contains(fn (mixed $value): bool => filled($value));
+
+                if (! $isCard && $hasCardEvidence) {
+                    $validator->errors()->add(
+                        "payments.{$index}.card_last4",
+                        'Los datos de tarjeta sólo pueden registrarse en pagos con tarjeta.'
+                    );
+                }
+
+                $hasProviderEvidence = collect([
+                    $payment['processor'] ?? null,
+                    $payment['external_operation_id'] ?? null,
+                    $payment['authorization_code'] ?? null,
+                    $payment['provider_status'] ?? null,
+                ])->contains(fn (mixed $value): bool => filled($value));
+
+                if (
+                    $method === CommercePaymentMethod::Cash
+                    && $hasProviderEvidence
+                ) {
+                    $validator->errors()->add(
+                        "payments.{$index}.processor",
+                        'El efectivo no admite evidencia de procesador u operación externa.'
+                    );
+                }
             }
         }];
     }
@@ -296,6 +428,11 @@ class StoreCommerceSaleRequest extends FormRequest
             'product_lines.*.quantity.regex' => 'La cantidad debe ser positiva y admitir hasta seis decimales.',
             'payments.min' => 'La venta requiere al menos un medio de pago.',
             'payments.*.amount.regex' => 'Cada pago debe ser positivo y admitir hasta dos decimales.',
+            'payments.*.card_last4.regex' => 'Los últimos 4 de la tarjeta deben contener exactamente cuatro dígitos.',
+            'payments.*.pan.prohibited' => 'SRCM nunca admite almacenar el PAN completo de una tarjeta.',
+            'payments.*.card_number.prohibited' => 'SRCM nunca admite almacenar el número completo de una tarjeta.',
+            'payments.*.cvv.prohibited' => 'SRCM nunca admite almacenar CVV.',
+            'payments.*.security_code.prohibited' => 'SRCM nunca admite almacenar códigos de seguridad de tarjeta.',
             'idempotency_key.regex' => 'La clave de seguridad comercial no es válida.',
         ];
     }

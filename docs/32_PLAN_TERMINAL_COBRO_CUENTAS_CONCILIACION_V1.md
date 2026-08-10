@@ -277,3 +277,14 @@ Si se retoma en otra conversación:
 6. No hacer commit/push del hardening UX hasta aprobación visual/manual.
 7. Implementar por bloques pequeños, fail-closed y con RESULT verificable.
 8. No corregir silenciosamente decisiones del operador.
+
+### Proveniencia de la evidencia de pago
+
+La evidencia estructurada del cobro debe distinguir su **fuente** sin alterar la verdad financiera:
+
+- **API / automática (preferida):** cuando exista integración con el procesador o proveedor, SRCM recibe metadata segura como marca/red, últimos 4, cuotas, procesador, ID de operación externa, autorización y estado informado. El operador no debe transcribir esos datos y la interfaz debe mostrarlos como evidencia automática / de solo lectura.
+- **Respaldo manual:** queda disponible únicamente cuando el proveedor, adquirente, billetera o entidad no pueda consultarse automáticamente. Lo ingresado se registra como snapshot declarado al momento del cobro y debe ser auditable.
+- **PAN completo, CVV y códigos de seguridad:** nunca deben entrar a SRCM, ni manualmente, ni por API, ni en logs.
+- **Separación de verdades:** evidencia automática o manual no equivale por sí sola a acreditación ni conciliación. Cuentas/Conciliación enlazará posteriormente el cobro esperado con la operación externa y la acreditación real.
+
+Principio APB: **API primero; respaldo manual explícito; nunca datos sensibles; ninguna evidencia declarada se presenta como dinero conciliado.**

@@ -24,6 +24,25 @@ class SalePaymentOverlayTest extends TestCase
             'data-sale-payment-review',
             'data-sale-payment-reconciliation',
             'data-sale-payment-method-picker',
+            'data-sale-payment-structured-evidence',
+            'data-sale-payment-evidence-source-guidance',
+            'Automática / API',
+            'Pendiente de integración',
+            'Respaldo manual',
+            'Disponible hoy',
+            'El operador no deberá transcribirla.',
+            'Carga manual de respaldo',
+            'card_brand',
+            'card_network',
+            'card_last4',
+            'installments',
+            'processor',
+            'external_operation_id',
+            'authorization_code',
+            'provider_status',
+            'Snapshot declarado al cobrar',
+            'paymentEvidenceSummary(payment)',
+            'Nunca PAN/CVV',
             'paymentOverlayOpen:',
             'paymentReviewOpen:',
             'paymentTotalMinor()',
@@ -75,6 +94,14 @@ class SalePaymentOverlayTest extends TestCase
         );
         $this->assertStringNotContainsString(
             "method: 'cash',",
+            $sale
+        );
+        $this->assertStringNotContainsString(
+            'payments[${index}][card_number]',
+            $sale
+        );
+        $this->assertStringNotContainsString(
+            'payments[${index}][cvv]',
             $sale
         );
 

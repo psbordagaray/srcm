@@ -378,7 +378,22 @@ class CommerceSaleController extends Controller
                                             $payment['paid_at'],
                                             config('app.timezone')
                                         )
-                                        : null
+                                        : null,
+                                cardBrand: $payment['card_brand'] ?? null,
+                                cardNetwork: $payment['card_network'] ?? null,
+                                cardLast4: $payment['card_last4'] ?? null,
+                                installments: filled(
+                                    $payment['installments'] ?? null
+                                )
+                                    ? (int) $payment['installments']
+                                    : null,
+                                processor: $payment['processor'] ?? null,
+                                externalOperationId:
+                                    $payment['external_operation_id'] ?? null,
+                                authorizationCode:
+                                    $payment['authorization_code'] ?? null,
+                                providerStatus:
+                                    $payment['provider_status'] ?? null
                             )
                         )
                         ->values()

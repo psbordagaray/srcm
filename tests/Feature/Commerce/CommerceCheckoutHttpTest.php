@@ -356,6 +356,116 @@ class CommerceCheckoutHttpTest extends TestCase
         );
     }
 
+    public function test_card_payment_captures_structured_evidence_and_rejects_sensitive_fields(): void
+    {
+        $organization = $this->organization();
+        $actor = $this->user(
+            $organization,
+            UserRole::Operator
+        );
+        $customer = $this->party(
+            $organization,
+            'Cliente tarjeta estructurada'
+        );
+        $location = $this->location($organization);
+        $product = $this->product(
+            'Cargador evidencia tarjeta',
+            'CARD-EVIDENCE'
+        );
+
+        $this->seedStock($actor, $product, $location, '1');
+        $this->setPrice(
+            $organization,
+            $actor,
+            $product,
+            1250000
+        );
+
+        $base = [
+            'currency_code' => 'ARS',
+            'service_order_id' => null,
+            'customer_business_party_id' => $customer->id,
+            'product_lines' => [[
+                'catalog_product_id' => $product->id,
+                'source_location_id' => $location->id,
+                'condition' => InventoryCondition::New->value,
+                'quantity' => '1',
+            ]],
+        ];
+
+        $this->actingAs($actor)
+            ->post(route('commerce-sales.store'), [
+                ...$base,
+                'payments' => [[
+                    'method' => CommercePaymentMethod::CreditCard->value,
+                    'amount' => '12500',
+                    'reference' => 'VOUCHER-REJECT',
+                    'card_number' => '4111111111111111',
+                    'cvv' => '123',
+                ]],
+                'idempotency_key' => 'service-ui:commerce-sale:'.Str::uuid(),
+            ])
+            ->assertSessionHasErrors([
+                'payments.0.card_number',
+                'payments.0.cvv',
+            ]);
+
+        $this->assertDatabaseCount('commerce_sales', 0);
+        $this->assertDatabaseCount('commerce_payments', 0);
+
+        $this->actingAs($actor)
+            ->post(route('commerce-sales.store'), [
+                ...$base,
+                'payments' => [[
+                    'method' => CommercePaymentMethod::CreditCard->value,
+                    'amount' => '12500',
+                    'reference' => 'VOUCHER-OK-4242',
+                    'card_brand' => 'Visa',
+                    'card_network' => 'Visa',
+                    'card_last4' => '4242',
+                    'installments' => '3',
+                    'processor' => 'Mercado Pago',
+                    'external_operation_id' => 'MP-OP-99887766',
+                    'authorization_code' => 'AUTH-4242',
+                    'provider_status' => 'approved',
+                    'notes' => 'Snapshot capturado en caja.',
+                    'paid_at' => null,
+                ]],
+                'idempotency_key' => 'service-ui:commerce-sale:'.Str::uuid(),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $sale = CommerceSale::query()
+            ->with('payments')
+            ->sole();
+        $payment = $sale->payments->sole();
+
+        $this->assertSame(
+            CommercePaymentMethod::CreditCard,
+            $payment->method
+        );
+        $this->assertSame('Visa', $payment->card_brand);
+        $this->assertSame('Visa', $payment->card_network);
+        $this->assertSame('4242', $payment->card_last4);
+        $this->assertSame(3, $payment->installments);
+        $this->assertSame('Mercado Pago', $payment->processor);
+        $this->assertSame(
+            'MP-OP-99887766',
+            $payment->external_operation_id
+        );
+        $this->assertSame('AUTH-4242', $payment->authorization_code);
+        $this->assertSame('approved', $payment->provider_status);
+
+        $this->actingAs($actor)
+            ->get(route('commerce-sales.show', $sale))
+            ->assertOk()
+            ->assertSee('•••• 4242')
+            ->assertSee('3 cuotas')
+            ->assertSee('Mercado Pago')
+            ->assertSee('MP-OP-99887766')
+            ->assertSee('no equivale a acreditación ni conciliación');
+    }
     public function test_http_guards_reject_foreign_evidence_and_non_exact_payment(): void
     {
         $fixture = $this->deliveredOrder('guards-http');
