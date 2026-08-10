@@ -54,7 +54,7 @@ class GlobalSearchOperationalTest extends TestCase
         $this->seed(DatabaseSeeder::class);
     }
 
-    public function test_route_is_scoped_read_only_and_navigation_exposes_search(): void
+    public function test_route_is_scoped_read_only_and_global_search_has_one_visible_entry_point(): void
     {
         $organization = $this->organization();
         $viewer = $this->user($organization, UserRole::Viewer);
@@ -72,19 +72,53 @@ class GlobalSearchOperationalTest extends TestCase
         );
         $this->assertSame(['GET', 'HEAD'], $route->methods());
 
-        $this->actingAs($viewer)
+        $response = $this->actingAs($viewer)
             ->get(route('global-search.index'))
             ->assertOk()
             ->assertSee('Búsqueda global')
             ->assertSee('Buscador operativo listo')
-            ->assertSee('Buscar');
+            ->assertSee('Usá el buscador superior')
+            ->assertSee('Ctrl K')
+            ->assertSee('Conocimiento técnico');
+
+        $content = $response->getContent();
+
+        $this->assertSame(
+            1,
+            substr_count($content, 'id="global-search"')
+        );
+        $this->assertStringContainsString(
+            'action="'.route('global-search.index').'"',
+            $content
+        );
+        $this->assertStringContainsString(
+            '@keydown.window.ctrl.k.prevent',
+            $content
+        );
+        $this->assertStringNotContainsString(
+            'id="global-search-query"',
+            $content
+        );
+        $this->assertStringNotContainsString(
+            'href="'.route('global-search.index').'"',
+            $content
+        );
+        $this->assertStringContainsString(
+            'href="'.route('knowledge.explorer').'"',
+            $content
+        );
 
         $this->actingAs($viewer)
             ->get(route('global-search.index', ['q' => '%%']))
             ->assertOk()
             ->assertSee('Consulta demasiado corta');
-    }
 
+        $this->actingAs($viewer)
+            ->get(route('knowledge.explorer'))
+            ->assertOk()
+            ->assertSee('Conocimiento técnico')
+            ->assertSee('Identidad técnica, códigos, modelos, relaciones y compatibilidades.');
+    }
     public function test_shared_catalog_finds_product_and_technical_model(): void
     {
         $organization = $this->organization();

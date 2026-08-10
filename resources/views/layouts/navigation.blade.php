@@ -9,14 +9,9 @@
             'route' => 'dashboard',
             'active' => 'dashboard',
             'icon' => 'dashboard',
-        ],        [
-            'label' => 'Buscar',
-            'route' => 'global-search.index',
-            'active' => 'global-search.*',
-            'icon' => 'link',
         ],
         [
-            'label' => 'Explorador',
+            'label' => 'Conocimiento técnico',
             'route' => 'knowledge.explorer',
             'active' => 'knowledge.*',
             'icon' => 'link',

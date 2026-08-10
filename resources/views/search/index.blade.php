@@ -14,40 +14,11 @@
     </x-slot>
 
     <div class="space-y-6">
-        <section class="sulu-card p-5 sm:p-6">
-            <form method="GET" action="{{ route('global-search.index') }}" class="flex flex-col gap-3 sm:flex-row">
-                <div class="flex-1">
-                    <label for="global-search-query" class="sr-only">Buscar en SRCM</label>
-                    <input
-                        id="global-search-query"
-                        name="q"
-                        value="{{ $query }}"
-                        class="sulu-input w-full"
-                        placeholder="SKU, producto, CUIT/DNI, cliente, IMEI, reparación, compra o venta"
-                        maxlength="100"
-                        autocomplete="off"
-                        autofocus
-                    >
-                </div>
-                <button type="submit" class="sulu-button-primary">
-                    Buscar
-                </button>
-            </form>
-
-            <div class="mt-4 flex flex-wrap gap-2 text-xs text-slate-500">
-                <span class="rounded-lg border border-white/5 px-2.5 py-1.5">SKU / producto</span>
-                <span class="rounded-lg border border-white/5 px-2.5 py-1.5">CUIT / DNI / contacto</span>
-                <span class="rounded-lg border border-white/5 px-2.5 py-1.5">IMEI / serie</span>
-                <span class="rounded-lg border border-white/5 px-2.5 py-1.5">N.º reparación / venta</span>
-                <span class="rounded-lg border border-white/5 px-2.5 py-1.5">Proveedor / compra</span>
-            </div>
-        </section>
-
         @if ($query === '')
             <section class="sulu-card p-8 text-center">
                 <h2 class="text-lg font-bold text-white">Buscador operativo listo</h2>
                 <p class="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-                    Escribí al menos dos caracteres. Los resultados privados pertenecen exclusivamente a la organización activa; el catálogo técnico compartido mantiene su alcance global.
+                    Usá el buscador superior o presioná Ctrl+K. Escribí al menos dos caracteres; los resultados privados pertenecen exclusivamente a la organización activa y el catálogo técnico compartido mantiene su alcance global.
                 </p>
             </section>
         @elseif (! $ready)

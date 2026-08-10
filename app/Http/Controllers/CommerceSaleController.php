@@ -159,6 +159,147 @@ class CommerceSaleController extends Controller
             abort(404);
         }
 
+        $products = CatalogProduct::query()
+            ->where('active', true)
+            ->with([
+                'productCategory',
+                'brand',
+                'manufacturer',
+                'knowledgeEntity.identifiers.identifierType',
+                'knowledgeEntity.outgoingCompatibilities.rightEntity.identifiers.identifierType',
+                'knowledgeEntity.incomingCompatibilities.leftEntity.identifiers.identifierType',
+            ])
+            ->orderBy('name')
+            ->get([
+                'id',
+                'product_category_id',
+                'brand_id',
+                'manufacturer_id',
+                'knowledge_entity_id',
+                'knowledge_identifier_id',
+                'sku',
+                'name',
+                'description',
+                'base_unit_code',
+                'quantity_scale',
+            ]);
+
+        $productSearchIndex = $products
+            ->map(function (CatalogProduct $product): array {
+                $terms = collect();
+
+                $pushTerm = function (
+                    mixed $value,
+                    string $kind,
+                    bool $exact = false
+                ) use ($terms): void {
+                    $text = Str::of((string) ($value ?? ''))
+                        ->squish()
+                        ->toString();
+
+                    if ($text === '') {
+                        return;
+                    }
+
+                    $terms->push([
+                        'value' => $text,
+                        'kind' => $kind,
+                        'exact' => $exact,
+                    ]);
+                };
+
+                $pushTerm($product->sku, 'SKU', true);
+                $pushTerm($product->name, 'Artículo');
+                $pushTerm($product->description, 'Descripción');
+                $pushTerm(
+                    $product->productCategory?->name,
+                    'Categoría'
+                );
+                $pushTerm($product->brand?->name, 'Marca');
+                $pushTerm(
+                    $product->manufacturer?->name,
+                    'Fabricante'
+                );
+
+                $knowledgeEntity = $product->knowledgeEntity;
+
+                if ($knowledgeEntity?->active) {
+                    $pushTerm(
+                        $knowledgeEntity->name,
+                        'Ficha de conocimiento'
+                    );
+
+                    foreach (
+                        $knowledgeEntity->identifiers
+                            ->where('active', true)
+                        as $identifier
+                    ) {
+                        $pushTerm(
+                            $identifier->value,
+                            $identifier->identifierType?->name
+                                ?? 'Identificador',
+                            true
+                        );
+                    }
+
+                    $relatedEntities = $knowledgeEntity
+                        ->outgoingCompatibilities
+                        ->where('active', true)
+                        ->pluck('rightEntity')
+                        ->merge(
+                            $knowledgeEntity
+                                ->incomingCompatibilities
+                                ->where('active', true)
+                                ->pluck('leftEntity')
+                        )
+                        ->filter(
+                            fn ($entity): bool =>
+                                (bool) $entity?->active
+                        )
+                        ->unique('id')
+                        ->values();
+
+                    foreach ($relatedEntities as $relatedEntity) {
+                        $pushTerm(
+                            $relatedEntity->name,
+                            'Modelo / relación'
+                        );
+
+                        foreach (
+                            $relatedEntity->identifiers
+                                ->where('active', true)
+                            as $identifier
+                        ) {
+                            $pushTerm(
+                                $identifier->value,
+                                $identifier->identifierType?->name
+                                    ?? 'Código relacionado',
+                                true
+                            );
+                        }
+                    }
+                }
+
+                return [
+                    'id' => (int) $product->id,
+                    'sku' => $product->sku,
+                    'name' => $product->name,
+                    'unit' => $product->base_unit_code,
+                    'scale' => (int) $product->quantity_scale,
+                    'terms' => $terms
+                        ->unique(
+                            fn (array $term): string =>
+                                Str::lower(
+                                    $term['kind'].'|'.$term['value']
+                                )
+                        )
+                        ->values()
+                        ->all(),
+                ];
+            })
+            ->values()
+            ->all();
+
         return view('commerce-sales.create', [
             'unsettledOrders' => $unsettledOrders,
             'selectedServiceOrder' => $selectedServiceOrder,
@@ -171,16 +312,8 @@ class CommerceSaleController extends Controller
                 )
                 ->orderBy('name')
                 ->get(['id', 'name', 'tax_id']),
-            'products' => CatalogProduct::query()
-                ->where('active', true)
-                ->orderBy('name')
-                ->get([
-                    'id',
-                    'sku',
-                    'name',
-                    'base_unit_code',
-                    'quantity_scale',
-                ]),
+            'products' => $products,
+            'productSearchIndex' => $productSearchIndex,
             'locations' => InventoryLocation::query()
                 ->forOrganization($organizationId)
                 ->active()

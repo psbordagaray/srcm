@@ -7,11 +7,11 @@
             </p>
 
             <h1 class="mt-1 text-2xl font-bold text-white">
-                Explorador de conocimiento
+                Conocimiento técnico
             </h1>
 
             <p class="mt-2 text-sm text-slate-400">
-                Buscá por código completo, fragmento, modelo, nombre o UUID.
+                Identidad técnica, códigos, modelos, relaciones y compatibilidades.
             </p>
         </div>
 

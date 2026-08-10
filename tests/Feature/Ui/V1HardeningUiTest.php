@@ -113,6 +113,154 @@ class V1HardeningUiTest extends TestCase
             ->assertSee($product->name);
     }
 
+    public function test_sale_pos_uses_single_product_composer_compact_cart_and_collapsible_context(): void
+    {
+        $organization = $this->organization();
+        $operator = $this->operator($organization);
+
+        $response = $this->actingAs($operator)
+            ->get(route('commerce-sales.create'))
+            ->assertOk()
+            ->assertSee('Orden a liquidar · Moneda')
+            ->assertSee('Cliente y referencia')
+            ->assertSee('Productos de la venta')
+            ->assertSee('Artículo → condición disponible → ubicación disponible → cantidad.')
+            ->assertSee('Carrito')
+            ->assertSee('Scroll interno para ventas extensas')
+            ->assertSee('Abrir cobro');
+
+        $content = $response->getContent();
+
+        $this->assertSame(
+            1,
+            substr_count($content, 'data-sale-product-composer')
+        );
+        $this->assertSame(
+            1,
+            substr_count($content, 'data-sale-product-funnel')
+        );
+
+        foreach ([
+            'addOrUpdateProduct()',
+            'editProduct(index)',
+            'removeProduct(index)',
+            'max-h-[22rem] overflow-auto',
+            'product_lines[${index}][catalog_product_id]',
+            'productSearchIndex:',
+            'conditionOptions()',
+            'locationOptions()',
+            'companyAvailableAllConditions(',
+            'cartCommittedAt(',
+            'resolveConditionSelection()',
+            'resolveLocationSelection()',
+        ] as $marker) {
+            $this->assertStringContainsString(
+                $marker,
+                $content
+            );
+        }
+
+        foreach ([
+            'Productos agregados',
+            '@click="addProduct()"',
+            'refreshLocationOptions($el, draftProduct)',
+            'data-location-id="',
+            'data-location-name="',
+        ] as $legacyMarker) {
+            $this->assertStringNotContainsString(
+                $legacyMarker,
+                $content
+            );
+        }
+    }
+    public function test_sale_lookup_index_exposes_registered_identifiers_and_guided_funnel(): void
+    {
+        $organization = $this->organization();
+        $operator = $this->operator($organization);
+        $category = ProductCategory::withoutEvents(
+            fn () => ProductCategory::query()->firstOrCreate(
+                ['slug' => 'lookup-ui-tests'],
+                [
+                    'name' => 'Lookup UI tests',
+                    'active' => true,
+                ]
+            )
+        );
+
+        $product = app(
+            \App\Domain\Knowledge\CatalogProductKnowledgeManager::class
+        )->create([
+            'product_category_id' => $category->id,
+            'brand_id' => null,
+            'manufacturer_id' => null,
+            'sku' => 'LOOKUP-USB-C',
+            'name' => 'Cable buscable por código interno',
+            'description' => 'Cable de prueba para búsqueda rápida.',
+            'active' => true,
+        ]);
+
+        $identifierType = \App\Models\IdentifierType::query()
+            ->firstOrCreate(
+                ['slug' => 'internal-code'],
+                [
+                    'name' => 'Código interno',
+                    'description' =>
+                        'Código rápido usado en mostrador.',
+                    'is_unique' => true,
+                    'active' => true,
+                ]
+            );
+
+        $product->knowledgeEntity
+            ->identifiers()
+            ->create([
+                'identifier_type_id' => $identifierType->id,
+                'value' => '1104',
+                'is_primary' => false,
+                'active' => true,
+            ]);
+
+        $response = $this->actingAs($operator)
+            ->get(route('commerce-sales.create'))
+            ->assertOk()
+            ->assertSee('SKU, código interno, descripción, marca, modelo…')
+            ->assertSee('Artículo → condición disponible → ubicación disponible → cantidad.')
+            ->assertSee('1104')
+            ->assertSee('Código interno');
+
+        $content = $response->getContent();
+
+        foreach ([
+            'productSearchIndex:',
+            'commitArticleSearch()',
+            'conditionOptions()',
+            'locationOptions()',
+            'companyAvailableAllConditions(product.id)',
+            'cartCommittedAt(',
+            'resolveConditionSelection()',
+            'resolveLocationSelection()',
+            'data-sale-product-funnel',
+        ] as $marker) {
+            $this->assertStringContainsString(
+                $marker,
+                $content
+            );
+        }
+
+        $this->assertStringContainsString(
+            "condition: '',",
+            $content
+        );
+        $this->assertStringContainsString(
+            "quantity: ''",
+            $content
+        );
+        $this->assertStringNotContainsString(
+            "condition: 'new',",
+            $content
+        );
+    }
+
     private function movement(
         User $actor,
         CatalogProduct $product,
@@ -152,7 +300,6 @@ class V1HardeningUiTest extends TestCase
             $actor
         );
     }
-
     private function product(string $name, string $sku): CatalogProduct
     {
         $category = ProductCategory::withoutEvents(

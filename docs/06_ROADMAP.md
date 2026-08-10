@@ -25,7 +25,16 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
   - proveedores y ofertas — fundación existente
   - compras directas afectadas a Reparaciones — fundación existente y congelada
   - órdenes generales, recepciones parciales y costos — ADR 24 aceptada; Bloques 1 y 2 completados
+  - UX pendiente: costo logístico esperado, costo informado/prepoblado editable, código de proveedor visible
+  - flujo pendiente: «Compra directa recibida» con control físico y recepción atómica, sin obligar a pasar por Oferta/Orden cuando no corresponde
 - Ventas
+  - venta/cobro/inventario atómicos — fundación implementada
+  - precios privados y autoridad comercial — ADR 31 aceptada; Bloque 1 implementado
+  - POS operativo: compositor único, lookup guiado, carrito compacto/hoja operativa, cantidades editables y Enter protegido — hardening UX local en curso
+  - Terminal de Cobro APB + atajos F1/F3/F7 + medios explícitos — diseño funcional aprobado; implementación pendiente
+  - pagos estructurados, cuentas financieras y conciliación — diseño funcional aprobado; implementación por bloques
+  - criterio V1.0: SRCM debe distinguir «cobro declarado» de «dinero verificado/acreditado» y disponer de un camino de conciliación aun cuando la institución no tenga API
+  - plan de continuidad: `docs/32_PLAN_TERMINAL_COBRO_CUENTAS_CONCILIACION_V1.md`
 - Búsqueda
   - búsqueda global operativa — ADR 28 aceptada; Bloque 1 implementado
 - Importación Excel/CSV

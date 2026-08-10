@@ -38,17 +38,21 @@
                             </svg>
                         </button>
 
-                        <form action="#" method="GET" class="relative flex-1" role="search">
-                            <label for="global-search" class="sr-only">Buscar productos, códigos o modelos</label>
+                        <form action="{{ route('global-search.index') }}" method="GET" class="relative flex-1" role="search">
+                            <label for="global-search" class="sr-only">Buscar en SRCM</label>
                             <svg class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="11" cy="11" r="7" />
                                 <path stroke-linecap="round" d="m20 20-3.5-3.5" />
                             </svg>
                             <input
                                 id="global-search"
+                                x-ref="globalSearch"
                                 name="q"
                                 type="search"
-                                placeholder="Buscar por código, producto o modelo de TV..."
+                                value="{{ request()->routeIs('global-search.*') ? request('q') : '' }}"
+                                placeholder="Buscar en SRCM: producto, cliente, IMEI, reparación, compra o venta..."
+                                autocomplete="off"
+                                @keydown.window.ctrl.k.prevent="$refs.globalSearch.focus(); $refs.globalSearch.select()"
                                 class="sulu-search-input"
                             >
                             <kbd class="pointer-events-none absolute right-4 top-1/2 hidden -translate-y-1/2 rounded border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold text-slate-500 sm:block">Ctrl K</kbd>
@@ -91,5 +95,57 @@
                 </main>
             </div>
         </div>
+
+        @can('record-commerce-sales')
+            <script data-srcm-global-f1-shortcut>
+                document.addEventListener('keydown', function (event) {
+                    if (
+                        event.key !== 'F1'
+                        || event.altKey
+                        || event.ctrlKey
+                        || event.metaKey
+                    ) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    const saleForm = document.querySelector(
+                        '[data-sale-explicit-submit-only]'
+                    );
+
+                    if (saleForm) {
+                        const hasProducts = Boolean(
+                            saleForm.querySelector(
+                                '[name^="product_lines["]'
+                            )
+                        );
+                        const hasPayments = Boolean(
+                            saleForm.querySelector(
+                                '[name^="payments["]'
+                            )
+                        );
+                        const hasService = Boolean(
+                            saleForm.querySelector(
+                                '[name="service_order_id"]'
+                            )?.value
+                        );
+
+                        if (
+                            (hasProducts || hasPayments || hasService)
+                            && ! window.confirm(
+                                'Hay una venta en curso. ¿Iniciar una nueva venta y descartar el borrador actual?'
+                            )
+                        ) {
+                            return;
+                        }
+                    }
+
+                    window.location.assign(
+                        @json(route('commerce-sales.create'))
+                    );
+                });
+            </script>
+        @endcan
     </body>
 </html>
