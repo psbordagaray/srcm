@@ -231,6 +231,21 @@ class AppServiceProvider extends ServiceProvider
             );
         }
 
+        foreach ([
+            'use-financial-accounts' => 'canUseFinancialAccounts',
+            'manage-financial-accounts' => 'canManageFinancialAccounts',
+            'review-financial-reconciliation' =>
+                'canReviewFinancialReconciliation',
+        ] as $ability => $method) {
+            Gate::define(
+                $ability,
+                fn (User $user): bool => app(CurrentOrganization::class)
+                    ->roleFor($user)
+                    ?->{$method}()
+                    ?? false
+            );
+        }
+
         Gate::define(
             'view-audit',
             fn (User $user): bool => app(CurrentOrganization::class)

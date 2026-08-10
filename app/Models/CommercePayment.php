@@ -7,6 +7,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CommercePayment extends Model
 {
@@ -55,6 +56,14 @@ class CommercePayment extends Model
     public function sale(): BelongsTo
     {
         return $this->belongsTo(CommerceSale::class, 'commerce_sale_id');
+    }
+
+    public function reconciliation(): HasOne
+    {
+        return $this->hasOne(
+            PaymentReconciliation::class,
+            'commerce_payment_id'
+        );
     }
 
     public function receivedBy(): BelongsTo

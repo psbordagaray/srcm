@@ -288,3 +288,24 @@ La evidencia estructurada del cobro debe distinguir su **fuente** sin alterar la
 - **Separación de verdades:** evidencia automática o manual no equivale por sí sola a acreditación ni conciliación. Cuentas/Conciliación enlazará posteriormente el cobro esperado con la operación externa y la acreditación real.
 
 Principio APB: **API primero; respaldo manual explícito; nunca datos sensibles; ninguna evidencia declarada se presenta como dinero conciliado.**
+
+---
+
+## 20. Estado de implementación P3 Foundation
+
+Checkpoint de partida publicado: `801fbff2a8a80dca3fe3b7fb2b3b2458a293eb4b`
+— `feat(commerce): add structured payment evidence foundation`.
+
+P3 Foundation incorpora el núcleo financiero **provider-neutral** sin confundir las cinco verdades:
+
+1. `financial_accounts`: cuentas privadas por organización (caja, banco, billetera, procesador u otra), con moneda, proveedor, referencia externa, activación, autoridad y auditoría.
+2. `financial_external_movements`: hechos externos inmutables e idempotentes provenientes de API/webhook/polling/CSV/XLSX/manual, con bruto, neto, comisión y retenciones.
+3. `payment_reconciliations`: expediente inmutable que vincula un cobro declarado con su importe esperado.
+4. `payment_reconciliation_events`: historia append-only de matching/diferencias/resoluciones; nunca se sobrescribe el pasado.
+5. `payment_reconciliation_allocations`: vínculo inmutable entre un evento y el movimiento externo usado como evidencia.
+
+Regla económica inicial: para un cobro, el matching compara **importe esperado contra bruto externo**. Neto menor por comisión/retención no constituye error de venta. Ejemplo: esperado ARS 60.000; bruto ARS 60.000; neto ARS 56.820; comisión ARS 3.180 ⇒ conciliación exacta.
+
+Autoridad inicial: operador puede utilizar cuentas financieras; sólo administrador configura cuentas, registra movimientos externos manuales y ejecuta/revisa conciliaciones. Los adaptadores automáticos P5 deberán ingresar por contratos de servicio explícitos sin debilitar el aislamiento por organización.
+
+Este Foundation **no agrega todavía** selector de cuenta en Terminal, adaptadores Mercado Pago/Payway/bancos, webhooks, Centro visual de Conciliación ni importador financiero CSV/XLSX. Esos pasos continúan sobre el mismo dominio, sin redefinirlo.

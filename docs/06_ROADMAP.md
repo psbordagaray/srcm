@@ -86,3 +86,7 @@ Que un comercio pueda operar diariamente utilizando únicamente SRCM.
 - Marketplace de conocimiento
 - Integraciones
 - API pública
+
+### P3 Foundation — cuentas y conciliación
+
+Base iniciada desde `801fbff2a8a80dca3fe3b7fb2b3b2458a293eb4b`: cuentas financieras privadas, movimientos externos inmutables/idempotentes, expediente de conciliación, eventos append-only y asignaciones de evidencia. Mantener separadas venta, cobro declarado, operación externa, acreditación y conciliación. Próximos pasos: destino de cuenta en Terminal, adaptadores/API, Centro de Conciliación e importadores bancarios CSV/XLSX.

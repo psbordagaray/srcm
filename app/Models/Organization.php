@@ -197,6 +197,21 @@ class Organization extends Model
         return $this->hasMany(CommerceSale::class);
     }
 
+    public function financialAccounts(): HasMany
+    {
+        return $this->hasMany(FinancialAccount::class);
+    }
+
+    public function financialExternalMovements(): HasMany
+    {
+        return $this->hasMany(FinancialExternalMovement::class);
+    }
+
+    public function paymentReconciliations(): HasMany
+    {
+        return $this->hasMany(PaymentReconciliation::class);
+    }
+
     public function serviceCancellationRequests(): HasMany
     {
         return $this->hasMany(ServiceCancellationRequest::class);
