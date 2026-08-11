@@ -1,96 +1,1012 @@
-# SRCM Roadmap
+# SRCM — Roadmap maestro
 
-# Versión 1.0 (MVP)
+Estado de continuidad: **documento ejecutivo de referencia obligatoria**
+Actualizado: **2026-08-11**
+Rama de desarrollo: `feature/core-entity`
+Último checkpoint publicado al consolidar este roadmap:
 
-Objetivo:
-Que un comercio pueda operar diariamente utilizando únicamente SRCM.
+`7753e61fba147395362109d90ce895d61442562a`
+`feat(finance): add operational payment destinations`
 
-## Núcleo
+Documento detallado complementario:
 
-- Dashboard
-  - tablero operativo por organización — ADR 27 aceptada; Bloque 1 implementado
-- Organizaciones
-- Personas
-  - directorio general de identidades — ADR 26 aceptada; Bloque 1 implementado
-- Marcas
-- Modelos técnicos
-- Productos
-- Identificadores
-- Stock
-- Clientes
-  - identidad comercial y rol Cliente — ADR 25 aceptada; Bloque 1 implementado
-- Proveedores
-- Compras
-  - auditoría de fundación — completada
-  - proveedores y ofertas — fundación existente
-  - compras directas afectadas a Reparaciones — fundación existente y congelada
-  - órdenes generales, recepciones parciales y costos — ADR 24 aceptada; Bloques 1 y 2 completados
-  - UX pendiente: costo logístico esperado, costo informado/prepoblado editable, código de proveedor visible
-  - flujo pendiente: «Compra directa recibida» con control físico y recepción atómica, sin obligar a pasar por Oferta/Orden cuando no corresponde
-- Ventas
-  - venta/cobro/inventario atómicos — fundación implementada
-  - precios privados y autoridad comercial — ADR 31 aceptada; Bloque 1 implementado
-  - POS operativo: compositor único, lookup guiado, carrito compacto/hoja operativa, cantidades editables y Enter protegido — hardening UX local en curso
-  - Terminal de Cobro APB + atajos F1/F3/F7 + medios explícitos — diseño funcional aprobado; implementación pendiente
-  - pagos estructurados, cuentas financieras y conciliación — diseño funcional aprobado; implementación por bloques
-  - criterio V1.0: SRCM debe distinguir «cobro declarado» de «dinero verificado/acreditado» y disponer de un camino de conciliación aun cuando la institución no tenga API
-  - plan de continuidad: `docs/32_PLAN_TERMINAL_COBRO_CUENTAS_CONCILIACION_V1.md`
-- Búsqueda
-  - búsqueda global operativa — ADR 28 aceptada; Bloque 1 implementado
-- Importación Excel/CSV
-  - productos CSV/XLSX con previsualización y confirmación atómica — ADR 29 aceptada; Bloque 1 implementado
-- Usuarios y permisos
-  - membresías y roles por organización — ADR 30 aceptada; Bloque 1 implementado
-- Reparaciones Core
-  - activos e identificadores técnicos — Core 1 completado
-  - órdenes de servicio e ingreso documentado — Core 1 completado
-  - diagnóstico y presupuestos versionados — Core 2 completado
-  - trabajo propio y tercerizado — Core 3 completado
-  - repuestos y compras afectados a la orden — Core 4 completado
-  - custodia con especialistas y resultado atribuible — Core 3 completado
-  - control de calidad, entrega y garantía atribuible — Core 5 completado
-  - venta mixta, pagos y controles antifraude — Core 6 completado
-  - recepción web, buscador y expediente operativo inicial — UI 1 completada
-  - diagnóstico, presupuesto versionado y decisión del cliente — UI 2 completada
-  - cancelación posterior a aprobación, resolución y devolución trazable — Core 7 completado
-  - superficie HTTP/UI de cancelación posterior a aprobación — Core 8 completado
-  - reclamos de garantía, reingreso y orden correctiva trazable — Core 9 completado
-  - superficie HTTP/UI de reclamos de garantía y devolución — Core 10 completado
-  - evidencias privadas, fotografías y archivos inmutables — Core 11 completado
-  - superficie HTTP/UI segura de evidencias privadas — Core 12 completado
-  - superficie HTTP/UI de trabajo propio, tercerizado y custodia — Core 13 completado
-  - superficie HTTP/UI de repuestos, compras afectadas y consumos — Core 14 completado
-  - superficie HTTP/UI de control de calidad, entrega y garantías — Core 15 completado
-  - superficie HTTP/UI de venta, cobro y cierre comercial — Core 16 completado
+`docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`
+
+Documento financiero complementario:
+
+`docs/32_PLAN_TERMINAL_COBRO_CUENTAS_CONCILIACION_V1.md`
 
 ---
 
-# Versión 2.0
+## 0. Mandato de producto
 
-- Casos
-- Protocolos
-- Dependencias
-- Compatibilidades
-- Riesgos
-- Observaciones
-- Evidencias
-- Historial técnico
+SRCM debe evolucionar hasta ser una **plataforma full de operación comercial**, capaz de simplificar el trabajo real del comerciante sin sacrificar integridad, trazabilidad ni autoridad.
+
+No se busca agregar funciones por cantidad. Se busca que las funciones compartan una verdad operacional común:
+
+**producto → precio autorizado → stock → venta/compra → cobro/pago → cuenta → verificación → fiscalidad → auditoría**
+
+Principio APB permanente:
+
+> **Automatizar lo inequívoco; preguntar lo ambiguo; bloquear lo peligroso; nunca corregir silenciosamente una decisión humana.**
+
+Los hechos confirmados no se reescriben para “hacer coincidir” la realidad. Se corrigen con hechos posteriores, reversos, reemplazos, diferencias o resoluciones auditables.
 
 ---
 
-# Versión 3.0
+## 1. Jerarquía de verdad para continuidad
 
-- Comunidad
-- Reputación
-- IA
-- Marketplace de conocimiento
-- Integraciones
-- API pública
+Si una conversación se cuelga, se pierde o debe continuar en otro chat:
 
-### P3 Foundation — cuentas y conciliación
+1. **Código + migraciones + tests en el checkpoint Git publicado**.
+2. **`docs/06_ROADMAP.md`** — mapa ejecutivo y estado.
+3. **`docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`** — North Star, alcance completo y criterios.
+4. ADRs y planes especializados, especialmente `docs/32_PLAN_TERMINAL_COBRO_CUENTAS_CONCILIACION_V1.md`.
+5. RESULT de runners validados.
+6. Conversación/memoria, únicamente como apoyo.
 
-Base iniciada desde `801fbff2a8a80dca3fe3b7fb2b3b2458a293eb4b`: cuentas financieras privadas, movimientos externos inmutables/idempotentes, expediente de conciliación, eventos append-only y asignaciones de evidencia. Mantener separadas venta, cobro declarado, operación externa, acreditación y conciliación. Próximos pasos: destino de cuenta en Terminal, adaptadores/API, Centro de Conciliación e importadores bancarios CSV/XLSX.
+Nunca reabrir como pendiente una decisión ya implementada y validada salvo regresión demostrable.
 
-### P3.1 — cuentas operativas en Terminal
+---
 
-Desde `373a2d0b83b2559c81d99524c486eda93e790dfd`: gestión visual de `financial_accounts` y `financial_account_id` por pago. Cada nuevo cobro web debe indicar destino privado activo, de la organización y moneda correctas; pagos múltiples admiten destinos distintos. La cuenta es destino declarado, no acreditación ni conciliación. P5 automatizará resolución por adaptadores y P6 mostrará conciliación.
+# V1.0 — Operación comercial completa / lista para producción
+
+Objetivo: que un comercio como SULU pueda operar diariamente usando SRCM como sistema principal, con continuidad, seguridad, fiscalidad y control de dinero reales.
+
+## 2. Núcleo ya construido
+
+### Organizaciones, identidad y autoridad
+- organizaciones privadas;
+- membresías y roles por organización;
+- personas e identidad comercial central;
+- clientes;
+- proveedores;
+- auditoría atribuible;
+- aislamiento tenant;
+- permisos efectivos por membresía activa.
+
+### Catálogo y conocimiento
+- categorías;
+- marcas;
+- fabricantes;
+- productos;
+- modelos técnicos;
+- identificadores;
+- compatibilidades;
+- knowledge bridge;
+- búsqueda global;
+- importación CSV/XLSX con previsualización y commit atómico.
+
+### Inventario
+- ubicaciones privadas jerárquicas;
+- ledger de movimientos;
+- proyección de saldos;
+- cantidades fraccionables por producto;
+- disponibilidad;
+- controles de negativos;
+- autorizaciones/overrides;
+- incidentes y regularizaciones;
+- inmutabilidad de hechos confirmados.
+
+### Compras
+- proveedores y ofertas;
+- órdenes de compra;
+- recepciones parciales;
+- costos;
+- compras afectadas a reparaciones;
+- trazabilidad recepción → inventario.
+
+Pendientes de UX ya conocidos:
+- costo logístico esperado;
+- costo informado/prepoblado editable;
+- código de proveedor visible;
+- flujo “Compra directa recibida” sin forzar Oferta/Orden cuando no corresponde.
+
+### Ventas / POS
+- venta + pagos + inventario atómicos;
+- precios privados y autoridad comercial;
+- POS con compositor único;
+- lookup guiado;
+- carrito compacto;
+- cantidades editables;
+- Enter protegido;
+- F1/F3/F7;
+- Terminal de Cobro APB;
+- pago múltiple;
+- evidencia estructurada;
+- precios server-authoritative.
+
+### Finanzas P1–P3.1
+Implementado y publicado:
+- P1 — Terminal de Cobro APB;
+- P2 — evidencia estructurada de pagos;
+- P3 — foundation de cuentas financieras y conciliación;
+- P3.1 — cuentas operativas y `financial_account_id` por pago.
+
+Verdades financieras separadas:
+1. venta;
+2. cobro declarado;
+3. operación externa;
+4. acreditación;
+5. conciliación.
+
+Checkpoint P3.1:
+`7753e61fba147395362109d90ce895d61442562a`.
+
+### Reparaciones Core
+Fundación y superficies operativas ya desarrolladas:
+- activo/identificadores;
+- orden;
+- diagnóstico;
+- presupuestos versionados;
+- decisión del cliente;
+- trabajo propio/tercerizado;
+- custodia;
+- repuestos;
+- control de calidad;
+- entrega;
+- garantía;
+- cancelaciones;
+- evidencias privadas;
+- venta/cobro de servicio.
+
+---
+
+## 3. P4 — Caja operativa, turnos, efectivo y pagos a proveedores — PRÓXIMO
+
+P4 amplía el antiguo concepto “Efectivo y vuelto”. Su alcance vinculante es:
+
+### P4A — Cajas operativas
+- múltiples cajas por organización/sucursal;
+- cada caja física/lógica enlazada a una cuenta financiera `cash_box`;
+- caja activa/inactiva sin borrado destructivo;
+- identificación clara de terminal/caja.
+
+### P4B — Apertura y turno
+- sesión/turno de caja;
+- usuario/cajero responsable;
+- apertura;
+- fondo inicial;
+- una política explícita para sesiones concurrentes;
+- preselección/sugerencia automática del destino efectivo basada en la caja del turno;
+- nunca una preferencia eterna olvidable del usuario.
+
+### P4C — Movimientos de efectivo
+- ventas en efectivo;
+- ingresos autorizados;
+- retiros parciales;
+- retiros de seguridad;
+- transferencias internas caja → caja fuerte/tesorería;
+- pagos operativos autorizados;
+- reversos/correcciones append-only;
+- motivo y actor obligatorios cuando corresponda.
+
+Un retiro de seguridad **no es un gasto**: el dinero cambia de custodia/cuenta interna.
+
+### P4D — Arqueo y cierre
+- efectivo esperado;
+- efectivo contado;
+- denominaciones opcionales;
+- diferencia;
+- faltante/sobrante explícito;
+- motivo;
+- autorización escalable;
+- cierre inmutable;
+- historial de sesiones.
+
+### P4E — Efectivo entregado/aplicado/vuelto
+No confundir:
+- importe aplicado a la venta;
+- dinero entregado;
+- vuelto.
+
+Preparar futuro vuelto multimedio sin falsear el total vendido.
+
+### P4F — Pago a proveedores en recepción
+Separar siempre:
+1. recepción física;
+2. obligación económica;
+3. autorización;
+4. ejecución del pago;
+5. cuenta/caja de origen;
+6. beneficiario;
+7. evidencia.
+
+Casos:
+- mercadería pagada contra entrega;
+- pago parcial;
+- pago pendiente;
+- pago al vendedor/proveedor;
+- transportista autorizado;
+- flete separado de mercadería;
+- límites por rol/importe;
+- escalamiento a encargado/administrador/dueño.
+
+**Confirmar una recepción de stock nunca paga automáticamente.**
+
+---
+
+## 4. P5 — Operaciones externas y adaptadores
+
+- contrato provider-neutral;
+- Mercado Pago como primer adaptador cuando se implemente;
+- API/webhook/polling;
+- idempotencia;
+- firmas/secretos;
+- estados externos;
+- metadata segura de pago;
+- no PAN completo;
+- no CVV;
+- jobs/reintentos;
+- registro de fallos sin duplicar efectos.
+
+---
+
+## 5. P6 — Centro de Conciliación
+
+- cobro esperado;
+- movimiento externo;
+- bruto;
+- neto;
+- comisión;
+- retenciones;
+- matching;
+- diferencia;
+- pendiente de revisión;
+- asignaciones;
+- resolución;
+- trazabilidad;
+- conciliación parcial y múltiple cuando el dominio lo requiera.
+
+---
+
+## 6. P7 — Instituciones sin API
+
+- importación CSV/XLSX;
+- previsualización;
+- normalización;
+- mapeo configurable;
+- detección de duplicados;
+- idempotencia;
+- conciliación contra el mismo motor;
+- fallback manual explícito y auditable.
+
+API primero; importación después; manual sólo cuando no exista alternativa razonable.
+
+---
+
+## 7. P8 — Posventa comercial completa
+
+- devoluciones parciales/totales;
+- cambios;
+- reembolsos;
+- crédito/saldo a favor;
+- devolución al medio original cuando corresponda;
+- diferencia de precio;
+- devolución de stock con condición real;
+- trazabilidad a venta original;
+- nunca editar retrospectivamente la venta original;
+- integración futura con notas de crédito fiscales.
+
+---
+
+## 8. P9 — Cuentas por cobrar y cuentas por pagar
+
+### CxC
+- cuenta corriente de cliente;
+- ventas a crédito;
+- vencimientos;
+- límites;
+- anticipos/señas;
+- cuotas propias;
+- cobranzas parciales;
+- un cobro aplicado a una o varias deudas;
+- saldos a favor;
+- aging.
+
+### CxP
+- factura/documento de proveedor;
+- orden;
+- recepción;
+- obligación;
+- vencimiento;
+- pago parcial;
+- pago agrupado;
+- anticipos;
+- notas de crédito;
+- 3-way match progresivo:
+  **orden ↔ recepción ↔ documento del proveedor**;
+- diferencias explícitas antes de pagar.
+
+---
+
+## 9. P10 — Fiscalidad argentina / ARCA
+
+Objetivo: integrar la fiscalidad argentina sin convertirla en la verdad primaria del negocio.
+
+Contrato vinculante:
+
+**Venta comercial ≠ comprobante fiscal ≠ autorización fiscal.**
+
+Toda venta confirmada debe existir en SRCM con independencia de que el circuito fiscal esté pendiente, autorizado, rechazado, en contingencia o legalmente no aplicable al caso concreto. La fiscalidad se modela como una capa separada y auditable.
+
+SRCM no debe incorporar mecanismos destinados a ocultar ventas, suprimir operaciones confirmadas ni producir documentación falsa para evadir obligaciones. Sí debe representar fielmente la situación real de cada operación y permitir distinguir, consultar y gestionar su estado fiscal.
+
+Estados fiscales orientativos:
+- no iniciado;
+- pendiente;
+- autorizado;
+- rechazado;
+- contingencia;
+- anulado/corregido mediante documento fiscal posterior;
+- no aplicable cuando jurídicamente corresponda.
+
+- configuración fiscal por organización;
+- puntos de venta;
+- numeración correlativa;
+- WSAA;
+- WSFEv1 como integración principal cuando corresponda;
+- evaluar WSMTXCA si el caso requiere detalle de ítems;
+- CAE;
+- CAEA/contingencia donde aplique;
+- comprobantes A/B/C/M y otros requeridos por el negocio;
+- notas de crédito/débito;
+- QR;
+- comprobante imprimible/digital;
+- homologación;
+- reintentos idempotentes;
+- separación entre venta confirmada y autorización fiscal;
+- nunca inventar CAE ni numeración;
+- arquitectura preparada para otras jurisdicciones sin rediseñar Comercio.
+
+---
+
+## 10. P11 — Producción, seguridad, observabilidad y recuperación
+
+Antes de depender de SRCM como sistema único:
+
+### Seguridad
+- MFA/step-up para acciones peligrosas;
+- PIN/supervisor en POS cuando corresponda;
+- passkeys/WebAuthn progresivamente;
+- sesiones y dispositivos;
+- principio de mínimo privilegio;
+- secretos fuera del repo;
+- rotación de credenciales;
+- rate limiting;
+- protección CSRF/XSS/SQLi desde framework + revisión específica;
+- auditoría de actos sensibles.
+
+### Observabilidad
+- logs estructurados;
+- correlation/request IDs;
+- métricas;
+- traces;
+- OpenTelemetry como estándar preferido;
+- health checks;
+- alertas;
+- colas/jobs visibles;
+- errores de integración accionables.
+
+### Resiliencia
+- backups automáticos;
+- cifrado;
+- retención;
+- restore drills;
+- RPO/RTO definidos;
+- plan de desastre;
+- migraciones verificadas;
+- rollback técnico controlado sin borrar hechos comerciales;
+- CI/CD y suite automática.
+
+### Integraciones robustas
+- outbox/eventos internos;
+- reintentos;
+- idempotency keys;
+- dead-letter/revisión;
+- webhooks firmados;
+- versionado de contratos.
+
+---
+
+## 11. P12 — Continuidad offline y hardware POS
+
+### Offline restringido
+- continuidad temporal de venta cuando sea seguro;
+- cache mínimo necesario;
+- cola local firmada/identificada;
+- replay idempotente;
+- conflicto explícito al reconectar;
+- nunca esconder sobreventas o conflictos;
+- fiscalidad offline sólo bajo mecanismos legalmente válidos;
+- no depender exclusivamente de una API de navegador de soporte desigual.
+
+### Hardware
+Adaptadores, no dependencias rígidas:
+- scanner 1D/2D;
+- impresora térmica;
+- cajón portamonedas;
+- balanza;
+- impresora de etiquetas;
+- display de cliente;
+- terminales de pago;
+- NFC/QR;
+- dispositivos Android/desktop;
+- futuras etiquetas electrónicas.
+
+### SRCM Customer Kiosk / Price Checker
+Modo autoservicio conectado al mismo catálogo maestro:
+- escaneo EAN/UPC/GTIN/QR/DataMatrix;
+- nombre, foto y precio vigente;
+- promociones;
+- características y variantes;
+- unidad de venta;
+- stock/ubicación cuando la política lo permita;
+- compatibilidades y Knowledge Universe;
+- productos relacionados;
+- consulta de otras sucursales;
+- futura reserva/preventa desde kiosco.
+
+Puede desplegarse sobre hardware dedicado o tablet/Android/PC + scanner. El kiosco consulta la misma verdad comercial: no mantiene una segunda lista de precios.
+
+### Seguridad de tienda / Loss Prevention
+Integración progresiva con:
+- EAS tradicional;
+- tags RF/AM;
+- RFID UHF/EPC item-level;
+- antenas/portales de salida;
+- desactivadores/removedores en caja;
+- correlación con POS;
+- eventos de seguridad;
+- futura correlación con CCTV cuando exista integración autorizada.
+
+Un código de barras ordinario no sustituye un tag EAS/RFID.
+
+Progresión:
+`EAS básico → RFID/EPC item-level → Smart Exit / Loss Prevention`.
+
+Con identificación item-level, SRCM podrá distinguir salida autorizada de artículo sin venta/transferencia/salida válida y conservar evento, hora, sucursal, puerta y artículo.
+
+---
+
+# Universo comercial objetivo de SRCM Full
+
+SRCM se diseña como plataforma horizontal para **retail + mayorista + distribución + servicios + reparación + omnicanalidad**, con verticales específicos sólo cuando un rubro requiera reglas propias.
+
+Rubros y operaciones objetivo, entre otros:
+
+- kioscos, maxikioscos, almacenes, despensas, minimercados, autoservicios y supermercados;
+- bazares, regalerías, jugueterías, librerías, papelerías, perfumerías y comercios multirrubro;
+- indumentaria, calzado, marroquinería y accesorios;
+- ferreterías, corralones, casas de electricidad, sanitarios, pinturerías, bulonerías, madereras y materiales para obra;
+- celulares, computación, electrónica, televisores, audio, electrodomésticos, seguridad y telecomunicaciones;
+- autopartes, motopartes, lubricantes, neumáticos, baterías, repuestos agrícolas y talleres con venta;
+- servicios técnicos de electrónica, informática, electrodomésticos, herramientas, maquinaria y otros equipos;
+- mayoristas, distribuidores, importadores y empresas con múltiples depósitos;
+- negocios de productos fraccionados por metro, kilo, litro, unidad u otra magnitud;
+- comercios de alimentos/consumo masivo con lote, vencimiento y trazabilidad;
+- muebles, decoración, iluminación, hogar, jardín, camping y equipamiento;
+- negocios de alto valor con seguimiento por serie/IMEI/SN;
+- empresas con varias cajas, varias sucursales y múltiples canales;
+- venta por pedido, preventa, reserva, seña y crédito comercial;
+- servicios con consumo de materiales/repuestos;
+- PYMEs y empresas familiares que hoy operan parcialmente con planillas, Drive, papel y mensajería.
+
+SRCM no se declarará automáticamente especialista vertical de restaurantes, hoteles, clínicas, farmacias, estaciones de servicio o fábricas MRP completas. Esos dominios podrán construirse como verticales cuando exista necesidad real, reutilizando el Core común sin degradarlo.
+
+La meta es profundidad real en el comercio, no convertirse en un producto superficial para todas las industrias.
+
+---
+
+# V1.5 — Retail omnicanal y crecimiento
+
+## 12. P13 — Reservas, holds, concurrencia y carrito persistente
+- holds POS temporales;
+- reservas formales;
+- concurrencia multicanal;
+- prevención de sobreventa;
+- carrito persistente/recuperable;
+- recuperación por cliente/WhatsApp;
+- expiraciones;
+- prioridad y autoridad;
+- no crear movimientos físicos ocultos por cada carrito.
+
+## 13. P14 — Multi-sucursal y fulfillment
+- sucursales;
+- depósitos;
+- cajas por sucursal;
+- stock por ubicación;
+- transferencias;
+- tránsito;
+- recepción de transferencias;
+- retiro en tienda;
+- ship-from-store;
+- entrega;
+- picking/packing progresivo.
+
+## 14. P15 — Omnicanalidad, publicaciones y SULU Media
+- WhatsApp Business;
+- Instagram;
+- ecommerce;
+- marketplaces;
+- catálogo compartido;
+- stock compartido;
+- precio por canal;
+- campañas;
+- publicación automática;
+- pausa por agotado;
+- trazabilidad publicación → venta;
+- módulo SULU Media/cartelería digital;
+- programación de piezas;
+- SRCM Player;
+- contenido derivado de ficha de producto y campañas.
+
+## 15. P16 — Motor comercial avanzado
+- listas de precios;
+- minorista/mayorista;
+- escalas por cantidad;
+- promociones;
+- combos;
+- cupones;
+- descuentos con autoridad;
+- margen mínimo;
+- reglas por canal;
+- precios programados;
+- fidelización;
+- gift cards;
+- puntos/recompensas;
+- campañas segmentadas.
+
+## 16. P17 — GS1, 2D, lotes, series y etiquetado
+- GTIN/EAN/UPC;
+- IMEI/SN;
+- lote;
+- vencimiento;
+- GS1 Application Identifiers;
+- QR/DataMatrix;
+- GS1 Digital Link progresivo;
+- etiquetas;
+- trazabilidad de unidad/lote;
+- recall cuando aplique.
+
+## 17. P18 — Reposición, planificación y proveedores
+- mínimos/máximos;
+- punto de pedido;
+- lead time;
+- stock proyectado;
+- órdenes sugeridas;
+- estacionalidad;
+- forecasting;
+- supplier scorecards;
+- precio/plazo/calidad;
+- compras consolidadas;
+- alertas de quiebre.
+
+Primero reglas determinísticas; IA después.
+
+## 18. P19 — CRM y analítica
+- ficha 360 del cliente;
+- historial;
+- frecuencia;
+- ticket medio;
+- preferencias;
+- segmentación;
+- consentimiento;
+- campañas;
+- cohortes;
+- margen;
+- rotación;
+- aging;
+- caja;
+- compras;
+- reparaciones;
+- BI/export;
+- dashboards por rol.
+
+---
+
+# V2.0 — Operación avanzada / empresa escalable
+
+## 19. Logística y depósito avanzado
+- picking;
+- packing;
+- olas;
+- zonas;
+- cross-docking cuando corresponda;
+- conteos cíclicos;
+- inventario móvil;
+- recepciones asistidas;
+- ruteo/entrega mediante integraciones.
+
+## 20. Plataforma móvil/PWA
+- operación responsive;
+- inventario móvil;
+- recepción móvil;
+- conteo;
+- fotos/evidencia;
+- lector de cámara;
+- firma;
+- notificaciones.
+
+## 21. Experiencias de tienda
+- customer display;
+- kiosco/self-service donde tenga sentido;
+- consulta de precio;
+- turnero;
+- etiquetas electrónicas;
+- QR de producto;
+- recibo digital.
+
+## 22. Integración contable y administrativa
+SRCM debe poseer la verdad operacional; no necesita reimplementar todo software commodity.
+
+Integrar progresivamente:
+- contabilidad general;
+- impuestos/liquidaciones externas;
+- bancos;
+- payroll;
+- couriers;
+- ecommerce;
+- proveedores especializados.
+
+Construir nativamente sólo cuando hacerlo mejore de verdad la operación o la integridad.
+
+## 23. Datos y gobierno
+- exportación completa;
+- portabilidad;
+- archivado;
+- retención;
+- privacidad;
+- permisos granulares;
+- data lineage;
+- catálogos de eventos;
+- versionado de APIs;
+- políticas de eliminación donde legalmente corresponda sin destruir evidencia obligatoria.
+
+---
+
+# SRCM Business Network — red comercial inter-organización
+
+SRCM Full debe poder evolucionar desde sistema privado de cada empresa hacia una red comercial opt-in que conecte organizaciones sin mezclar sus datos privados.
+
+> **SRCM no sólo administra una empresa. A escala, puede conectar empresas entre sí conservando la soberanía, autoridad y privacidad de cada organización.**
+
+## Perfil comercial publicable
+Cada organización podrá decidir publicar:
+- nombre comercial;
+- zona de cobertura;
+- varios rubros/categorías principales;
+- marcas;
+- mayorista/minorista/distribuidor/importador/servicio;
+- canales de contacto;
+- condiciones generales publicables;
+- catálogo/ofertas seleccionadas.
+
+Nada privado se publica por inferencia automática.
+
+## Descubrimiento de proveedores
+Búsqueda por rubro, producto, marca, código, ubicación, cobertura, condiciones, reputación y disponibilidad/oferta publicada.
+
+## RFQ / cotización B2B
+`Necesidad de compra → RFQ → proveedores → ofertas → comparación → selección → SupplierOffer/PurchaseOrder`.
+
+## Catálogo compartible y mapping
+Cada empresa conserva su catálogo privado. La red podrá relacionar:
+- GTIN/EAN/UPC;
+- SKU/código proveedor;
+- código fabricante;
+- modelo técnico;
+- marca;
+- Knowledge Universe;
+- mapping confirmado.
+
+Un producto desconocido puede generar una propuesta de alta, nunca un alta automática sin revisión/autoridad.
+
+## Documento proveedor → inbound automático
+> **El proveedor transmite datos; el comprador controla la realidad física. El documento del proveedor no aumenta stock por sí solo. La recepción física confirmada es la que incorpora mercadería al inventario propio.**
+
+Circuito:
+`PurchaseOrder comprador`
+→ `SalesOrder proveedor`
+→ preparación/despacho
+→ `Invoice/Remito/ASN estructurado`
+→ `Inbound/Purchase Receipt esperado comprador`
+→ control físico
+→ confirmación
+→ stock propio.
+
+La factura, orden de venta, remito o ASN puede crear/prellenar automáticamente una recepción esperada con proveedor, productos, cantidades, costos informados, documentos, bultos, lotes/series, referencia externa y estado de envío.
+
+**El comprador controla; no vuelve a transcribir.**
+
+## Diferencias de recepción
+Ejemplo:
+`Proveedor declaró 100 → 97 conformes + 2 dañados + 1 faltante`.
+
+SRCM conserva esperado, recibido, condición, faltante/sobrante, daño, evidencia y reclamo. Sólo lo físicamente confirmado ingresa al stock correspondiente y con condición real.
+
+## 3-way match
+`Orden de compra ↔ documento/factura proveedor ↔ recepción física`.
+
+Coincidencia exacta puede dejar preparada la obligación de pago según políticas. Diferencias nunca se corrigen ni pagan silenciosamente.
+
+## ASN — Advance Shipping Notice
+Puede transportar artículos, cantidades, bultos, lotes/series, transportista, documentos, ETA y QR/identificador. Al llegar, escanearlo puede abrir directamente la recepción esperada.
+
+## Reputación B2B basada en hechos
+Indicadores gobernados por privacidad:
+- cumplimiento de cantidades;
+- puntualidad;
+- diferencias;
+- daños;
+- cancelaciones;
+- calidad de respuesta;
+- experiencia por rubro.
+
+Priorizar evidencia operacional sobre estrellas subjetivas.
+
+## Dos representaciones privadas
+El mismo intercambio puede ser:
+- venta/fulfillment para proveedor;
+- compra/recepción/CxP para comprador.
+
+Se comparte documento estructurado, no acceso a la base privada de la contraparte.
+
+## Regla anti doble carga
+> **Un dato estructurado creado por una empresa SRCM Network no debe recargarse manualmente por otra cuando pueda transmitirse, mapearse y validarse de forma segura.**
+
+---
+
+# Knowledge Universe — capa transversal permanente
+
+El Knowledge Core no es una función decorativa de V3 ni un “chatbot futuro”. Es una capa transversal que debe preservarse durante toda la evolución de SRCM.
+
+Cada módulo debe preguntarse:
+
+**¿qué conocimiento produce esta operación y qué conocimiento podría ayudarla?**
+
+Fuentes internas:
+- compras;
+- ventas;
+- devoluciones;
+- reparaciones;
+- diagnósticos;
+- presupuestos;
+- garantías;
+- fallas;
+- compatibilidades;
+- identificadores;
+- rotación;
+- proveedores;
+- precios;
+- búsquedas sin resultado;
+- evidencia aportada por usuarios autorizados.
+
+Fuentes externas:
+- fabricantes;
+- documentación oficial;
+- catálogos de proveedores;
+- APIs;
+- códigos/GS1;
+- marketplaces;
+- documentación técnica;
+- fuentes públicas de la web cuando su uso sea permitido y verificable.
+
+Modelo conceptual:
+
+`fuente → dato candidato → normalización → entidad SRCM → relación → provenance → confianza → validación → conocimiento utilizable`
+
+Relaciones de conocimiento posibles:
+- compatible con;
+- incompatible con;
+- reemplaza;
+- requiere;
+- recomienda;
+- no recomienda;
+- se instala con;
+- se repara con;
+- presenta riesgo de;
+- fue validado por;
+- suele fallar por;
+- suele comprarse con;
+- tiene alternativa equivalente.
+
+Siempre conservar:
+- fuente;
+- actor;
+- contexto;
+- evidencia;
+- fecha;
+- vigencia;
+- confianza;
+- validación;
+- versión.
+
+Privacidad:
+- los datos privados de cada organización siguen siendo privados;
+- el conocimiento compartible debe separarse de datos comerciales sensibles;
+- cualquier agregación entre organizaciones debe diseñarse con reglas explícitas de privacidad, anonimización/consentimiento y gobernanza;
+- nunca convertir automáticamente una observación privada en conocimiento público.
+
+La IA podrá extraer, relacionar, detectar contradicciones y proponer conocimiento, pero debe distinguir entre:
+- inferencia de IA;
+- afirmación de fabricante;
+- evidencia de proveedor;
+- observación de usuario/comercio;
+- validación técnica.
+
+Objetivo: que SRCM sea simultáneamente **sistema de operación** y **memoria intelectual del comercio**.
+
+---
+
+# V3.0 — Inteligencia, automatización y plataforma
+
+## 24. IA operacional gobernada
+La IA no será un chatbot decorativo.
+
+Casos:
+- sugerir reposición;
+- detectar anomalías de caja;
+- señalar ventas/compras atípicas;
+- identificar repuestos desde foto/código/medidas;
+- proponer compatibilidades;
+- sugerir precio/margen;
+- preparar órdenes de compra;
+- explicar variaciones;
+- resumir expedientes;
+- sugerir campañas;
+- detectar garantías repetitivas;
+- forecast;
+- asistencia al operador.
+
+Regla:
+**la IA puede observar, explicar, sugerir y preparar; no debe ejecutar por sí sola dinero, stock, fiscalidad o actos irreversibles sin autoridad definida.**
+
+## 25. Agentes y automatizaciones
+- jobs inteligentes;
+- aprobaciones;
+- reglas;
+- workflows;
+- eventos;
+- agent tools limitadas por permisos;
+- dry-run;
+- evidencia de inputs/outputs;
+- human-in-the-loop;
+- rollback lógico mediante hechos compensatorios.
+
+## 26. API pública y ecosistema
+- API versionada;
+- OpenAPI;
+- OAuth/scopes;
+- webhooks;
+- SDKs;
+- marketplace de integraciones;
+- conectores;
+- permisos por app;
+- rate limits;
+- sandbox.
+
+## 26.1. SRCM Business Network
+- perfiles comerciales opt-in;
+- rubros/categorías publicables;
+- supplier discovery;
+- RFQ;
+- catálogos/ofertas compartibles;
+- documentos B2B estructurados;
+- SalesOrder/Invoice/Remito/ASN → inbound comprador;
+- mapping de productos;
+- 3-way match;
+- reputación basada en hechos;
+- privacidad y soberanía por organización;
+- eliminación de doble carga.
+
+## 27. Conocimiento y comunidad
+- base técnica;
+- compatibilidades;
+- casos;
+- protocolos;
+- evidencias;
+- reputación;
+- conocimiento compartible;
+- marketplace de conocimiento;
+- IA alimentada sólo por fuentes y permisos válidos.
+
+---
+
+# Principios técnicos permanentes
+
+## 28. Arquitectura
+- modular monolith primero; separar servicios sólo cuando exista necesidad real;
+- API-first en contratos de dominio;
+- web como cliente, no autoridad final;
+- provider-neutral;
+- tenant-private;
+- idempotencia;
+- transacciones atómicas donde corresponda;
+- eventos/outbox para efectos externos;
+- append-only/inmutabilidad para evidencia y hechos financieros;
+- bases proyectadas reconstruibles desde hechos confirmados cuando el dominio lo permita.
+
+## 29. UX
+- teclado primero en POS;
+- móvil cuando la tarea lo requiera;
+- accesible;
+- no esconder estados críticos;
+- no usar texto libre como fuente de verdad cuando existe vocabulario estructurable;
+- defaults sólo cuando son inequívocos;
+- confirmar explícitamente dinero/stock/acciones peligrosas;
+- minimizar trabajo manual repetitivo.
+
+## 30. Autoridad
+- rol + organización + contexto;
+- límites por importe/tipo;
+- supervisor/step-up;
+- ninguna autorización inferida de un campo de texto;
+- segregación de funciones configurable para comercios grandes.
+
+## 31. Evidencia
+- snapshots inmutables;
+- archivos privados;
+- hash cuando corresponda;
+- source/provenance;
+- actor;
+- fecha/hora;
+- idempotencia;
+- nunca almacenar datos sensibles innecesarios.
+
+## 32. Calidad
+Cada bloque:
+1. diagnóstico real;
+2. diseño/ADR cuando corresponde;
+3. migraciones seguras;
+4. tests focales;
+5. suite completa;
+6. `git diff --check`;
+7. GRAN PRUEBA manual si afecta UI/operación;
+8. verificador read-only cuando sea útil;
+9. commit/push sólo tras aprobación;
+10. checkpoint registrado en Roadmap.
+
+Los runners deben ser PowerShell 5.1 compatibles y deben tratar errores fatales impresos como fallo aunque un proceso devuelva exit code incorrecto.
+
+---
+
+# Baseline tecnológico 2026 a vigilar
+
+No son dependencias obligatorias inmediatas; son referencias para no diseñar SRCM con supuestos viejos:
+
+- ARCA: facturación electrónica por Web Services oficiales, autorización por punto de venta y numeración correlativa;
+- GS1 Digital Link 1.1.4 / códigos 2D;
+- OpenTelemetry para traces/métricas/logs;
+- FIDO2/WebAuthn/passkeys para autenticación resistente al phishing;
+- POS modernos con sesiones, control de efectivo, offline temporal, hardware integrado y devoluciones;
+- APIs/webhooks/event-driven integrations;
+- IA operacional con permisos y human-in-the-loop.
+
+Estas referencias deben verificarse de nuevo en fuentes oficiales antes de cada implementación porque normas, APIs y estándares cambian.
+
+---
+
+# Decisiones vinculantes agregadas 2026-08-11
+
+1. **Fiscalidad desacoplada:** la venta comercial y el comprobante fiscal son verdades distintas. La integración con ARCA no debe borrar ni ocultar operaciones comerciales confirmadas.
+2. **Mercado objetivo amplio:** SRCM Full cubre horizontalmente retail, mayorista, distribución, servicios, reparación y omnicanalidad; los verticales especiales se construyen cuando el dominio lo justifique.
+3. **Knowledge Universe transversal:** conocimiento, compatibilidades, evidencia, fuentes externas y aprendizaje del ecosistema se preservan como una columna permanente de SRCM, no como accesorio tardío.
+4. **Privacidad por organización:** el conocimiento compartible nunca autoriza mezclar datos comerciales privados sin reglas explícitas.
+5. **Operación y conocimiento se retroalimentan:** comprar, vender, reparar, devolver y garantizar producen conocimiento; el conocimiento ayuda a comprar, vender, reparar y prevenir mejor.
+6. **Experiencia de tienda conectada:** price checker/kiosco, EAS y RFID consumen el mismo catálogo, precios, stock y reglas de SRCM.
+7. **Business Network opt-in:** empresas pueden descubrirse, cotizar e intercambiar documentos B2B sin exponer datos privados.
+8. **Cero doble carga evitable:** datos estructurados del proveedor prellenan compra/recepción del comprador.
+9. **Stock sólo por recepción física confirmada:** factura, orden, remito o ASN jamás incrementan stock por sí solos.
+
+---
+
+# Regla final de alcance
+
+**“SRCM lo quiero TODO” no significa construir indiscriminadamente todo desde cero.**
+
+Significa que el comerciante debe poder resolver desde SRCM —de forma nativa o mediante integración sólida— todo su circuito operativo sin volver a planillas, WhatsApp suelto o procesos paralelos para cubrir agujeros esenciales.
+
+La prioridad siempre será:
+
+**menos trabajo manual + más verdad + más seguridad + más velocidad + más trazabilidad.**

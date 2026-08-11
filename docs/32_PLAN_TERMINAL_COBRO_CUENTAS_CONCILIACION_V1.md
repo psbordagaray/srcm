@@ -1,12 +1,16 @@
 # SRCM V1 — Terminal de Cobro APB, Cuentas y Conciliación
 
-Estado: **Contrato funcional aprobado / implementación por bloques pendiente**
+Estado: **P1–P3.1 implementados y publicados / P4 próximo**
 
-Fecha de consolidación: **2026-08-10**
+Fecha de consolidación inicial: **2026-08-10**
+Fecha de actualización: **2026-08-11**
 
-Checkpoint oficial de código sobre el que se desarrolló el hardening UX:
-`ce62ecccea5fca630a990acc1520e09d95a48851`
-— `feat(commerce): add private pricing and harden sale authority`
+Checkpoint oficial actual:
+`7753e61fba147395362109d90ce895d61442562a`
+— `feat(finance): add operational payment destinations`
+
+North Star y roadmap maestro:
+`docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`
 
 Este documento existe también como **documento de continuidad**: si una conversación se interrumpe, se cuelga o debe continuarse en otro chat, debe leerse antes de rediseñar Venta, Cobro, Cuentas, conciliación o integraciones financieras.
 
@@ -214,29 +218,48 @@ Flujo comprobado: `Compra/Orden → recepción → inventario → movimientos �
 
 Aprendizajes: Enter no puede ejecutar venta irreversible; carrito visible; cantidad editable; cantidad no disponible debe advertirse; rapidez no puede asumir medio de pago; un importe manual no se recalcula silenciosamente.
 
-Snapshot de hardening UX 2026-08-10: **451 tests / 3947 assertions**, staging vacío, sin commit/push del hardening UX todavía. El checkpoint oficial continúa en `ce62ecc...` hasta aprobación visual y cierre controlado.
+Estado validado al 2026-08-11: P1, P2, P3 Foundation y P3.1 fueron publicados. La GRAN PRUEBA real llegó hasta Venta #4: cobro Efectivo ARS 2.000 con destino `Caja principal`, `financial_account_id` persistido y salida física enlazada. El cierre P3.1 publicó **462 tests / 4148 assertions** en `7753e61fba147395362109d90ce895d61442562a`.
+
+La cuenta destino expresa pertenencia del cobro declarado; no implica acreditación ni conciliación.
 
 ---
 
-## 18. Implementación recomendada por bloques
+## 18. Implementación por bloques — estado actualizado
 
-### P0 — Continuidad documental
-Este documento + Roadmap.
+### P0 — Continuidad documental — IMPLEMENTADO
+Este documento + Roadmap + ADRs.
 
-### P1 — Terminal de Cobro APB
+### P1 — Terminal de Cobro APB — IMPLEMENTADO
 Overlay, F7/F1/F3, medio explícito, Falta/Excede/Exacto, confirmación final, Enter protegido, backend atómico preservado.
 
-### P2 — Evidencia estructurada de pagos
-Campos por medio, tarjeta, transferencia, billeteras, operación externa y pagos múltiples.
+### P2 — Evidencia estructurada de pagos — IMPLEMENTADO
+Campos seguros por medio y pagos múltiples. PAN completo/CVV fuera de SRCM.
 
-### P3 — Cuentas financieras
-Cuentas privadas por organización, caja/bancos/procesadores, destino, permisos y auditoría.
+### P3 — Cuentas financieras y conciliación Foundation — IMPLEMENTADO
+Cuentas privadas, movimientos externos, reconciliación provider-neutral e inmutabilidad/idempotencia.
 
-### P4 — Efectivo y vuelto
-Entregado/aplicado, cálculo de vuelto y preparación de vuelto multimedio.
+### P3.1 — Cuentas operativas en Terminal — IMPLEMENTADO
+Gestión visual de cuentas y `financial_account_id` por pago. Checkpoint publicado: `7753e61fba147395362109d90ce895d61442562a`.
+
+### P4 — Caja operativa, turnos, efectivo y pagos a proveedores — PRÓXIMO
+Amplía el antiguo P4 “Efectivo y vuelto”:
+- cajas múltiples vinculadas a cuentas `cash_box`;
+- apertura/turno/cierre;
+- fondo inicial;
+- destino efectivo sugerido por turno;
+- entregado/aplicado/vuelto;
+- ingresos/retiros;
+- retiros de seguridad;
+- transferencias a caja fuerte/tesorería;
+- arqueo esperado vs contado;
+- faltantes/sobrantes;
+- autoridad escalable;
+- pago a proveedor/flete contra recepción conforme;
+- recepción, obligación, autorización y ejecución del pago como hechos separados;
+- confirmar stock nunca paga automáticamente.
 
 ### P5 — Operaciones externas y adaptadores
-Contrato común; Mercado Pago como adaptador; API/webhook/polling; idempotencia; IDs y estados externos.
+Contrato común; Mercado Pago como primer adaptador cuando corresponda; API/webhook/polling; idempotencia; IDs y estados externos.
 
 ### P6 — Centro de Conciliación
 Cobros esperados, movimientos/acreditaciones, bruto/neto, comisiones, matching, diferencias, revisión y resolución.
@@ -244,24 +267,28 @@ Cobros esperados, movimientos/acreditaciones, bruto/neto, comisiones, matching, 
 ### P7 — Instituciones sin API
 Importadores CSV/XLSX, previsualización, normalización, idempotencia y conciliación contra el mismo motor.
 
-Posteriores relacionados: holds POS, concurrencia multicanal, carrito persistente, reservas, crédito propio/cuentas por cobrar y vuelto multimedio completo.
+El roadmap completo posterior —devoluciones, CxC/CxP, ARCA, producción/offline/hardware, omnicanalidad, GS1, CRM, forecasting, IA y API— se mantiene en `docs/06_ROADMAP.md` y `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
 
 ---
 
-## 19. Criterio mínimo antes de declarar SRCM V1.0 listo para uso comercial real
+## 19. Criterio financiero mínimo antes de declarar SRCM V1.0 listo para uso comercial real
 
-No hace falta integrar todos los bancos/procesadores. Sí debe existir como mínimo:
+En el frente Venta/Cobro/Finanzas debe existir como mínimo:
 
 1. Terminal de Cobro APB operativa.
 2. Medio explícito, sin Efectivo asumido.
 3. Pago múltiple usable.
 4. Evidencia estructurada básica.
 5. Cuentas financieras privadas.
-6. Diferenciación entre cobro declarado y acreditación verificada.
-7. Camino de conciliación.
-8. Camino alternativo para instituciones sin API.
-9. Auditoría e idempotencia.
-10. Venta/pago/inventario protegidos atómicamente.
+6. Caja operativa con apertura/cierre/arqueo.
+7. Diferenciación entre cobro declarado y acreditación verificada.
+8. Camino de conciliación.
+9. Camino alternativo para instituciones sin API.
+10. Auditoría e idempotencia.
+11. Venta/pago/inventario protegidos atómicamente.
+12. Pagos a proveedores sin acoplar recepción a desembolso.
+
+El criterio global V1.0 —incluyendo fiscalidad, posventa, CxC/CxP, producción, seguridad, backups y continuidad— está definido en el Roadmap maestro.
 
 ---
 
@@ -269,14 +296,17 @@ No hace falta integrar todos los bancos/procesadores. Sí debe existir como mín
 
 Si se retoma en otra conversación:
 
-1. Leer este documento.
-2. Leer ADR 31.
-3. Revisar `docs/06_ROADMAP.md`.
-4. Confirmar rama, HEAD, estado dirty y staging.
-5. **No reabrir como pendientes decisiones ya implementadas.**
-6. No hacer commit/push del hardening UX hasta aprobación visual/manual.
-7. Implementar por bloques pequeños, fail-closed y con RESULT verificable.
-8. No corregir silenciosamente decisiones del operador.
+1. Leer `docs/06_ROADMAP.md`.
+2. Leer `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
+3. Leer este documento si se toca Venta/Cobro/Cuentas/Conciliación/Caja.
+4. Leer ADR 31 y el ADR específico del dominio afectado.
+5. Confirmar rama, HEAD, working tree y staging.
+6. Leer el RESULT del último bloque ejecutado.
+7. **No reabrir como pendientes decisiones ya implementadas.**
+8. Implementar por bloques pequeños, fail-closed y con RESULT verificable.
+9. No hacer commit/push de trabajo nuevo hasta aprobación visual/manual cuando corresponda.
+10. No corregir silenciosamente decisiones del operador.
+11. Jerarquía de verdad: código/checkpoint → Roadmap/ADRs → RESULT → conversación.
 
 ### Proveniencia de la evidencia de pago
 
@@ -291,7 +321,7 @@ Principio APB: **API primero; respaldo manual explícito; nunca datos sensibles;
 
 ---
 
-## 20. Estado de implementación P3 Foundation
+## 21. Estado de implementación P3 Foundation
 
 Checkpoint de partida publicado: `801fbff2a8a80dca3fe3b7fb2b3b2458a293eb4b`
 — `feat(commerce): add structured payment evidence foundation`.
@@ -312,7 +342,11 @@ Este Foundation **no agrega todavía** selector de cuenta en Terminal, adaptador
 
 ---
 
-## 21. Estado de implementación P3.1 — destino de cobro
+## 22. Estado de implementación P3.1 — destino de cobro
+
+Checkpoint P3.1 publicado:
+`7753e61fba147395362109d90ce895d61442562a`
+— `feat(finance): add operational payment destinations`.
 
 P3.1 lleva `financial_accounts` a la operación diaria:
 
