@@ -15,6 +15,7 @@ use App\Http\Requests\StoreCommerceSaleRequest;
 use App\Models\BusinessParty;
 use App\Models\CatalogProduct;
 use App\Models\CommerceSale;
+use App\Models\FinancialAccount;
 use App\Models\InventoryLocation;
 use App\Models\ServiceOrder;
 use Brick\Math\BigDecimal;
@@ -320,6 +321,19 @@ class CommerceSaleController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'paymentMethods' => CommercePaymentMethod::cases(),
+            'financialAccounts' => FinancialAccount::query()
+                ->forOrganization($organizationId)
+                ->where('active', true)
+                ->orderBy('currency_code')
+                ->orderBy('name')
+                ->get([
+                    'id',
+                    'public_id',
+                    'name',
+                    'type',
+                    'provider',
+                    'currency_code',
+                ]),
             'conditions' => InventoryCondition::cases(),
             'productPrices' => $priceReader->matrix(
                 $priceReader->currentForProducts($organizationId)
@@ -393,7 +407,9 @@ class CommerceSaleController extends Controller
                                 authorizationCode:
                                     $payment['authorization_code'] ?? null,
                                 providerStatus:
-                                    $payment['provider_status'] ?? null
+                                    $payment['provider_status'] ?? null,
+                                financialAccountId:
+                                    (int) $payment['financial_account_id']
                             )
                         )
                         ->values()
@@ -461,6 +477,7 @@ class CommerceSaleController extends Controller
             'lines.product',
             'lines.inventoryMovementLine',
             'payments.receivedBy',
+            'payments.financialAccount',
             'inventoryMovement.lines.product',
             'inventoryMovement.lines.sourceLocation',
         ]);

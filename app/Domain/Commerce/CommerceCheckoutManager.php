@@ -16,6 +16,7 @@ use App\Models\BusinessParty;
 use App\Models\CatalogProduct;
 use App\Models\CommercePayment;
 use App\Models\CommerceSale;
+use App\Models\FinancialAccount;
 use App\Models\CommerceSaleLine;
 use App\Models\OrganizationMembership;
 use App\Models\ServiceOrder;
@@ -74,6 +75,12 @@ final class CommerceCheckoutManager
                     'inventoryMovement.lines',
                 ]);
             }
+
+            $this->guardFinancialAccounts(
+                $normalized['payments'],
+                $organizationId,
+                $normalized['currency_code']
+            );
 
             $soldAt = $data->soldAt
                 ? CarbonImmutable::instance($data->soldAt)
@@ -220,6 +227,8 @@ final class CommerceCheckoutManager
                 CommercePayment::query()->create([
                     'organization_id' => $organizationId,
                     'commerce_sale_id' => $sale->id,
+                    'financial_account_id' =>
+                        $payment['financial_account_id'],
                     'position' => $index + 1,
                     'method' => $payment['method'],
                     'amount_minor' => $payment['amount_minor'],
@@ -558,6 +567,17 @@ final class CommerceCheckoutManager
                 );
             }
 
+            $financialAccountId = $payment->financialAccountId;
+
+            if (
+                $financialAccountId !== null
+                && $financialAccountId <= 0
+            ) {
+                throw new DomainException(
+                    'La cuenta destino del pago no es válida.'
+                );
+            }
+
             $reference = $this->paymentText(
                 $payment->reference,
                 255,
@@ -675,6 +695,7 @@ final class CommerceCheckoutManager
             }
 
             $payments[] = [
+                'financial_account_id' => $financialAccountId,
                 'method' => $payment->method->value,
                 'amount_minor' => $payment->amountMinor,
                 'reference' => $reference,
@@ -798,6 +819,41 @@ final class CommerceCheckoutManager
         }
 
         return $left + $right;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $payments
+     */
+    private function guardFinancialAccounts(
+        array $payments,
+        int $organizationId,
+        string $currencyCode
+    ): void {
+        $ids = collect($payments)
+            ->pluck('financial_account_id')
+            ->filter(fn (mixed $id): bool => $id !== null)
+            ->map(fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return;
+        }
+
+        $accounts = FinancialAccount::query()
+            ->forOrganization($organizationId)
+            ->whereIn('id', $ids->all())
+            ->where('active', true)
+            ->where('currency_code', $currencyCode)
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        if ($accounts->count() !== $ids->count()) {
+            throw new DomainException(
+                'Una cuenta destino no está activa, no pertenece a la organización o usa otra moneda.'
+            );
+        }
     }
 
     private function organizationId(User $actor): int

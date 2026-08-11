@@ -9,10 +9,12 @@ use App\Domain\Inventory\InventoryMovementCreator;
 use App\Domain\Inventory\InventoryMovementDraftData;
 use App\Domain\Inventory\InventoryMovementLineData;
 use App\Enums\CommercePaymentMethod;
+use App\Enums\FinancialAccountType;
 use App\Enums\InventoryCondition;
 use App\Enums\InventoryMovementType;
 use App\Enums\UserRole;
 use App\Models\CatalogProduct;
+use App\Models\FinancialAccount;
 use App\Models\InventoryLocation;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
@@ -157,6 +159,10 @@ class OrganizationProductPriceTest extends TestCase
         $operator = $this->user($organization, UserRole::Operator);
         $product = $this->product('Cable blindado', 'PRICE-FORGE');
         $location = $this->location($organization);
+        $account = $this->financialAccount(
+            $organization,
+            $admin
+        );
 
         app(OrganizationProductPriceManager::class)->set(
             $product,
@@ -184,6 +190,7 @@ class OrganizationProductPriceTest extends TestCase
                 ]],
                 'payments' => [[
                     'method' => CommercePaymentMethod::Cash->value,
+                    'financial_account_id' => $account->id,
                     'amount' => '14300,00',
                     'reference' => null,
                     'notes' => null,
@@ -213,9 +220,14 @@ class OrganizationProductPriceTest extends TestCase
     public function test_product_sale_without_private_price_is_blocked(): void
     {
         $organization = $this->organization();
+        $admin = $this->user($organization, UserRole::Admin);
         $operator = $this->user($organization, UserRole::Operator);
         $product = $this->product('Sin precio', 'NO-PRICE');
         $location = $this->location($organization);
+        $account = $this->financialAccount(
+            $organization,
+            $admin
+        );
 
         $this->seedStock($operator, $product, $location, '1');
 
@@ -231,6 +243,7 @@ class OrganizationProductPriceTest extends TestCase
                 ]],
                 'payments' => [[
                     'method' => CommercePaymentMethod::Cash->value,
+                    'financial_account_id' => $account->id,
                     'amount' => '99999',
                     'reference' => null,
                 ]],
@@ -293,6 +306,24 @@ class OrganizationProductPriceTest extends TestCase
                 'active' => true,
             ])->refresh()
         );
+    }
+
+    private function financialAccount(
+        Organization $organization,
+        User $creator
+    ): FinancialAccount {
+        $suffix = Str::lower(Str::random(8));
+
+        return FinancialAccount::query()->create([
+            'organization_id' => $organization->id,
+            'name' => 'Caja de precios '.$suffix,
+            'normalized_name' => 'cajadeprecios'.$suffix,
+            'type' => FinancialAccountType::CashBox,
+            'currency_code' => 'ARS',
+            'active' => true,
+            'created_by_user_id' => $creator->id,
+            'updated_by_user_id' => $creator->id,
+        ]);
     }
 
     private function organization(): Organization

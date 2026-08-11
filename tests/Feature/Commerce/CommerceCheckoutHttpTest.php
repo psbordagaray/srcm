@@ -25,6 +25,7 @@ use App\Domain\Service\ServiceWorkManager;
 use App\Domain\Service\ServiceWorkReportData;
 use App\Enums\CommercePaymentMethod;
 use App\Enums\CommerceSaleLineType;
+use App\Enums\FinancialAccountType;
 use App\Enums\InventoryCondition;
 use App\Enums\InventoryMovementStatus;
 use App\Enums\InventoryMovementType;
@@ -41,6 +42,7 @@ use App\Http\Middleware\RequireOrganization;
 use App\Models\BusinessParty;
 use App\Models\CatalogProduct;
 use App\Models\CommerceSale;
+use App\Models\FinancialAccount;
 use App\Models\InventoryLocation;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
@@ -58,11 +60,23 @@ class CommerceCheckoutHttpTest extends TestCase
 {
     use RefreshDatabase;
 
+    private int $financialAccountId;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->seed(DatabaseSeeder::class);
+
+        $organization = $this->organization();
+        $creator = $this->user($organization, UserRole::Admin);
+        $account = $this->financialAccount(
+            $organization,
+            $creator,
+            'ARS',
+            'Cuenta HTTP principal'
+        );
+        $this->financialAccountId = $account->id;
     }
 
     public function test_routes_and_commerce_permissions_are_explicit(): void
@@ -136,6 +150,7 @@ class CommerceCheckoutHttpTest extends TestCase
                 'product_lines' => [],
                 'payments' => [[
                     'method' => CommercePaymentMethod::Cash->value,
+                    'financial_account_id' => $this->financialAccountId,
                     'amount' => '40000,00',
                     'reference' => null,
                     'notes' => 'Pago total en mostrador.',
@@ -224,6 +239,7 @@ class CommerceCheckoutHttpTest extends TestCase
                 'payments' => [
                     [
                         'method' => CommercePaymentMethod::Cash->value,
+                        'financial_account_id' => $this->financialAccountId,
                         'amount' => '25000',
                         'reference' => null,
                         'notes' => null,
@@ -231,6 +247,7 @@ class CommerceCheckoutHttpTest extends TestCase
                     ],
                     [
                         'method' => CommercePaymentMethod::BankTransfer->value,
+                        'financial_account_id' => $this->financialAccountId,
                         'amount' => '30000',
                         'reference' => 'TRANSFERENCIA-HTTP-9981',
                         'notes' => null,
@@ -319,6 +336,7 @@ class CommerceCheckoutHttpTest extends TestCase
                 ...$base,
                 'payments' => [[
                     'method' => CommercePaymentMethod::DigitalWallet->value,
+                    'financial_account_id' => $this->financialAccountId,
                     'amount' => '9000',
                     'reference' => null,
                     'notes' => null,
@@ -335,6 +353,7 @@ class CommerceCheckoutHttpTest extends TestCase
                 ...$base,
                 'payments' => [[
                     'method' => CommercePaymentMethod::DigitalWallet->value,
+                    'financial_account_id' => $this->financialAccountId,
                     'amount' => '9000',
                     'reference' => 'MP-HTTP-441122',
                     'notes' => null,
@@ -398,6 +417,7 @@ class CommerceCheckoutHttpTest extends TestCase
                 ...$base,
                 'payments' => [[
                     'method' => CommercePaymentMethod::CreditCard->value,
+                    'financial_account_id' => $this->financialAccountId,
                     'amount' => '12500',
                     'reference' => 'VOUCHER-REJECT',
                     'card_number' => '4111111111111111',
@@ -418,6 +438,7 @@ class CommerceCheckoutHttpTest extends TestCase
                 ...$base,
                 'payments' => [[
                     'method' => CommercePaymentMethod::CreditCard->value,
+                    'financial_account_id' => $this->financialAccountId,
                     'amount' => '12500',
                     'reference' => 'VOUCHER-OK-4242',
                     'card_brand' => 'Visa',
@@ -466,6 +487,117 @@ class CommerceCheckoutHttpTest extends TestCase
             ->assertSee('MP-OP-99887766')
             ->assertSee('no equivale a acreditación ni conciliación');
     }
+    public function test_payment_destination_is_required_scoped_active_and_same_currency(): void
+    {
+        $organization = $this->organization();
+        $actor = $this->user($organization, UserRole::Operator);
+        $location = $this->location($organization);
+        $product = $this->product(
+            'Destino financiero HTTP',
+            'FIN-DEST-HTTP'
+        );
+
+        $this->seedStock($actor, $product, $location, '1');
+        $this->setPrice(
+            $organization,
+            $actor,
+            $product,
+            100000
+        );
+
+        $foreign = Organization::query()->create([
+            'name' => 'Org financiera extranjera',
+            'slug' => 'org-financiera-extranjera',
+            'active' => true,
+        ]);
+
+        $usd = $this->financialAccount(
+            $organization,
+            $actor,
+            'USD',
+            'Cuenta USD'
+        );
+        $foreignAccount = $this->financialAccount(
+            $foreign,
+            $actor,
+            'ARS',
+            'Cuenta extranjera'
+        );
+
+        $base = [
+            'currency_code' => 'ARS',
+            'service_order_id' => null,
+            'customer_business_party_id' => null,
+            'product_lines' => [[
+                'catalog_product_id' => $product->id,
+                'source_location_id' => $location->id,
+                'condition' => InventoryCondition::New->value,
+                'quantity' => '1',
+            ]],
+        ];
+        $payment = [
+            'method' => CommercePaymentMethod::Cash->value,
+            'amount' => '1000',
+            'reference' => null,
+            'notes' => null,
+            'paid_at' => null,
+        ];
+
+        $this->actingAs($actor)
+            ->post(route('commerce-sales.store'), [
+                ...$base,
+                'payments' => [$payment],
+                'idempotency_key' =>
+                    'service-ui:commerce-sale:'.Str::uuid(),
+            ])
+            ->assertSessionHasErrors(
+                'payments.0.financial_account_id'
+            );
+
+        foreach ([$usd->id, $foreignAccount->id] as $invalidId) {
+            $this->actingAs($actor)
+                ->post(route('commerce-sales.store'), [
+                    ...$base,
+                    'payments' => [[
+                        ...$payment,
+                        'financial_account_id' => $invalidId,
+                    ]],
+                    'idempotency_key' =>
+                        'service-ui:commerce-sale:'.Str::uuid(),
+                ])
+                ->assertSessionHasErrors(
+                    'payments.0.financial_account_id'
+                );
+        }
+
+        $this->actingAs($actor)
+            ->post(route('commerce-sales.store'), [
+                ...$base,
+                'payments' => [[
+                    ...$payment,
+                    'financial_account_id' => $this->financialAccountId,
+                ]],
+                'idempotency_key' =>
+                    'service-ui:commerce-sale:'.Str::uuid(),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $sale = CommerceSale::query()
+            ->with('payments.financialAccount')
+            ->sole();
+        $saved = $sale->payments->sole();
+
+        $this->assertSame(
+            $this->financialAccountId,
+            $saved->financial_account_id
+        );
+        $this->assertSame(
+            'Cuenta HTTP principal',
+            $saved->financialAccount->name
+        );
+    }
+
     public function test_http_guards_reject_foreign_evidence_and_non_exact_payment(): void
     {
         $fixture = $this->deliveredOrder('guards-http');
@@ -485,6 +617,7 @@ class CommerceCheckoutHttpTest extends TestCase
             'product_lines' => [],
             'payments' => [[
                 'method' => CommercePaymentMethod::Cash->value,
+                'financial_account_id' => $this->financialAccountId,
                 'amount' => '39999',
                 'reference' => null,
                 'notes' => null,
@@ -764,6 +897,31 @@ class CommerceCheckoutHttpTest extends TestCase
                 'active' => true,
             ])->refresh()
         );
+    }
+
+    private function financialAccount(
+        Organization $organization,
+        User $creator,
+        string $currency,
+        string $name
+    ): FinancialAccount {
+        $normalized = Str::lower(
+            preg_replace('/[^a-zA-Z0-9]+/', '', $name)
+                ?? $name
+        );
+
+        return FinancialAccount::query()->create([
+            'organization_id' => $organization->id,
+            'name' => $name,
+            'normalized_name' => $normalized.'-'.Str::lower(
+                Str::random(6)
+            ),
+            'type' => FinancialAccountType::Other,
+            'currency_code' => $currency,
+            'active' => true,
+            'created_by_user_id' => $creator->id,
+            'updated_by_user_id' => $creator->id,
+        ]);
     }
 
     private function organization(): Organization

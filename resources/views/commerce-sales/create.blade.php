@@ -111,6 +111,7 @@
                 productDraftError: '',
                 cartQuantityError: '',
                 payments: {{ \Illuminate\Support\Js::from(array_values($paymentRows)) }}.map(payment => ({
+                    financial_account_id: '',
                     card_brand: '',
                     card_network: '',
                     card_last4: '',
@@ -125,6 +126,20 @@
                 serviceTotals: {{ \Illuminate\Support\Js::from($serviceTotals) }},
                 serviceCurrencies: {{ \Illuminate\Support\Js::from($serviceCurrencies) }},
                 paymentMethodLabels: {{ \Illuminate\Support\Js::from($paymentMethodLabels) }},
+                financialAccounts: {{ \Illuminate\Support\Js::from(
+                    $financialAccounts->map(
+                        fn ($account) => [
+                            'id' => (int) $account->id,
+                            'name' => $account->name,
+                            'type' => $account->type->label(),
+                            'provider' => $account->provider,
+                            'currency_code' => $account->currency_code,
+                            'label' => $account->name.' · '.
+                                $account->currency_code.' · '.
+                                $account->type->label(),
+                        ]
+                    )->values()->all()
+                ) }},
                 productPrices: {{ \Illuminate\Support\Js::from($productPrices) }},
                 availability: {{ \Illuminate\Support\Js::from($availabilityMatrix) }},
                 productSearchIndex: {{ \Illuminate\Support\Js::from($productSearchIndex) }},
@@ -187,13 +202,21 @@
                     );
                     this.$watch(
                         'currencyCode',
-                        () => this.syncAutomaticPayment()
+                        () => {
+                            this.payments.forEach(
+                                payment => this.ensurePaymentAccountCurrency(
+                                    payment
+                                )
+                            );
+                            this.syncAutomaticPayment();
+                        }
                     );
                 },
                 blankPayment(method = '') {
                     return {
                         method,
                         amount: '',
+                        financial_account_id: '',
                         reference: '',
                         card_brand: '',
                         card_network: '',
@@ -308,6 +331,33 @@
                     return this.paymentMethodLabels[method]
                         ?? 'Medio sin seleccionar';
                 },
+                financialAccountOptions() {
+                    return this.financialAccounts.filter(
+                        account => String(account.currency_code)
+                            === String(this.currencyCode)
+                    );
+                },
+                financialAccountFor(id) {
+                    return this.financialAccountOptions().find(
+                        account => String(account.id) === String(id)
+                    ) ?? null;
+                },
+                financialAccountLabel(id) {
+                    return this.financialAccountFor(id)?.label
+                        ?? 'Cuenta sin seleccionar';
+                },
+                ensurePaymentAccountCurrency(payment) {
+                    if (
+                        payment.financial_account_id
+                        && ! this.financialAccountFor(
+                            payment.financial_account_id
+                        )
+                    ) {
+                        payment.financial_account_id = '';
+                        this.paymentReviewOpen = false;
+                        this.paymentError = '';
+                    }
+                },
                 paymentRequiresReference(method) {
                     return Boolean(method) && method !== 'cash';
                 },
@@ -368,6 +418,9 @@
                     if (
                         ! payment.method
                         || this.paymentAmountMinor(payment.amount) <= 0
+                        || ! this.financialAccountFor(
+                            payment.financial_account_id
+                        )
                     ) {
                         return false;
                     }
@@ -2300,7 +2353,16 @@
                             </section>
 
                             <section class="space-y-4">
-                                <template x-for="(payment, index) in payments" :key="'payment-overlay-'+index">
+                                <div
+                                x-show="financialAccountOptions().length === 0"
+                                x-cloak
+                                class="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm font-bold text-amber-100"
+                                data-sale-payment-no-financial-accounts
+                            >
+                                No hay cuentas financieras activas para la moneda seleccionada. Un administrador debe configurar una cuenta antes de confirmar el cobro.
+                            </div>
+
+                            <template x-for="(payment, index) in payments" :key="'payment-overlay-'+index">
                                     <article class="rounded-2xl border border-slate-700 bg-slate-950/55 p-5" data-sale-payment-card>
                                         <div class="flex flex-wrap items-center justify-between gap-3">
                                             <div>
@@ -2316,7 +2378,7 @@
                                             </button>
                                         </div>
 
-                                        <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                                        <div class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
                                             <div>
                                                 <label class="text-xs font-bold text-slate-400">Medio</label>
                                                 <select
@@ -2331,6 +2393,29 @@
                                                         <option value="{{ $method->value }}">{{ $method->label() }}</option>
                                                     @endforeach
                                                 </select>
+                                            </div>
+
+                                            <div data-sale-payment-financial-account>
+                                                <label class="text-xs font-bold text-slate-400">Cuenta destino</label>
+                                                <select
+                                                    :name="`payments[${index}][financial_account_id]`"
+                                                    x-model="payment.financial_account_id"
+                                                    @change="paymentReviewOpen = false; paymentError = ''"
+                                                    required
+                                                    class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+                                                >
+                                                    <option value="">Seleccionar cuenta…</option>
+                                                    <template
+                                                        x-for="account in financialAccountOptions()"
+                                                        :key="`financial-account-${account.id}`"
+                                                    >
+                                                        <option
+                                                            :value="String(account.id)"
+                                                            x-text="account.label"
+                                                        ></option>
+                                                    </template>
+                                                </select>
+                                                <p class="mt-1 text-[11px] text-slate-500">Destino declarado. No equivale a acreditación ni conciliación.</p>
                                             </div>
 
                                             <div>
@@ -2594,6 +2679,9 @@
                                                 <strong class="text-lg text-white" x-text="paymentMethodLabel(payment.method)"></strong>
                                                 <strong class="font-mono text-xl text-emerald-200" x-text="`${currencyCode} ${money(paymentAmountMinor(payment.amount))}`"></strong>
                                             </div>
+                                            <p class="mt-2 text-sm text-cyan-200">
+                                                Destino: <span x-text="financialAccountLabel(payment.financial_account_id)"></span>
+                                            </p>
                                             <p
                                                 x-show="payment.reference"
                                                 class="mt-2 text-sm text-slate-400"

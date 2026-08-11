@@ -55,6 +55,7 @@ class StoreCommerceSaleRequest extends FormRequest
             )
             ->filter(fn (array $payment): bool => filled($payment['amount'] ?? null)
                 || filled($payment['reference'] ?? null)
+                || filled($payment['financial_account_id'] ?? null)
                 || filled($payment['card_brand'] ?? null)
                 || filled($payment['card_network'] ?? null)
                 || filled($payment['card_last4'] ?? null)
@@ -80,6 +81,11 @@ class StoreCommerceSaleRequest extends FormRequest
                 'reference' => $this->optional(
                     (string) ($payment['reference'] ?? '')
                 ),
+                'financial_account_id' => filled(
+                    $payment['financial_account_id'] ?? null
+                )
+                    ? (int) $payment['financial_account_id']
+                    : null,
                 'card_brand' => $this->optional(
                     (string) ($payment['card_brand'] ?? '')
                 ),
@@ -246,6 +252,17 @@ class StoreCommerceSaleRequest extends FormRequest
                 Rule::enum(CommercePaymentMethod::class),
             ],
             'payments.*.amount' => $positiveMoney,
+            'payments.*.financial_account_id' => [
+                'required',
+                'integer',
+                Rule::exists('financial_accounts', 'id')
+                    ->where('organization_id', $organizationId)
+                    ->where('active', true)
+                    ->where(
+                        'currency_code',
+                        (string) $this->input('currency_code')
+                    ),
+            ],
             'payments.*.reference' => [
                 'nullable',
                 'string',
@@ -428,6 +445,8 @@ class StoreCommerceSaleRequest extends FormRequest
             'product_lines.*.quantity.regex' => 'La cantidad debe ser positiva y admitir hasta seis decimales.',
             'payments.min' => 'La venta requiere al menos un medio de pago.',
             'payments.*.amount.regex' => 'Cada pago debe ser positivo y admitir hasta dos decimales.',
+            'payments.*.financial_account_id.required' => 'Cada pago requiere una cuenta destino.',
+            'payments.*.financial_account_id.exists' => 'La cuenta destino no pertenece a la organización, está inactiva o usa otra moneda.',
             'payments.*.card_last4.regex' => 'Los últimos 4 de la tarjeta deben contener exactamente cuatro dígitos.',
             'payments.*.pan.prohibited' => 'SRCM nunca admite almacenar el PAN completo de una tarjeta.',
             'payments.*.card_number.prohibited' => 'SRCM nunca admite almacenar el número completo de una tarjeta.',

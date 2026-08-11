@@ -4,6 +4,7 @@ use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\CommerceSaleController;
+use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -394,6 +395,48 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereNumber('customer')
                         ->name('customers.toggle-active');
                 });
+            Route::middleware('can:use-financial-accounts')
+                ->group(function () {
+                    Route::get(
+                        'financial/accounts',
+                        [FinancialAccountController::class, 'index']
+                    )->name('financial-accounts.index');
+                });
+
+            Route::middleware('can:manage-financial-accounts')
+                ->group(function () {
+                    Route::get(
+                        'financial/accounts/create',
+                        [FinancialAccountController::class, 'create']
+                    )->name('financial-accounts.create');
+
+                    Route::post(
+                        'financial/accounts',
+                        [FinancialAccountController::class, 'store']
+                    )->name('financial-accounts.store');
+
+                    Route::get(
+                        'financial/accounts/{financialAccount:public_id}/edit',
+                        [FinancialAccountController::class, 'edit']
+                    )
+                        ->whereUuid('financialAccount')
+                        ->name('financial-accounts.edit');
+
+                    Route::put(
+                        'financial/accounts/{financialAccount:public_id}',
+                        [FinancialAccountController::class, 'update']
+                    )
+                        ->whereUuid('financialAccount')
+                        ->name('financial-accounts.update');
+
+                    Route::patch(
+                        'financial/accounts/{financialAccount:public_id}/toggle-active',
+                        [FinancialAccountController::class, 'toggleActive']
+                    )
+                        ->whereUuid('financialAccount')
+                        ->name('financial-accounts.toggle-active');
+                });
+
             Route::middleware('can:view-commerce-sales')
                 ->group(function () {
                     Route::get(

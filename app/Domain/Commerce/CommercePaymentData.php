@@ -20,7 +20,8 @@ final readonly class CommercePaymentData
         public ?string $processor = null,
         public ?string $externalOperationId = null,
         public ?string $authorizationCode = null,
-        public ?string $providerStatus = null
+        public ?string $providerStatus = null,
+        public ?int $financialAccountId = null
     ) {
     }
 }

@@ -170,6 +170,14 @@
                 || ! request()->user()?->can('view-purchases'),
         ],
         [
+            'label' => 'Cuentas',
+            'route' => 'financial-accounts.index',
+            'active' => 'financial-accounts.*',
+            'icon' => 'receipt',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('use-financial-accounts'),
+        ],
+        [
             'label' => 'Ventas',
             'route' => 'commerce-sales.index',
             'active' => 'commerce-sales.*',

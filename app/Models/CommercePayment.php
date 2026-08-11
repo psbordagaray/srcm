@@ -16,6 +16,7 @@ class CommercePayment extends Model
     protected $fillable = [
         'organization_id',
         'commerce_sale_id',
+        'financial_account_id',
         'position',
         'method',
         'amount_minor',
@@ -56,6 +57,14 @@ class CommercePayment extends Model
     public function sale(): BelongsTo
     {
         return $this->belongsTo(CommerceSale::class, 'commerce_sale_id');
+    }
+
+    public function financialAccount(): BelongsTo
+    {
+        return $this->belongsTo(
+            FinancialAccount::class,
+            'financial_account_id'
+        );
     }
 
     public function reconciliation(): HasOne

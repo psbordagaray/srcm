@@ -89,7 +89,8 @@
                                 </div>
 
                                 @if(
-                                    $payment->reference
+                                    $payment->financialAccount
+                                    || $payment->reference
                                     || $payment->card_brand
                                     || $payment->card_network
                                     || $payment->card_last4
@@ -101,6 +102,14 @@
                                     || $payment->notes
                                 )
                                     <div class="mt-3 space-y-2 border-t border-emerald-500/10 pt-3 text-xs text-slate-400">
+                                        @if($payment->financialAccount)
+                                            <p>
+                                                <strong>Cuenta destino:</strong>
+                                                {{ $payment->financialAccount->name }}
+                                                · {{ $payment->financialAccount->currency_code }}
+                                                · {{ $payment->financialAccount->type->label() }}
+                                            </p>
+                                        @endif
                                         @if($payment->reference)
                                             <p><strong>Referencia:</strong> {{ $payment->reference }}</p>
                                         @endif

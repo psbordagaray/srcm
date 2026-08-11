@@ -309,3 +309,20 @@ Regla económica inicial: para un cobro, el matching compara **importe esperado 
 Autoridad inicial: operador puede utilizar cuentas financieras; sólo administrador configura cuentas, registra movimientos externos manuales y ejecuta/revisa conciliaciones. Los adaptadores automáticos P5 deberán ingresar por contratos de servicio explícitos sin debilitar el aislamiento por organización.
 
 Este Foundation **no agrega todavía** selector de cuenta en Terminal, adaptadores Mercado Pago/Payway/bancos, webhooks, Centro visual de Conciliación ni importador financiero CSV/XLSX. Esos pasos continúan sobre el mismo dominio, sin redefinirlo.
+
+---
+
+## 21. Estado de implementación P3.1 — destino de cobro
+
+P3.1 lleva `financial_accounts` a la operación diaria:
+
+- existe gestión visual privada de cuentas; operador puede consultarlas y sólo administrador puede crear, editar, activar o inactivar;
+- cada pago confirmado desde la Terminal debe declarar una `financial_account_id`;
+- la cuenta elegida debe pertenecer a la organización activa, estar activa y usar la misma moneda de la venta;
+- pagos múltiples pueden dirigir cada importe a cuentas distintas;
+- la Terminal no presupone una cuenta destino: el operador la selecciona explícitamente entre las cuentas válidas de la moneda;
+- el destino forma parte del fingerprint/idempotencia del checkout y del snapshot inmutable del cobro;
+- pagos históricos previos a P3.1 conservan `financial_account_id = null`; la columna permanece nullable por compatibilidad histórica, pero el flujo web P3.1 no permite nuevos cobros sin destino;
+- la cuenta destino expresa **dónde pertenece el cobro declarado**, no acredita que el dinero haya ingresado ni lo marca como conciliado.
+
+P3.1 no introduce todavía asociaciones rígidas medio→tipo de cuenta. Un cobro con tarjeta puede terminar en un procesador, billetera o banco según la configuración real de la organización. Se bloquean tenant, actividad y moneda; los adaptadores P5 resolverán progresivamente destinos automáticos sin redefinir este contrato.
