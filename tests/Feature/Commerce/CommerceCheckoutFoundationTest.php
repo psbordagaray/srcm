@@ -108,9 +108,10 @@ class CommerceCheckoutFoundationTest extends TestCase
             currencyCode: 'ARS',
             idempotencyKey: 'commerce:checkout:service-only',
             payments: [new CommercePaymentData(
-                CommercePaymentMethod::Cash,
-                4000000
-            )],
+                    CommercePaymentMethod::BankTransfer,
+                    4000000,
+                    'TRANSFERENCIA-FOUNDATION-P4B'
+                )],
             serviceOrderId: $order->id,
             customerBusinessPartyId: $customer->id
         );
@@ -148,9 +149,10 @@ class CommerceCheckoutFoundationTest extends TestCase
                 idempotencyKey: 'commerce:checkout:mixed',
                 payments: [
                     new CommercePaymentData(
-                        CommercePaymentMethod::Cash,
-                        2500000
-                    ),
+                    CommercePaymentMethod::BankTransfer,
+                    2500000,
+                    'TRANSFERENCIA-FOUNDATION-P4B'
+                ),
                     new CommercePaymentData(
                         CommercePaymentMethod::BankTransfer,
                         3000000,
@@ -246,9 +248,10 @@ class CommerceCheckoutFoundationTest extends TestCase
                     currencyCode: 'ARS',
                     idempotencyKey: 'commerce:checkout:fraud',
                     payments: [new CommercePaymentData(
-                        CommercePaymentMethod::Cash,
-                        4000000
-                    )],
+                    CommercePaymentMethod::BankTransfer,
+                    4000000,
+                    'TRANSFERENCIA-FOUNDATION-P4B'
+                )],
                     productLines: [new CommerceProductLineData(
                         $product->id,
                         $location->id,
@@ -284,9 +287,10 @@ class CommerceCheckoutFoundationTest extends TestCase
             currencyCode: 'ARS',
             idempotencyKey: 'commerce:checkout:bad-payment',
             payments: [new CommercePaymentData(
-                CommercePaymentMethod::Cash,
-                900000
-            )],
+                    CommercePaymentMethod::BankTransfer,
+                    900000,
+                    'TRANSFERENCIA-FOUNDATION-P4B'
+                )],
             productLines: [new CommerceProductLineData(
                 $product->id,
                 $location->id,
@@ -307,9 +311,10 @@ class CommerceCheckoutFoundationTest extends TestCase
                     currencyCode: 'ARS',
                     idempotencyKey: 'commerce:checkout:no-stock',
                     payments: [new CommercePaymentData(
-                        CommercePaymentMethod::Cash,
-                        1000000
-                    )],
+                    CommercePaymentMethod::BankTransfer,
+                    1000000,
+                    'TRANSFERENCIA-FOUNDATION-P4B'
+                )],
                     productLines: [new CommerceProductLineData(
                         $product->id,
                         $location->id,
@@ -342,8 +347,9 @@ class CommerceCheckoutFoundationTest extends TestCase
                 currencyCode: 'ARS',
                 idempotencyKey: 'commerce:checkout:database',
                 payments: [new CommercePaymentData(
-                    CommercePaymentMethod::Cash,
-                    4000000
+                    CommercePaymentMethod::BankTransfer,
+                    4000000,
+                    'TRANSFERENCIA-FOUNDATION-P4B'
                 )],
                 serviceOrderId: $order->id,
                 customerBusinessPartyId: $customer->id

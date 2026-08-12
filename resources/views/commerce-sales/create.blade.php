@@ -95,6 +95,17 @@
                 paymentOverlayOpen: {{ \Illuminate\Support\Js::from($paymentValidationFailed) }},
                 paymentReviewOpen: false,
                 paymentError: '',
+                activeCashSession: {{ \Illuminate\Support\Js::from(
+                    $activeCashSession
+                        ? [
+                            'id' => (int) $activeCashSession->id,
+                            'register_name' => $activeCashSession->register->name,
+                            'financial_account_id' => (int) $activeCashSession->register->financialAccount->id,
+                            'financial_account_label' => $activeCashSession->register->financialAccount->name.' · '.$activeCashSession->currency_code.' · Caja de efectivo',
+                            'currency_code' => $activeCashSession->currency_code,
+                        ]
+                        : null
+                ) }},
                 productLines: {{ \Illuminate\Support\Js::from(array_values($productRows)) }}.filter(
                     line => Boolean(line.catalog_product_id)
                 ),
@@ -192,6 +203,11 @@
                     )->all()
                 ) }},
                 init() {
+                    this.payments.forEach(
+                        payment => this.syncOperationalCashAccount(
+                            payment
+                        )
+                    );
                     this.$watch(
                         'productLines',
                         () => this.syncAutomaticPayment()
@@ -203,11 +219,10 @@
                     this.$watch(
                         'currencyCode',
                         () => {
-                            this.payments.forEach(
-                                payment => this.ensurePaymentAccountCurrency(
-                                    payment
-                                )
-                            );
+                            this.payments.forEach(payment => {
+                                this.ensurePaymentAccountCurrency(payment);
+                                this.syncOperationalCashAccount(payment);
+                            });
                             this.syncAutomaticPayment();
                         }
                     );
@@ -227,12 +242,22 @@
                         authorization_code: '',
                         provider_status: '',
                         notes: '',
-                        paid_at: '',
                         _manual: true
                     };
                 },
                 addPayment(method = '') {
+                    if (
+                        method === 'cash'
+                        && ! this.cashSessionAvailable()
+                    ) {
+                        this.paymentError =
+                            'Efectivo requiere un turno de caja abierto para la moneda de la venta.';
+                        this.paymentReviewOpen = false;
+                        return;
+                    }
+
                     const payment = this.blankPayment(method);
+                    this.syncOperationalCashAccount(payment);
 
                     if (
                         this.payments.length === 0
@@ -345,6 +370,59 @@
                 financialAccountLabel(id) {
                     return this.financialAccountFor(id)?.label
                         ?? 'Cuenta sin seleccionar';
+                },
+                cashSessionAvailable() {
+                    return Boolean(
+                        this.activeCashSession
+                        && String(
+                            this.activeCashSession.currency_code
+                        ) === String(this.currencyCode)
+                        && this.financialAccountFor(
+                            this.activeCashSession.financial_account_id
+                        )
+                    );
+                },
+                syncOperationalCashAccount(payment) {
+                    if (payment.method !== 'cash') {
+                        return;
+                    }
+
+                    payment.financial_account_id =
+                        this.cashSessionAvailable()
+                            ? String(
+                                this.activeCashSession
+                                    .financial_account_id
+                            )
+                            : '';
+                },
+                onPaymentMethodChanged(payment) {
+                    if (payment.method === 'cash') {
+                        this.syncOperationalCashAccount(payment);
+
+                        if (! this.cashSessionAvailable()) {
+                            this.paymentError =
+                                'Efectivo requiere un turno de caja abierto para la moneda de la venta.';
+                        }
+                    } else if (
+                        this.activeCashSession
+                        && String(
+                            payment.financial_account_id
+                        ) === String(
+                            this.activeCashSession
+                                .financial_account_id
+                        )
+                    ) {
+                        payment.financial_account_id = '';
+                    }
+
+                    this.paymentReviewOpen = false;
+
+                    if (
+                        payment.method !== 'cash'
+                        || this.cashSessionAvailable()
+                    ) {
+                        this.paymentError = '';
+                    }
                 },
                 ensurePaymentAccountCurrency(payment) {
                     if (
@@ -2211,9 +2289,13 @@
             <section class="sulu-card p-6">
                 <div class="grid gap-5 md:grid-cols-2">
                     <div>
-                        <label for="sold_at" class="text-sm font-semibold text-slate-200">Fecha y hora de venta</label>
-                        <input id="sold_at" name="sold_at" type="datetime-local" value="{{ old('sold_at') }}" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-amber-400 focus:ring-amber-400">
-                        <p class="mt-2 text-xs text-slate-500">Vacío registra el momento actual.</p>
+                        <p class="text-sm font-semibold text-slate-200">Momento de venta</p>
+                        <div class="mt-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-slate-300">
+                            Se registra al confirmar, usando el reloj del servidor.
+                        </div>
+                        <p class="mt-2 text-xs text-slate-500">
+                            La operación normal no permite fechar la venta manualmente.
+                        </p>
                     </div>
                     <div>
                         <label for="notes" class="text-sm font-semibold text-slate-200">Notas internas</label>
@@ -2275,6 +2357,34 @@
 
                     <div class="overflow-y-auto">
                         <div x-show="! paymentReviewOpen" class="space-y-6 p-5 sm:p-7">
+                            <section
+                                class="rounded-2xl border px-4 py-3"
+                                data-sale-cash-session-context
+                                :class="cashSessionAvailable()
+                                    ? 'border-cyan-400/25 bg-cyan-400/5'
+                                    : 'border-slate-700 bg-slate-950/45'"
+                            >
+                                <template x-if="cashSessionAvailable()">
+                                    <div>
+                                        <p class="text-xs font-black uppercase tracking-[0.18em] text-cyan-300">Turno de caja activo</p>
+                                        <p class="mt-1 text-sm font-bold text-white">
+                                            <span x-text="activeCashSession.register_name"></span>
+                                            <span class="text-slate-500"> → </span>
+                                            <span x-text="activeCashSession.financial_account_label"></span>
+                                        </p>
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            Al elegir Efectivo, SRCM deriva este destino automáticamente.
+                                        </p>
+                                    </div>
+                                </template>
+                                <template x-if="! cashSessionAvailable()">
+                                    <div>
+                                        <p class="text-sm font-black text-slate-300">Sin turno de caja compatible con la moneda.</p>
+                                        <p class="mt-1 text-xs text-slate-500">Efectivo requiere un turno de caja abierto; los medios electrónicos siguen disponibles.</p>
+                                    </div>
+                                </template>
+                            </section>
+
                             <section class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.55fr)]">
                                 <div class="rounded-2xl border border-emerald-400/25 bg-emerald-400/5 p-5">
                                     <p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">Total a cobrar</p>
@@ -2384,7 +2494,7 @@
                                                 <select
                                                     :name="`payments[${index}][method]`"
                                                     x-model="payment.method"
-                                                    @change="paymentReviewOpen = false; paymentError = ''"
+                                                    @change="onPaymentMethodChanged(payment)"
                                                     required
                                                     class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400"
                                                 >
@@ -2397,25 +2507,53 @@
 
                                             <div data-sale-payment-financial-account>
                                                 <label class="text-xs font-bold text-slate-400">Cuenta destino</label>
-                                                <select
-                                                    :name="`payments[${index}][financial_account_id]`"
-                                                    x-model="payment.financial_account_id"
-                                                    @change="paymentReviewOpen = false; paymentError = ''"
-                                                    required
-                                                    class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+
+                                                <input
+                                                    type="hidden"
+                                                    :name="payment.method === 'cash' ? `payments[${index}][financial_account_id]` : null"
+                                                    :value="payment.financial_account_id"
                                                 >
-                                                    <option value="">Seleccionar cuenta…</option>
-                                                    <template
-                                                        x-for="account in financialAccountOptions()"
-                                                        :key="`financial-account-${account.id}`"
-                                                    >
-                                                        <option
-                                                            :value="String(account.id)"
-                                                            x-text="account.label"
-                                                        ></option>
-                                                    </template>
-                                                </select>
-                                                <p class="mt-1 text-[11px] text-slate-500">Destino declarado. No equivale a acreditación ni conciliación.</p>
+
+                                                <template x-if="payment.method === 'cash'">
+                                                    <div>
+                                                        <div
+                                                            data-sale-cash-derived-account
+                                                            class="mt-2 w-full rounded-xl border border-cyan-400/25 bg-cyan-400/5 px-3 py-2.5 text-sm font-bold text-cyan-100"
+                                                            x-text="cashSessionAvailable()
+                                                                ? activeCashSession.financial_account_label
+                                                                : 'Sin turno de caja compatible'"
+                                                        ></div>
+                                                        <p class="mt-1 text-[11px] font-semibold text-cyan-300">
+                                                            Destino derivado del turno abierto. No editable en cobro normal.
+                                                        </p>
+                                                    </div>
+                                                </template>
+
+                                                <template x-if="payment.method !== 'cash'">
+                                                    <div>
+                                                        <select
+                                                            :name="`payments[${index}][financial_account_id]`"
+                                                            x-model="payment.financial_account_id"
+                                                            @change="paymentReviewOpen = false; paymentError = ''"
+                                                            required
+                                                            class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-cyan-400 focus:ring-cyan-400"
+                                                        >
+                                                            <option value="">Seleccionar cuenta…</option>
+                                                            <template
+                                                                x-for="account in financialAccountOptions()"
+                                                                :key="`financial-account-${account.id}`"
+                                                            >
+                                                                <option
+                                                                    :value="String(account.id)"
+                                                                    x-text="account.label"
+                                                                ></option>
+                                                            </template>
+                                                        </select>
+                                                        <p class="mt-1 text-[11px] text-slate-500">
+                                                            Destino declarado. No equivale a acreditación ni conciliación.
+                                                        </p>
+                                                    </div>
+                                                </template>
                                             </div>
 
                                             <div>
@@ -2451,13 +2589,13 @@
                                             </div>
 
                                             <div>
-                                                <label class="text-xs font-bold text-slate-400">Fecha y hora</label>
-                                                <input
-                                                    :name="`payments[${index}][paid_at]`"
-                                                    x-model="payment.paid_at"
-                                                    type="datetime-local"
-                                                    class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400"
-                                                >
+                                                <p class="text-xs font-bold text-slate-400">Hora efectiva del cobro</p>
+                                                <div class="mt-2 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-300">
+                                                    Se registra al confirmar
+                                                </div>
+                                                <p class="mt-1 text-[11px] text-slate-500">
+                                                    No editable en el cobro operativo normal.
+                                                </p>
                                             </div>
                                         </div>
 

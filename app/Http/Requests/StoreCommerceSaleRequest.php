@@ -213,7 +213,7 @@ class StoreCommerceSaleRequest extends FormRequest
                 'max:255',
             ],
             'notes' => ['nullable', 'string', 'max:5000'],
-            'sold_at' => ['nullable', 'date'],
+            'sold_at' => ['prohibited'],
             'product_lines' => [
                 'array',
                 'max:20',
@@ -318,7 +318,7 @@ class StoreCommerceSaleRequest extends FormRequest
                 'string',
                 'max:2000',
             ],
-            'payments.*.paid_at' => ['nullable', 'date'],
+            'payments.*.paid_at' => ['prohibited'],
             'idempotency_key' => [
                 'required',
                 'string',

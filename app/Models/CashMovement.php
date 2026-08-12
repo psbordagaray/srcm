@@ -1,0 +1,98 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\CashMovementDirection;
+use App\Enums\CashMovementType;
+use App\Models\Concerns\BelongsToOrganization;
+use DomainException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
+
+class CashMovement extends Model
+{
+    use BelongsToOrganization;
+
+    public $timestamps = false;
+
+    protected $fillable = [
+        'organization_id',
+        'public_id',
+        'cash_register_session_id',
+        'cash_register_id',
+        'financial_account_id',
+        'commerce_payment_id',
+        'direction',
+        'type',
+        'amount_minor',
+        'currency_code',
+        'idempotency_key',
+        'fingerprint',
+        'recorded_by_user_id',
+        'occurred_at',
+        'created_at',
+    ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (CashMovement $movement): void {
+            if (blank($movement->public_id)) {
+                $movement->public_id = (string) Str::uuid();
+            }
+        });
+
+        static::updating(fn () => throw new DomainException(
+            'Un movimiento de efectivo registrado es inmutable.'
+        ));
+
+        static::deleting(fn () => throw new DomainException(
+            'Un movimiento de efectivo registrado no puede eliminarse.'
+        ));
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'direction' => CashMovementDirection::class,
+            'type' => CashMovementType::class,
+            'amount_minor' => 'integer',
+            'occurred_at' => 'immutable_datetime',
+            'created_at' => 'immutable_datetime',
+        ];
+    }
+
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(
+            CashRegisterSession::class,
+            'cash_register_session_id'
+        );
+    }
+
+    public function register(): BelongsTo
+    {
+        return $this->belongsTo(CashRegister::class, 'cash_register_id');
+    }
+
+    public function financialAccount(): BelongsTo
+    {
+        return $this->belongsTo(
+            FinancialAccount::class,
+            'financial_account_id'
+        );
+    }
+
+    public function commercePayment(): BelongsTo
+    {
+        return $this->belongsTo(
+            CommercePayment::class,
+            'commerce_payment_id'
+        );
+    }
+
+    public function recordedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'recorded_by_user_id');
+    }
+}

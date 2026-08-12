@@ -12,14 +12,25 @@
                 </p>
             </div>
 
-            @can('manage-financial-accounts')
-                <a
-                    href="{{ route('financial-accounts.create') }}"
-                    class="rounded-xl bg-amber-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-amber-300"
-                >
-                    Nueva cuenta
-                </a>
-            @endcan
+            <div class="flex flex-wrap gap-2">
+                @can('operate-cash-register')
+                    <a
+                        href="{{ route('cash-registers.index') }}"
+                        class="rounded-xl border border-emerald-400/30 px-4 py-3 text-sm font-black text-emerald-200 hover:border-emerald-300"
+                    >
+                        Cajas operativas
+                    </a>
+                @endcan
+
+                @can('manage-financial-accounts')
+                    <a
+                        href="{{ route('financial-accounts.create') }}"
+                        class="rounded-xl bg-amber-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-amber-300"
+                    >
+                        Nueva cuenta
+                    </a>
+                @endcan
+            </div>
         </div>
 
         @if(session('success'))

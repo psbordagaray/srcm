@@ -6,6 +6,7 @@ use App\Domain\Commerce\CommerceCheckoutData;
 use App\Domain\Commerce\CommerceCheckoutManager;
 use App\Domain\Commerce\CommerceSalePolicyGuard;
 use App\Domain\Commerce\OrganizationProductPriceReader;
+use App\Domain\Finance\CashRegisterSessionManager;
 use App\Domain\Commerce\CommercePaymentData;
 use App\Domain\Commerce\CommerceProductLineData;
 use App\Domain\Tenancy\CurrentOrganization;
@@ -130,7 +131,8 @@ class CommerceSaleController extends Controller
         Request $request,
         CurrentOrganization $currentOrganization,
         OrganizationProductPriceReader $priceReader,
-        CommerceSalePolicyGuard $salePolicy
+        CommerceSalePolicyGuard $salePolicy,
+        CashRegisterSessionManager $cashSessions
     ): View {
         $organizationId = $currentOrganization->id($request->user());
         $unsettledOrders = ServiceOrder::query()
@@ -321,6 +323,9 @@ class CommerceSaleController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'paymentMethods' => CommercePaymentMethod::cases(),
+            'activeCashSession' => $cashSessions->currentFor(
+                $request->user()
+            ),
             'financialAccounts' => FinancialAccount::query()
                 ->forOrganization($organizationId)
                 ->where('active', true)
@@ -363,12 +368,7 @@ class CommerceSaleController extends Controller
                 throw new DomainException($stockShortage);
             }
 
-            $soldAt = filled($validated['sold_at'] ?? null)
-                ? CarbonImmutable::parse(
-                    $validated['sold_at'],
-                    config('app.timezone')
-                )
-                : CarbonImmutable::now();
+            $soldAt = CarbonImmutable::now();
 
             $sale = $manager->checkout(
                 new CommerceCheckoutData(
@@ -385,14 +385,7 @@ class CommerceSaleController extends Controller
                                 ),
                                 reference: $payment['reference'] ?? null,
                                 notes: $payment['notes'] ?? null,
-                                paidAt: filled(
-                                    $payment['paid_at'] ?? null
-                                )
-                                        ? CarbonImmutable::parse(
-                                            $payment['paid_at'],
-                                            config('app.timezone')
-                                        )
-                                        : null,
+                                paidAt: null,
                                 cardBrand: $payment['card_brand'] ?? null,
                                 cardNetwork: $payment['card_network'] ?? null,
                                 cardLast4: $payment['card_last4'] ?? null,

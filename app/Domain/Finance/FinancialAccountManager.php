@@ -5,6 +5,7 @@ namespace App\Domain\Finance;
 use App\Domain\Audit\AuditRecorder;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\FinancialAccountType;
+use App\Models\CashRegister;
 use App\Models\FinancialAccount;
 use App\Models\Organization;
 use App\Models\User;
@@ -161,6 +162,27 @@ final class FinancialAccountManager
                 );
             }
 
+            $cashRegister = CashRegister::query()
+                ->where('financial_account_id', $locked->id)
+                ->first();
+
+            if ($cashRegister) {
+                if ($type !== FinancialAccountType::CashBox) {
+                    throw new DomainException(
+                        'Una cuenta vinculada a una caja operativa debe conservar el tipo Caja de efectivo.'
+                    );
+                }
+
+                if (
+                    $locked->currency_code !== $currency
+                    && $cashRegister->sessions()->exists()
+                ) {
+                    throw new DomainException(
+                        'La moneda de una caja operativa no puede cambiar después del primer turno.'
+                    );
+                }
+            }
+
             $old = [
                 'name' => $locked->name,
                 'type' => $locked->type,
@@ -218,6 +240,18 @@ final class FinancialAccountManager
             if (! $locked) {
                 throw new DomainException(
                     'La cuenta financiera no pertenece a la organización activa.'
+                );
+            }
+
+            if (
+                $locked->active
+                && CashRegister::query()
+                    ->where('financial_account_id', $locked->id)
+                    ->where('active', true)
+                    ->exists()
+            ) {
+                throw new DomainException(
+                    'No puede inactivarse la cuenta financiera de una caja operativa activa.'
                 );
             }
 

@@ -232,6 +232,9 @@ class AppServiceProvider extends ServiceProvider
         }
 
         foreach ([
+            'manage-cash-registers' => 'canManageCashRegisters',
+            'operate-cash-register' => 'canOperateCashRegister',
+            'supervise-cash-registers' => 'canSuperviseCashRegisters',
             'use-financial-accounts' => 'canUseFinancialAccounts',
             'manage-financial-accounts' => 'canManageFinancialAccounts',
             'review-financial-reconciliation' =>

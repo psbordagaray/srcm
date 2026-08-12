@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
+use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CommerceSaleController;
 use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\BusinessPartyController;
@@ -395,6 +396,55 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereNumber('customer')
                         ->name('customers.toggle-active');
                 });
+            Route::middleware('can:operate-cash-register')
+                ->group(function () {
+                    Route::get(
+                        'financial/cash-registers',
+                        [CashRegisterController::class, 'index']
+                    )->name('cash-registers.index');
+
+                    Route::post(
+                        'financial/cash-registers/{cashRegister:public_id}/open',
+                        [CashRegisterController::class, 'open']
+                    )
+                        ->whereUuid('cashRegister')
+                        ->name('cash-registers.open');
+                });
+
+            Route::middleware('can:manage-cash-registers')
+                ->group(function () {
+                    Route::get(
+                        'financial/cash-registers/create',
+                        [CashRegisterController::class, 'create']
+                    )->name('cash-registers.create');
+
+                    Route::post(
+                        'financial/cash-registers',
+                        [CashRegisterController::class, 'store']
+                    )->name('cash-registers.store');
+
+                    Route::get(
+                        'financial/cash-registers/{cashRegister:public_id}/edit',
+                        [CashRegisterController::class, 'edit']
+                    )
+                        ->whereUuid('cashRegister')
+                        ->name('cash-registers.edit');
+
+                    Route::put(
+                        'financial/cash-registers/{cashRegister:public_id}',
+                        [CashRegisterController::class, 'update']
+                    )
+                        ->whereUuid('cashRegister')
+                        ->name('cash-registers.update');
+
+                    Route::patch(
+                        'financial/cash-registers/{cashRegister:public_id}/toggle-active',
+                        [CashRegisterController::class, 'toggleActive']
+                    )
+                        ->whereUuid('cashRegister')
+                        ->name('cash-registers.toggle-active');
+                });
+
             Route::middleware('can:use-financial-accounts')
                 ->group(function () {
                     Route::get(

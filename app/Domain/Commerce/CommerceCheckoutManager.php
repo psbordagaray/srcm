@@ -2,6 +2,8 @@
 
 namespace App\Domain\Commerce;
 
+use App\Domain\Finance\CashLedgerRecorder;
+use App\Domain\Finance\CashRegisterSessionManager;
 use App\Domain\Inventory\InventoryMovementConfirmer;
 use App\Domain\Inventory\InventoryMovementCreator;
 use App\Domain\Inventory\InventoryMovementDraftData;
@@ -13,6 +15,7 @@ use App\Enums\InventoryMovementType;
 use App\Enums\ServiceOrderStatus;
 use App\Enums\ServiceQuoteDecisionType;
 use App\Models\BusinessParty;
+use App\Models\CashRegisterSession;
 use App\Models\CatalogProduct;
 use App\Models\CommercePayment;
 use App\Models\CommerceSale;
@@ -37,7 +40,9 @@ final class CommerceCheckoutManager
     public function __construct(
         private readonly InventoryMovementCreator $movementCreator,
         private readonly InventoryMovementConfirmer $movementConfirmer,
-        private readonly OrganizationProductPriceReader $prices
+        private readonly OrganizationProductPriceReader $prices,
+        private readonly CashRegisterSessionManager $cashSessions,
+        private readonly CashLedgerRecorder $cashLedger
     ) {
     }
 
@@ -75,6 +80,13 @@ final class CommerceCheckoutManager
                     'inventoryMovement.lines',
                 ]);
             }
+
+            $cashSession = $this->guardOperationalCashPayments(
+                $normalized['payments'],
+                $actor,
+                $organizationId,
+                $normalized['currency_code']
+            );
 
             $this->guardFinancialAccounts(
                 $normalized['payments'],
@@ -224,7 +236,7 @@ final class CommerceCheckoutManager
                     );
                 }
 
-                CommercePayment::query()->create([
+                $recordedPayment = CommercePayment::query()->create([
                     'organization_id' => $organizationId,
                     'commerce_sale_id' => $sale->id,
                     'financial_account_id' =>
@@ -247,6 +259,23 @@ final class CommerceCheckoutManager
                     'received_by_user_id' => $actor->id,
                     'paid_at' => $paidAt,
                 ]);
+
+                if (
+                    $payment['method']
+                        === CommercePaymentMethod::Cash->value
+                ) {
+                    if (! $cashSession) {
+                        throw new DomainException(
+                            'El cobro en efectivo perdió su turno de caja.'
+                        );
+                    }
+
+                    $this->cashLedger->recordSalePayment(
+                        $cashSession,
+                        $recordedPayment,
+                        $actor
+                    );
+                }
             }
 
             $sale->status = CommerceSaleStatus::Confirmed;
@@ -819,6 +848,68 @@ final class CommerceCheckoutManager
         }
 
         return $left + $right;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $payments
+     */
+    private function guardOperationalCashPayments(
+        array $payments,
+        User $actor,
+        int $organizationId,
+        string $currencyCode
+    ): ?CashRegisterSession {
+        $cashPayments = collect($payments)
+            ->filter(
+                fn (array $payment): bool =>
+                    $payment['method']
+                        === CommercePaymentMethod::Cash->value
+            )
+            ->values();
+
+        if ($cashPayments->isEmpty()) {
+            return null;
+        }
+
+        $session = $this->cashSessions->lockCurrentFor($actor);
+
+        if (! $session) {
+            throw new DomainException(
+                'Para cobrar en efectivo, abrí un turno de caja.'
+            );
+        }
+
+        $register = $session->register;
+        $account = $register?->financialAccount;
+
+        if (
+            (int) $session->organization_id !== $organizationId
+            || $session->currency_code !== $currencyCode
+            || ! $register
+            || ! $register->active
+            || (int) $register->organization_id !== $organizationId
+            || ! $account
+            || ! $account->active
+            || (int) $account->organization_id !== $organizationId
+            || $account->currency_code !== $currencyCode
+        ) {
+            throw new DomainException(
+                'El turno de caja no está disponible para la moneda de la venta.'
+            );
+        }
+
+        foreach ($cashPayments as $payment) {
+            if (
+                (int) ($payment['financial_account_id'] ?? 0)
+                    !== (int) $account->id
+            ) {
+                throw new DomainException(
+                    'El destino del efectivo debe ser la cuenta de la caja del turno abierto.'
+                );
+            }
+        }
+
+        return $session;
     }
 
     /**

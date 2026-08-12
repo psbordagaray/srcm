@@ -7,7 +7,7 @@
                     <span class="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-200">{{ $sale->status->label() }}</span>
                 </div>
                 <h1 class="mt-2 text-2xl font-bold text-white">Venta #{{ $sale->sale_number }}</h1>
-                <p class="mt-2 text-sm text-slate-400">{{ $sale->sold_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }} · registrada por {{ $sale->recordedBy->name }}</p>
+                <p class="mt-2 text-sm text-slate-400">{{ $sale->sold_at->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }} · registrada por {{ $sale->recordedBy->name }}</p>
             </div>
 
             <div class="flex flex-wrap gap-3">
@@ -83,7 +83,7 @@
                                 <div class="flex flex-wrap items-start justify-between gap-4">
                                     <div>
                                         <p class="text-sm font-bold text-emerald-100">{{ $payment->method->label() }}</p>
-                                        <p class="mt-1 text-xs text-slate-500">{{ $payment->paid_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }} · recibió {{ $payment->receivedBy->name }}</p>
+                                        <p class="mt-1 text-xs text-slate-500">{{ $payment->paid_at->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }} · recibió {{ $payment->receivedBy->name }}</p>
                                     </div>
                                     <p class="font-mono text-lg font-bold text-white">$ {{ number_format($payment->amount_minor / 100, 2, ',', '.') }}</p>
                                 </div>

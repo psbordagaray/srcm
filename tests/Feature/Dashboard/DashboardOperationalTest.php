@@ -512,8 +512,9 @@ class DashboardOperationalTest extends TestCase
                 currencyCode: $currency,
                 idempotencyKey: 'dashboard:sale:'.$number,
                 payments: [new CommercePaymentData(
-                    CommercePaymentMethod::Cash,
-                    $totalMinor
+                    CommercePaymentMethod::BankTransfer,
+                    $totalMinor,
+                    'DASHBOARD-TRANSFER-'.$number
                 )],
                 productLines: [new CommerceProductLineData(
                     catalogProductId: $product->id,

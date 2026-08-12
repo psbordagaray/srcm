@@ -61,7 +61,7 @@
                             <tr class="transition hover:bg-slate-800/30">
                                 <td class="px-5 py-4">
                                     <a href="{{ route('commerce-sales.show', $sale) }}" class="font-mono text-sm font-bold text-amber-200 hover:text-amber-100">#{{ $sale->sale_number }}</a>
-                                    <p class="mt-1 text-xs text-slate-500">{{ $sale->sold_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</p>
+                                    <p class="mt-1 text-xs text-slate-500">{{ $sale->sold_at->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }}</p>
                                 </td>
                                 <td class="px-5 py-4">
                                     <p class="text-sm font-semibold text-slate-200">{{ $sale->customer_name_snapshot }}</p>

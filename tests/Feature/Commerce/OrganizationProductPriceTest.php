@@ -189,10 +189,10 @@ class OrganizationProductPriceTest extends TestCase
                     'unit_price' => '1,00',
                 ]],
                 'payments' => [[
-                    'method' => CommercePaymentMethod::Cash->value,
+                    'method' => CommercePaymentMethod::BankTransfer->value,
                     'financial_account_id' => $account->id,
                     'amount' => '14300,00',
-                    'reference' => null,
+                    'reference' => 'PRICE-FORGE-TRANSFER',
                     'notes' => null,
                     'paid_at' => null,
                 ]],

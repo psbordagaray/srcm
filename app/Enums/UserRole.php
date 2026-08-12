@@ -342,6 +342,21 @@ enum UserRole: string
         return $this->canDraftInventoryMovement($type);
     }
 
+    public function canManageCashRegisters(): bool
+    {
+        return $this === self::Admin;
+    }
+
+    public function canOperateCashRegister(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
+    public function canSuperviseCashRegisters(): bool
+    {
+        return $this === self::Admin;
+    }
+
     public function canUseFinancialAccounts(): bool
     {
         return $this !== self::Viewer;

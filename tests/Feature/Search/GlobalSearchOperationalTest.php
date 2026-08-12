@@ -570,8 +570,9 @@ class GlobalSearchOperationalTest extends TestCase
                     .':'
                     .$number,
                 payments: [new CommercePaymentData(
-                    CommercePaymentMethod::Cash,
-                    $totalMinor
+                    CommercePaymentMethod::BankTransfer,
+                    $totalMinor,
+                    'SEARCH-TRANSFER-'.$number
                 )],
                 productLines: [new CommerceProductLineData(
                     catalogProductId: $product->id,

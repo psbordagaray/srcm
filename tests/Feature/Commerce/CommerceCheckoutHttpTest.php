@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Commerce;
 
+use App\Domain\Finance\CashRegisterSessionManager;
 use App\Domain\Inventory\InventoryMovementConfirmer;
 use App\Domain\Inventory\InventoryMovementCreator;
 use App\Domain\Inventory\InventoryMovementDraftData;
@@ -40,6 +41,7 @@ use App\Enums\ServiceWorkOutcome;
 use App\Enums\UserRole;
 use App\Http\Middleware\RequireOrganization;
 use App\Models\BusinessParty;
+use App\Models\CashRegister;
 use App\Models\CatalogProduct;
 use App\Models\CommerceSale;
 use App\Models\FinancialAccount;
@@ -130,6 +132,11 @@ class CommerceCheckoutHttpTest extends TestCase
     public function test_operator_liquidates_delivered_service_through_http(): void
     {
         $fixture = $this->deliveredOrder('service-http');
+        $cashAccount = $this->openCashShift(
+            $fixture['organization'],
+            $fixture['actor'],
+            'service-http'
+        );
 
         $this->actingAs($fixture['actor'])
             ->get(route('commerce-sales.create', [
@@ -150,7 +157,7 @@ class CommerceCheckoutHttpTest extends TestCase
                 'product_lines' => [],
                 'payments' => [[
                     'method' => CommercePaymentMethod::Cash->value,
-                    'financial_account_id' => $this->financialAccountId,
+                    'financial_account_id' => $cashAccount->id,
                     'amount' => '40000,00',
                     'reference' => null,
                     'notes' => 'Pago total en mostrador.',
@@ -207,6 +214,11 @@ class CommerceCheckoutHttpTest extends TestCase
     public function test_mixed_sale_confirms_product_issue_and_split_payments(): void
     {
         $fixture = $this->deliveredOrder('mixed-http');
+        $cashAccount = $this->openCashShift(
+            $fixture['organization'],
+            $fixture['actor'],
+            'mixed-http'
+        );
         $product = $this->product(
             'Auriculares Bluetooth HTTP',
             'AUR-HTTP'
@@ -239,7 +251,7 @@ class CommerceCheckoutHttpTest extends TestCase
                 'payments' => [
                     [
                         'method' => CommercePaymentMethod::Cash->value,
-                        'financial_account_id' => $this->financialAccountId,
+                        'financial_account_id' => $cashAccount->id,
                         'amount' => '25000',
                         'reference' => null,
                         'notes' => null,
@@ -536,9 +548,9 @@ class CommerceCheckoutHttpTest extends TestCase
             ]],
         ];
         $payment = [
-            'method' => CommercePaymentMethod::Cash->value,
+            'method' => CommercePaymentMethod::BankTransfer->value,
             'amount' => '1000',
-            'reference' => null,
+            'reference' => 'DESTINATION-SCOPE-HTTP',
             'notes' => null,
             'paid_at' => null,
         ];
@@ -897,6 +909,58 @@ class CommerceCheckoutHttpTest extends TestCase
                 'active' => true,
             ])->refresh()
         );
+    }
+
+    private function openCashShift(
+        Organization $organization,
+        User $actor,
+        string $suffix
+    ): FinancialAccount {
+        $accountName = 'Caja HTTP '.$suffix;
+        $normalizedAccount = Str::lower(
+            preg_replace('/[^a-zA-Z0-9]+/', '', $accountName)
+                ?? $accountName
+        );
+
+        $account = FinancialAccount::query()->create([
+            'organization_id' => $organization->id,
+            'name' => $accountName,
+            'normalized_name' => $normalizedAccount.'-'.Str::lower(
+                Str::random(6)
+            ),
+            'type' => FinancialAccountType::CashBox,
+            'currency_code' => 'ARS',
+            'active' => true,
+            'created_by_user_id' => $actor->id,
+            'updated_by_user_id' => $actor->id,
+        ]);
+
+        $registerName = 'Caja operativa '.$suffix;
+
+        $register = CashRegister::query()->create([
+            'organization_id' => $organization->id,
+            'financial_account_id' => $account->id,
+            'name' => $registerName,
+            'normalized_name' => Str::lower(
+                preg_replace(
+                    '/[^a-zA-Z0-9]+/',
+                    '',
+                    $registerName
+                ) ?? $registerName
+            ),
+            'active' => true,
+            'created_by_user_id' => $actor->id,
+            'updated_by_user_id' => $actor->id,
+        ]);
+
+        app(CashRegisterSessionManager::class)->open(
+            $register,
+            0,
+            'commerce:http:cash-open:'.$suffix,
+            $actor
+        );
+
+        return $account;
     }
 
     private function financialAccount(
