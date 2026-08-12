@@ -5,6 +5,7 @@ namespace App\Enums;
 enum FinancialAccountType: string
 {
     case CashBox = 'cash_box';
+    case CashReserve = 'cash_reserve';
     case BankAccount = 'bank_account';
     case DigitalWallet = 'digital_wallet';
     case CardProcessor = 'card_processor';
@@ -14,6 +15,7 @@ enum FinancialAccountType: string
     {
         return match ($this) {
             self::CashBox => 'Caja de efectivo',
+            self::CashReserve => 'Reserva / Tesorería de efectivo',
             self::BankAccount => 'Cuenta bancaria',
             self::DigitalWallet => 'Billetera digital',
             self::CardProcessor => 'Procesador / adquirente',

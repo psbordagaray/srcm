@@ -7,6 +7,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class CashRegisterSession extends Model
@@ -65,5 +66,13 @@ class CashRegisterSession extends Model
     public function openedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'opened_by_user_id');
+    }
+
+    public function movements(): HasMany
+    {
+        return $this->hasMany(
+            CashMovement::class,
+            'cash_register_session_id'
+        );
     }
 }

@@ -127,3 +127,36 @@ Esto separa:
 Una venta confirmada no puede convertirse en una operación retroactiva por
 editar un `datetime-local`. Los flujos históricos deberán tener permiso,
 motivo y trazabilidad propios.
+
+## 9. P4C — retiros de seguridad y tesorería
+
+P4C extiende `CashMovement` sin reescribir cobros P4B.
+
+Se incorpora `security_drop` como hecho manual append-only:
+
+`turno abierto → cash_box origen → retiro de seguridad → cash_reserve destino`
+
+Reglas:
+
+- el origen nunca lo elige el operador: deriva de su turno abierto;
+- el destino debe ser una cuenta privada activa `cash_reserve` de la misma organización y moneda;
+- el retiro debe ser mayor que cero y no puede superar el efectivo esperado del turno;
+- el motivo es estructurado y la nota es opcional;
+- el retry usa idempotency key + fingerprint;
+- el movimiento es inmutable y no puede borrarse;
+- `commerce_payment_id` queda nulo en retiros de seguridad;
+- el retiro reduce el efectivo esperado del turno, pero no modifica ventas ni cobros históricos;
+- el fondo inicial continúa siendo baseline, no un movimiento comercial;
+- Administrador supervisa; Operador registra retiros únicamente sobre su propio turno;
+- P4C no implementa cierre/arqueo, faltantes/sobrantes ni pagos a proveedor/flete.
+
+Se incorpora `FinancialAccountType::CashReserve` para representar caja fuerte,
+tesorería o reserva física de efectivo sin confundirla con una caja operativa
+`cash_box`.
+
+Efectivo esperado del turno:
+
+`fondo inicial + entradas CashMovement − salidas CashMovement`
+
+P4D usará esta proyección como base del arqueo y cierre, sin corregir
+silenciosamente diferencias.

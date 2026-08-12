@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Finance\CashLedgerRecorder;
 use App\Domain\Finance\CashRegisterManager;
 use App\Domain\Finance\CashRegisterSessionManager;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\CashRegisterSessionStatus;
+use App\Enums\CashSecurityDropReason;
 use App\Enums\FinancialAccountType;
 use App\Http\Requests\OpenCashRegisterSessionRequest;
+use App\Http\Requests\RecordCashSecurityDropRequest;
 use App\Http\Requests\SaveCashRegisterRequest;
+use App\Models\CashMovement;
 use App\Models\CashRegister;
 use App\Models\FinancialAccount;
 use Brick\Math\BigDecimal;
@@ -24,28 +28,93 @@ class CashRegisterController extends Controller
     public function index(
         Request $request,
         CurrentOrganization $currentOrganization,
-        CashRegisterSessionManager $sessions
+        CashRegisterSessionManager $sessions,
+        CashLedgerRecorder $ledger
     ): View {
-        $organizationId = $currentOrganization->id($request->user());
+        $actor = $request->user();
+        $organizationId = $currentOrganization->id($actor);
+        $currentSession = $sessions->currentFor($actor);
+
+        $registers = CashRegister::query()
+            ->forOrganization($organizationId)
+            ->with([
+                'financialAccount',
+                'sessions' => fn ($query) => $query
+                    ->where(
+                        'status',
+                        CashRegisterSessionStatus::Open->value
+                    )
+                    ->with('openedBy'),
+            ])
+            ->orderByDesc('active')
+            ->orderBy('name')
+            ->get();
+
+        $expectedBySession = [];
+
+        foreach ($registers as $register) {
+            foreach ($register->sessions as $openSession) {
+                $isOwn = $currentSession
+                    && (int) $currentSession->id === (int) $openSession->id;
+
+                if (
+                    $isOwn
+                    || $actor->can('supervise-cash-registers')
+                ) {
+                    $expectedBySession[$openSession->id] =
+                        $ledger->expectedAmountMinor(
+                            $openSession,
+                            $actor
+                        );
+                }
+            }
+        }
+
+        $recentMovements = $currentSession
+            ? CashMovement::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'cash_register_session_id',
+                    $currentSession->id
+                )
+                ->with([
+                    'destinationFinancialAccount',
+                    'recordedBy',
+                ])
+                ->orderByDesc('occurred_at')
+                ->orderByDesc('id')
+                ->limit(20)
+                ->get()
+            : collect();
 
         return view('cash-registers.index', [
-            'registers' => CashRegister::query()
+            'registers' => $registers,
+            'currentSession' => $currentSession,
+            'currentExpectedMinor' => $currentSession
+                ? $ledger->expectedAmountMinor(
+                    $currentSession,
+                    $actor
+                )
+                : null,
+            'expectedBySession' => $expectedBySession,
+            'treasuryAccounts' => FinancialAccount::query()
                 ->forOrganization($organizationId)
-                ->with([
-                    'financialAccount',
-                    'sessions' => fn ($query) => $query
-                        ->where(
-                            'status',
-                            CashRegisterSessionStatus::Open->value
-                        )
-                        ->with('openedBy'),
-                ])
-                ->orderByDesc('active')
+                ->where('active', true)
+                ->where(
+                    'type',
+                    FinancialAccountType::CashReserve
+                )
+                ->when(
+                    $currentSession,
+                    fn ($query) => $query->where(
+                        'currency_code',
+                        $currentSession->currency_code
+                    )
+                )
                 ->orderBy('name')
                 ->get(),
-            'currentSession' => $sessions->currentFor(
-                $request->user()
-            ),
+            'dropReasons' => CashSecurityDropReason::cases(),
+            'recentMovements' => $recentMovements,
         ]);
     }
 
@@ -182,6 +251,51 @@ class CashRegisterController extends Controller
                 $register->active
                     ? 'Caja operativa activada.'
                     : 'Caja operativa inactivada.'
+            );
+    }
+
+    public function securityDrop(
+        RecordCashSecurityDropRequest $request,
+        CashLedgerRecorder $ledger
+    ): RedirectResponse {
+        $validated = $request->validated();
+
+        try {
+            $destination = FinancialAccount::query()
+                ->findOrFail(
+                    $validated['destination_financial_account_id']
+                );
+
+            $movement = $ledger->recordSecurityDrop(
+                $destination,
+                $this->moneyMinor($validated['amount']),
+                CashSecurityDropReason::from(
+                    $validated['reason_code']
+                ),
+                $validated['note'] ?: null,
+                $validated['idempotency_key'],
+                $request->user()
+            );
+        } catch (DomainException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'cash_movement' => $exception->getMessage(),
+                ]);
+        }
+
+        return redirect()
+            ->route('cash-registers.index')
+            ->with(
+                'success',
+                'Retiro de seguridad registrado por '.
+                number_format(
+                    $movement->amount_minor / 100,
+                    2,
+                    ',',
+                    '.'
+                ).
+                ' '.$movement->currency_code.'.'
             );
     }
 

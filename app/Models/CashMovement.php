@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\CashMovementDirection;
 use App\Enums\CashMovementType;
+use App\Enums\CashSecurityDropReason;
 use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
@@ -22,9 +23,12 @@ class CashMovement extends Model
         'cash_register_session_id',
         'cash_register_id',
         'financial_account_id',
+        'destination_financial_account_id',
         'commerce_payment_id',
         'direction',
         'type',
+        'reason_code',
+        'note',
         'amount_minor',
         'currency_code',
         'idempotency_key',
@@ -56,6 +60,7 @@ class CashMovement extends Model
         return [
             'direction' => CashMovementDirection::class,
             'type' => CashMovementType::class,
+            'reason_code' => CashSecurityDropReason::class,
             'amount_minor' => 'integer',
             'occurred_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',
@@ -80,6 +85,14 @@ class CashMovement extends Model
         return $this->belongsTo(
             FinancialAccount::class,
             'financial_account_id'
+        );
+    }
+
+    public function destinationFinancialAccount(): BelongsTo
+    {
+        return $this->belongsTo(
+            FinancialAccount::class,
+            'destination_financial_account_id'
         );
     }
 

@@ -409,6 +409,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )
                         ->whereUuid('cashRegister')
                         ->name('cash-registers.open');
+
+                    Route::post(
+                        'financial/cash-registers/security-drops',
+                        [CashRegisterController::class, 'securityDrop']
+                    )->name('cash-registers.security-drops');
                 });
 
             Route::middleware('can:manage-cash-registers')

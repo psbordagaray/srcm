@@ -58,9 +58,175 @@
                     </strong>
                     · abierto {{ $currentSession->opened_at?->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }}
                 </p>
-                <p class="mt-2 text-xs text-slate-500">
-                    P4B todavía no cierra turnos: el cierre, arqueo y diferencias llegan en el siguiente bloque.
-                </p>
+                <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-4">
+                        <p class="text-xs font-black uppercase tracking-wider text-emerald-300">
+                            Efectivo esperado
+                        </p>
+                        <p class="mt-2 font-mono text-2xl font-black text-white">
+                            {{ $currentSession->currency_code }}
+                            {{ number_format(($currentExpectedMinor ?? 0) / 100, 2, ',', '.') }}
+                        </p>
+                        <p class="mt-1 text-xs text-slate-500">
+                            Fondo inicial + cobros en efectivo − retiros registrados.
+                        </p>
+                    </div>
+                    <div class="rounded-xl border border-slate-700 bg-slate-950/40 p-4">
+                        <p class="text-xs font-black uppercase tracking-wider text-slate-400">
+                            P4C
+                        </p>
+                        <p class="mt-2 text-sm font-bold text-white">
+                            Los retiros son transferencias internas a tesorería.
+                        </p>
+                        <p class="mt-1 text-xs text-slate-500">
+                            No son gastos y no modifican ventas ni cobros históricos. No cierra el turno.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-5 rounded-2xl border border-amber-400/20 bg-amber-400/5 p-4" data-security-drop-form>
+                    <p class="text-sm font-black text-amber-100">
+                        Retiro de seguridad
+                    </p>
+                    <p class="mt-1 text-xs text-slate-400">
+                        Sacá efectivo de la caja operativa y registrá su destino en una reserva / tesorería.
+                    </p>
+
+                    @if($treasuryAccounts->isEmpty())
+                        <div class="mt-4 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-sm text-slate-400">
+                            No hay una cuenta activa de tipo
+                            <strong class="text-white">Reserva / Tesorería de efectivo</strong>
+                            para {{ $currentSession->currency_code }}.
+                            Un administrador debe crearla en Cuentas financieras.
+                        </div>
+                    @else
+                        <form
+                            method="POST"
+                            action="{{ route('cash-registers.security-drops') }}"
+                            class="mt-4 grid gap-3 lg:grid-cols-2"
+                        >
+                            @csrf
+                            <input
+                                type="hidden"
+                                name="idempotency_key"
+                                value="cash-ui:security-drop:{{ \Illuminate\Support\Str::uuid() }}"
+                            >
+
+                            <label class="block">
+                                <span class="text-xs font-bold text-slate-400">
+                                    Destino de tesorería
+                                </span>
+                                <select
+                                    name="destination_financial_account_id"
+                                    required
+                                    class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white focus:border-amber-400 focus:ring-amber-400"
+                                >
+                                    <option value="">Seleccionar destino…</option>
+                                    @foreach($treasuryAccounts as $account)
+                                        <option
+                                            value="{{ $account->id }}"
+                                            @selected((string) old('destination_financial_account_id') === (string) $account->id)
+                                        >
+                                            {{ $account->name }} · {{ $account->currency_code }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </label>
+
+                            <label class="block">
+                                <span class="text-xs font-bold text-slate-400">
+                                    Importe
+                                </span>
+                                <input
+                                    type="text"
+                                    name="amount"
+                                    value="{{ old('amount') }}"
+                                    inputmode="decimal"
+                                    placeholder="0,00"
+                                    required
+                                    class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-white focus:border-amber-400 focus:ring-amber-400"
+                                >
+                            </label>
+
+                            <label class="block">
+                                <span class="text-xs font-bold text-slate-400">
+                                    Motivo
+                                </span>
+                                <select
+                                    name="reason_code"
+                                    required
+                                    class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white focus:border-amber-400 focus:ring-amber-400"
+                                >
+                                    @foreach($dropReasons as $reason)
+                                        <option
+                                            value="{{ $reason->value }}"
+                                            @selected(old('reason_code', \App\Enums\CashSecurityDropReason::ExcessCash->value) === $reason->value)
+                                        >
+                                            {{ $reason->label() }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </label>
+
+                            <label class="block">
+                                <span class="text-xs font-bold text-slate-400">
+                                    Nota / sobre / referencia
+                                </span>
+                                <input
+                                    type="text"
+                                    name="note"
+                                    value="{{ old('note') }}"
+                                    maxlength="1000"
+                                    placeholder="Opcional"
+                                    class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white focus:border-amber-400 focus:ring-amber-400"
+                                >
+                            </label>
+
+                            <div class="lg:col-span-2 flex justify-end">
+                                <button
+                                    type="submit"
+                                    class="rounded-xl bg-amber-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-amber-300"
+                                >
+                                    Registrar retiro de seguridad
+                                </button>
+                            </div>
+                        </form>
+                    @endif
+                </div>
+
+                @if($recentMovements->isNotEmpty())
+                    <div class="mt-5" data-current-cash-ledger>
+                        <p class="text-xs font-black uppercase tracking-[0.18em] text-slate-400">
+                            Últimos movimientos del turno
+                        </p>
+                        <div class="mt-3 divide-y divide-white/5 overflow-hidden rounded-xl border border-slate-800">
+                            @foreach($recentMovements as $movement)
+                                <div class="flex flex-col gap-2 bg-slate-950/35 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p class="text-sm font-bold text-white">
+                                            {{ $movement->type->label() }}
+                                        </p>
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            {{ $movement->occurred_at?->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }}
+                                            · {{ $movement->recordedBy?->name ?? 'Usuario' }}
+                                            @if($movement->destinationFinancialAccount)
+                                                · destino: {{ $movement->destinationFinancialAccount->name }}
+                                            @endif
+                                            @if($movement->reason_code)
+                                                · {{ $movement->reason_code->label() }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <strong class="font-mono {{ $movement->direction === \App\Enums\CashMovementDirection::In ? 'text-emerald-300' : 'text-amber-300' }}">
+                                        {{ $movement->direction === \App\Enums\CashMovementDirection::In ? '+' : '−' }}
+                                        {{ $movement->currency_code }}
+                                        {{ number_format($movement->amount_minor / 100, 2, ',', '.') }}
+                                    </strong>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             @else
                 <p class="font-black text-white">No tenés un turno de caja abierto.</p>
                 <p class="mt-2 text-sm text-slate-400">
@@ -112,6 +278,17 @@
                                         Operador: {{ $openSession->openedBy?->name ?? 'Usuario' }}
                                         · desde {{ $openSession->opened_at?->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }}
                                     </p>
+                                    @can('supervise-cash-registers')
+                                        @if(array_key_exists($openSession->id, $expectedBySession))
+                                            <p class="mt-2 text-xs font-bold text-emerald-300">
+                                                Efectivo esperado sistema:
+                                                <span class="font-mono">
+                                                    {{ $openSession->currency_code }}
+                                                    {{ number_format($expectedBySession[$openSession->id] / 100, 2, ',', '.') }}
+                                                </span>
+                                            </p>
+                                        @endif
+                                    @endcan
                                 @endif
                             </div>
 
