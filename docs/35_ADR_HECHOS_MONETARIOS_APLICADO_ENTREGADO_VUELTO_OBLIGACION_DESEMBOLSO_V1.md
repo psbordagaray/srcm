@@ -226,6 +226,13 @@ Debe poder proyectar, entre otros:
 
 La campana y Dashboard deben llevar por deep-link al workflow dueño del hecho.
 
+P4F.4 completa esta regla para la ejecución:
+
+- `executed` vuelve al solicitante como resultado relevante y acknowledgeable;
+- Attention conserva `source + public_id + estado de control` en su clave proyectada, de modo que un cierre posterior puede generar un nuevo resultado sin mutar el aviso anterior;
+- el resultado puede informar `Caja registrada`, `turno cerrado exacto` o `turno cerrado con diferencia`, pero ninguna de esas etiquetas modifica los hechos monetarios;
+- una anomalía estructural se muestra como anomalía; nunca se completa la historia inventando evidencia.
+
 ## 9. Origen del pago
 
 `FinancialAccount` identifica la cuenta/destino financiero.
@@ -271,6 +278,10 @@ historia para hacer cuadrar una pantalla.
 
 Ni un cobro electrónico declarado ni un pago saliente declarado prueban por sí
 solos que la entidad financiera acreditó o debitó el dinero.
+
+Para efectivo, P4F.4 no abre una conciliación externa: el egreso físico se controla mediante el `CashMovement` del turno y el arqueo/cierre de Caja. Un cierre con diferencia es evidencia de control del turno, no una autorización para modificar el pago ejecutado.
+
+El motor P3 existente continúa siendo la base provider-neutral para movimientos financieros externos. Mientras P4F.3 sólo ejecute `cash_box`, P4F.4 se limita a declarar explícitamente que la verificación externa no aplica; la futura ejecución desde banco/billetera deberá enlazar su débito externo verificado sin reutilizar `CashMovement` ni presentar el pago declarado como conciliado.
 
 La conciliación enlaza evidencia externa con los hechos esperados y conserva:
 

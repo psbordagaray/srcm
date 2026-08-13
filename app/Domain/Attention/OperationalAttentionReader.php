@@ -2,6 +2,7 @@
 
 namespace App\Domain\Attention;
 
+use App\Domain\Purchase\PurchasePaymentControlReader;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\CashSecurityDropRequestStatus;
 use App\Enums\InventoryNegativeRequestStatus;
@@ -16,7 +17,8 @@ use Illuminate\Support\Collection;
 final class OperationalAttentionReader
 {
     public function __construct(
-        private readonly CurrentOrganization $currentOrganization
+        private readonly CurrentOrganization $currentOrganization,
+        private readonly PurchasePaymentControlReader $purchasePaymentControl
     ) {
     }
 
@@ -365,6 +367,7 @@ final class OperationalAttentionReader
                 ->where('requested_by_user_id', $actor->id)
                 ->whereIn('status', [
                     PurchasePaymentRequestStatus::Approved->value,
+                    PurchasePaymentRequestStatus::Executed->value,
                     PurchasePaymentRequestStatus::Rejected->value,
                     PurchasePaymentRequestStatus::Cancelled->value,
                     PurchasePaymentRequestStatus::Expired->value,
@@ -373,6 +376,8 @@ final class OperationalAttentionReader
                     'approvedBy:id,name',
                     'resolvedBy:id,name',
                     'originFinancialAccount:id,name',
+                    'execution:id,organization_id,purchase_payment_request_id,executed_by_user_id,executed_at',
+                    'execution.executedBy:id,name',
                     'obligation:id,public_id,purchase_order_id,beneficiary_business_party_id',
                     'obligation.order:id,public_id',
                     'obligation.beneficiary:id,name',
@@ -422,6 +427,68 @@ final class OperationalAttentionReader
                     continue;
                 }
 
+                if (
+                    $request->status
+                    === PurchasePaymentRequestStatus::Executed
+                ) {
+                    $execution = $request->execution;
+
+                    if ($execution) {
+                        $control = $this->purchasePaymentControl->read(
+                            $execution,
+                            $actor
+                        );
+                        $executorName =
+                            $execution->executedBy?->name
+                            ?? 'Usuario';
+                    } else {
+                        $control = [
+                            'state' => 'integrity_anomaly',
+                            'severity' => 'danger',
+                            'title' =>
+                                'Anomalía de control · revisar evidencia',
+                            'detail' =>
+                                'La solicitud figura ejecutada pero no conserva '.
+                                'su hecho de ejecución. SRCM no inventará un '.
+                                'movimiento para completar la historia.',
+                            'occurred_at' =>
+                                $request->requested_at,
+                        ];
+                        $executorName = 'Usuario';
+                    }
+
+                    $items->push($this->item(
+                        sourceType: 'purchase_payment_request',
+                        sourcePublicId: $request->public_id,
+                        state:
+                            PurchasePaymentRequestStatus::Executed->value
+                            .':'.$control['state'],
+                        kind: 'result',
+                        severity: $control['severity'],
+                        title: 'Pago ejecutado · resultado registrado',
+                        detail: $executorName
+                            .' ejecutó '
+                            .$this->money(
+                                $request->amount_minor,
+                                $request->currency_code
+                            )
+                            .' para '
+                            .($request->obligation?->beneficiary?->name
+                                ?? 'beneficiario')
+                            .' desde '
+                            .($request->originFinancialAccount?->name
+                                ?? 'cuenta de origen')
+                            .'. '.$control['title'].'. '
+                            .$control['detail'],
+                        url: $url,
+                        occurredAt: $control['occurred_at']
+                            ?? $request->requested_at,
+                        priority: 20,
+                        acknowledgeable: true
+                    ));
+
+                    continue;
+                }
                 $title = match ($request->status) {
                     PurchasePaymentRequestStatus::Rejected =>
                         'Solicitud de pago rechazada',

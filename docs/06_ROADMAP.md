@@ -323,6 +323,17 @@ Contrato Foundation P4F.3 — efectivo:
 - pago externo y débito/acreditación verificada permanecen separados hasta conciliación;
 - diferencias nunca se corrigen ni pagan silenciosamente.
 
+Contrato Foundation P4F.4:
+- una ejecución confirmada vuelve al solicitante como `resultado` acknowledgeable; Attention no crea ni modifica el pago;
+- el estado de control forma parte de la clave proyectada: si el solicitante reconoce el resultado con turno abierto y luego el arqueo cambia el control a `exacto` o `con diferencia`, el nuevo resultado puede aparecer sin reescribir el anterior;
+- para efectivo, `PurchasePaymentControlReader` deriva control sólo de `PurchasePaymentExecution + CashMovement + CashRegisterSession + CashRegisterClosure`;
+- mientras el turno está abierto, el egreso está registrado pero el control físico queda pendiente del arqueo/cierre;
+- un cierre sin diferencia confirma el control de Caja, no crea una conciliación financiera adicional;
+- un cierre con diferencia la muestra explícitamente y jamás altera, compensa ni vuelve a pagar la ejecución confirmada;
+- efectivo no crea `FinancialExternalMovement` ni `payment_reconciliation`: la verificación externa no aplica a un egreso físico de Caja;
+- el motor P3 de movimientos externos/conciliación permanece como verdad separada para banco, billetera y procesadores; P4F.4 no fuerza una conciliación de egresos todavía inexistentes;
+- cualquier inconsistencia estructural entre ejecución y `CashMovement` se proyecta como anomalía de control; SRCM no inventa movimientos para cuadrarla.
+
 ADR rector: `docs/35_ADR_HECHOS_MONETARIOS_APLICADO_ENTREGADO_VUELTO_OBLIGACION_DESEMBOLSO_V1.md`.
 
 ---

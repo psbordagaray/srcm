@@ -125,7 +125,29 @@
                                                                     {{ number_format($paymentRequest->execution->cashMovement->amount_minor / 100, 2, ',', '.') }}
                                                                 </p>
                                                             @endif
-                                                        </div>
+
+                                                            @php
+                                                                $paymentControl = $paymentControls->get($paymentRequest->execution->id);
+                                                            @endphp
+
+                                                            @if($paymentControl)
+                                                                <div class="mt-3 border-t border-cyan-400/15 pt-3">
+                                                                    <p class="text-[11px] font-bold uppercase tracking-[0.14em] text-cyan-300">P4F.4 · Control y conciliación</p>
+                                                                    <p class="mt-2 text-xs font-semibold {{ $paymentControl['severity'] === 'danger' ? 'text-red-300' : ($paymentControl['severity'] === 'warning' ? 'text-amber-300' : 'text-emerald-300') }}">
+                                                                        {{ $paymentControl['title'] }}
+                                                                    </p>
+                                                                    <p class="mt-1 text-[11px] text-slate-400">{{ $paymentControl['detail'] }}</p>
+                                                                    @if($paymentControl['external_verification_applicable'])
+                                                                        <p class="mt-1 text-[11px] text-amber-200">
+                                                                            Requiere un movimiento financiero externo verificado antes de cualquier conciliación.
+                                                                        </p>
+                                                                    @else
+                                                                        <p class="mt-1 text-[11px] text-slate-500">
+                                                                            Efectivo: la verificación externa no aplica. El control posterior pertenece al arqueo/cierre del turno; SRCM no crea una conciliación financiera ficticia.
+                                                                        </p>
+                                                                    @endif
+                                                                </div>
+                                                            @endif                                                        </div>
                                                     @endif
 
                                                     @if(

@@ -6,6 +6,7 @@ use App\Domain\Inventory\InventoryQuantity;
 use App\Domain\Purchase\PurchaseOrderDraftData;
 use App\Domain\Purchase\PurchaseOrderLineData;
 use App\Domain\Purchase\PurchaseOrderManager;
+use App\Domain\Purchase\PurchasePaymentControlReader;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\PurchaseOrderStatus;
 use App\Http\Requests\CancelPurchaseOrderRequest;
@@ -155,7 +156,8 @@ class PurchaseOrderController extends Controller
     public function show(
         Request $request,
         string $purchaseOrder,
-        CurrentOrganization $currentOrganization
+        CurrentOrganization $currentOrganization,
+        PurchasePaymentControlReader $paymentControl
     ): View {
         $order = $this->scopedOrder(
             $request,
@@ -184,9 +186,27 @@ class PurchaseOrderController extends Controller
             'receipts.obligations.paymentRequests.execution.cashMovement:id,public_id,purchase_payment_execution_id,direction,type,amount_minor,currency_code,occurred_at',
         ]);
 
+        $paymentControls = collect();
+
+        foreach ($order->receipts as $receipt) {
+            foreach ($receipt->obligations as $obligation) {
+                foreach ($obligation->paymentRequests as $paymentRequest) {
+                    if ($paymentRequest->execution) {
+                        $paymentControls->put(
+                            $paymentRequest->execution->id,
+                            $paymentControl->read(
+                                $paymentRequest->execution,
+                                $request->user()
+                            )
+                        );
+                    }
+                }
+            }
+        }
         return view('purchases.show', [
             'order' => $order,
             'lineBalances' => $this->lineBalances($order),
+            'paymentControls' => $paymentControls,
             'obligationBeneficiaries' =>
                 BusinessParty::query()
                     ->forOrganization((int) $order->organization_id)

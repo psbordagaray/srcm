@@ -316,5 +316,13 @@ P4F.3 Foundation fija para efectivo:
 - sólo la ejecución confirmada cambia el esperado de Caja; solicitud y aprobación continúan sin efecto monetario;
 - banco/billetera permanecen fuera de esta Foundation y no deben simularse con `CashMovement`.
 
+P4F.4 agrega una proyección de control sin crear una nueva verdad de Caja:
+- `PurchasePaymentExecution + CashMovement` prueban qué egreso registró SRCM;
+- mientras el turno sigue abierto, el control físico permanece pendiente del arqueo/cierre;
+- `CashRegisterClosure` con diferencia cero confirma que el turno cerró exactamente;
+- una diferencia de cierre se muestra como advertencia y nunca reescribe el pago, el movimiento ni el esperado histórico;
+- el efectivo no se envía al motor de conciliación externa: no existe banco/procesador que deba acreditar o debitar ese movimiento físico;
+- si en el futuro el origen es banco/billetera, el hecho externo verificado y su conciliación seguirán separados del pago declarado.
+
 ADR rector para P4E/P4F y evolución P8/P9:
 `docs/35_ADR_HECHOS_MONETARIOS_APLICADO_ENTREGADO_VUELTO_OBLIGACION_DESEMBOLSO_V1.md`.
