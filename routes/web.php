@@ -10,6 +10,7 @@ use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GlobalSearchController;
+use App\Http\Controllers\PurchaseObligationController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseReceiptController;
 use App\Http\Controllers\CompatibilityController;
@@ -44,7 +45,9 @@ use App\Http\Middleware\RequireOrganization;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->to(
+        route('login', absolute: false)
+    );
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -637,6 +640,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )
                         ->whereUuid('purchaseOrder')
                         ->name('purchase-orders.receipts.store');
+                });
+
+            Route::middleware('can:create-purchase-obligations')
+                ->group(function () {
+                    Route::post(
+                        'purchases/{purchaseOrder}/receipts/{purchaseReceipt}/obligations',
+                        [PurchaseObligationController::class, 'store']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->whereUuid('purchaseReceipt')
+                        ->name('purchase-orders.obligations.store');
                 });
 
             Route::middleware('can:cancel-purchase-orders')

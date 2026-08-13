@@ -260,6 +260,16 @@ P4F se construirá por slices compatibles con P9:
 - importe, moneda, vencimiento/condición, estado, idempotencia y fingerprint;
 - recepción conforme puede preparar una obligación según política, nunca ejecutar el pago.
 
+Contrato de Foundation P4F.1:
+- la obligación se reconoce explícitamente desde una `PurchaseReceipt` confirmada;
+- `merchandise` y `logistics` son componentes separados y cada uno puede tener beneficiario distinto;
+- importe y moneda derivan de la recepción/orden y no son editables por el usuario;
+- una recepción admite como máximo una obligación por componente; el pago parcial futuro se aplica sobre esa obligación, no se crean deudas duplicadas para simular cuotas;
+- el beneficiario es `BusinessParty` privada de la organización y por defecto puede ser la identidad del proveedor;
+- condición de pago estructurada: contra recepción, vencimiento en fecha u otra condición explicada;
+- la obligación es inmutable, idempotente y auditable;
+- no crea `CashMovement`, no toca `FinancialAccount`, no cambia Inventario y no representa autorización ni ejecución.
+
 **P4F.2 — Solicitud y autorización**
 - solicitud, autorización, rechazo/cancelación y expiración explícitos;
 - actores y timestamps separados;

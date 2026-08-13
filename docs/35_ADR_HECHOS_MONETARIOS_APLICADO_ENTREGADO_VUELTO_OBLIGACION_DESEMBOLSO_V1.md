@@ -128,6 +128,24 @@ P4F debe ser la foundation operativa. P9 podrá generalizar cuentas por pagar,
 vencimientos, aging, aplicaciones múltiples, estados de cuenta y contabilidad
 auxiliar sin romper estos hechos.
 
+## 6.1. P4F.1 — Obligación Foundation
+
+P4F.1 materializa la obligación económica como hecho privado e inmutable enlazado a una recepción confirmada.
+
+Reglas de Foundation:
+- fuente exacta: `PurchaseReceipt` + `PurchaseOrder` + proveedor;
+- componentes: mercadería y logística/flete, reconocidos por separado;
+- importe y moneda derivados del hecho de recepción; el operador no los escribe;
+- beneficiario estructurado como `BusinessParty`, pudiendo diferir del proveedor;
+- una obligación por recepción y componente; futuros pagos parciales aplican contra la misma obligación;
+- condición estructurada y vencimiento cuando corresponda;
+- idempotencia y fingerprint;
+- autoridad inicial conservadora: Administrador reconoce obligaciones; Operador puede seguir recibiendo mercadería pero no crear deuda financiera;
+- reconocer no solicita, autoriza ni ejecuta un pago;
+- reconocer no crea movimiento de caja, no altera una cuenta financiera y no modifica inventario.
+
+P4F.2 agregará solicitud/autorización sobre esta verdad. P4F.3 agregará ejecución total/parcial sin reescribir la obligación original.
+
 ## 7. Autoridad
 
 Autorizar no mueve dinero.

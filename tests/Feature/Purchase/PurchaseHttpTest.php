@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Purchase;
 
+use App\Domain\Inventory\InventoryQuantity;
 use App\Domain\Purchase\PurchaseOrderDraftData;
 use App\Domain\Purchase\PurchaseOrderLineData;
 use App\Domain\Purchase\PurchaseOrderManager;
@@ -163,6 +164,50 @@ class PurchaseHttpTest extends TestCase
             ->assertSee('REM-HTTP-001')
             ->assertSee('REM-HTTP-002')
             ->assertSee($order->receipts()->first()->inventoryMovement->public_id);
+    }
+
+    public function test_purchase_quantities_are_human_readable_without_losing_scale_truth(): void
+    {
+        $organization = $this->organization();
+        $operator = $this->user(
+            $organization,
+            UserRole::Operator
+        );
+        $this->actingAs($operator);
+
+        [$order] = $this->issuedOrder(
+            $organization,
+            $operator,
+            'Cantidad visual',
+            '10'
+        );
+
+        $this->get(route('purchase-orders.show', $order))
+            ->assertOk()
+            ->assertSee('10 unit')
+            ->assertDontSee('10.000000');
+
+        $this->get(
+            route('purchase-orders.receipts.create', $order)
+        )
+            ->assertOk()
+            ->assertSee(
+                'Pedido 10 · recibido 0 · pendiente 10 unit'
+            )
+            ->assertDontSee('10.000000');
+
+        $this->assertSame(
+            '10',
+            InventoryQuantity::input('10.000000', 0)
+        );
+        $this->assertSame(
+            '10,5',
+            InventoryQuantity::display('10.500000', 2)
+        );
+        $this->assertSame(
+            '1.234,5',
+            InventoryQuantity::display('1234.500000', 2)
+        );
     }
 
     public function test_receipt_validation_and_domain_reject_invalid_locations_and_overreceipt(): void

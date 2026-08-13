@@ -7,9 +7,10 @@
             ? $order->lines->map(fn ($line) => [
                 'catalog_product_id' => (string) $line->catalog_product_id,
                 'supplier_offer_id' => $line->supplier_offer_id === null ? '' : (string) $line->supplier_offer_id,
-                'quantity' => str_contains((string) $line->ordered_quantity, '.')
-                    ? rtrim(rtrim((string) $line->ordered_quantity, '0'), '.')
-                    : (string) $line->ordered_quantity,
+                'quantity' => \App\Domain\Inventory\InventoryQuantity::input(
+                    $line->ordered_quantity,
+                    $line->quantity_scale
+                ),
                 'unit_cost' => number_format($line->unit_cost_minor / 100, 2, '.', ''),
                 'supplier_code' => $line->supplier_code ?? '',
                 'description' => $line->description ?? '',

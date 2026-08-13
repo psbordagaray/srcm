@@ -111,6 +111,12 @@ class PurchaseReceipt extends Model
             ->orderBy('sequence');
     }
 
+    public function obligations(): HasMany
+    {
+        return $this->hasMany(PurchaseObligation::class)
+            ->orderBy('id');
+    }
+
     private function guardCreation(): void
     {
         $order = PurchaseOrder::query()

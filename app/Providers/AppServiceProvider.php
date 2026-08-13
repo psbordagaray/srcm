@@ -119,6 +119,8 @@ class AppServiceProvider extends ServiceProvider
             'draft-purchase-orders' => 'canDraftPurchaseOrders',
             'issue-purchase-orders' => 'canIssuePurchaseOrders',
             'receive-purchases' => 'canReceivePurchases',
+            'create-purchase-obligations' =>
+                'canCreatePurchaseObligations',
             'cancel-purchase-orders' => 'canCancelPurchaseOrders',
         ] as $ability => $method) {
             Gate::define(

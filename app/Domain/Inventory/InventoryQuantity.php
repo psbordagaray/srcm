@@ -238,6 +238,78 @@ final class InventoryQuantity
         );
     }
 
+    public static function input(
+        mixed $value,
+        int $scale
+    ): string {
+        self::assertDisplayScale($scale);
+
+        try {
+            $plain = (string) BigDecimal::of(
+                self::signed($value)
+            )->toScale(
+                $scale,
+                RoundingMode::Unnecessary
+            );
+        } catch (DomainException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new DomainException(
+                'La cantidad no puede representarse con la precisión configurada.',
+                previous: $exception
+            );
+        }
+
+        if (! str_contains($plain, '.')) {
+            return $plain;
+        }
+
+        $plain = rtrim(rtrim($plain, '0'), '.');
+
+        return in_array($plain, ['', '-0'], true)
+            ? '0'
+            : $plain;
+    }
+
+    public static function display(
+        mixed $value,
+        int $scale
+    ): string {
+        $plain = self::input($value, $scale);
+        $negative = str_starts_with($plain, '-');
+
+        if ($negative) {
+            $plain = substr($plain, 1);
+        }
+
+        [$integer, $fraction] = array_pad(
+            explode('.', $plain, 2),
+            2,
+            null
+        );
+
+        $grouped = preg_replace(
+            '/\B(?=(\d{3})+(?!\d))/',
+            '.',
+            $integer
+        ) ?? $integer;
+
+        $human = $fraction === null
+            ? $grouped
+            : $grouped.','.$fraction;
+
+        return $negative ? '-'.$human : $human;
+    }
+
+    private static function assertDisplayScale(int $scale): void
+    {
+        if ($scale < 0 || $scale > self::SCALE) {
+            throw new DomainException(
+                'La precisión visual debe estar entre 0 y '.self::SCALE.'.'
+            );
+        }
+    }
+
     private static function decimal(
         mixed $value,
         int $scale,

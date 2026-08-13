@@ -51,6 +51,7 @@ final class PurchaseActorGuard
             'draft' => $membership->role->canDraftPurchaseOrders(),
             'issue' => $membership->role->canIssuePurchaseOrders(),
             'receive' => $membership->role->canReceivePurchases(),
+            'obligate' => $membership->role->canCreatePurchaseObligations(),
             'cancel' => $membership->role->canCancelPurchaseOrders(),
             default => false,
         };

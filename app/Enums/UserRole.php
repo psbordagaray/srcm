@@ -210,6 +210,11 @@ enum UserRole: string
         return $this !== self::Viewer;
     }
 
+    public function canCreatePurchaseObligations(): bool
+    {
+        return $this === self::Admin;
+    }
+
     public function canCancelPurchaseOrders(): bool
     {
         return $this === self::Admin;

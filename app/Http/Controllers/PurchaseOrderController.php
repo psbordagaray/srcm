@@ -10,6 +10,7 @@ use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\PurchaseOrderStatus;
 use App\Http\Requests\CancelPurchaseOrderRequest;
 use App\Http\Requests\SavePurchaseOrderRequest;
+use App\Models\BusinessParty;
 use App\Models\CatalogProduct;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
@@ -170,13 +171,20 @@ class PurchaseOrderController extends Controller
             'lines.receiptLines.inventoryLocation:id,name',
             'receipts.receivedBy:id,name',
             'receipts.inventoryMovement:id,public_id,type,status',
-            'receipts.lines.product:id,sku,name',
+            'receipts.lines.product:id,sku,name,base_unit_code,quantity_scale',
             'receipts.lines.inventoryLocation:id,name',
+            'receipts.obligations.beneficiary:id,name,tax_id',
+            'receipts.obligations.recognizedBy:id,name',
         ]);
 
         return view('purchases.show', [
             'order' => $order,
             'lineBalances' => $this->lineBalances($order),
+            'obligationBeneficiaries' =>
+                BusinessParty::query()
+                    ->forOrganization((int) $order->organization_id)
+                    ->orderBy('name')
+                    ->get(['id', 'name', 'tax_id']),
         ]);
     }
 

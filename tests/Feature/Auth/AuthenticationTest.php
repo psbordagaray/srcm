@@ -17,6 +17,12 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_root_redirects_to_srcm_login_instead_of_laravel_welcome(): void
+    {
+        $this->get('/')
+            ->assertRedirect(route('login', absolute: false));
+    }
+
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
         $user = User::factory()->create();
@@ -49,6 +55,8 @@ class AuthenticationTest extends TestCase
         $response = $this->actingAs($user)->post('/logout');
 
         $this->assertGuest();
-        $response->assertRedirect('/');
+        $response->assertRedirect(
+            route('login', absolute: false)
+        );
     }
 }

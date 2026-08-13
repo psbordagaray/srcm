@@ -102,6 +102,12 @@ class PurchaseOrder extends Model
             ->orderBy('id');
     }
 
+    public function obligations(): HasMany
+    {
+        return $this->hasMany(PurchaseObligation::class)
+            ->orderBy('id');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(
