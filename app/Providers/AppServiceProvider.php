@@ -125,6 +125,8 @@ class AppServiceProvider extends ServiceProvider
                 'canRequestPurchasePayments',
             'approve-purchase-payments' =>
                 'canApprovePurchasePayments',
+            'execute-purchase-payments' =>
+                'canExecutePurchasePayments',
             'cancel-purchase-orders' => 'canCancelPurchaseOrders',
         ] as $ability => $method) {
             Gate::define(

@@ -25,6 +25,7 @@ class CashMovement extends Model
         'financial_account_id',
         'destination_financial_account_id',
         'cash_security_drop_request_id',
+        'purchase_payment_execution_id',
         'commerce_payment_id',
         'direction',
         'type',
@@ -110,6 +111,14 @@ class CashMovement extends Model
         return $this->belongsTo(
             CommercePayment::class,
             'commerce_payment_id'
+        );
+    }
+
+    public function purchasePaymentExecution(): BelongsTo
+    {
+        return $this->belongsTo(
+            PurchasePaymentExecution::class,
+            'purchase_payment_execution_id'
         );
     }
 

@@ -9,6 +9,7 @@ enum PurchasePaymentRequestStatus: string
     case Rejected = 'rejected';
     case Cancelled = 'cancelled';
     case Expired = 'expired';
+    case Executed = 'executed';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum PurchasePaymentRequestStatus: string
             self::Rejected => 'Rechazada',
             self::Cancelled => 'Cancelada',
             self::Expired => 'Vencida',
+            self::Executed => 'Ejecutada · pago registrado',
         };
     }
 
@@ -27,6 +29,7 @@ enum PurchasePaymentRequestStatus: string
             self::Rejected,
             self::Cancelled,
             self::Expired,
+            self::Executed,
         ], true);
     }
 

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Purchase\PurchasePaymentExecutionManager;
 use App\Domain\Purchase\PurchasePaymentRequestData;
 use App\Domain\Purchase\PurchasePaymentRequestManager;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Http\Requests\ApprovePurchasePaymentRequest;
+use App\Http\Requests\ExecutePurchasePaymentRequest;
 use App\Http\Requests\RequestPurchasePaymentRequest;
 use App\Http\Requests\ResolvePurchasePaymentRequest;
 use App\Models\PurchaseObligation;
@@ -101,6 +103,31 @@ class PurchasePaymentRequestController extends Controller
         );
     }
 
+    public function execute(
+        ExecutePurchasePaymentRequest $request,
+        PurchasePaymentRequest $purchasePaymentRequest,
+        PurchasePaymentExecutionManager $manager
+    ): RedirectResponse {
+        try {
+            $execution = $manager->executeCash(
+                $purchasePaymentRequest,
+                $request->validated('execution_reference'),
+                $request->validated('execution_note'),
+                $request->validated('idempotency_key'),
+                $request->user()
+            );
+        } catch (DomainException $exception) {
+            return back()->withErrors([
+                'purchase_payment_execution' =>
+                    $exception->getMessage(),
+            ]);
+        }
+
+        return $this->redirectTo(
+            $execution->request,
+            'Pago en efectivo ejecutado y registrado. Caja fue afectada por el egreso confirmado.'
+        );
+    }
     public function reject(
         ResolvePurchasePaymentRequest $request,
         PurchasePaymentRequest $purchasePaymentRequest,

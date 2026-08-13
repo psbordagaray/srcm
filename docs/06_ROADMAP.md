@@ -301,6 +301,21 @@ Contrato Foundation P4F.2:
 - medios no efectivo generan su hecho financiero saliente sin inventar un movimiento de caja;
 - evidencia segura y hora de servidor.
 
+Contrato Foundation P4F.3 — efectivo:
+- una autorización se consume exactamente por el importe autorizado; el ejecutor no puede recortarlo ni ampliarlo silenciosamente;
+- un pago parcial de la obligación se modela autorizando un importe parcial, ejecutándolo y luego creando otra solicitud sólo por el saldo económico pendiente;
+- `PurchasePaymentExecution` es un hecho separado, inmutable, idempotente y auditable; no reescribe `PurchaseObligation` ni la aprobación P4F.2;
+- el saldo ejecutable deriva de `obligación original - SUM(ejecuciones confirmadas)`;
+- Foundation ejecuta sólo `cash_box`; banco/billetera quedan para el hecho financiero saliente y verificación externa posteriores;
+- el ejecutor debe tener capacidad de ejecución, no puede ser el aprobador y debe poseer un turno abierto propio sobre la caja autorizada;
+- al ejecutar se revalida la huella de aprobación, obligación, beneficiario, importe, moneda, origen, turno y efectivo esperado actual;
+- la ejecución y su `CashMovement::purchase_payment` nacen en la misma transacción; el movimiento es `out`, sin destino interno, sin `CommercePayment` y sin disfrazarse de retiro de seguridad;
+- sólo entonces la solicitud pasa `approved -> executed` y deja de admitir cancelación o vencimiento;
+- reintentar la misma clave de ejecución devuelve el mismo hecho; otra clave no duplica el pago;
+- la DB bloquea mutación/borrado de ejecución y movimiento y exige vínculo estructurado entre autorización, ejecución y egreso;
+- P4F.3 Foundation no inventa ejecución retroactiva para autorizaciones históricas y no crea hechos no efectivo;
+- P4F.4 completará la distribución avanzada de ejecución/resultado por Attention y controles adicionales.
+
 **P4F.4 — Atención y control**
 - pendientes encuentran al aprobador mediante Operational Attention;
 - autorizaciones encuentran al ejecutor;

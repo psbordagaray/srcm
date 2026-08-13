@@ -8,6 +8,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class PurchasePaymentRequest extends Model
@@ -160,6 +161,14 @@ class PurchasePaymentRequest extends Model
         );
     }
 
+    public function execution(): HasOne
+    {
+        return $this->hasOne(
+            PurchasePaymentExecution::class,
+            'purchase_payment_request_id'
+        );
+    }
+
     private function guardCreation(): void
     {
         $status = $this->status
@@ -185,14 +194,34 @@ class PurchasePaymentRequest extends Model
             ->where('currency_code', $this->currency_code)
             ->first();
 
+        $executedMinor = $obligation
+            ? (int) PurchasePaymentExecution::query()
+                ->where(
+                    'organization_id',
+                    $this->organization_id
+                )
+                ->where(
+                    'purchase_obligation_id',
+                    $obligation->id
+                )
+                ->sum('amount_minor')
+            : 0;
+        $remainingMinor = $obligation
+            ? max(
+                0,
+                (int) $obligation->amount_minor
+                    - $executedMinor
+            )
+            : 0;
+
         if (
             ! $obligation
             || (int) $this->amount_minor <= 0
             || (int) $this->amount_minor
-                > (int) $obligation->amount_minor
+                > $remainingMinor
         ) {
             throw new DomainException(
-                'La solicitud no conserva una obligación e importe autorizables.'
+                'La solicitud no conserva una obligación y saldo ejecutable suficientes.'
             );
         }
 

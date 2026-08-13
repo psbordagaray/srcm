@@ -168,6 +168,28 @@ Contrato:
 - Operational Attention proyecta `pendiente -> aprobador` y `aprobado/rechazado/cancelado/vencido -> solicitante`;
 - P4F.3 agregará el hecho de ejecución y el cálculo de saldo ejecutable sin reescribir estos hechos.
 
+## 6.3. P4F.3 — Ejecución en efectivo Foundation
+
+P4F.3 convierte una autorización vigente en un desembolso real sin reescribir
+la obligación ni la decisión que lo autorizó.
+
+Contrato:
+
+- `PurchasePaymentExecution` es el hecho de ejecución append-only;
+- una autorización se ejecuta por su importe exacto: el ejecutor no cambia el monto aprobado;
+- pago parcial significa `autorización parcial -> ejecución exacta -> nueva solicitud por el saldo`, no múltiples importes arbitrarios bajo una misma aprobación;
+- el saldo económico ejecutable se deriva de `PurchaseObligation.amount_minor - SUM(PurchasePaymentExecution.amount_minor)`;
+- Foundation admite ejecución monetaria sólo cuando el origen autorizado es `cash_box`;
+- el ejecutor necesita capacidad explícita, no puede ser el aprobador y debe poseer un turno abierto propio sobre la caja autorizada;
+- al ejecutar se revalidan request fingerprint, approval fingerprint, obligación, beneficiario, moneda, origen, turno y efectivo esperado actual;
+- una sola transacción crea `PurchasePaymentExecution`, crea `CashMovement out` tipo `purchase_payment` y consume la solicitud con `approved -> executed`;
+- el `CashMovement` queda ligado uno-a-uno a la ejecución y no usa `destination`, `CommercePayment`, security-drop request, reason code ni nota para fingir otro dominio;
+- referencia y nota operativa segura pertenecen a la ejecución, no al ledger genérico;
+- la ejecución es idempotente: mismo request + misma clave + mismos hechos devuelve el mismo resultado; cualquier colisión distinta falla;
+- una solicitud `executed` es terminal y ya no puede cancelarse, rechazarse o expirar;
+- nuevas solicitudes sobre la misma obligación sólo pueden cubrir el saldo no ejecutado;
+- obligación, autorización, ejecución y movimiento permanecen hechos distintos y auditables;
+- banco, billetera y otros medios no efectivo siguen fuera de esta Foundation: su ejecución saliente y posterior débito verificado se modelarán sin inventar `CashMovement`.
 ## 7. Autoridad
 
 Autorizar no mueve dinero.

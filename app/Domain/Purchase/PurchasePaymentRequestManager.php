@@ -6,6 +6,7 @@ use App\Domain\Audit\AuditRecorder;
 use App\Enums\PurchasePaymentRequestStatus;
 use App\Models\FinancialAccount;
 use App\Models\PurchaseObligation;
+use App\Models\PurchasePaymentExecution;
 use App\Models\PurchasePaymentRequest;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -63,12 +64,6 @@ final class PurchasePaymentRequestManager
                 );
             }
 
-            if ($data->amountMinor > $obligation->amount_minor) {
-                throw new DomainException(
-                    'El importe solicitado supera la obligación económica.'
-                );
-            }
-
             $origin = FinancialAccount::query()
                 ->forOrganization($organizationId)
                 ->whereKey($data->originFinancialAccountId)
@@ -111,6 +106,30 @@ final class PurchasePaymentRequestManager
                 }
 
                 return $existing;
+            }
+
+            $executedMinor = (int) PurchasePaymentExecution::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'purchase_obligation_id',
+                    $obligation->id
+                )
+                ->lockForUpdate()
+                ->get(['amount_minor'])
+                ->sum('amount_minor');
+            $remainingMinor = max(
+                0,
+                (int) $obligation->amount_minor
+                    - $executedMinor
+            );
+
+            if (
+                $remainingMinor <= 0
+                || $data->amountMinor > $remainingMinor
+            ) {
+                throw new DomainException(
+                    'El importe solicitado supera el saldo económico pendiente de ejecución.'
+                );
             }
 
             if (PurchasePaymentRequest::query()

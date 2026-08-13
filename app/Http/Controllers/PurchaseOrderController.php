@@ -180,6 +180,8 @@ class PurchaseOrderController extends Controller
             'receipts.obligations.paymentRequests.requestedBy:id,name',
             'receipts.obligations.paymentRequests.approvedBy:id,name',
             'receipts.obligations.paymentRequests.resolvedBy:id,name',
+            'receipts.obligations.paymentRequests.execution.executedBy:id,name',
+            'receipts.obligations.paymentRequests.execution.cashMovement:id,public_id,purchase_payment_execution_id,direction,type,amount_minor,currency_code,occurred_at',
         ]);
 
         return view('purchases.show', [

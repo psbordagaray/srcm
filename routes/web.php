@@ -672,6 +672,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->name('purchase-payment-requests.cancel');
                 });
 
+            Route::middleware('can:execute-purchase-payments')
+                ->group(function () {
+                    Route::post(
+                        'purchases/payment-requests/{purchasePaymentRequest:public_id}/execute',
+                        [PurchasePaymentRequestController::class, 'execute']
+                    )
+                        ->whereUuid('purchasePaymentRequest')
+                        ->name('purchase-payment-requests.execute');
+                });
             Route::middleware('can:approve-purchase-payments')
                 ->group(function () {
                     Route::post(

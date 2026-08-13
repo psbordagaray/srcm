@@ -306,5 +306,15 @@ Reglas:
 - Operational Attention distribuye solicitud, aprobación, ejecución y resultado
   sin convertirse en segunda verdad del pago.
 
+P4F.3 Foundation fija para efectivo:
+- `PurchasePaymentExecution` conserva la ejecución como hecho separado de la autorización;
+- la autorización se consume por su importe exacto; pagos parciales usan autorizaciones parciales sucesivas contra el saldo de la obligación;
+- el ejecutor no puede ser quien aprobó y debe poseer turno abierto propio sobre el `cash_box` autorizado;
+- antes de ejecutar se vuelve a calcular el efectivo esperado; no se permite un egreso superior al esperado actual;
+- la transacción crea `CashMovement::purchase_payment` con dirección `out` y vínculo único a la ejecución;
+- `purchase_payment` no tiene destino interno, `CommercePayment`, retiro de seguridad, reason code ni nota libre en el ledger; el contexto vive en la ejecución estructurada;
+- sólo la ejecución confirmada cambia el esperado de Caja; solicitud y aprobación continúan sin efecto monetario;
+- banco/billetera permanecen fuera de esta Foundation y no deben simularse con `CashMovement`.
+
 ADR rector para P4E/P4F y evolución P8/P9:
 `docs/35_ADR_HECHOS_MONETARIOS_APLICADO_ENTREGADO_VUELTO_OBLIGACION_DESEMBOLSO_V1.md`.

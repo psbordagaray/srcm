@@ -71,6 +71,13 @@
                                             $activePaymentRequest = $obligation->paymentRequests->first(
                                                 fn ($candidate) => $candidate->status->isActive()
                                             );
+                                            $executedPaymentMinor = (int) $obligation->paymentRequests->sum(
+                                                fn ($candidate) => (int) ($candidate->execution?->amount_minor ?? 0)
+                                            );
+                                            $remainingPaymentMinor = max(
+                                                0,
+                                                (int) $obligation->amount_minor - $executedPaymentMinor
+                                            );
                                             $compatibleOrigins = $paymentOrigins->where(
                                                 'currency_code',
                                                 $obligation->currency_code
@@ -85,7 +92,7 @@
                                                 <div id="payment-request-{{ $paymentRequest->public_id }}" class="mt-3 rounded-xl border border-slate-700 bg-slate-950/60 p-3">
                                                     <div class="flex flex-wrap items-start justify-between gap-3">
                                                         <div>
-                                                            <p class="text-xs font-bold uppercase tracking-wider {{ $paymentRequest->status === \App\Enums\PurchasePaymentRequestStatus::Approved ? 'text-emerald-300' : ($paymentRequest->status === \App\Enums\PurchasePaymentRequestStatus::Pending ? 'text-amber-300' : 'text-slate-300') }}">{{ mb_strtoupper($paymentRequest->status->label(), 'UTF-8') }} · SIN PAGO</p>
+                                                            <p class="text-xs font-bold uppercase tracking-wider {{ in_array($paymentRequest->status, [\App\Enums\PurchasePaymentRequestStatus::Approved, \App\Enums\PurchasePaymentRequestStatus::Executed], true) ? 'text-emerald-300' : ($paymentRequest->status === \App\Enums\PurchasePaymentRequestStatus::Pending ? 'text-amber-300' : 'text-slate-300') }}">{{ mb_strtoupper($paymentRequest->status->label(), 'UTF-8') }}{{ $paymentRequest->status === \App\Enums\PurchasePaymentRequestStatus::Executed ? '' : ' · SIN PAGO' }}</p>
                                                             <p class="mt-2 text-xs text-slate-400">Solicitó {{ $paymentRequest->requestedBy->name }} · {{ $paymentRequest->requested_at->timezone(config('app.display_timezone', 'America/Argentina/Buenos_Aires'))->format('d/m/Y H:i') }}</p>
                                                             <p class="mt-1 text-xs text-slate-400">Origen propuesto: {{ $paymentRequest->originFinancialAccount->name }} · {{ $paymentRequest->originFinancialAccount->type->label() }}</p>
                                                             @if($paymentRequest->request_note)<p class="mt-1 text-xs text-slate-400">Nota: {{ $paymentRequest->request_note }}</p>@endif
@@ -96,6 +103,64 @@
                                                         </div>
                                                         <p class="font-mono text-sm font-bold text-cyan-200">{{ $paymentRequest->currency_code }} {{ number_format($paymentRequest->amount_minor / 100, 2, ',', '.') }}</p>
                                                     </div>
+
+
+                                                    @if($paymentRequest->execution)
+                                                        <div class="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3">
+                                                            <p class="text-xs font-bold uppercase tracking-wider text-emerald-300">Pago en efectivo ejecutado</p>
+                                                            <p class="mt-2 text-xs text-slate-300">
+                                                                Ejecutó {{ $paymentRequest->execution->executedBy->name }}
+                                                                · {{ $paymentRequest->execution->executed_at->timezone(config('app.display_timezone', 'America/Argentina/Buenos_Aires'))->format('d/m/Y H:i') }}
+                                                            </p>
+                                                            @if($paymentRequest->execution->execution_reference)
+                                                                <p class="mt-1 text-xs text-slate-400">Referencia: {{ $paymentRequest->execution->execution_reference }}</p>
+                                                            @endif
+                                                            @if($paymentRequest->execution->execution_note)
+                                                                <p class="mt-1 text-xs text-slate-400">Nota: {{ $paymentRequest->execution->execution_note }}</p>
+                                                            @endif
+                                                            @if($paymentRequest->execution->cashMovement)
+                                                                <p class="mt-1 text-[11px] text-slate-500">
+                                                                    CashMovement {{ $paymentRequest->execution->cashMovement->public_id }}
+                                                                    · egreso {{ $paymentRequest->execution->cashMovement->currency_code }}
+                                                                    {{ number_format($paymentRequest->execution->cashMovement->amount_minor / 100, 2, ',', '.') }}
+                                                                </p>
+                                                            @endif
+                                                        </div>
+                                                    @endif
+
+                                                    @if(
+                                                        $paymentRequest->status === \App\Enums\PurchasePaymentRequestStatus::Approved
+                                                        && $paymentRequest->originFinancialAccount->type === \App\Enums\FinancialAccountType::CashBox
+                                                        && (int) $paymentRequest->approved_by_user_id !== (int) auth()->id()
+                                                    )
+                                                        @can('execute-purchase-payments')
+                                                            <form
+                                                                method="POST"
+                                                                action="{{ route('purchase-payment-requests.execute', $paymentRequest) }}"
+                                                                class="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/5 p-3"
+                                                                onsubmit="return window.confirm('Confirmar egreso real de {{ $paymentRequest->currency_code }} {{ number_format($paymentRequest->amount_minor / 100, 2, ',', '.') }} desde {{ $paymentRequest->originFinancialAccount->name }}. Esta ejecución afectará Caja.');"
+                                                            >
+                                                                @csrf
+                                                                <input type="hidden" name="idempotency_key" value="purchase-ui:payment-execute:{{ \Illuminate\Support\Str::uuid() }}">
+                                                                <p class="text-xs font-bold uppercase tracking-wider text-amber-200">P4F.3 · Ejecución irreversible</p>
+                                                                <p class="mt-1 text-[11px] text-slate-400">
+                                                                    Esta acción registra un egreso real de
+                                                                    <strong class="text-slate-200">{{ $paymentRequest->currency_code }} {{ number_format($paymentRequest->amount_minor / 100, 2, ',', '.') }}</strong>
+                                                                    desde {{ $paymentRequest->originFinancialAccount->name }}.
+                                                                    Requiere un turno abierto propio sobre esa caja.
+                                                                </p>
+                                                                <div class="mt-3 grid gap-2 lg:grid-cols-2">
+                                                                    <input name="execution_reference" maxlength="180" placeholder="Referencia / recibo opcional" class="rounded-lg border-slate-700 bg-slate-950 text-xs text-slate-100">
+                                                                    <input name="execution_note" maxlength="1000" placeholder="Nota de ejecución opcional" class="rounded-lg border-slate-700 bg-slate-950 text-xs text-slate-100">
+                                                                </div>
+                                                                <label class="mt-3 flex items-start gap-2 text-xs text-amber-100">
+                                                                    <input type="checkbox" name="confirm_execute" value="1" required class="mt-0.5 rounded border-slate-600 bg-slate-950">
+                                                                    <span>Confirmo que el efectivo será entregado al beneficiario y que SRCM debe registrar ahora el egreso real.</span>
+                                                                </label>
+                                                                <button type="submit" class="mt-3 rounded-lg bg-amber-300 px-4 py-2.5 text-sm font-bold text-slate-950">Ejecutar pago en efectivo</button>
+                                                            </form>
+                                                        @endcan
+                                                    @endif
 
                                                     @if($paymentRequest->status === \App\Enums\PurchasePaymentRequestStatus::Pending)
                                                         @can('approve-purchase-payments')
@@ -143,14 +208,14 @@
                                             @endforeach
 
                                             @can('request-purchase-payments')
-                                                @if(! $activePaymentRequest)
+                                                @if(! $activePaymentRequest && $remainingPaymentMinor > 0)
                                                     @if($compatibleOrigins->isNotEmpty())
                                                         <form method="POST" action="{{ route('purchase-payment-requests.store', ['purchaseOrder' => $order->public_id, 'purchaseObligation' => $obligation->public_id]) }}" class="mt-3 grid gap-3 rounded-xl border border-cyan-400/15 bg-cyan-400/5 p-3 lg:grid-cols-2">
                                                             @csrf
                                                             <input type="hidden" name="idempotency_key" value="purchase-ui:payment-request:{{ \Illuminate\Support\Str::uuid() }}">
                                                             <div>
                                                                 <label class="text-[11px] font-semibold text-slate-400">Importe a solicitar</label>
-                                                                <input type="number" name="amount" min="0.01" step="0.01" max="{{ number_format($obligation->amount_minor / 100, 2, '.', '') }}" value="{{ number_format($obligation->amount_minor / 100, 2, '.', '') }}" required class="mt-1 w-full rounded-lg border-slate-700 bg-slate-950 font-mono text-sm text-slate-100">
+                                                                <input type="number" name="amount" min="0.01" step="0.01" max="{{ number_format($remainingPaymentMinor / 100, 2, '.', '') }}" value="{{ number_format($remainingPaymentMinor / 100, 2, '.', '') }}" required class="mt-1 w-full rounded-lg border-slate-700 bg-slate-950 font-mono text-sm text-slate-100">
                                                                 <p class="mt-1 text-[11px] text-slate-500">Puede ser parcial. Nunca puede superar la obligación.</p>
                                                             </div>
                                                             <div>
@@ -173,6 +238,8 @@
                                                     @else
                                                         <p class="mt-3 text-xs text-amber-200">No hay cuentas financieras activas compatibles con {{ $obligation->currency_code }} para proponer como origen.</p>
                                                     @endif
+                                                @elseif($remainingPaymentMinor <= 0)
+                                                    <p class="mt-3 text-xs font-semibold text-emerald-300">La obligación quedó cubierta por ejecuciones confirmadas. El hecho original permanece inmutable.</p>
                                                 @else
                                                     <p class="mt-3 text-[11px] text-slate-500">Hay una solicitud pendiente o autorizada. Debe resolverse antes de crear otra.</p>
                                                 @endif
