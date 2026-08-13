@@ -9,6 +9,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class PurchaseObligation extends Model
@@ -108,6 +109,14 @@ class PurchaseObligation extends Model
             User::class,
             'recognized_by_user_id'
         );
+    }
+
+    public function paymentRequests(): HasMany
+    {
+        return $this->hasMany(
+            PurchasePaymentRequest::class,
+            'purchase_obligation_id'
+        )->orderBy('id');
     }
 
     private function guardCreation(): void

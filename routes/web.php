@@ -11,6 +11,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\PurchaseObligationController;
+use App\Http\Controllers\PurchasePaymentRequestController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseReceiptController;
 use App\Http\Controllers\CompatibilityController;
@@ -653,6 +654,47 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->name('purchase-orders.obligations.store');
                 });
 
+            Route::middleware('can:request-purchase-payments')
+                ->group(function () {
+                    Route::post(
+                        'purchases/{purchaseOrder}/obligations/{purchaseObligation}/payment-requests',
+                        [PurchasePaymentRequestController::class, 'store']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->whereUuid('purchaseObligation')
+                        ->name('purchase-payment-requests.store');
+
+                    Route::post(
+                        'purchases/payment-requests/{purchasePaymentRequest:public_id}/cancel',
+                        [PurchasePaymentRequestController::class, 'cancel']
+                    )
+                        ->whereUuid('purchasePaymentRequest')
+                        ->name('purchase-payment-requests.cancel');
+                });
+
+            Route::middleware('can:approve-purchase-payments')
+                ->group(function () {
+                    Route::post(
+                        'purchases/payment-requests/{purchasePaymentRequest:public_id}/approve',
+                        [PurchasePaymentRequestController::class, 'approve']
+                    )
+                        ->whereUuid('purchasePaymentRequest')
+                        ->name('purchase-payment-requests.approve');
+
+                    Route::post(
+                        'purchases/payment-requests/{purchasePaymentRequest:public_id}/reject',
+                        [PurchasePaymentRequestController::class, 'reject']
+                    )
+                        ->whereUuid('purchasePaymentRequest')
+                        ->name('purchase-payment-requests.reject');
+
+                    Route::post(
+                        'purchases/payment-requests/{purchasePaymentRequest:public_id}/expire',
+                        [PurchasePaymentRequestController::class, 'expire']
+                    )
+                        ->whereUuid('purchasePaymentRequest')
+                        ->name('purchase-payment-requests.expire');
+                });
             Route::middleware('can:cancel-purchase-orders')
                 ->group(function () {
                     Route::post(

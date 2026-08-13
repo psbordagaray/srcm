@@ -5,9 +5,11 @@ namespace App\Domain\Attention;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\CashSecurityDropRequestStatus;
 use App\Enums\InventoryNegativeRequestStatus;
+use App\Enums\PurchasePaymentRequestStatus;
 use App\Models\CashSecurityDropRequest;
 use App\Models\InventoryNegativeRequest;
 use App\Models\OperationalAttentionReceipt;
+use App\Models\PurchasePaymentRequest;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -68,6 +70,7 @@ final class OperationalAttentionReader
 
         $items = $items
             ->concat($this->cashSecurityDropItems($actor, $organizationId))
+            ->concat($this->purchasePaymentItems($actor, $organizationId))
             ->concat($this->inventoryOverrideItems($actor, $organizationId));
 
         if (! $includeAcknowledged) {
@@ -287,6 +290,187 @@ final class OperationalAttentionReader
                         acknowledgeable: true
                     ));
                 }
+            }
+        }
+
+        return $items;
+    }
+
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function purchasePaymentItems(
+        User $actor,
+        int $organizationId
+    ): Collection {
+        $items = collect();
+
+        if ($actor->can('approve-purchase-payments')) {
+            $pending = PurchasePaymentRequest::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'status',
+                    PurchasePaymentRequestStatus::Pending->value
+                )
+                ->where('requested_by_user_id', '!=', $actor->id)
+                ->with([
+                    'requestedBy:id,name',
+                    'originFinancialAccount:id,name',
+                    'obligation:id,public_id,purchase_order_id,beneficiary_business_party_id',
+                    'obligation.order:id,public_id',
+                    'obligation.beneficiary:id,name',
+                ])
+                ->orderBy('requested_at')
+                ->orderBy('id')
+                ->get();
+
+            foreach ($pending as $request) {
+                $items->push($this->item(
+                    sourceType: 'purchase_payment_request',
+                    sourcePublicId: $request->public_id,
+                    state:
+                        PurchasePaymentRequestStatus::Pending->value,
+                    kind: 'action',
+                    severity: 'warning',
+                    title: 'Autorizar pago a proveedor',
+                    detail: ($request->requestedBy?->name ?? 'Usuario')
+                        .' solicita '
+                        .$this->money(
+                            $request->amount_minor,
+                            $request->currency_code
+                        )
+                        .' para '
+                        .($request->obligation?->beneficiary?->name
+                            ?? 'beneficiario')
+                        .' desde '
+                        .($request->originFinancialAccount?->name
+                            ?? 'cuenta propuesta')
+                        .'. Autorizar no ejecuta el pago.',
+                    url: route(
+                        'purchase-orders.show',
+                        $request->obligation->order
+                    )
+                        .'#payment-request-'.$request->public_id,
+                    occurredAt: $request->requested_at,
+                    priority: 9,
+                    acknowledgeable: false
+                ));
+            }
+        }
+
+        if ($actor->can('request-purchase-payments')) {
+            $own = PurchasePaymentRequest::query()
+                ->forOrganization($organizationId)
+                ->where('requested_by_user_id', $actor->id)
+                ->whereIn('status', [
+                    PurchasePaymentRequestStatus::Approved->value,
+                    PurchasePaymentRequestStatus::Rejected->value,
+                    PurchasePaymentRequestStatus::Cancelled->value,
+                    PurchasePaymentRequestStatus::Expired->value,
+                ])
+                ->with([
+                    'approvedBy:id,name',
+                    'resolvedBy:id,name',
+                    'originFinancialAccount:id,name',
+                    'obligation:id,public_id,purchase_order_id,beneficiary_business_party_id',
+                    'obligation.order:id,public_id',
+                    'obligation.beneficiary:id,name',
+                ])
+                ->latest('requested_at')
+                ->latest('id')
+                ->limit(20)
+                ->get();
+
+            foreach ($own as $request) {
+                $url = route(
+                    'purchase-orders.show',
+                    $request->obligation->order
+                )
+                    .'#payment-request-'.$request->public_id;
+
+                if (
+                    $request->status
+                    === PurchasePaymentRequestStatus::Approved
+                ) {
+                    $items->push($this->item(
+                        sourceType: 'purchase_payment_request',
+                        sourcePublicId: $request->public_id,
+                        state:
+                            PurchasePaymentRequestStatus::Approved->value,
+                        kind: 'action',
+                        severity: 'success',
+                        title: 'Pago autorizado · ejecución pendiente',
+                        detail: ($request->approvedBy?->name
+                            ?? 'Administración')
+                            .' autorizó '
+                            .$this->money(
+                                $request->amount_minor,
+                                $request->currency_code
+                            )
+                            .' para '
+                            .($request->obligation?->beneficiary?->name
+                                ?? 'beneficiario')
+                            .'. P4F.3 deberá ejecutar el desembolso.',
+                        url: $url,
+                        occurredAt: $request->approved_at
+                            ?? $request->requested_at,
+                        priority: 6,
+                        acknowledgeable: false
+                    ));
+
+                    continue;
+                }
+
+                $title = match ($request->status) {
+                    PurchasePaymentRequestStatus::Rejected =>
+                        'Solicitud de pago rechazada',
+                    PurchasePaymentRequestStatus::Cancelled =>
+                        'Solicitud de pago cancelada',
+                    PurchasePaymentRequestStatus::Expired =>
+                        'Autorización de pago vencida',
+                    default => 'Solicitud de pago resuelta',
+                };
+
+                $severity = match ($request->status) {
+                    PurchasePaymentRequestStatus::Rejected =>
+                        'danger',
+                    PurchasePaymentRequestStatus::Expired =>
+                        'warning',
+                    default => 'neutral',
+                };
+
+                $detail = 'La solicitud de '
+                    .$this->money(
+                        $request->amount_minor,
+                        $request->currency_code
+                    )
+                    .' para '
+                    .($request->obligation?->beneficiary?->name
+                        ?? 'beneficiario')
+                    .' quedó '
+                    .mb_strtolower($request->status->label())
+                    .'.';
+
+                if (filled($request->resolution_note)) {
+                    $detail .= ' Motivo: '
+                        .$request->resolution_note;
+                }
+
+                $items->push($this->item(
+                    sourceType: 'purchase_payment_request',
+                    sourcePublicId: $request->public_id,
+                    state: $request->status->value,
+                    kind: 'result',
+                    severity: $severity,
+                    title: $title,
+                    detail: $detail,
+                    url: $url,
+                    occurredAt: $request->resolved_at
+                        ?? $request->requested_at,
+                    priority: 30,
+                    acknowledgeable: true
+                ));
             }
         }
 

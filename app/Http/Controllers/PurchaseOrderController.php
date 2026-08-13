@@ -12,6 +12,7 @@ use App\Http\Requests\CancelPurchaseOrderRequest;
 use App\Http\Requests\SavePurchaseOrderRequest;
 use App\Models\BusinessParty;
 use App\Models\CatalogProduct;
+use App\Models\FinancialAccount;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\SupplierOffer;
@@ -175,6 +176,10 @@ class PurchaseOrderController extends Controller
             'receipts.lines.inventoryLocation:id,name',
             'receipts.obligations.beneficiary:id,name,tax_id',
             'receipts.obligations.recognizedBy:id,name',
+            'receipts.obligations.paymentRequests.originFinancialAccount:id,name,type,currency_code,active',
+            'receipts.obligations.paymentRequests.requestedBy:id,name',
+            'receipts.obligations.paymentRequests.approvedBy:id,name',
+            'receipts.obligations.paymentRequests.resolvedBy:id,name',
         ]);
 
         return view('purchases.show', [
@@ -185,6 +190,18 @@ class PurchaseOrderController extends Controller
                     ->forOrganization((int) $order->organization_id)
                     ->orderBy('name')
                     ->get(['id', 'name', 'tax_id']),
+            'paymentOrigins' =>
+                FinancialAccount::query()
+                    ->forOrganization((int) $order->organization_id)
+                    ->where('active', true)
+                    ->orderBy('name')
+                    ->get([
+                        'id',
+                        'name',
+                        'type',
+                        'currency_code',
+                        'external_label',
+                    ]),
         ]);
     }
 

@@ -277,6 +277,22 @@ Contrato de Foundation P4F.1:
 - segregación de funciones cuando la política lo exija;
 - autorización ligada por fingerprint a obligación, beneficiario, importe, moneda y origen propuesto.
 
+Contrato Foundation P4F.2:
+- la solicitud nace exclusivamente desde una `PurchaseObligation` reconocida;
+- beneficiario y moneda se heredan de la obligación y no son editables;
+- el solicitante puede proponer un importe total o parcial mayor que cero y nunca superior a la obligación;
+- el origen propuesto es una `FinancialAccount` activa, privada de la organización y de la misma moneda;
+- sólo puede existir una solicitud activa (`pending` o `approved`) por obligación;
+- Operador/Administrador pueden solicitar; Administrador aprueba, rechaza o expira;
+- `solicitante != aprobador` se aplica de forma fail-closed;
+- una solicitud aprobada ya no se rechaza: puede cancelarse o expirar antes de la futura ejecución;
+- solicitante o Administrador pueden cancelar con motivo explícito;
+- solicitud y aprobación tienen claves de idempotencia y fingerprints separados;
+- el fingerprint autorizable liga obligación, huella de obligación, beneficiario, importe, moneda, origen y contexto;
+- Operational Attention lleva el pendiente al aprobador y el resultado/acción al solicitante;
+- ninguna transición P4F.2 crea `CashMovement`, altera `FinancialAccount`, modifica Inventario ni marca la obligación como pagada;
+- P4F.3 reforzará el importe disponible con el ledger real de ejecuciones y consumirá la autorización mediante un hecho de desembolso, no reescribiendo la obligación.
+
 **P4F.3 — Ejecución**
 - pago total o parcial;
 - cuenta/caja de origen explícita;

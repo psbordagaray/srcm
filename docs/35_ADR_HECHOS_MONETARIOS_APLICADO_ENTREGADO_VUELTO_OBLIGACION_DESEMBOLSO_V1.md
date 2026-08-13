@@ -146,6 +146,28 @@ Reglas de Foundation:
 
 P4F.2 agregará solicitud/autorización sobre esta verdad. P4F.3 agregará ejecución total/parcial sin reescribir la obligación original.
 
+## 6.2. P4F.2 — Solicitud y autorización
+
+P4F.2 materializa la decisión previa al desembolso sin convertirla en dinero movido.
+
+Contrato:
+- fuente: `PurchaseObligation` inmutable;
+- beneficiario y moneda se copian de la obligación;
+- importe solicitado explícito, total o parcial, `> 0` y nunca superior a la obligación en esta foundation;
+- origen propuesto: `FinancialAccount` activa, mismo tenant y moneda;
+- una sola solicitud activa por obligación para evitar autorizaciones concurrentes contradictorias;
+- `pending -> approved` requiere Administrador diferente del solicitante;
+- `pending -> rejected` requiere Administrador diferente del solicitante;
+- `pending|approved -> cancelled` requiere solicitante o Administrador y motivo;
+- `pending|approved -> expired` requiere Administrador diferente del solicitante y motivo;
+- una autorización ya otorgada no se rechaza: se cancela o expira antes de ejecutar;
+- solicitud, aprobación y resolución conservan actores, timestamps e idempotencia separados;
+- el fingerprint de solicitud liga organización, obligación + huella, beneficiario, importe, moneda, origen propuesto y contexto;
+- el fingerprint de aprobación liga la huella de solicitud al aprobador y su nota;
+- solicitar o autorizar nunca crea `CashMovement`, nunca debita `FinancialAccount` y nunca muta Inventario;
+- Operational Attention proyecta `pendiente -> aprobador` y `aprobado/rechazado/cancelado/vencido -> solicitante`;
+- P4F.3 agregará el hecho de ejecución y el cálculo de saldo ejecutable sin reescribir estos hechos.
+
 ## 7. Autoridad
 
 Autorizar no mueve dinero.
