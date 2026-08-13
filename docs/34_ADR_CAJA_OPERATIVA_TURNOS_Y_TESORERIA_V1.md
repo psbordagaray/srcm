@@ -147,8 +147,9 @@ Reglas:
 - `commerce_payment_id` queda nulo en retiros de seguridad;
 - el retiro reduce el efectivo esperado del turno, pero no modifica ventas ni cobros históricos;
 - el fondo inicial continúa siendo baseline, no un movimiento comercial;
-- Administrador supervisa; Operador registra retiros únicamente sobre su propio turno;
-- P4C no implementa cierre/arqueo, faltantes/sobrantes ni pagos a proveedor/flete.
+- el retiro histórico P4C original permitía registro directo por Operador sobre su propio turno;
+- el hardening P4C/P4D posterior reemplaza ese camino por solicitud, autorización y ejecución separadas;
+- P4C no implementa pagos a proveedor/flete.
 
 Se incorpora `FinancialAccountType::CashReserve` para representar caja fuerte,
 tesorería o reserva física de efectivo sin confundirla con una caja operativa
@@ -160,3 +161,97 @@ Efectivo esperado del turno:
 
 P4D usará esta proyección como base del arqueo y cierre, sin corregir
 silenciosamente diferencias.
+
+## 10. P4D — arqueo, cierre y diferencias
+
+P4D agrega un hecho histórico inmutable `CashRegisterClosure` por turno.
+
+Flujo normal:
+
+`turno open → conteo físico → closing_requested transitorio → cierre → closed`
+
+Reglas:
+
+- `expected_amount_minor` se congela desde `opening_amount_minor + entradas - salidas`;
+- `counted_amount_minor` es declaración humana explícita;
+- `difference_minor = counted_amount_minor - expected_amount_minor`;
+- una diferencia distinta de cero exige motivo estructurado y nota;
+- la diferencia no crea ningún `CashMovement` implícito;
+- el cierre no modifica ventas, pagos ni retiros previos;
+- la hora de cierre la fija el servidor;
+- el operador sólo cierra su propio turno;
+- supervisión puede revisar el historial de cierres de la organización;
+- idempotency key + fingerprint protegen reintentos;
+- el cierre y su evidencia no admiten update ni delete;
+- el turno cerrado deja de aceptar movimientos de efectivo;
+- una caja cerrada vuelve a quedar disponible para una apertura posterior.
+
+La transición `closing_requested` se usa dentro de la transacción de cierre para
+congelar el libro antes de calcular el arqueo. No es una corrección contable ni
+un movimiento de caja.
+
+P4D no implementa pagos a proveedor/flete, devoluciones de efectivo ni ajustes
+automáticos de faltantes o sobrantes.
+
+## 11. Hardening P4C/P4D — selector operativo y autorización de retiros
+
+La GRAN PRUEBA manual detectó dos riesgos de superficie que se corrigen antes del
+checkpoint definitivo:
+
+1. `Retiro de seguridad` y `Arqueo y cierre` no deben presentarse como dos
+   formularios sensibles simultáneamente activos;
+2. un cajero/operador no debe poder decidir y ejecutar unilateralmente una
+   extracción de efectivo.
+
+La superficie del turno pasa a ser un **selector de operación**. El usuario elige
+una operación y SRCM despliega sólo ese flujo. Por ahora:
+
+- `Retiro de seguridad`;
+- `Arqueo y cierre`.
+
+Esto constituye el primer caso concreto de una futura superficie construida desde
+módulos + capacidades + alcance organizacional.
+
+### Retiro de seguridad autorizado
+
+Flujo vinculante:
+
+`solicitud → autorización administrativa → ejecución física`
+
+Reglas:
+
+- solicitar no crea `CashMovement` ni reduce el efectivo esperado;
+- autorizar no crea `CashMovement` ni reduce el efectivo esperado;
+- sólo ejecutar una autorización vigente crea exactamente un
+  `CashMovement::security_drop`;
+- `requested_by`, `approved_by` y `executed_by` se conservan por separado;
+- el solicitante no puede autoautorizarse;
+- en esta etapa autoriza un Administrador/supervisor;
+- la ejecución corresponde al responsable del turno que hizo la solicitud;
+- la autorización se vincula por fingerprint a turno, caja, origen, destino,
+  importe, moneda, motivo y nota;
+- cambiar cualquier dato autorizable exige una nueva solicitud;
+- una autorización es de un solo uso;
+- `pending`, `approved`, `executed`, `rejected`, `cancelled` y `expired` son
+  estados explícitos del workflow;
+- una solicitud pendiente o autorizada debe resolverse antes del cierre;
+- la DB impide insertar un nuevo `security_drop` sin solicitud aprobada válida;
+- el `security_drop` histórico ya registrado antes de este hardening se conserva
+  intacto como evidencia real del desarrollo y no se reescribe.
+
+La aprobación expresa autoridad. La ejecución expresa custodia física. Son hechos
+diferentes y SRCM no los fusiona.
+
+### Arqueo y cierre
+
+P4D conserva sus invariantes:
+
+`expected = opening + inflows - outflows`
+
+`difference = counted - expected`
+
+Una diferencia sigue siendo evidencia. Nunca se crea un movimiento compensatorio
+para hacer cuadrar silenciosamente la caja.
+
+La representación visual de diferencias usa código de moneda explícito, por
+ejemplo `− ARS 500,00`, y no símbolos locales ambiguos como `-$`.

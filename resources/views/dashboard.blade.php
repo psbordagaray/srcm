@@ -39,17 +39,67 @@
     @endphp
 
     <div class="space-y-6">
-        @can('override-inventory-negative')
-            @if(($summary['pending_negative_requests'] ?? 0) > 0)
-                <a href="{{ route('inventory-negative-authorizations.index', ['status' => 'pending']) }}" class="flex items-center justify-between gap-4 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-5 py-4 text-amber-50 shadow-lg shadow-amber-950/10 transition hover:bg-amber-400/15">
+        @if(($operationalAttention['count'] ?? 0) > 0)
+            <section
+                class="overflow-hidden rounded-2xl border border-amber-400/25 bg-amber-400/5 shadow-lg shadow-amber-950/10"
+                data-operational-attention-dashboard
+            >
+                <div class="flex items-center justify-between gap-4 border-b border-amber-400/10 px-5 py-4">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Autorización requerida</p>
-                        <p class="mt-1 font-semibold">{{ $summary['pending_negative_requests'] }} Override{{ $summary['pending_negative_requests'] === 1 ? '' : 's' }} pendiente{{ $summary['pending_negative_requests'] === 1 ? '' : 's' }} de revisión</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">
+                            Requiere tu atención
+                        </p>
+                        <p class="mt-1 text-sm text-slate-400">
+                            {{ $operationalAttention['count'] }}
+                            {{ $operationalAttention['count'] === 1 ? 'tema requiere' : 'temas requieren' }}
+                            una acción o que conozcas su resultado.
+                        </p>
                     </div>
-                    <span class="rounded-lg border border-amber-300/30 px-3 py-2 text-xs font-bold">Revisar</span>
-                </a>
-            @endif
-        @endcan
+                    <span class="rounded-full bg-amber-300 px-2.5 py-1 text-xs font-black text-slate-950">
+                        {{ $operationalAttention['count'] }}
+                    </span>
+                </div>
+
+                <div class="divide-y divide-white/5">
+                    @foreach($operationalAttention['items']->take(6) as $attentionItem)
+                        <div class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <a href="{{ $attentionItem['url'] }}" class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="text-sm font-bold text-white">
+                                        {{ $attentionItem['title'] }}
+                                    </span>
+                                    <span class="rounded-full border border-white/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider {{ $attentionItem['kind'] === 'action' ? 'text-amber-300' : 'text-cyan-300' }}">
+                                        {{ $attentionItem['kind'] === 'action' ? 'Acción requerida' : 'Resultado' }}
+                                    </span>
+                                </div>
+                                <p class="mt-1 text-sm leading-5 text-slate-400">
+                                    {{ $attentionItem['detail'] }}
+                                </p>
+                                <p class="mt-1 text-[11px] text-slate-600">
+                                    {{ $attentionItem['occurred_at']?->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }}
+                                </p>
+                            </a>
+
+                            <div class="flex shrink-0 items-center gap-2">
+                                <a href="{{ $attentionItem['url'] }}" class="sulu-button-secondary">
+                                    Abrir
+                                </a>
+
+                                @if($attentionItem['acknowledgeable'])
+                                    <form method="POST" action="{{ route('operational-attention.acknowledge') }}">
+                                        @csrf
+                                        <input type="hidden" name="attention_key" value="{{ $attentionItem['key'] }}">
+                                        <button type="submit" class="rounded-xl border border-white/10 px-3 py-2 text-xs font-bold text-slate-400 hover:border-white/20 hover:text-white">
+                                            Marcar visto
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
 
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <a

@@ -25,6 +25,7 @@ use App\Http\Controllers\ManufacturerController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationMemberController;
 use App\Http\Controllers\OrganizationProductPriceController;
+use App\Http\Controllers\OperationalAttentionController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ProfileController;
@@ -248,6 +249,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 [DashboardController::class, 'index']
             )->name('dashboard');
 
+            Route::post(
+                '/operational-attention/acknowledge',
+                [OperationalAttentionController::class, 'acknowledge']
+            )->name('operational-attention.acknowledge');
+
             Route::get(
                 '/search',
                 [GlobalSearchController::class, 'index']
@@ -411,9 +417,45 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->name('cash-registers.open');
 
                     Route::post(
-                        'financial/cash-registers/security-drops',
-                        [CashRegisterController::class, 'securityDrop']
-                    )->name('cash-registers.security-drops');
+                        'financial/cash-registers/security-drop-requests',
+                        [CashRegisterController::class, 'requestSecurityDrop']
+                    )->name('cash-registers.security-drop-requests.store');
+
+                    Route::post(
+                        'financial/cash-registers/security-drop-requests/{cashSecurityDropRequest:public_id}/execute',
+                        [CashRegisterController::class, 'executeSecurityDrop']
+                    )
+                        ->whereUuid('cashSecurityDropRequest')
+                        ->name('cash-registers.security-drop-requests.execute');
+
+                    Route::post(
+                        'financial/cash-registers/security-drop-requests/{cashSecurityDropRequest:public_id}/cancel',
+                        [CashRegisterController::class, 'cancelSecurityDrop']
+                    )
+                        ->whereUuid('cashSecurityDropRequest')
+                        ->name('cash-registers.security-drop-requests.cancel');
+
+                    Route::post(
+                        'financial/cash-registers/close',
+                        [CashRegisterController::class, 'close']
+                    )->name('cash-registers.close');
+                });
+
+            Route::middleware('can:approve-cash-security-drop')
+                ->group(function () {
+                    Route::post(
+                        'financial/cash-registers/security-drop-requests/{cashSecurityDropRequest:public_id}/approve',
+                        [CashRegisterController::class, 'approveSecurityDrop']
+                    )
+                        ->whereUuid('cashSecurityDropRequest')
+                        ->name('cash-registers.security-drop-requests.approve');
+
+                    Route::post(
+                        'financial/cash-registers/security-drop-requests/{cashSecurityDropRequest:public_id}/reject',
+                        [CashRegisterController::class, 'rejectSecurityDrop']
+                    )
+                        ->whereUuid('cashSecurityDropRequest')
+                        ->name('cash-registers.security-drop-requests.reject');
                 });
 
             Route::middleware('can:manage-cash-registers')

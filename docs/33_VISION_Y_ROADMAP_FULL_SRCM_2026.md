@@ -82,17 +82,41 @@ Los rubros con dominios muy especializados —restaurantes, hoteles, clínicas, 
 
 ---
 
-## 2.3. Knowledge Universe como identidad del producto
+## 2.3. Knowledge Universe como capacidad diferencial opcional
 
-SRCM no debe degradarse a un ERP/POS convencional.
+SRCM conserva Knowledge Universe como una de sus capacidades diferenciales, pero la plataforma no obliga a cada empresa a exponer ni operar esa complejidad. El catálogo comercial universal debe funcionar plenamente por sí mismo.
 
-El Knowledge Core es una capa transversal permanente que conecta:
+Cuando la organización habilita Knowledge, el Core conecta:
 
 `producto ↔ modelo ↔ código ↔ compatibilidad ↔ componente ↔ falla ↔ solución ↔ riesgo ↔ evidencia ↔ fuente`
 
-El sistema debe aprender de operaciones internas y de fuentes externas verificables, siempre conservando provenance, confianza, contexto y validación.
+El sistema puede aprender de operaciones internas y de fuentes externas verificables, siempre conservando provenance, confianza, contexto y validación.
 
-Los datos privados de una organización nunca se vuelven conocimiento compartido por defecto.
+Los datos privados de una organización nunca se vuelven conocimiento compartido por defecto. Deshabilitar la superficie Knowledge no borra historia ni evidencia y no afecta productos, stock, compras o ventas.
+
+### 2.3.1. Potencia modular y superficies por organización
+
+SRCM se concibe como una plataforma de capacidades. El Dueño/Admin general podrá decidir qué módulos utiliza la organización y delegar a administradores de segundo nivel sólo las configuraciones y empleados dentro de su alcance.
+
+Los roles actuales son presets iniciales. La autoridad futura evoluciona a capacidades granulares y alcances organizacionales. La navegación debe derivarse de esa misma verdad: una función deshabilitada o ajena al trabajo del usuario no ensucia su superficie cotidiana.
+
+Los presets por rubro aceleran la configuración inicial, pero nunca encierran a la empresa. Moda/belleza puede operar catálogo, variantes, compras, stock multisucursal, ventas, caja, clientes y promociones sin Knowledge técnico; repuestos/electro puede habilitar modelos, compatibilidades y conocimiento enriquecido sobre el mismo Core comercial.
+
+Principio:
+
+> **La potencia total pertenece a SRCM; la complejidad visible pertenece sólo a quien la necesita.**
+
+### 2.3.2. Atención operativa orientada a autoridad
+
+La modularidad define qué puede hacer cada persona; el Centro de Atención Operativa debe decirle qué requiere su intervención ahora.
+
+SRCM proyecta desde los hechos de dominio una bandeja personal de acciones y resultados, filtrada por organización, capacidad y alcance. La campana superior y el Dashboard consumen la misma proyección y llevan mediante deep-link al punto exacto de resolución.
+
+La proyección nunca sustituye Gates, Policies, reglas de dominio ni integridad DB. Tampoco crea una segunda verdad de negocio: una autorización sigue viviendo en su workflow original; la atención sólo hace visible que requiere acción o que produjo un resultado relevante.
+
+Principio:
+
+> **El usuario no busca pendientes; SRCM le presenta los pendientes que realmente le corresponden.**
 
 ---
 

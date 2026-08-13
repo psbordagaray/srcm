@@ -152,7 +152,7 @@ Fundación y superficies operativas ya desarrolladas:
 
 ---
 
-## 3. P4 — Caja operativa, turnos, efectivo y pagos a proveedores — PRÓXIMO
+## 3. P4 — Caja operativa, turnos, efectivo y pagos a proveedores — EN DESARROLLO
 
 P4 amplía el antiguo concepto “Efectivo y vuelto”. Su alcance vinculante es:
 
@@ -182,6 +182,17 @@ P4 amplía el antiguo concepto “Efectivo y vuelto”. Su alcance vinculante es
 - motivo y actor obligatorios cuando corresponda.
 
 Un retiro de seguridad **no es un gasto**: el dinero cambia de custodia/cuenta interna.
+
+Hardening vinculante P4C/P4D:
+- el cajero solicita el retiro; solicitar no mueve dinero;
+- un Administrador/supervisor diferente del solicitante autoriza o rechaza;
+- autorizar no mueve dinero;
+- el responsable del turno ejecuta físicamente una autorización vigente y de un solo uso;
+- `requested_by`, `approved_by` y `executed_by` quedan separados y auditados;
+- cambiar turno, caja, origen, destino, importe, moneda, motivo o nota exige nueva autorización;
+- una solicitud pendiente/autorizada debe resolverse antes del cierre;
+- el `security_drop` histórico previo al hardening se conserva sin reescritura;
+- la pantalla de turno expone un selector de operación y nunca mantiene Retiro + Arqueo como formularios sensibles simultáneamente activos.
 
 ### P4D — Arqueo y cierre
 - efectivo esperado;
@@ -603,6 +614,76 @@ Primero reglas determinísticas; IA después.
 - BI/export;
 - dashboards por rol.
 
+## P20 — Tablero de Módulos, Capacidades y Superficies
+
+Objetivo: que una misma plataforma SRCM pueda adaptarse desde un comercio pequeño hasta una empresa multisucursal compleja sin bifurcar el producto ni obligar a cada usuario a convivir con funciones que no necesita.
+
+Cadena de autoridad futura:
+
+`plataforma disponible → organización habilita módulos → autoridad delega capacidades → alcance limita dónde → usuario recibe su superficie`
+
+Contrato:
+- Dueño/Admin general habilita o deshabilita módulos de la organización;
+- administradores de segundo nivel reciben delegación limitada por capacidades y alcance;
+- roles como Admin/Operator/Viewer evolucionan a presets iniciales, no a la única fuente de autoridad;
+- el menú y las acciones visibles derivan de módulo habilitado + capacidad + alcance;
+- ocultar UI nunca sustituye autorización de backend/DB;
+- desactivar un módulo nunca borra historia: puede ocultar, dejar read-only o reactivar;
+- dependencias entre módulos deben ser explícitas;
+- presets por rubro son recomendaciones editables, nunca jaulas;
+- módulos podrán habilitarse globalmente o, cuando exista P14, por sucursal/ámbito;
+- operaciones sensibles pueden exigir segregación solicitante/autorizador/ejecutor y umbrales futuros.
+
+Presets orientativos:
+- Retail general;
+- Moda y belleza;
+- Electro / tecnología;
+- Repuestos / autopartes;
+- Servicios y reparaciones;
+- Mayorista / distribuidor;
+- Configuración personalizada.
+
+El **catálogo comercial universal** —producto, variantes, SKU/códigos, marca, categoría, precio, fotos y stock— debe funcionar plenamente sin Knowledge Universe. Modelos técnicos, compatibilidades, assertions y conocimiento enriquecido son una **capacidad avanzada opcional** que una organización puede habilitar cuando aporta valor real a su rubro.
+
+Principio vinculante:
+
+> **La potencia total pertenece a SRCM; la complejidad visible pertenece sólo a quien la necesita.**
+
+P20 completo se implementará en un bloque propio. Desde ahora cada módulo nuevo debe diseñarse compatible con este contrato.
+
+### Centro de Atención Operativa — capacidad transversal
+
+SRCM debe llevar los pendientes hacia la persona que puede resolverlos y los resultados hacia quien necesita conocerlos. Ningún usuario debería recorrer módulos para descubrir una autorización pendiente, un Override por revisar o el resultado de una decisión que inició.
+
+Base transversal:
+- campana superior con contador por actor;
+- bandeja de atención con deep-links al hecho exacto;
+- bloque `Requiere tu atención` en Dashboard;
+- separación entre `acción requerida` y `resultado a conocer`;
+- filtrado por organización + actor + capacidad + alcance;
+- el hecho de dominio sigue siendo la única fuente de verdad;
+- leído/ack, cuando sea necesario, conserva sólo metadata del usuario y nunca duplica el estado de negocio;
+- los pendientes accionables desaparecen al cambiar el hecho de estado;
+- los resultados terminales pueden reconocerse sin modificar la evidencia original;
+- badges de sidebar son una extensión opcional de la misma proyección, no contadores artesanales por módulo.
+
+Primeros proveedores:
+1. solicitudes de retiro de seguridad;
+2. Overrides de stock negativo.
+
+Extensiones previstas:
+- diferencias y excepciones de caja;
+- descuentos/precios con autoridad;
+- compras, pagos y tesorería;
+- recepciones con diferencias;
+- cancelaciones y garantías;
+- conciliaciones y anomalías;
+- cualquier workflow futuro que requiera prontitud operativa.
+
+Principio vinculante:
+
+> **Una decisión pendiente debe encontrar a quien puede resolverla; un resultado relevante debe encontrar a quien lo necesita.**
+
 ---
 
 # V2.0 — Operación avanzada / empresa escalable
@@ -757,13 +838,15 @@ Se comparte documento estructurado, no acceso a la base privada de la contrapart
 
 ---
 
-# Knowledge Universe — capa transversal permanente
+# Knowledge Universe — capacidad avanzada transversal y opcional
 
-El Knowledge Core no es una función decorativa de V3 ni un “chatbot futuro”. Es una capa transversal que debe preservarse durante toda la evolución de SRCM.
+Knowledge Universe sigue siendo una capacidad diferencial de SRCM, pero no una obligación visible ni una dependencia del catálogo comercial universal. Una organización puede deshabilitar su superficie técnica cuando su rubro no la necesita sin perder productos, ventas, compras, stock ni historia comercial.
 
-Cada módulo debe preguntarse:
+Cuando Knowledge está habilitado, los módulos compatibles deben preguntarse:
 
 **¿qué conocimiento produce esta operación y qué conocimiento podría ayudarla?**
+
+Deshabilitar Knowledge no borra entidades ni evidencia histórica. La capacidad puede permanecer oculta/read-only y reactivarse según las políticas futuras del Tablero de Módulos.
 
 Fuentes internas:
 - compras;
@@ -991,9 +1074,9 @@ Estas referencias deben verificarse de nuevo en fuentes oficiales antes de cada 
 
 1. **Fiscalidad desacoplada:** la venta comercial y el comprobante fiscal son verdades distintas. La integración con ARCA no debe borrar ni ocultar operaciones comerciales confirmadas.
 2. **Mercado objetivo amplio:** SRCM Full cubre horizontalmente retail, mayorista, distribución, servicios, reparación y omnicanalidad; los verticales especiales se construyen cuando el dominio lo justifique.
-3. **Knowledge Universe transversal:** conocimiento, compatibilidades, evidencia, fuentes externas y aprendizaje del ecosistema se preservan como una columna permanente de SRCM, no como accesorio tardío.
+3. **Knowledge Universe avanzado y opcional:** la plataforma preserva conocimiento, compatibilidades, evidencia y fuentes verificables, pero cada organización decide si esa capacidad forma parte de su superficie operativa; el catálogo comercial universal no depende de ella.
 4. **Privacidad por organización:** el conocimiento compartible nunca autoriza mezclar datos comerciales privados sin reglas explícitas.
-5. **Operación y conocimiento se retroalimentan:** comprar, vender, reparar, devolver y garantizar producen conocimiento; el conocimiento ayuda a comprar, vender, reparar y prevenir mejor.
+5. **Operación y conocimiento se retroalimentan cuando Knowledge está habilitado:** comprar, vender, reparar, devolver y garantizar pueden producir conocimiento; esa capa ayuda a comprar, vender, reparar y prevenir mejor sin ser obligatoria para rubros que no la necesitan.
 6. **Experiencia de tienda conectada:** price checker/kiosco, EAS y RFID consumen el mismo catálogo, precios, stock y reglas de SRCM.
 7. **Business Network opt-in:** empresas pueden descubrirse, cotizar e intercambiar documentos B2B sin exponer datos privados.
 8. **Cero doble carga evitable:** datos estructurados del proveedor prellenan compra/recepción del comprador.

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Dashboard;
 
+use App\Domain\Attention\OperationalAttentionReader;
 use App\Domain\Inventory\InventoryAvailabilityReader;
 use App\Domain\Inventory\InventoryQuantity;
 use App\Domain\Tenancy\CurrentOrganization;
@@ -24,7 +25,8 @@ final class DashboardReader
 {
     public function __construct(
         private readonly CurrentOrganization $currentOrganization,
-        private readonly InventoryAvailabilityReader $inventoryAvailability
+        private readonly InventoryAvailabilityReader $inventoryAvailability,
+        private readonly OperationalAttentionReader $operationalAttention
     ) {
     }
 
@@ -186,6 +188,8 @@ final class DashboardReader
             'recentPurchases' => $recentPurchases,
             'recentSales' => $recentSales,
             'recentAudit' => $recentAudit,
+            'operationalAttention' =>
+                $this->operationalAttention->read($actor),
         ];
     }
 

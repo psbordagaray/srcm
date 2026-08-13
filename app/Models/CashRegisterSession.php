@@ -8,6 +8,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class CashRegisterSession extends Model
@@ -72,6 +73,22 @@ class CashRegisterSession extends Model
     {
         return $this->hasMany(
             CashMovement::class,
+            'cash_register_session_id'
+        );
+    }
+
+    public function securityDropRequests(): HasMany
+    {
+        return $this->hasMany(
+            CashSecurityDropRequest::class,
+            'cash_register_session_id'
+        );
+    }
+
+    public function closure(): HasOne
+    {
+        return $this->hasOne(
+            CashRegisterClosure::class,
             'cash_register_session_id'
         );
     }

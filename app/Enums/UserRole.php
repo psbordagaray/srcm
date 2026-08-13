@@ -357,6 +357,21 @@ enum UserRole: string
         return $this === self::Admin;
     }
 
+    public function canRequestCashSecurityDrop(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
+    public function canApproveCashSecurityDrop(): bool
+    {
+        return $this === self::Admin;
+    }
+
+    public function canExecuteCashSecurityDrop(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
     public function canUseFinancialAccounts(): bool
     {
         return $this !== self::Viewer;

@@ -6,11 +6,11 @@ use App\Enums\CashSecurityDropReason;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class RecordCashSecurityDropRequest extends FormRequest
+class RequestCashSecurityDropRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('operate-cash-register')
+        return $this->user()?->can('request-cash-security-drop')
             ?? false;
     }
 
@@ -25,6 +25,7 @@ class RecordCashSecurityDropRequest extends FormRequest
             'idempotency_key' => trim(
                 (string) $this->input('idempotency_key')
             ),
+            'operation' => 'security_drop',
         ]);
     }
 
@@ -55,7 +56,11 @@ class RecordCashSecurityDropRequest extends FormRequest
                 'required',
                 'string',
                 'max:100',
-                'regex:/^cash-ui:security-drop:[0-9a-f-]{36}$/',
+                'regex:/^cash-ui:security-drop-request:[0-9a-f-]{36}$/',
+            ],
+            'operation' => [
+                'required',
+                'in:security_drop',
             ],
         ];
     }

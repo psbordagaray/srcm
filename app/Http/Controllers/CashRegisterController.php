@@ -5,15 +5,24 @@ namespace App\Http\Controllers;
 use App\Domain\Finance\CashLedgerRecorder;
 use App\Domain\Finance\CashRegisterManager;
 use App\Domain\Finance\CashRegisterSessionManager;
+use App\Domain\Finance\CashSecurityDropManager;
 use App\Domain\Tenancy\CurrentOrganization;
+use App\Enums\CashCountDifferenceReason;
 use App\Enums\CashRegisterSessionStatus;
 use App\Enums\CashSecurityDropReason;
+use App\Enums\CashSecurityDropRequestStatus;
 use App\Enums\FinancialAccountType;
+use App\Http\Requests\ApproveCashSecurityDropRequest;
+use App\Http\Requests\CloseCashRegisterSessionRequest;
+use App\Http\Requests\ExecuteCashSecurityDropRequest;
 use App\Http\Requests\OpenCashRegisterSessionRequest;
-use App\Http\Requests\RecordCashSecurityDropRequest;
+use App\Http\Requests\RequestCashSecurityDropRequest;
+use App\Http\Requests\ResolveCashSecurityDropRequest;
 use App\Http\Requests\SaveCashRegisterRequest;
 use App\Models\CashMovement;
 use App\Models\CashRegister;
+use App\Models\CashRegisterClosure;
+use App\Models\CashSecurityDropRequest;
 use App\Models\FinancialAccount;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -87,6 +96,51 @@ class CashRegisterController extends Controller
                 ->get()
             : collect();
 
+        $ownDropRequests = $currentSession
+            ? CashSecurityDropRequest::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'cash_register_session_id',
+                    $currentSession->id
+                )
+                ->where('requested_by_user_id', $actor->id)
+                ->with([
+                    'destinationFinancialAccount',
+                    'approvedBy',
+                    'executedBy',
+                    'resolvedBy',
+                    'movement',
+                ])
+                ->orderByDesc('requested_at')
+                ->orderByDesc('id')
+                ->limit(10)
+                ->get()
+            : collect();
+
+        $pendingDropApprovals = $actor->can(
+            'approve-cash-security-drop'
+        )
+            ? CashSecurityDropRequest::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'status',
+                    CashSecurityDropRequestStatus::Pending->value
+                )
+                ->with([
+                    'register',
+                    'destinationFinancialAccount',
+                    'requestedBy',
+                ])
+                ->orderBy('requested_at')
+                ->orderBy('id')
+                ->get()
+            : collect();
+
+        $hasBlockingDropRequests = $ownDropRequests->contains(
+            fn (CashSecurityDropRequest $dropRequest): bool =>
+                $dropRequest->status->blocksClosing()
+        );
+
         return view('cash-registers.index', [
             'registers' => $registers,
             'currentSession' => $currentSession,
@@ -114,7 +168,31 @@ class CashRegisterController extends Controller
                 ->orderBy('name')
                 ->get(),
             'dropReasons' => CashSecurityDropReason::cases(),
+            'differenceReasons' =>
+                CashCountDifferenceReason::cases(),
             'recentMovements' => $recentMovements,
+            'ownDropRequests' => $ownDropRequests,
+            'pendingDropApprovals' => $pendingDropApprovals,
+            'hasBlockingDropRequests' => $hasBlockingDropRequests,
+            'recentClosures' => CashRegisterClosure::query()
+                ->forOrganization($organizationId)
+                ->when(
+                    ! $actor->can('supervise-cash-registers'),
+                    fn ($query) => $query->where(
+                        'opened_by_user_id',
+                        $actor->id
+                    )
+                )
+                ->with([
+                    'register',
+                    'financialAccount',
+                    'openedBy',
+                    'closedBy',
+                ])
+                ->orderByDesc('closed_at')
+                ->orderByDesc('id')
+                ->limit(20)
+                ->get(),
         ]);
     }
 
@@ -254,24 +332,21 @@ class CashRegisterController extends Controller
             );
     }
 
-    public function securityDrop(
-        RecordCashSecurityDropRequest $request,
-        CashLedgerRecorder $ledger
+    public function requestSecurityDrop(
+        RequestCashSecurityDropRequest $request,
+        CashSecurityDropManager $manager
     ): RedirectResponse {
         $validated = $request->validated();
 
         try {
-            $destination = FinancialAccount::query()
-                ->findOrFail(
-                    $validated['destination_financial_account_id']
-                );
+            $destination = FinancialAccount::query()->findOrFail(
+                $validated['destination_financial_account_id']
+            );
 
-            $movement = $ledger->recordSecurityDrop(
+            $dropRequest = $manager->request(
                 $destination,
                 $this->moneyMinor($validated['amount']),
-                CashSecurityDropReason::from(
-                    $validated['reason_code']
-                ),
+                CashSecurityDropReason::from($validated['reason_code']),
                 $validated['note'] ?: null,
                 $validated['idempotency_key'],
                 $request->user()
@@ -280,7 +355,7 @@ class CashRegisterController extends Controller
             return back()
                 ->withInput()
                 ->withErrors([
-                    'cash_movement' => $exception->getMessage(),
+                    'cash_security_drop' => $exception->getMessage(),
                 ]);
         }
 
@@ -288,7 +363,136 @@ class CashRegisterController extends Controller
             ->route('cash-registers.index')
             ->with(
                 'success',
-                'Retiro de seguridad registrado por '.
+                'Solicitud de retiro enviada por '.
+                number_format(
+                    $dropRequest->amount_minor / 100,
+                    2,
+                    ',',
+                    '.'
+                ).
+                ' '.$dropRequest->currency_code.'. Espera autorización.'
+            );
+    }
+
+    public function approveSecurityDrop(
+        ApproveCashSecurityDropRequest $request,
+        CashSecurityDropRequest $cashSecurityDropRequest,
+        CashSecurityDropManager $manager
+    ): RedirectResponse {
+        $this->guardSecurityDropRequest(
+            $request,
+            $cashSecurityDropRequest
+        );
+        $validated = $request->validated();
+
+        try {
+            $manager->approve(
+                $cashSecurityDropRequest,
+                $validated['approval_note'] ?: null,
+                $validated['idempotency_key'],
+                $request->user()
+            );
+        } catch (DomainException $exception) {
+            return back()->withErrors([
+                'cash_security_drop_approval' => $exception->getMessage(),
+            ]);
+        }
+
+        return redirect()
+            ->route('cash-registers.index')
+            ->with('success', 'Retiro de seguridad autorizado.');
+    }
+
+    public function rejectSecurityDrop(
+        ResolveCashSecurityDropRequest $request,
+        CashSecurityDropRequest $cashSecurityDropRequest,
+        CashSecurityDropManager $manager
+    ): RedirectResponse {
+        $this->guardSecurityDropRequest(
+            $request,
+            $cashSecurityDropRequest
+        );
+        $validated = $request->validated();
+
+        try {
+            $manager->reject(
+                $cashSecurityDropRequest,
+                $validated['resolution_note'],
+                $validated['idempotency_key'],
+                $request->user()
+            );
+        } catch (DomainException $exception) {
+            return back()->withErrors([
+                'cash_security_drop_approval' => $exception->getMessage(),
+            ]);
+        }
+
+        return redirect()
+            ->route('cash-registers.index')
+            ->with('success', 'Solicitud de retiro rechazada.');
+    }
+
+    public function cancelSecurityDrop(
+        ResolveCashSecurityDropRequest $request,
+        CashSecurityDropRequest $cashSecurityDropRequest,
+        CashSecurityDropManager $manager
+    ): RedirectResponse {
+        $this->guardSecurityDropRequest(
+            $request,
+            $cashSecurityDropRequest
+        );
+        $validated = $request->validated();
+
+        try {
+            $manager->cancel(
+                $cashSecurityDropRequest,
+                $validated['resolution_note'],
+                $validated['idempotency_key'],
+                $request->user()
+            );
+        } catch (DomainException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'cash_security_drop' => $exception->getMessage(),
+                ]);
+        }
+
+        return redirect()
+            ->route('cash-registers.index')
+            ->with('success', 'Solicitud de retiro cancelada.');
+    }
+
+    public function executeSecurityDrop(
+        ExecuteCashSecurityDropRequest $request,
+        CashSecurityDropRequest $cashSecurityDropRequest,
+        CashSecurityDropManager $manager
+    ): RedirectResponse {
+        $this->guardSecurityDropRequest(
+            $request,
+            $cashSecurityDropRequest
+        );
+        $validated = $request->validated();
+
+        try {
+            $movement = $manager->execute(
+                $cashSecurityDropRequest,
+                $validated['idempotency_key'],
+                $request->user()
+            );
+        } catch (DomainException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'cash_security_drop' => $exception->getMessage(),
+                ]);
+        }
+
+        return redirect()
+            ->route('cash-registers.index')
+            ->with(
+                'success',
+                'Retiro autorizado ejecutado por '.
                 number_format(
                     $movement->amount_minor / 100,
                     2,
@@ -296,6 +500,48 @@ class CashRegisterController extends Controller
                     '.'
                 ).
                 ' '.$movement->currency_code.'.'
+            );
+    }
+
+    public function close(
+        CloseCashRegisterSessionRequest $request,
+        CashRegisterSessionManager $manager
+    ): RedirectResponse {
+        $validated = $request->validated();
+
+        try {
+            $closure = $manager->closeCurrent(
+                $this->moneyMinor($validated['counted_amount']),
+                filled($validated['difference_reason'] ?? null)
+                    ? CashCountDifferenceReason::from(
+                        $validated['difference_reason']
+                    )
+                    : null,
+                $validated['closing_note'] ?: null,
+                $validated['idempotency_key'],
+                $request->user()
+            );
+        } catch (DomainException $exception) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'cash_closure' => $exception->getMessage(),
+                ]);
+        }
+
+        $difference = number_format(
+            $closure->difference_minor / 100,
+            2,
+            ',',
+            '.'
+        );
+
+        return redirect()
+            ->route('cash-registers.index')
+            ->with(
+                'success',
+                'Turno cerrado. Diferencia de arqueo: '.
+                $closure->currency_code.' '.$difference.'.'
             );
     }
 
@@ -348,6 +594,19 @@ class CashRegisterController extends Controller
         );
 
         return $organizationId;
+    }
+
+    private function guardSecurityDropRequest(
+        Request $request,
+        CashSecurityDropRequest $dropRequest
+    ): void {
+        $organizationId = app(CurrentOrganization::class)
+            ->id($request->user());
+
+        abort_unless(
+            (int) $dropRequest->organization_id === $organizationId,
+            404
+        );
     }
 
     private function availableAccounts(

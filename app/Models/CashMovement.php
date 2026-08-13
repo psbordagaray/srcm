@@ -24,6 +24,7 @@ class CashMovement extends Model
         'cash_register_id',
         'financial_account_id',
         'destination_financial_account_id',
+        'cash_security_drop_request_id',
         'commerce_payment_id',
         'direction',
         'type',
@@ -93,6 +94,14 @@ class CashMovement extends Model
         return $this->belongsTo(
             FinancialAccount::class,
             'destination_financial_account_id'
+        );
+    }
+
+    public function securityDropRequest(): BelongsTo
+    {
+        return $this->belongsTo(
+            CashSecurityDropRequest::class,
+            'cash_security_drop_request_id'
         );
     }
 

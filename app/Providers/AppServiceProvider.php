@@ -235,6 +235,9 @@ class AppServiceProvider extends ServiceProvider
             'manage-cash-registers' => 'canManageCashRegisters',
             'operate-cash-register' => 'canOperateCashRegister',
             'supervise-cash-registers' => 'canSuperviseCashRegisters',
+            'request-cash-security-drop' => 'canRequestCashSecurityDrop',
+            'approve-cash-security-drop' => 'canApproveCashSecurityDrop',
+            'execute-cash-security-drop' => 'canExecuteCashSecurityDrop',
             'use-financial-accounts' => 'canUseFinancialAccounts',
             'manage-financial-accounts' => 'canManageFinancialAccounts',
             'review-financial-reconciliation' =>
