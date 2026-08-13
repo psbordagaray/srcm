@@ -244,6 +244,10 @@ final class CommerceCheckoutManager
                     'position' => $index + 1,
                     'method' => $payment['method'],
                     'amount_minor' => $payment['amount_minor'],
+                    'tendered_amount_minor' =>
+                        $payment['tendered_amount_minor'],
+                    'change_amount_minor' =>
+                        $payment['change_amount_minor'],
                     'reference' => $payment['reference'],
                     'card_brand' => $payment['card_brand'],
                     'card_network' => $payment['card_network'],
@@ -607,6 +611,26 @@ final class CommerceCheckoutManager
                 );
             }
 
+            $tenderedAmountMinor = $payment->tenderedAmountMinor;
+            $changeAmountMinor = null;
+
+            if ($payment->method === CommercePaymentMethod::Cash) {
+                if ($tenderedAmountMinor !== null) {
+                    if ($tenderedAmountMinor < $payment->amountMinor) {
+                        throw new DomainException(
+                            'El dinero entregado no puede ser menor que el importe aplicado.'
+                        );
+                    }
+
+                    $changeAmountMinor =
+                        $tenderedAmountMinor - $payment->amountMinor;
+                }
+            } elseif ($tenderedAmountMinor !== null) {
+                throw new DomainException(
+                    'Sólo el efectivo admite dinero entregado y vuelto.'
+                );
+            }
+
             $reference = $this->paymentText(
                 $payment->reference,
                 255,
@@ -727,6 +751,8 @@ final class CommerceCheckoutManager
                 'financial_account_id' => $financialAccountId,
                 'method' => $payment->method->value,
                 'amount_minor' => $payment->amountMinor,
+                'tendered_amount_minor' => $tenderedAmountMinor,
+                'change_amount_minor' => $changeAmountMinor,
                 'reference' => $reference,
                 'card_brand' => $cardBrand,
                 'card_network' => $cardNetwork,

@@ -402,7 +402,14 @@ class CommerceSaleController extends Controller
                                 providerStatus:
                                     $payment['provider_status'] ?? null,
                                 financialAccountId:
-                                    (int) $payment['financial_account_id']
+                                    (int) $payment['financial_account_id'],
+                                tenderedAmountMinor: filled(
+                                    $payment['tendered_amount'] ?? null
+                                )
+                                    ? $this->moneyMinor(
+                                        $payment['tendered_amount']
+                                    )
+                                    : null
                             )
                         )
                         ->values()

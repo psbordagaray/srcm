@@ -88,6 +88,20 @@
                                     <p class="font-mono text-lg font-bold text-white">$ {{ number_format($payment->amount_minor / 100, 2, ',', '.') }}</p>
                                 </div>
 
+                                @if($payment->method === \App\Enums\CommercePaymentMethod::Cash)
+                                    @if(
+                                        $payment->tendered_amount_minor !== null
+                                        && $payment->change_amount_minor !== null
+                                    )
+                                        <div class="mt-3 grid gap-2 rounded-xl border border-emerald-500/10 bg-slate-950/40 p-3 text-xs sm:grid-cols-2" data-sale-cash-tender-detail>
+                                            <p class="text-slate-400"><strong>Dinero entregado:</strong> <span class="font-mono text-white">$ {{ number_format($payment->tendered_amount_minor / 100, 2, ',', '.') }}</span></p>
+                                            <p class="text-slate-400"><strong>Vuelto:</strong> <span class="font-mono text-emerald-200">$ {{ number_format($payment->change_amount_minor / 100, 2, ',', '.') }}</span></p>
+                                        </div>
+                                    @else
+                                        <p class="mt-3 text-xs text-slate-500" data-sale-cash-tender-legacy>Dinero entregado y vuelto no capturados en este cobro histórico.</p>
+                                    @endif
+                                @endif
+
                                 @if(
                                     $payment->financialAccount
                                     || $payment->reference

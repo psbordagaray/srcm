@@ -123,6 +123,7 @@
                 cartQuantityError: '',
                 payments: {{ \Illuminate\Support\Js::from(array_values($paymentRows)) }}.map(payment => ({
                     financial_account_id: '',
+                    tendered_amount: '',
                     card_brand: '',
                     card_network: '',
                     card_last4: '',
@@ -132,7 +133,10 @@
                     authorization_code: '',
                     provider_status: '',
                     ...payment,
-                    _manual: true
+                    _manual: true,
+                    _tenderManual: String(
+                        payment.tendered_amount ?? ''
+                    ).trim() !== ''
                 })),
                 serviceTotals: {{ \Illuminate\Support\Js::from($serviceTotals) }},
                 serviceCurrencies: {{ \Illuminate\Support\Js::from($serviceCurrencies) }},
@@ -203,11 +207,10 @@
                     )->all()
                 ) }},
                 init() {
-                    this.payments.forEach(
-                        payment => this.syncOperationalCashAccount(
-                            payment
-                        )
-                    );
+                    this.payments.forEach(payment => {
+                        this.syncOperationalCashAccount(payment);
+                        this.syncCashTenderToApplied(payment);
+                    });
                     this.$watch(
                         'productLines',
                         () => this.syncAutomaticPayment()
@@ -232,6 +235,7 @@
                         method,
                         amount: '',
                         financial_account_id: '',
+                        tendered_amount: '',
                         reference: '',
                         card_brand: '',
                         card_network: '',
@@ -242,7 +246,8 @@
                         authorization_code: '',
                         provider_status: '',
                         notes: '',
-                        _manual: true
+                        _manual: true,
+                        _tenderManual: false
                     };
                 },
                 addPayment(method = '') {
@@ -269,6 +274,7 @@
                             this.saleTotalMinor()
                         );
                         payment._manual = false;
+                        this.syncCashTenderToApplied(payment);
                     }
 
                     this.payments.push(payment);
@@ -303,6 +309,55 @@
                     }
 
                     return Math.round(amount * 100);
+                },
+                cashTenderedMinor(payment) {
+                    return this.paymentAmountMinor(
+                        payment.tendered_amount
+                    );
+                },
+                paymentChangeMinor(payment) {
+                    if (payment.method !== 'cash') {
+                        return 0;
+                    }
+
+                    const applied = this.paymentAmountMinor(
+                        payment.amount
+                    );
+                    const tendered = this.cashTenderedMinor(payment);
+
+                    return tendered >= applied
+                        ? tendered - applied
+                        : 0;
+                },
+                cashTenderValid(payment) {
+                    if (payment.method !== 'cash') {
+                        return true;
+                    }
+
+                    const applied = this.paymentAmountMinor(
+                        payment.amount
+                    );
+                    const tendered = this.cashTenderedMinor(payment);
+
+                    return applied > 0 && tendered >= applied;
+                },
+                syncCashTenderToApplied(payment) {
+                    if (
+                        payment.method !== 'cash'
+                        || payment._tenderManual === true
+                    ) {
+                        return;
+                    }
+
+                    payment.tendered_amount =
+                        this.paymentAmountMinor(payment.amount) > 0
+                            ? payment.amount
+                            : '';
+                },
+                markPaymentTenderManual(payment) {
+                    payment._tenderManual = true;
+                    this.paymentReviewOpen = false;
+                    this.paymentError = '';
                 },
                 moneyInput(minor) {
                     return (Number(minor || 0) / 100)
@@ -398,6 +453,7 @@
                 onPaymentMethodChanged(payment) {
                     if (payment.method === 'cash') {
                         this.syncOperationalCashAccount(payment);
+                        this.syncCashTenderToApplied(payment);
 
                         if (! this.cashSessionAvailable()) {
                             this.paymentError =
@@ -413,6 +469,11 @@
                         )
                     ) {
                         payment.financial_account_id = '';
+                    }
+
+                    if (payment.method !== 'cash') {
+                        payment.tendered_amount = '';
+                        payment._tenderManual = false;
                     }
 
                     this.paymentReviewOpen = false;
@@ -504,6 +565,22 @@
                     }
 
                     if (
+                        payment.method === 'cash'
+                        && ! this.cashTenderValid(payment)
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        payment.method !== 'cash'
+                        && String(
+                            payment.tendered_amount ?? ''
+                        ).trim() !== ''
+                    ) {
+                        return false;
+                    }
+
+                    if (
                         this.paymentRequiresReference(payment.method)
                         && ! String(payment.reference ?? '').trim()
                     ) {
@@ -550,6 +627,7 @@
                 },
                 markPaymentAmountManual(payment) {
                     payment._manual = true;
+                    this.syncCashTenderToApplied(payment);
                     this.paymentReviewOpen = false;
                     this.paymentError = '';
                 },
@@ -567,6 +645,7 @@
                         this.saleTotalMinor() > 0
                             ? this.moneyInput(this.saleTotalMinor())
                             : '';
+                    this.syncCashTenderToApplied(this.payments[0]);
                 },
                 adjustLastPaymentToBalance() {
                     this.paymentError = '';
@@ -599,6 +678,9 @@
                     this.payments[index].amount =
                         this.moneyInput(balance);
                     this.payments[index]._manual = true;
+                    this.syncCashTenderToApplied(
+                        this.payments[index]
+                    );
                     this.paymentReviewOpen = false;
                 },
                 openPaymentOverlay() {
@@ -2574,6 +2656,37 @@
                                                 <p x-show="payment._manual !== false" class="mt-1 text-[11px] text-slate-500">Manual: SRCM no lo reescribe silenciosamente.</p>
                                             </div>
 
+                                            <div x-show="payment.method === 'cash'" x-cloak data-sale-cash-tender>
+                                                <label class="text-xs font-bold text-slate-400">Dinero entregado</label>
+                                                <input
+                                                    :name="payment.method === 'cash' ? `payments[${index}][tendered_amount]` : null"
+                                                    x-model="payment.tendered_amount"
+                                                    @input="markPaymentTenderManual(payment)"
+                                                    @keydown.enter.prevent="$event.target.blur()"
+                                                    type="text"
+                                                    inputmode="decimal"
+                                                    placeholder="0,00"
+                                                    :required="payment.method === 'cash'"
+                                                    data-sale-cash-tendered-amount
+                                                    class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-lg font-black text-white focus:border-emerald-400 focus:ring-emerald-400"
+                                                >
+                                                <p
+                                                    x-show="cashTenderValid(payment)"
+                                                    class="mt-1 text-[11px] font-bold text-emerald-300"
+                                                    data-sale-cash-change
+                                                >
+                                                    Vuelto: <span x-text="`${currencyCode} ${money(paymentChangeMinor(payment))}`"></span>
+                                                </p>
+                                                <p
+                                                    x-show="cashTenderedMinor(payment) > 0 && ! cashTenderValid(payment)"
+                                                    class="mt-1 text-[11px] font-bold text-red-300"
+                                                >
+                                                    El dinero entregado no alcanza el importe aplicado.
+                                                </p>
+                                                <p x-show="payment._tenderManual !== true" class="mt-1 text-[11px] text-cyan-300">Auto: sigue el importe aplicado hasta que lo edites.</p>
+                                                <p x-show="payment._tenderManual === true" class="mt-1 text-[11px] text-slate-500">Manual: SRCM no lo reescribe silenciosamente.</p>
+                                            </div>
+
                                             <div>
                                                 <label class="text-xs font-bold text-slate-400">Referencia</label>
                                                 <input
@@ -2817,6 +2930,15 @@
                                                 <strong class="text-lg text-white" x-text="paymentMethodLabel(payment.method)"></strong>
                                                 <strong class="font-mono text-xl text-emerald-200" x-text="`${currencyCode} ${money(paymentAmountMinor(payment.amount))}`"></strong>
                                             </div>
+                                            <div
+                                                x-show="payment.method === 'cash'"
+                                                class="mt-3 grid gap-2 rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-3 text-sm sm:grid-cols-3"
+                                                data-sale-cash-tender-review
+                                            >
+                                                <p class="text-slate-300">Aplicado: <strong class="font-mono text-white" x-text="`${currencyCode} ${money(paymentAmountMinor(payment.amount))}`"></strong></p>
+                                                <p class="text-slate-300">Entregado: <strong class="font-mono text-white" x-text="`${currencyCode} ${money(cashTenderedMinor(payment))}`"></strong></p>
+                                                <p class="text-slate-300">Vuelto: <strong class="font-mono text-emerald-200" x-text="`${currencyCode} ${money(paymentChangeMinor(payment))}`"></strong></p>
+                                            </div>
                                             <p class="mt-2 text-sm text-cyan-200">
                                                 Destino: <span x-text="financialAccountLabel(payment.financial_account_id)"></span>
                                             </p>
@@ -2836,7 +2958,16 @@
                                     </template>
                                 </div>
 
-                                <p x-show="payments.length === 1" class="mt-7 text-lg font-bold text-slate-100">
+                                <p x-show="payments.length === 1 && payments[0]?.method === 'cash'" class="mt-7 text-lg font-bold leading-8 text-slate-100">
+                                    ¿Confirmás aplicar
+                                    <span class="font-mono text-white" x-text="`${currencyCode} ${money(paymentAmountMinor(payments[0]?.amount))}`"></span>,
+                                    recibir
+                                    <span class="font-mono text-white" x-text="`${currencyCode} ${money(cashTenderedMinor(payments[0]))}`"></span>
+                                    y entregar
+                                    <span class="font-mono text-emerald-200" x-text="`${currencyCode} ${money(paymentChangeMinor(payments[0]))}`"></span>
+                                    de vuelto?
+                                </p>
+                                <p x-show="payments.length === 1 && payments[0]?.method !== 'cash'" class="mt-7 text-lg font-bold text-slate-100">
                                     ¿Confirmás que recibiste
                                     <span class="font-mono text-white" x-text="`${currencyCode} ${money(saleTotalMinor())}`"></span>
                                     en

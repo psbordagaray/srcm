@@ -418,6 +418,95 @@ Si existe una coincidencia probable, el sistema recomendará vincularla en lugar
 
 ---
 
+## Cobro
+
+Hecho por el cual la organización recibe o declara recibir valor de un cliente
+para aplicar a una venta, deuda u obligación del cliente.
+
+Un cobro declarado no equivale necesariamente a acreditación bancaria
+verificada.
+
+---
+
+## Importe aplicado
+
+Porción del total comercial que un medio de pago cancela.
+
+En `CommercePayment`, la verdad actual es `amount_minor`.
+
+No debe confundirse con el dinero físico entregado por el cliente.
+
+---
+
+## Dinero entregado
+
+En efectivo, importe físico que el cliente pone en manos del cajero antes de
+recibir vuelto.
+
+Puede ser mayor que el importe aplicado.
+
+No es ingreso adicional, no aumenta el total vendido y no debe interpretarse
+como efectivo retenido final.
+
+---
+
+## Vuelto
+
+Importe que SRCM devuelve al cliente dentro del acto de cobro porque el dinero
+entregado supera lo aplicado.
+
+En P4E Foundation:
+
+`vuelto = entregado - aplicado`
+
+El vuelto no es descuento, devolución posventa, reembolso ni gasto.
+
+---
+
+## Obligación económica
+
+Hecho que expresa que la organización debe un importe determinado a un
+beneficiario por una causa identificable.
+
+Una recepción física puede fundamentar o preparar una obligación, pero no es la
+misma cosa y nunca constituye por sí sola un pago.
+
+---
+
+## Autorización de pago
+
+Decisión atribuible que habilita pagar hechos exactos dentro de una política de
+autoridad.
+
+Autorizar no mueve dinero.
+
+---
+
+## Ejecución del pago
+
+Acto por el cual un pago autorizado se hace efectivo desde una cuenta, caja u
+otro origen.
+
+Ejecutar es distinto de autorizar y de conciliar.
+
+---
+
+## Beneficiario del pago
+
+Parte comercial o destinatario estructurado que recibe el valor desembolsado.
+
+Puede coincidir con el proveedor de la orden o ser un transportista,
+representante u otro autorizado.
+
+---
+
+## Evidencia de pago
+
+Prueba estructurada o documental que respalda la ejecución de un pago.
+
+No reemplaza la autorización, el movimiento de cuenta ni la conciliación.
+
+---
 ## Términos que deben evitarse
 
 Evitar campos o conceptos ambiguos como:

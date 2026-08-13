@@ -20,6 +20,8 @@ class CommercePayment extends Model
         'position',
         'method',
         'amount_minor',
+        'tendered_amount_minor',
+        'change_amount_minor',
         'reference',
         'card_brand',
         'card_network',
@@ -49,6 +51,8 @@ class CommercePayment extends Model
         return [
             'method' => CommercePaymentMethod::class,
             'amount_minor' => 'integer',
+            'tendered_amount_minor' => 'integer',
+            'change_amount_minor' => 'integer',
             'installments' => 'integer',
             'paid_at' => 'immutable_datetime',
         ];

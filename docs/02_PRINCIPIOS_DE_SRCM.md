@@ -133,3 +133,19 @@ No por la cantidad de funciones que posee.
 Pensar más.
 
 Cada hora de arquitectura evita muchas horas de reescritura futura.
+
+---
+
+# 15. Hechos distintos permanecen distintos.
+
+Entregado no es aplicado.
+
+Vuelto no es descuento ni reembolso.
+
+Recepción no es obligación.
+
+Autorizar no es ejecutar.
+
+Cobro o pago declarado no es acreditación o débito verificado.
+
+Conciliar no significa reescribir la historia para hacerla coincidir.

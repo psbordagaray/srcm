@@ -1,7 +1,7 @@
 # SRCM — Visión y Roadmap Full 2026
 
 Estado: **North Star / contrato de dirección y continuidad**
-Fecha: **2026-08-11**
+Fecha: **2026-08-13**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 
 ---
@@ -232,12 +232,28 @@ Los movimientos confirmados son la verdad. Los saldos visibles son proyecciones.
 El precio cobrado debe tener origen y autoridad.
 
 ### Dinero
-Separar:
+
+SRCM conserva hechos monetarios separados en ambas direcciones.
+
+**Entrada:**
 1. venta;
-2. cobro/pago declarado;
-3. operación externa;
-4. acreditación/débito real;
-5. conciliación.
+2. importe aplicado;
+3. efectivo entregado y vuelto cuando corresponda;
+4. cobro declarado;
+5. operación externa;
+6. acreditación real;
+7. conciliación.
+
+**Salida:**
+1. causa comercial/recepción;
+2. obligación económica;
+3. autorización;
+4. ejecución del pago;
+5. movimiento de cuenta/caja;
+6. débito externo verificado;
+7. conciliación.
+
+`entregado ≠ aplicado`, `vuelto ≠ reembolso`, `recepción ≠ pago` y `autorizar ≠ ejecutar`.
 
 ### Caja
 Separar:
@@ -354,7 +370,12 @@ Debe tener, según corresponda:
 - asumir Efectivo;
 - inventar conciliaciones;
 - mezclar cobro con acreditación;
+- registrar dinero entregado como si fuera importe vendido/aplicado;
+- tratar vuelto como descuento, gasto o devolución posventa;
+- inventar evidencia histórica de entregado/vuelto;
+- mezclar recepción con obligación;
 - mezclar recepción con pago;
+- mezclar autorización con ejecución;
 - mezclar retiro de seguridad con gasto;
 - mezclar caja física con cuenta bancaria;
 - permitir cross-tenant;

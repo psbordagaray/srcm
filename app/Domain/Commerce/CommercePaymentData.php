@@ -21,7 +21,8 @@ final readonly class CommercePaymentData
         public ?string $externalOperationId = null,
         public ?string $authorizationCode = null,
         public ?string $providerStatus = null,
-        public ?int $financialAccountId = null
+        public ?int $financialAccountId = null,
+        public ?int $tenderedAmountMinor = null
     ) {
     }
 }

@@ -1,13 +1,15 @@
 # SRCM V1 — Terminal de Cobro APB, Cuentas y Conciliación
 
-Estado: **P1–P3.1 implementados y publicados / P4 próximo**
+Estado: **P1–P3.1 + P4A–P4D publicados / P4E en validación / P4F planificado**
 
 Fecha de consolidación inicial: **2026-08-10**
-Fecha de actualización: **2026-08-11**
+Fecha de actualización: **2026-08-13**
 
-Checkpoint oficial actual:
-`7753e61fba147395362109d90ce895d61442562a`
-— `feat(finance): add operational payment destinations`
+Checkpoint oficial publicado actual:
+`1b2187bf5e709f583e3ee79db5ad8df528751116`
+— `feat(finance): harden cash operations and attention`
+
+P4E Foundation se valida localmente sobre ese checkpoint y no se considera publicada hasta GRAN PRUEBA + checkpoint.
 
 North Star y roadmap maestro:
 `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`
@@ -132,7 +134,15 @@ No confundir importe aplicado a la venta, dinero entregado y vuelto.
 
 Ejemplo: venta ARS 9.000, cliente entrega ARS 10.000, aplicado ARS 9.000, vuelto ARS 1.000.
 
-El diseño debe quedar preparado para futuro **vuelto multimedio** sin falsear el total vendido.
+P4E Foundation fija estas verdades:
+- `amount_minor` sigue siendo el importe aplicado;
+- `tendered_amount_minor` es evidencia del efectivo entregado;
+- `change_amount_minor = tendered - applied`;
+- el vuelto no cambia la venta;
+- los históricos sin captura conservan `NULL`, no evidencia inventada;
+- en vuelto efectivo del mismo medio, el libro de caja refleja el efectivo neto retenido.
+
+El diseño queda preparado para futuro **vuelto multimedio**, pero ese caso requerirá separar el efectivo bruto recibido y el desembolso de vuelto por la otra cuenta. No se falseará el total vendido ni se reescribirá `amount_minor`.
 
 ---
 
@@ -241,7 +251,9 @@ Cuentas privadas, movimientos externos, reconciliación provider-neutral e inmut
 ### P3.1 — Cuentas operativas en Terminal — IMPLEMENTADO
 Gestión visual de cuentas y `financial_account_id` por pago. Checkpoint publicado: `7753e61fba147395362109d90ce895d61442562a`.
 
-### P4 — Caja operativa, turnos, efectivo y pagos a proveedores — PRÓXIMO
+### P4 — Caja operativa, turnos, efectivo y pagos a proveedores — EN IMPLEMENTACIÓN
+
+P4A–P4D están publicados. P4E Foundation incorpora aplicado/entregado/vuelto y queda pendiente de GRAN PRUEBA/checkpoint. P4F es el siguiente frente y reutiliza caja, cuentas, autoridad y Operational Attention sin fusionar recepción con desembolso.
 Amplía el antiguo P4 “Efectivo y vuelto”:
 - cajas múltiples vinculadas a cuentas `cash_box`;
 - apertura/turno/cierre;

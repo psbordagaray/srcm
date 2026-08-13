@@ -255,3 +255,56 @@ para hacer cuadrar silenciosamente la caja.
 
 La representación visual de diferencias usa código de moneda explícito, por
 ejemplo `− ARS 500,00`, y no símbolos locales ambiguos como `-$`.
+
+## 12. P4E — aplicado, entregado y vuelto
+
+P4E agrega evidencia específica al cobro en efectivo sin redefinir la venta.
+
+Verdades:
+
+- `CommercePayment.amount_minor` continúa siendo el importe aplicado;
+- `tendered_amount_minor` registra cuánto efectivo entrega el cliente;
+- `change_amount_minor` registra el vuelto;
+- en la foundation, `change = tendered - amount`;
+- no efectivo no admite estos campos;
+- cobros históricos sin captura conservan `NULL`;
+- no se infiere vuelto cero como si hubiera sido observado;
+- la Terminal presenta aplicado, entregado y vuelto antes de confirmar.
+
+Para vuelto en efectivo del mismo medio, el efecto de caja es el efectivo neto
+retenido. El cajero puede recibir físicamente más durante segundos, pero el
+esperado del turno no se infla con dinero que se devuelve dentro del mismo acto.
+
+Vuelto multimedio queda fuera de P4E Foundation: si el efectivo entregado se
+devuelve por otra cuenta, SRCM necesitará hechos separados de ingreso bruto y
+desembolso de vuelto para que cada cuenta refleje su realidad.
+
+## 13. P4F — integración futura de pagos a proveedor/flete
+
+P4F reutilizará la infraestructura de caja sin convertir `CashMovement` en una
+cuenta por pagar.
+
+Cadena:
+
+`recepción → obligación → autorización → ejecución → movimiento financiero`
+
+Para efectivo:
+
+`ejecución válida + turno abierto → CashMovement out`
+
+Reglas:
+
+- crear una obligación no toca el esperado de caja;
+- autorizar una obligación no toca el esperado de caja;
+- sólo ejecutar el pago efectivo crea el egreso;
+- un pago parcial crea efecto sólo por el importe ejecutado;
+- el beneficiario se conserva estructurado y puede diferir del proveedor;
+- mercadería y flete pueden originar obligaciones separadas;
+- el origen deriva de una cuenta/caja válida y de la autoridad del actor;
+- banco/billetera no crean `CashMovement`; su débito externo se verifica y
+  concilia mediante el motor financiero;
+- Operational Attention distribuye solicitud, aprobación, ejecución y resultado
+  sin convertirse en segunda verdad del pago.
+
+ADR rector para P4E/P4F y evolución P8/P9:
+`docs/35_ADR_HECHOS_MONETARIOS_APLICADO_ENTREGADO_VUELTO_OBLIGACION_DESEMBOLSO_V1.md`.

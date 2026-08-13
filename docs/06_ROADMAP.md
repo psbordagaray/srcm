@@ -211,7 +211,22 @@ No confundir:
 - dinero entregado;
 - vuelto.
 
-Preparar futuro vuelto multimedio sin falsear el total vendido.
+Foundation P4E:
+- `commerce_payments.amount_minor` sigue siendo el importe aplicado a la venta;
+- en efectivo, SRCM puede conservar por separado `tendered_amount_minor` y `change_amount_minor`;
+- el vuelto se deriva como `entregado - aplicado`, nunca altera el total vendido;
+- el movimiento de caja registra el importe aplicado/retenido, no infla el esperado con el efectivo transitoriamente recibido antes de dar vuelto;
+- cobros históricos sin captura P4E conservan `NULL` y no se les inventa evidencia retrospectiva;
+- la Terminal de Cobro muestra y confirma aplicado, entregado y vuelto antes del submit irreversible.
+
+Pendiente posterior: vuelto multimedio sin falsear el total vendido.
+
+Criterio de aceptación P4E:
+- venta ARS 9.000 + cliente entrega ARS 10.000 + vuelto ARS 1.000 conserva `aplicado=9.000`, `entregado=10.000`, `vuelto=1.000`;
+- en la foundation de vuelto efectivo en el mismo medio, el esperado de caja aumenta por el efectivo neto retenido, no por el efectivo transitorio antes de dar vuelto;
+- `entregado` y `vuelto` sólo pertenecen a líneas Efectivo;
+- los cobros históricos sin esa captura permanecen explícitamente sin evidencia;
+- vuelto multimedio futuro requerirá hechos de movimiento por cada origen/destino y no se resolverá falseando `amount_minor`.
 
 ### P4F — Pago a proveedores en recepción
 Separar siempre:
@@ -234,6 +249,40 @@ Casos:
 - escalamiento a encargado/administrador/dueño.
 
 **Confirmar una recepción de stock nunca paga automáticamente.**
+
+P4F se construirá por slices compatibles con P9:
+
+**P4F.1 — Obligación Foundation**
+- obligación privada por organización;
+- origen en recepción/documento/condición comercial explícita;
+- mercadería y logística separables;
+- proveedor/beneficiario estructurado;
+- importe, moneda, vencimiento/condición, estado, idempotencia y fingerprint;
+- recepción conforme puede preparar una obligación según política, nunca ejecutar el pago.
+
+**P4F.2 — Solicitud y autorización**
+- solicitud, autorización, rechazo/cancelación y expiración explícitos;
+- actores y timestamps separados;
+- límites por capacidad/importe;
+- segregación de funciones cuando la política lo exija;
+- autorización ligada por fingerprint a obligación, beneficiario, importe, moneda y origen propuesto.
+
+**P4F.3 — Ejecución**
+- pago total o parcial;
+- cuenta/caja de origen explícita;
+- efectivo sólo desde turno válido y crea egreso `CashMovement` al ejecutar;
+- obligación o autorización por sí solas no alteran el efectivo esperado;
+- medios no efectivo generan su hecho financiero saliente sin inventar un movimiento de caja;
+- evidencia segura y hora de servidor.
+
+**P4F.4 — Atención y control**
+- pendientes encuentran al aprobador mediante Operational Attention;
+- autorizaciones encuentran al ejecutor;
+- rechazo/cancelación vuelve al solicitante;
+- pago externo y débito/acreditación verificada permanecen separados hasta conciliación;
+- diferencias nunca se corrigen ni pagan silenciosamente.
+
+ADR rector: `docs/35_ADR_HECHOS_MONETARIOS_APLICADO_ENTREGADO_VUELTO_OBLIGACION_DESEMBOLSO_V1.md`.
 
 ---
 

@@ -610,6 +610,105 @@ class CommerceCheckoutHttpTest extends TestCase
         );
     }
 
+    public function test_cash_tender_and_change_are_explicit_without_inflating_cash_ledger(): void
+    {
+        $fixture = $this->deliveredOrder('cash-tender-p4e');
+        $cashAccount = $this->openCashShift(
+            $fixture['organization'],
+            $fixture['actor'],
+            'cash-tender-p4e'
+        );
+
+        $this->actingAs($fixture['actor'])
+            ->post(route('commerce-sales.store'), [
+                'currency_code' => 'ARS',
+                'service_order_id' => $fixture['order']->id,
+                'customer_business_party_id' => $fixture['customer']->id,
+                'product_lines' => [],
+                'payments' => [[
+                    'method' => CommercePaymentMethod::Cash->value,
+                    'financial_account_id' => $cashAccount->id,
+                    'amount' => '40000,00',
+                    'tendered_amount' => '50000,00',
+                    'reference' => null,
+                    'notes' => 'P4E tender explícito.',
+                    'paid_at' => null,
+                ]],
+                'idempotency_key' => 'service-ui:commerce-sale:'.Str::uuid(),
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $sale = CommerceSale::query()->with('payments')->sole();
+        $payment = $sale->payments->sole();
+
+        $this->assertSame(4000000, $payment->amount_minor);
+        $this->assertSame(5000000, $payment->tendered_amount_minor);
+        $this->assertSame(1000000, $payment->change_amount_minor);
+        $this->assertDatabaseHas('cash_movements', [
+            'commerce_payment_id' => $payment->id,
+            'amount_minor' => 4000000,
+        ]);
+        $this->assertDatabaseMissing('cash_movements', [
+            'commerce_payment_id' => $payment->id,
+            'amount_minor' => 5000000,
+        ]);
+
+        $this->actingAs($fixture['actor'])
+            ->get(route('commerce-sales.show', $sale))
+            ->assertOk()
+            ->assertSee('Dinero entregado')
+            ->assertSee('50.000,00')
+            ->assertSee('Vuelto')
+            ->assertSee('10.000,00');
+    }
+
+    public function test_cash_tender_below_applied_and_non_cash_tender_are_rejected(): void
+    {
+        $fixture = $this->deliveredOrder('cash-tender-guards-p4e');
+        $cashAccount = $this->openCashShift(
+            $fixture['organization'],
+            $fixture['actor'],
+            'cash-tender-guards-p4e'
+        );
+        $base = [
+            'currency_code' => 'ARS',
+            'service_order_id' => $fixture['order']->id,
+            'customer_business_party_id' => $fixture['customer']->id,
+            'product_lines' => [],
+        ];
+
+        $this->actingAs($fixture['actor'])
+            ->post(route('commerce-sales.store'), [
+                ...$base,
+                'payments' => [[
+                    'method' => CommercePaymentMethod::Cash->value,
+                    'financial_account_id' => $cashAccount->id,
+                    'amount' => '40000,00',
+                    'tendered_amount' => '39999,99',
+                ]],
+                'idempotency_key' => 'service-ui:commerce-sale:'.Str::uuid(),
+            ])
+            ->assertSessionHasErrors('payments.0.tendered_amount');
+
+        $this->actingAs($fixture['actor'])
+            ->post(route('commerce-sales.store'), [
+                ...$base,
+                'payments' => [[
+                    'method' => CommercePaymentMethod::CreditCard->value,
+                    'financial_account_id' => $this->financialAccountId,
+                    'amount' => '40000,00',
+                    'tendered_amount' => '50000,00',
+                    'reference' => 'P4E-NON-CASH',
+                ]],
+                'idempotency_key' => 'service-ui:commerce-sale:'.Str::uuid(),
+            ])
+            ->assertSessionHasErrors('payments.0.tendered_amount');
+
+        $this->assertDatabaseCount('commerce_sales', 0);
+        $this->assertDatabaseCount('commerce_payments', 0);
+        $this->assertDatabaseCount('cash_movements', 0);
+    }
     public function test_http_guards_reject_foreign_evidence_and_non_exact_payment(): void
     {
         $fixture = $this->deliveredOrder('guards-http');
