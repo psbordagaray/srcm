@@ -590,3 +590,11 @@ simular resultado, consultar recurso completo y normalizarlo. El dispositivo
 virtual y las credenciales de prueba son una frontera obligatoria antes de
 habilitar el Point físico y dinero real. El transporte no obtiene autoridad
 para crear hechos financieros por sí mismo.
+
+
+<!-- P5.4_MERCADO_PAGO_WEBHOOK_RESOLUTION_V1 -->
+## Continuidad P5.4 — autenticidad antes de automatización
+Los Webhooks de proveedores externos sólo pueden producir observaciones después
+de validar su firma y resolver identidad interna sin confiar en datos de tenancy
+recibidos. El transporte y el body externo jamás reciben autoridad directa para
+elegir una organización, una cuenta financiera o escribir el ledger.

@@ -1235,3 +1235,14 @@ Checkpoint base P5.1: `97653c38ca416906004e7fd4230756c6ce281115`.
 - smoke opt-in sobre `NEWLAND_N950__SBX0000001`;
 - simulación `processed` + GET + normalización por adapter;
 - sin Point físico, sin dinero real y sin escritura en el ledger P3.
+
+
+<!-- P5.4_MERCADO_PAGO_WEBHOOK_RESOLUTION_V1 -->
+### P5.4 — Mercado Pago Webhook authenticity/resolution — EN VALIDACIÓN
+- HMAC-SHA256 sobre manifest oficial `data.id + x-request-id + ts`;
+- comparación constante y fail-closed ante firma incompleta o inválida;
+- body nunca selecciona tenant/cuenta;
+- `application_id`, `user_id` y `live_mode` sólo se contrastan contra identidad esperada;
+- recurso financiero canónico siempre se obtiene por `GET /v1/orders/{id}`;
+- secretos siguen fuera de DB/repo y entran sólo de forma transitoria;
+- sin ruta pública ni ingestión al ledger hasta resolver secret store + connection routing + ACK/job.

@@ -388,3 +388,12 @@ prueba externa mutante se limita al dispositivo virtual de Mercado Pago y a una
 simulación de estado; no ingresa el resultado al ledger financiero ni concilia
 cobros. La moneda ARS se deriva de `country_code=AR/ARG` únicamente cuando la
 respuesta Point no incluye moneda explícita.
+
+
+<!-- P5.4_MERCADO_PAGO_WEBHOOK_RESOLUTION_V1 -->
+## P5.4 — Webhook firmado y resolución canónica
+SRCM valida el origen de una notificación Point con el manifest HMAC oficial,
+impide que el body elija organización o cuenta y obtiene la order completa por
+API antes de normalizarla. Esta slice no expone todavía endpoint público ni
+llama al ingestor: primero deben quedar resueltos el almacén seguro de secretos,
+el vínculo aplicación/usuario -> conexión interna y la estrategia ACK + job.
