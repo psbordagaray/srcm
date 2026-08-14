@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class FinancialProviderConnection extends Model
@@ -74,6 +75,14 @@ class FinancialProviderConnection extends Model
         return $this->belongsTo(
             FinancialAccount::class,
             'financial_account_id'
+        );
+    }
+
+    public function compatibilityBindings(): HasMany
+    {
+        return $this->hasMany(
+            FinancialProviderConnectionCompatibilityBinding::class,
+            'financial_provider_connection_id'
         );
     }
 

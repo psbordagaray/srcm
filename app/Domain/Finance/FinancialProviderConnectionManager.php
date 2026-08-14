@@ -16,7 +16,8 @@ final class FinancialProviderConnectionManager
 {
     public function __construct(
         private readonly CurrentOrganization $currentOrganization,
-        private readonly AuditRecorder $audit
+        private readonly AuditRecorder $audit,
+        private readonly FinancialProviderConnectionCompatibilityManager $compatibilityBindings
     ) {
     }
 
@@ -180,6 +181,11 @@ final class FinancialProviderConnectionManager
                 throw new DomainException(
                     'No puede reactivarse la conexión mientras la cuenta financiera esté inactiva.'
                 );
+            }
+
+            if (! $locked->active) {
+                $this->compatibilityBindings
+                    ->assertCanActivate($locked);
             }
 
             $old = ['active' => $locked->active];

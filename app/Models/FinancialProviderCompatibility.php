@@ -6,6 +6,7 @@ use App\Enums\FinancialProviderCompatibilityStatus;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class FinancialProviderCompatibility extends Model
 {
@@ -53,6 +54,22 @@ class FinancialProviderCompatibility extends Model
     {
         return $this->hasMany(
             FinancialProviderCapabilityCompatibility::class,
+            'financial_provider_compatibility_id'
+        );
+    }
+
+    public function connectionBindings(): HasMany
+    {
+        return $this->hasMany(
+            FinancialProviderConnectionCompatibilityBinding::class,
+            'financial_provider_compatibility_id'
+        );
+    }
+
+    public function retirement(): HasOne
+    {
+        return $this->hasOne(
+            FinancialProviderCompatibilityRetirement::class,
             'financial_provider_compatibility_id'
         );
     }
