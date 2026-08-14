@@ -33,7 +33,7 @@ final class MercadoPagoExternalFinancialProviderAdapter implements ExternalFinan
 
         if (($order['type'] ?? null) !== 'point') {
             throw new DomainException(
-                'Mercado Pago P5.2 sólo normaliza recursos completos de Point Orders.'
+                'Mercado Pago P5 sólo normaliza recursos completos de Point Orders.'
             );
         }
 
@@ -45,12 +45,7 @@ final class MercadoPagoExternalFinancialProviderAdapter implements ExternalFinan
         }
 
         $status = $this->mapStatus($providerStatus);
-        $currency = strtoupper(trim((string) ($order['currency'] ?? '')));
-
-        if (preg_match('/^[A-Z]{3}$/D', $currency) !== 1) {
-            throw new DomainException('La order de Mercado Pago no informa una moneda ISO válida.');
-        }
-
+        $currency = $this->resolveCurrency($order);
         $grossAmountMinor = $this->resolveGrossAmountMinor($order);
         $version = $this->safeVersion($order['version'] ?? null);
         $observationKey = 'point-order:'.$orderId.':'.$providerStatus;
@@ -114,6 +109,31 @@ final class MercadoPagoExternalFinancialProviderAdapter implements ExternalFinan
     }
 
     /** @param array<string, mixed> $order */
+    private function resolveCurrency(array $order): string
+    {
+        $explicit = strtoupper(trim((string) ($order['currency'] ?? '')));
+
+        if ($explicit !== '') {
+            if (preg_match('/^[A-Z]{3}$/D', $explicit) !== 1) {
+                throw new DomainException(
+                    'La order de Mercado Pago informa una moneda ISO inválida.'
+                );
+            }
+
+            return $explicit;
+        }
+
+        $country = strtoupper(trim((string) ($order['country_code'] ?? '')));
+
+        return match ($country) {
+            'AR', 'ARG' => 'ARS',
+            default => throw new DomainException(
+                'La order de Mercado Pago no informa moneda y su país no tiene mapeo financiero explícito.'
+            ),
+        };
+    }
+
+    /** @param array<string, mixed> $order */
     private function resolveGrossAmountMinor(array $order): int
     {
         foreach (['total_paid_amount', 'total_amount'] as $field) {
@@ -131,12 +151,17 @@ final class MercadoPagoExternalFinancialProviderAdapter implements ExternalFinan
                     && $payments[0][$field] !== null
                     && $payments[0][$field] !== ''
                 ) {
-                    return $this->moneyToMinor($payments[0][$field], 'transactions.payments[0].'.$field);
+                    return $this->moneyToMinor(
+                        $payments[0][$field],
+                        'transactions.payments[0].'.$field
+                    );
                 }
             }
         }
 
-        throw new DomainException('La order de Mercado Pago no contiene un importe financiero normalizable.');
+        throw new DomainException(
+            'La order de Mercado Pago no contiene un importe financiero normalizable.'
+        );
     }
 
     private function moneyToMinor(mixed $value, string $field): int
@@ -148,13 +173,17 @@ final class MercadoPagoExternalFinancialProviderAdapter implements ExternalFinan
         }
 
         if (! is_string($value) && ! is_int($value)) {
-            throw new DomainException('Mercado Pago '.$field.' no tiene formato monetario válido.');
+            throw new DomainException(
+                'Mercado Pago '.$field.' no tiene formato monetario válido.'
+            );
         }
 
         $text = trim((string) $value);
 
         if (preg_match('/^(0|[1-9][0-9]*)(?:\.([0-9]{1,2}))?$/D', $text, $match) !== 1) {
-            throw new DomainException('Mercado Pago '.$field.' no tiene formato decimal seguro.');
+            throw new DomainException(
+                'Mercado Pago '.$field.' no tiene formato decimal seguro.'
+            );
         }
 
         $units = $match[1];
@@ -163,13 +192,17 @@ final class MercadoPagoExternalFinancialProviderAdapter implements ExternalFinan
         $minorText = $minorText === '' ? '0' : $minorText;
 
         if (strlen($minorText) > 18) {
-            throw new DomainException('Mercado Pago '.$field.' excede el rango monetario admitido.');
+            throw new DomainException(
+                'Mercado Pago '.$field.' excede el rango monetario admitido.'
+            );
         }
 
         $minor = (int) $minorText;
 
         if ((string) $minor !== $minorText && $minor !== 0) {
-            throw new DomainException('Mercado Pago '.$field.' excede el entero admitido por la plataforma.');
+            throw new DomainException(
+                'Mercado Pago '.$field.' excede el entero admitido por la plataforma.'
+            );
         }
 
         return $minor;
@@ -201,13 +234,17 @@ final class MercadoPagoExternalFinancialProviderAdapter implements ExternalFinan
         }
 
         if (! is_string($value) && ! is_int($value)) {
-            throw new DomainException('La versión de la order de Mercado Pago no es válida.');
+            throw new DomainException(
+                'La versión de la order de Mercado Pago no es válida.'
+            );
         }
 
         $version = trim((string) $value);
 
         if (preg_match('/^[A-Za-z0-9._-]{1,32}$/D', $version) !== 1) {
-            throw new DomainException('La versión de la order de Mercado Pago no es válida.');
+            throw new DomainException(
+                'La versión de la order de Mercado Pago no es válida.'
+            );
         }
 
         return $version;
@@ -244,7 +281,9 @@ final class MercadoPagoExternalFinancialProviderAdapter implements ExternalFinan
             try {
                 return new DateTimeImmutable($value);
             } catch (\Throwable) {
-                throw new DomainException('Mercado Pago informó un timestamp externo inválido.');
+                throw new DomainException(
+                    'Mercado Pago informó un timestamp externo inválido.'
+                );
             }
         }
 

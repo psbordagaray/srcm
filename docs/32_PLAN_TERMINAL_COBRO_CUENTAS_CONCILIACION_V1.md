@@ -378,3 +378,13 @@ P3.1 no introduce todavía asociaciones rígidas medio→tipo de cuenta. Un cobr
 <!-- P5.2_MERCADO_PAGO_POINT_ADAPTER_V1 -->
 ## P5.2 — Mercado Pago Point adapter
 Mercado Pago Point entra como adaptador sobre `FinancialExternalMovement`, usando la API de Orders vigente. La order completa se normaliza a evidencia provider-neutral; una notificación que sólo aporta ID no se ingiere. El smoke real inicial queda limitado a `GET /terminals/v1/list`. Ninguna credencial se persiste y ninguna operación monetaria real se ejecuta en esta foundation.
+
+
+<!-- P5.3_MERCADO_PAGO_ORDERS_TEST_V1 -->
+## P5.3 — Orders API y prueba controlada Point
+SRCM incorpora un cliente mínimo para crear/consultar Point Orders con
+idempotencia explícita y dinero decimal derivado de minor units. La primera
+prueba externa mutante se limita al dispositivo virtual de Mercado Pago y a una
+simulación de estado; no ingresa el resultado al ledger financiero ni concilia
+cobros. La moneda ARS se deriva de `country_code=AR/ARG` únicamente cuando la
+respuesta Point no incluye moneda explícita.

@@ -581,3 +581,12 @@ La meta es que el comerciante sienta que SRCM:
 <!-- P5.2_MERCADO_PAGO_POINT_ADAPTER_V1 -->
 ## Continuidad P5.2 — Mercado Pago Point
 El primer proveedor concreto de P5 será Mercado Pago Point sobre la API de Orders. Su adapter traduce recursos completos a la verdad financiera P3/P5.1; no crea un ledger paralelo. La primera verificación productiva será sólo lectura de terminales. El cobro real queda detrás de un checkpoint explícito posterior.
+
+
+<!-- P5.3_MERCADO_PAGO_ORDERS_TEST_V1 -->
+## Continuidad P5.3 — Point Orders antes de producción
+La integración Mercado Pago avanza por un test harness controlado: crear order,
+simular resultado, consultar recurso completo y normalizarlo. El dispositivo
+virtual y las credenciales de prueba son una frontera obligatoria antes de
+habilitar el Point físico y dinero real. El transporte no obtiene autoridad
+para crear hechos financieros por sí mismo.

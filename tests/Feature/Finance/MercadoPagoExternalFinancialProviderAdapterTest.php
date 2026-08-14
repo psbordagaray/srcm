@@ -50,8 +50,14 @@ class MercadoPagoExternalFinancialProviderAdapterTest extends TestCase
             'ORD01JY0PGGPZ4DBV73E2PXRBCQ84',
             $observation->externalOperationId
         );
-        $this->assertSame(FinancialMovementDirection::Credit, $observation->direction);
-        $this->assertSame(FinancialMovementStatus::Posted, $observation->status);
+        $this->assertSame(
+            FinancialMovementDirection::Credit,
+            $observation->direction
+        );
+        $this->assertSame(
+            FinancialMovementStatus::Posted,
+            $observation->status
+        );
         $this->assertSame('ARS', $observation->currencyCode);
         $this->assertSame(12000, $observation->grossAmountMinor);
         $this->assertSame(12000, $observation->netAmountMinor);
@@ -80,6 +86,47 @@ class MercadoPagoExternalFinancialProviderAdapterTest extends TestCase
         );
     }
 
+    public function test_documented_argentina_order_shape_derives_ars_without_inventing_other_countries(): void
+    {
+        $adapter = new MercadoPagoExternalFinancialProviderAdapter();
+
+        $observation = $adapter->normalize([
+            'id' => 'ORD_REAL_SHAPE_ARG_1',
+            'type' => 'point',
+            'status' => 'processed',
+            'status_detail' => 'accredited',
+            'country_code' => 'ARG',
+            'version' => 3,
+            'last_updated_date' => '2026-08-13T23:30:00Z',
+            'transactions' => [
+                'payments' => [[
+                    'amount' => '1.00',
+                    'paid_amount' => '1.00',
+                    'status' => 'processed',
+                ]],
+            ],
+        ]);
+
+        $this->assertSame('ARS', $observation->currencyCode);
+        $this->assertSame(100, $observation->grossAmountMinor);
+        $this->assertSame(
+            FinancialMovementStatus::Posted,
+            $observation->status
+        );
+
+        $this->assertDomainFailure(fn () => $adapter->normalize([
+            'id' => 'ORD_UNMAPPED_COUNTRY_1',
+            'type' => 'point',
+            'status' => 'processed',
+            'country_code' => 'URY',
+            'transactions' => [
+                'payments' => [[
+                    'paid_amount' => '1.00',
+                ]],
+            ],
+        ]));
+    }
+
     public function test_full_webhook_envelope_and_api_resource_are_deterministic(): void
     {
         $adapter = new MercadoPagoExternalFinancialProviderAdapter();
@@ -105,11 +152,26 @@ class MercadoPagoExternalFinancialProviderAdapterTest extends TestCase
             'date_created' => '2026-08-13T23:20:01Z',
         ]);
 
-        $this->assertSame(FinancialMovementStatus::Pending, $fromApi->status);
-        $this->assertSame($fromApi->observationKey, $fromWebhook->observationKey);
-        $this->assertSame($fromApi->externalOperationId, $fromWebhook->externalOperationId);
-        $this->assertSame($fromApi->grossAmountMinor, $fromWebhook->grossAmountMinor);
-        $this->assertSame($fromApi->currencyCode, $fromWebhook->currencyCode);
+        $this->assertSame(
+            FinancialMovementStatus::Pending,
+            $fromApi->status
+        );
+        $this->assertSame(
+            $fromApi->observationKey,
+            $fromWebhook->observationKey
+        );
+        $this->assertSame(
+            $fromApi->externalOperationId,
+            $fromWebhook->externalOperationId
+        );
+        $this->assertSame(
+            $fromApi->grossAmountMinor,
+            $fromWebhook->grossAmountMinor
+        );
+        $this->assertSame(
+            $fromApi->currencyCode,
+            $fromWebhook->currencyCode
+        );
     }
 
     public function test_point_lifecycle_maps_to_provider_neutral_statuses(): void
@@ -207,6 +269,17 @@ class MercadoPagoExternalFinancialProviderAdapterTest extends TestCase
             'status' => 'processed',
             'currency' => 'PESO',
             'total_amount' => '10.00',
+        ]));
+
+        $this->assertDomainFailure(fn () => $adapter->normalize([
+            'id' => 'ORD_NO_CURRENCY_OR_COUNTRY',
+            'type' => 'point',
+            'status' => 'processed',
+            'transactions' => [
+                'payments' => [[
+                    'amount' => '10.00',
+                ]],
+            ],
         ]));
     }
 

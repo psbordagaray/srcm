@@ -1223,3 +1223,15 @@ La prioridad siempre será:
 - sin credenciales persistidas, sin webhook público y sin cobro real en esta slice.
 
 Checkpoint base P5.1: `97653c38ca416906004e7fd4230756c6ce281115`.
+
+
+<!-- P5.3_MERCADO_PAGO_ORDERS_TEST_V1 -->
+### P5.3 — Mercado Pago Orders / prueba controlada — EN VALIDACIÓN
+- transporte HTTP mínimo `POST /v1/orders` + `GET /v1/orders/{id}`;
+- `X-Idempotency-Key` UUID v4 obligatorio;
+- minor units internos → decimal string sin float;
+- hardening de moneda: `AR/ARG → ARS` sólo cuando la order no informa `currency`;
+- errores del proveedor sanitizados, sin body ni token;
+- smoke opt-in sobre `NEWLAND_N950__SBX0000001`;
+- simulación `processed` + GET + normalización por adapter;
+- sin Point físico, sin dinero real y sin escritura en el ledger P3.
