@@ -598,3 +598,11 @@ Los Webhooks de proveedores externos sólo pueden producir observaciones despué
 de validar su firma y resolver identidad interna sin confiar en datos de tenancy
 recibidos. El transporte y el body externo jamás reciben autoridad directa para
 elegir una organización, una cuenta financiera o escribir el ledger.
+
+
+<!-- P5.5_MERCADO_PAGO_WEBHOOK_HTTP_QUEUE_V1 -->
+## Continuidad P5.5 — Webhook operativo sin entregar autoridad externa
+La recepción HTTP pública se separa del trabajo financiero: autenticar y
+encolar es una fase; consultar la evidencia canónica e ingerirla es otra. Los
+secretos permanecen fuera del ledger, la base y los jobs. La conexión interna
+se fija por una URL configurada por SRCM y queda protegida por su propio HMAC.

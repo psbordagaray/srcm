@@ -1246,3 +1246,16 @@ Checkpoint base P5.1: `97653c38ca416906004e7fd4230756c6ce281115`.
 - recurso financiero canónico siempre se obtiene por `GET /v1/orders/{id}`;
 - secretos siguen fuera de DB/repo y entran sólo de forma transitoria;
 - sin ruta pública ni ingestión al ledger hasta resolver secret store + connection routing + ACK/job.
+
+
+<!-- P5.5_MERCADO_PAGO_WEBHOOK_HTTP_QUEUE_V1 -->
+### P5.5 — Mercado Pago Webhook HTTP/Queue + secret routing — EN VALIDACIÓN
+- endpoint stateless `/api/webhooks/finance/mercado-pago/{connectionPublicId}`;
+- route UUID selecciona conexión interna, nunca el body;
+- secret store fuera de DB/repo mediante contrato reemplazable;
+- query raw preserva `data.id` antes de HMAC;
+- firma + identidad se validan antes del ACK;
+- job serializa sólo connection/resource/notification IDs;
+- `HTTP 200` ocurre después de enqueue y antes del GET externo;
+- job obtiene order canónica y la ingiere con source Webhook;
+- sin URL pública real ni prueba externa en esta slice.

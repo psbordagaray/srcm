@@ -397,3 +397,12 @@ impide que el body elija organización o cuenta y obtiene la order completa por
 API antes de normalizarla. Esta slice no expone todavía endpoint público ni
 llama al ingestor: primero deben quedar resueltos el almacén seguro de secretos,
 el vínculo aplicación/usuario -> conexión interna y la estrategia ACK + job.
+
+
+<!-- P5.5_MERCADO_PAGO_WEBHOOK_HTTP_QUEUE_V1 -->
+## P5.5 — endpoint Webhook, secret routing y ACK/job
+La URL Webhook queda ligada al `public_id` interno de una conexión financiera.
+SRCM carga secret/token fuera de DB, valida HMAC e identidad, encola sólo
+identificadores seguros y responde 200. El job posterior consulta la order
+canónica y usa el ingestor P5 con source Webhook. El body nunca elige tenant,
+cuenta ni importe financiero.

@@ -15,24 +15,22 @@ final class MercadoPagoPointWebhookResolver
     }
 
     /**
-     * P5.4 intentionally receives credentials and expected external identity
-     * as transient arguments. It neither persists them nor selects tenancy
-     * from unverified webhook body data.
+     * P5.5 splits cheap synchronous authentication from remote resolution so
+     * the public endpoint can ACK immediately after safely enqueueing work.
      *
      * @param array<string, mixed> $query
      * @param array<string, mixed> $body
      */
-    public function resolve(
+    public function authenticate(
         string $xSignature,
         string $xRequestId,
         array $query,
         array $body,
         string $webhookSecret,
-        string $accessToken,
         string $expectedApplicationId,
         string $expectedUserId,
         bool $expectedLiveMode
-    ): ExternalFinancialProviderObservation {
+    ): MercadoPagoPointWebhookNotification {
         $queryDataId = $query['data.id'] ?? null;
 
         if (! is_string($queryDataId) && ! is_int($queryDataId)) {
@@ -85,14 +83,36 @@ final class MercadoPagoPointWebhookResolver
             );
         }
 
+        return $notification;
+    }
+
+    public function resolveResource(
+        string $resourceId,
+        string $accessToken
+    ): ExternalFinancialProviderObservation {
+        $resourceId = trim($resourceId);
+
+        if (
+            $resourceId === ''
+            || strlen($resourceId) > 191
+            || preg_match(
+                '/^[A-Za-z0-9][A-Za-z0-9._:-]*$/D',
+                $resourceId
+            ) !== 1
+        ) {
+            throw new DomainException(
+                'Mercado Pago webhook requiere un recurso válido.'
+            );
+        }
+
         $order = $this->ordersClient->getOrder(
             $accessToken,
-            $notification->resourceId
+            $resourceId
         );
 
         if (
             ! is_string($order['id'] ?? null)
-            || trim($order['id']) !== $notification->resourceId
+            || trim($order['id']) !== $resourceId
         ) {
             throw new DomainException(
                 'Mercado Pago devolvió una order distinta a la notificada.'
@@ -103,7 +123,7 @@ final class MercadoPagoPointWebhookResolver
 
         if (
             $observation->externalOperationId
-                !== $notification->resourceId
+                !== $resourceId
         ) {
             throw new DomainException(
                 'La observación Mercado Pago no conserva la order notificada.'
@@ -111,6 +131,40 @@ final class MercadoPagoPointWebhookResolver
         }
 
         return $observation;
+    }
+
+    /**
+     * Backwards-compatible composition retained for P5.4 callers/tests.
+     *
+     * @param array<string, mixed> $query
+     * @param array<string, mixed> $body
+     */
+    public function resolve(
+        string $xSignature,
+        string $xRequestId,
+        array $query,
+        array $body,
+        string $webhookSecret,
+        string $accessToken,
+        string $expectedApplicationId,
+        string $expectedUserId,
+        bool $expectedLiveMode
+    ): ExternalFinancialProviderObservation {
+        $notification = $this->authenticate(
+            $xSignature,
+            $xRequestId,
+            $query,
+            $body,
+            $webhookSecret,
+            $expectedApplicationId,
+            $expectedUserId,
+            $expectedLiveMode
+        );
+
+        return $this->resolveResource(
+            $notification->resourceId,
+            $accessToken
+        );
     }
 
     private function numericExpected(
