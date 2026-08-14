@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\Finance\MercadoPagoPointWebhookReceiptService;
 use App\Jobs\ProcessMercadoPagoPointWebhook;
 use DomainException;
+use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -13,7 +14,8 @@ final class MercadoPagoWebhookController extends Controller
     public function __invoke(
         Request $request,
         string $connectionPublicId,
-        MercadoPagoPointWebhookReceiptService $receipts
+        MercadoPagoPointWebhookReceiptService $receipts,
+        QueueFactory $queues
     ): Response {
         try {
             $receipt = $receipts->accept(
@@ -30,10 +32,12 @@ final class MercadoPagoWebhookController extends Controller
             return response('', 401);
         }
 
-        ProcessMercadoPagoPointWebhook::dispatch(
-            $receipt->connectionPublicId,
-            $receipt->resourceId,
-            $receipt->notificationId
+        $queues->connection()->push(
+            new ProcessMercadoPagoPointWebhook(
+                $receipt->connectionPublicId,
+                $receipt->resourceId,
+                $receipt->notificationId
+            )
         );
 
         return response('', 200);

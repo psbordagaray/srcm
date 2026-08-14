@@ -9,7 +9,9 @@ use App\Contracts\Finance\MercadoPagoConnectionSecretStore;
 use App\Domain\Finance\ExternalFinancialProviderIngestor;
 use App\Domain\Finance\FinancialAccountManager;
 use App\Domain\Finance\FinancialProviderConnectionManager;
+use App\Domain\Finance\MercadoPagoPointWebhookReceiptService;
 use App\Domain\Tenancy\CurrentOrganization;
+use App\Http\Controllers\MercadoPagoWebhookController;
 use App\Enums\FinancialAccountType;
 use App\Enums\FinancialMovementSource;
 use App\Enums\UserRole;
@@ -19,7 +21,11 @@ use App\Models\Organization;
 use App\Models\OrganizationMembership;
 use App\Models\User;
 use DomainException;
+use Illuminate\Contracts\Queue\Factory as QueueFactory;
+use Illuminate\Contracts\Queue\Queue as QueueContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Mockery;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Str;
@@ -92,6 +98,163 @@ class MercadoPagoWebhookHttpQueueFoundationTest extends TestCase
             'cliente@example.com',
             $serialized
         );
+    }
+
+    public function test_public_route_accepts_documented_full_envelope_without_top_level_notification_id(): void
+    {
+        [, $connection] = $this->mercadoPagoConnection();
+        [$secret] = $this->bindSecrets($connection);
+
+        Queue::fake();
+        Http::fake();
+
+        $resourceId = 'ORD01HTTPFULL001';
+        $requestId = 'req-http-full-001';
+        $timestamp = '1742505638683';
+
+        $body = $this->body($resourceId);
+        unset($body['id']);
+
+        $body['data'] = [
+            'external_reference' => 'ext_ref_1234',
+            'id' => $resourceId,
+            'status' => 'processed',
+            'status_detail' => 'accredited',
+            'total_paid_amount' => '100000',
+            'transactions' => [
+                'payments' => [[
+                    'amount' => '100000',
+                    'id' => 'PAY01HTTPFULL001',
+                    'paid_amount' => '100000',
+                    'status' => 'processed',
+                    'status_detail' => 'accredited',
+                ]],
+            ],
+            'type' => 'point',
+            'version' => 3,
+        ];
+
+        $response = $this->postJson(
+            '/api/webhooks/finance/mercado-pago/'
+                .$connection->public_id
+                .'?data.id='.$resourceId
+                .'&type=order',
+            $body,
+            [
+                'x-signature' => $this->signature(
+                    $secret,
+                    $resourceId,
+                    $requestId,
+                    $timestamp
+                ),
+                'x-request-id' => $requestId,
+            ]
+        );
+
+        $response->assertOk();
+
+        Queue::assertPushed(
+            ProcessMercadoPagoPointWebhook::class,
+            fn (ProcessMercadoPagoPointWebhook $job): bool =>
+                $job->connectionPublicId
+                    === strtolower((string) $connection->public_id)
+                && $job->resourceId === $resourceId
+                && $job->notificationId === null
+        );
+
+        Http::assertNothingSent();
+    }
+
+    public function test_controller_pushes_to_injected_queue_before_ack(): void
+    {
+        [, $connection] = $this->mercadoPagoConnection();
+        [$secret] = $this->bindSecrets($connection);
+
+        Http::fake();
+
+        $resourceId = 'ORD01DIRECTQUEUE001';
+        $requestId = 'req-direct-queue-001';
+        $timestamp = '1742505638683';
+
+        $rawQuery =
+            'data.id='.$resourceId.'&type=order';
+
+        $request = Request::create(
+            '/api/webhooks/finance/mercado-pago/'
+                .$connection->public_id
+                .'?'.$rawQuery,
+            'POST',
+            [],
+            [],
+            [],
+            [
+                'CONTENT_TYPE' => 'application/json',
+                'HTTP_X_SIGNATURE' => $this->signature(
+                    $secret,
+                    $resourceId,
+                    $requestId,
+                    $timestamp
+                ),
+                'HTTP_X_REQUEST_ID' => $requestId,
+            ],
+            json_encode(
+                $this->body($resourceId),
+                JSON_THROW_ON_ERROR
+            )
+        );
+
+        $request->server->set(
+            'QUERY_STRING',
+            $rawQuery
+        );
+
+        $queue = Mockery::mock(
+            QueueContract::class
+        );
+
+        $queue
+            ->shouldReceive('push')
+            ->once()
+            ->with(
+                Mockery::on(
+                    fn (mixed $job): bool =>
+                        $job
+                            instanceof ProcessMercadoPagoPointWebhook
+                        && $job->connectionPublicId
+                            === strtolower(
+                                (string) $connection->public_id
+                            )
+                        && $job->resourceId === $resourceId
+                        && $job->notificationId
+                            === '987654321'
+                )
+            )
+            ->andReturn(123);
+
+        $queues = Mockery::mock(
+            QueueFactory::class
+        );
+
+        $queues
+            ->shouldReceive('connection')
+            ->once()
+            ->withNoArgs()
+            ->andReturn($queue);
+
+        $response = (new MercadoPagoWebhookController)(
+            $request,
+            strtolower((string) $connection->public_id),
+            app(MercadoPagoPointWebhookReceiptService::class),
+            $queues
+        );
+
+        $this->assertSame(
+            200,
+            $response->getStatusCode()
+        );
+        $this->assertSame('', $response->getContent());
+
+        Http::assertNothingSent();
     }
 
     public function test_invalid_signature_or_spoofed_identity_never_acks_or_enqueues(): void
@@ -451,11 +614,7 @@ class MercadoPagoWebhookHttpQueueFoundationTest extends TestCase
         string $requestId,
         string $timestamp
     ): string {
-        $signedId = ctype_alnum($dataId)
-            ? strtolower($dataId)
-            : $dataId;
-
-        $manifest = 'id:'.$signedId
+        $manifest = 'id:'.$dataId
             .';request-id:'.$requestId
             .';ts:'.$timestamp
             .';';

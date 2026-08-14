@@ -7,7 +7,7 @@ final readonly class MercadoPagoPointWebhookReceipt
     public function __construct(
         public string $connectionPublicId,
         public string $resourceId,
-        public string $notificationId
+        public ?string $notificationId
     ) {
     }
 }

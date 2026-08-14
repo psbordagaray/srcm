@@ -45,10 +45,6 @@ final class MercadoPagoWebhookSignatureVerifier
 
         [$timestamp, $signature] = $this->signatureParts($xSignature);
 
-        if (ctype_alnum($resourceId)) {
-            $resourceId = strtolower($resourceId);
-        }
-
         $manifest = 'id:'.$resourceId
             .';request-id:'.$requestId
             .';ts:'.$timestamp

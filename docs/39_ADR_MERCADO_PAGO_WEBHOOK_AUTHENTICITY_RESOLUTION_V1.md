@@ -16,7 +16,7 @@ check -> GET /v1/orders/{id} -> adapter -> provider-neutral observation`
 
 P5.4 no llama todavía a `ExternalFinancialProviderIngestor`.
 
-## 2. Firma oficial
+## 2. Firma oficial y contrato Point efectivo
 
 Mercado Pago envía:
 
@@ -24,13 +24,33 @@ Mercado Pago envía:
 - header `x-request-id`;
 - header `x-signature` con `ts` y `v1`.
 
-El manifest oficial es:
+El manifest usado por SRCM para **Mercado Pago Point** es:
 
-`id:<data.id>;request-id:<x-request-id>;ts:<ts>;`
-
-Cuando `data.id` es alfanumérico, se firma en minúsculas.
+`id:<data.id exacto>;request-id:<x-request-id>;ts:<ts>;`
 
 La contrafirma es HMAC-SHA256 hexadecimal y se compara en tiempo constante.
+
+La documentación general de Webhooks publicada por Mercado Pago contiene una
+regla que indica pasar a minúsculas un `data.id` alfanumérico. Sin embargo, el
+contrato Point verificado en P5.6 presenta evidencia específica y contradictoria:
+
+- la documentación Point muestra IDs `ORD...` en mayúsculas y deriva la
+  validación a los SDKs oficiales pasando `data.id` de la query;
+- el `WebhookSignatureValidator` PHP oficial construye el manifest con
+  `dataId` tal como fue recibido, sin normalizar el case;
+- la simulación externa real de Point ejecutada el 2026-08-14 llegó a SRCM con
+  `data.id` alfanumérico en mayúsculas y su HMAC coincidió con el manifest de
+  case exacto, no con el manifest en minúsculas.
+
+Por lo tanto, para el endpoint **Point** SRCM conserva byte a byte el case del
+`data.id` recibido al construir el HMAC. No se admite una transformación
+arbitraria de case ni se modifica luego el identificador para routing o para la
+resolución canónica.
+
+Esta decisión es específica del contrato Point observado y debe quedar sujeta
+al registro de compatibilidad de proveedores P5.7. Un cambio futuro del
+contrato externo requiere evidencia y migración explícita; no una relajación
+silenciosa del verificador.
 
 SRCM P5.4 exige los tres valores del manifest. Aunque la documentación general
 permite omitir pares ausentes, para Point no aceptamos una notificación con

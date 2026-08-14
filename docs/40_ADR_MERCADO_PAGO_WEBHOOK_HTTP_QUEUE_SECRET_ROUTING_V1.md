@@ -203,3 +203,59 @@ La primera prueba externa del endpoint queda para un checkpoint separado.
 
 > **ACK rápido sólo después de autenticar y encolar; secretos y payload bruto
 > nunca viajan con el job; la order canónica es la única evidencia financiera.**
+
+<!-- P5.6_REAL_POINT_ENVELOPE_2026_08_14 -->
+## 13. Hallazgo P5.6 — envelope Point real/documentado
+
+La validación HTTPS externa de P5.6 confirmó una diferencia entre los mocks
+iniciales y el envelope `order.processed` documentado por Mercado Pago Point.
+
+Para una notificación procesada, Mercado Pago puede enviar:
+
+- `action`, `api_version`, `application_id`, `date_created`, `live_mode`,
+  `type` y `user_id` en el nivel superior;
+- la Order completa dentro de `data`;
+- `data.id` como identificador de recurso;
+- sin un `id` de notificación obligatorio en el nivel superior.
+
+La documentación de validación de firma también muestra una forma compacta que
+sí incluye `id` superior. Por lo tanto SRCM acepta ambas variantes.
+
+Decisión vinculante:
+
+- `data.id` sigue siendo obligatorio y debe coincidir entre query y body;
+- `x-signature` + `x-request-id` + `data.id` siguen siendo obligatorios;
+- `application_id`, `user_id` y `live_mode` siguen comparándose con la
+  identidad esperada de la conexión;
+- el `id` superior, cuando existe, se valida y conserva;
+- cuando no existe, se representa como `null`;
+- nunca se inventa un identificador de notificación;
+- la idempotencia financiera continúa basada en la Order/estado/evidencia
+  canónica, no en ese `id` opcional.
+
+<!-- P5.6_ACK_AFTER_IMMEDIATE_ENQUEUE_2026_08_14 -->
+## 14. Corrección P5.6 — ACK solamente después del enqueue efectivo
+
+Las pruebas locales con servidor PHP persistente demostraron dos fronteras
+insuficientes para el contrato estricto "ACK después de enqueue":
+
+1. `ProcessMercadoPagoPointWebhook::dispatch(...)` crea un `PendingDispatch`;
+   el envío real ocurre al destruir ese objeto.
+2. `Illuminate\Contracts\Bus\Dispatcher::dispatch($job)` tampoco produjo, en
+   el harness HTTP persistente, una fila observable en la database queue antes
+   del ACK.
+
+Para este endpoint público la frontera vinculante pasa a ser el backend de
+queue directamente.
+
+Decisión vinculante:
+
+- el controller recibe `Illuminate\Contracts\Queue\Factory`;
+- obtiene la conexión default mediante `$queues->connection()`;
+- construye `ProcessMercadoPagoPointWebhook` con IDs seguros únicamente;
+- invoca `$queues->connection()->push($job)` antes de crear HTTP 200;
+- para el driver `database`, `Queue::push()` persiste el payload en la tabla
+  de jobs mediante `DatabaseQueue`;
+- si `connection()` o `push()` falla, no se emite ACK 200;
+- esto sólo persiste el job: el worker sigue separado del request;
+- sigue prohibido serializar secretos, body crudo, payer data o Access Token.

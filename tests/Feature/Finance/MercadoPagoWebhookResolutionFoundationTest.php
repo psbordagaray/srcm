@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 class MercadoPagoWebhookResolutionFoundationTest extends TestCase
 {
-    public function test_signature_verifier_implements_official_manifest_and_lowercases_alphanumeric_data_id(): void
+    public function test_point_signature_verifier_preserves_exact_query_data_id_case(): void
     {
         $verifier = app(MercadoPagoWebhookSignatureVerifier::class);
 
@@ -20,21 +20,45 @@ class MercadoPagoWebhookResolutionFoundationTest extends TestCase
         $requestId = '2066ca19-c6f1-498a-be75-1923005edd06';
         $timestamp = '1742505638683';
 
-        $manifest = 'id:'.strtolower($dataId)
+        $exactManifest = 'id:'.$dataId
             .';request-id:'.$requestId
             .';ts:'.$timestamp
             .';';
 
-        $hash = hash_hmac('sha256', $manifest, $secret);
+        $exactHash = hash_hmac(
+            'sha256',
+            $exactManifest,
+            $secret
+        );
 
         $verifier->verify(
-            'ts='.$timestamp.',v1='.$hash,
+            'ts='.$timestamp.',v1='.$exactHash,
             $requestId,
             $dataId,
             $secret
         );
 
         $this->addToAssertionCount(1);
+
+        $lowercaseManifest = 'id:'.strtolower($dataId)
+            .';request-id:'.$requestId
+            .';ts:'.$timestamp
+            .';';
+
+        $lowercaseHash = hash_hmac(
+            'sha256',
+            $lowercaseManifest,
+            $secret
+        );
+
+        $this->assertDomainFailure(fn () =>
+            $verifier->verify(
+                'ts='.$timestamp.',v1='.$lowercaseHash,
+                $requestId,
+                $dataId,
+                $secret
+            )
+        );
     }
 
     public function test_signature_tampering_and_malformed_headers_fail_closed_without_secret_leakage(): void
@@ -147,6 +171,74 @@ class MercadoPagoWebhookResolutionFoundationTest extends TestCase
                 'Bearer TRANSIENT_TEST_ACCESS_TOKEN'
             )
         );
+    }
+
+    public function test_documented_processed_full_envelope_without_top_level_notification_id_is_accepted(): void
+    {
+        Http::fake();
+
+        $secret = 'P5_6_FULL_ENVELOPE_SECRET';
+        $requestId = 'req-full-envelope-001';
+        $dataId = 'ORD01FULLENVELOPE001';
+        $timestamp = '1742505638683';
+
+        $notification = app(MercadoPagoPointWebhookResolver::class)
+            ->authenticate(
+                $this->signature(
+                    $secret,
+                    $dataId,
+                    $requestId,
+                    $timestamp
+                ),
+                $requestId,
+                [
+                    'data.id' => $dataId,
+                    'type' => 'order',
+                ],
+                [
+                    'action' => 'order.processed',
+                    'api_version' => 'v1',
+                    'application_id' => '3186891236050430',
+                    'date_created' => '2026-08-14T12:00:00Z',
+                    'live_mode' => true,
+                    'type' => 'order',
+                    'user_id' => '51110066',
+                    'data' => [
+                        'external_reference' => 'ext_ref_1234',
+                        'id' => $dataId,
+                        'status' => 'processed',
+                        'status_detail' => 'accredited',
+                        'total_paid_amount' => '100000',
+                        'transactions' => [
+                            'payments' => [[
+                                'amount' => '100000',
+                                'id' => 'PAY01FULLENVELOPE001',
+                                'paid_amount' => '100000',
+                                'status' => 'processed',
+                                'status_detail' => 'accredited',
+                            ]],
+                        ],
+                        'type' => 'point',
+                        'version' => 3,
+                    ],
+                ],
+                $secret,
+                '3186891236050430',
+                '51110066',
+                true
+            );
+
+        $this->assertSame($dataId, $notification->resourceId);
+        $this->assertSame('order.processed', $notification->action);
+        $this->assertSame(
+            '3186891236050430',
+            $notification->applicationId
+        );
+        $this->assertSame('51110066', $notification->userId);
+        $this->assertTrue($notification->liveMode);
+        $this->assertNull($notification->notificationId);
+
+        Http::assertNothingSent();
     }
 
     public function test_invalid_signature_never_calls_orders_api(): void
@@ -269,11 +361,7 @@ class MercadoPagoWebhookResolutionFoundationTest extends TestCase
         string $requestId,
         string $timestamp
     ): string {
-        $signedId = ctype_alnum($dataId)
-            ? strtolower($dataId)
-            : $dataId;
-
-        $manifest = 'id:'.$signedId
+        $manifest = 'id:'.$dataId
             .';request-id:'.$requestId
             .';ts:'.$timestamp
             .';';

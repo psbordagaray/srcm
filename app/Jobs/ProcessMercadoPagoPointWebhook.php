@@ -25,7 +25,7 @@ final class ProcessMercadoPagoPointWebhook implements ShouldQueue
     public function __construct(
         public readonly string $connectionPublicId,
         public readonly string $resourceId,
-        public readonly string $notificationId
+        public readonly ?string $notificationId
     ) {
     }
 

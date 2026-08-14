@@ -14,7 +14,7 @@ final readonly class MercadoPagoPointWebhookNotification
         public string $applicationId,
         public string $userId,
         public bool $liveMode,
-        public string $notificationId,
+        public ?string $notificationId,
         public ?DateTimeInterface $createdAt
     ) {
     }
@@ -72,7 +72,7 @@ final readonly class MercadoPagoPointWebhookNotification
             $body['user_id'] ?? null,
             'user_id'
         );
-        $notificationId = self::identifier(
+        $notificationId = self::optionalIdentifier(
             $body['id'] ?? null,
             'notification id'
         );
@@ -92,6 +92,17 @@ final readonly class MercadoPagoPointWebhookNotification
             notificationId: $notificationId,
             createdAt: self::date($body['date_created'] ?? null)
         );
+    }
+
+    private static function optionalIdentifier(
+        mixed $value,
+        string $label
+    ): ?string {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return self::identifier($value, $label);
     }
 
     private static function action(mixed $value): string
