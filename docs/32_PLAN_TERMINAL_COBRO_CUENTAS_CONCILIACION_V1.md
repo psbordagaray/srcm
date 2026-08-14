@@ -374,3 +374,7 @@ P3.1 lleva `financial_accounts` a la operación diaria:
 - la cuenta destino expresa **dónde pertenece el cobro declarado**, no acredita que el dinero haya ingresado ni lo marca como conciliado.
 
 P3.1 no introduce todavía asociaciones rígidas medio→tipo de cuenta. Un cobro con tarjeta puede terminar en un procesador, billetera o banco según la configuración real de la organización. Se bloquean tenant, actividad y moneda; los adaptadores P5 resolverán progresivamente destinos automáticos sin redefinir este contrato.
+
+<!-- P5.2_MERCADO_PAGO_POINT_ADAPTER_V1 -->
+## P5.2 — Mercado Pago Point adapter
+Mercado Pago Point entra como adaptador sobre `FinancialExternalMovement`, usando la API de Orders vigente. La order completa se normaliza a evidencia provider-neutral; una notificación que sólo aporta ID no se ingiere. El smoke real inicial queda limitado a `GET /terminals/v1/list`. Ninguna credencial se persiste y ninguna operación monetaria real se ejecuta en esta foundation.

@@ -577,3 +577,7 @@ La meta es que el comerciante sienta que SRCM:
 - crece sin perder la verdad.
 
 **SRCM full = menos trabajo manual, más control y una sola verdad operacional.**
+
+<!-- P5.2_MERCADO_PAGO_POINT_ADAPTER_V1 -->
+## Continuidad P5.2 — Mercado Pago Point
+El primer proveedor concreto de P5 será Mercado Pago Point sobre la API de Orders. Su adapter traduce recursos completos a la verdad financiera P3/P5.1; no crea un ledger paralelo. La primera verificación productiva será sólo lectura de terminales. El cobro real queda detrás de un checkpoint explícito posterior.

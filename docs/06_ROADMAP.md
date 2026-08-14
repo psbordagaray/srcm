@@ -1209,3 +1209,17 @@ Significa que el comerciante debe poder resolver desde SRCM —de forma nativa o
 La prioridad siempre será:
 
 **menos trabajo manual + más verdad + más seguridad + más velocidad + más trazabilidad.**
+
+<!-- P5.2_MERCADO_PAGO_POINT_ADAPTER_V1 -->
+### P5.2 — Mercado Pago Point adapter — FOUNDATION EN VALIDACIÓN
+- primer adaptador concreto montado sobre P5.1 provider-neutral;
+- API de Orders vigente para Point;
+- normalización de recurso completo Point Order;
+- status provider-specific → provider-neutral;
+- dinero decimal → minor units sin float ambiguo;
+- payload/PII/tokens descartados;
+- notificación incompleta fail-closed;
+- smoke real opcional sólo lectura para detectar terminales;
+- sin credenciales persistidas, sin webhook público y sin cobro real en esta slice.
+
+Checkpoint base P5.1: `97653c38ca416906004e7fd4230756c6ce281115`.
