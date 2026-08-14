@@ -273,6 +273,8 @@ Amplía el antiguo P4 “Efectivo y vuelto”:
 ### P5 — Operaciones externas y adaptadores
 Contrato común; Mercado Pago como primer adaptador cuando corresponda; API/webhook/polling; idempotencia; IDs y estados externos.
 
+P5.1 Foundation agrega una conexión provider-neutral por cuenta financiera sin secretos, un contrato de adapter, observaciones seguras y un ingestor automático que reutiliza `ExternalFinancialMovementRecorder`. La deduplicación automática considera cuenta + ID externo + estado para que webhook/polling de la misma observación no dupliquen efectos; los cambios de estado permanecen append-only. Ninguna evidencia externa concilia por sí sola.
+
 ### P6 — Centro de Conciliación
 Cobros esperados, movimientos/acreditaciones, bruto/neto, comisiones, matching, diferencias, revisión y resolución.
 

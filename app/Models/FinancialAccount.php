@@ -8,6 +8,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class FinancialAccount extends Model
@@ -67,5 +68,13 @@ class FinancialAccount extends Model
     public function externalMovements(): HasMany
     {
         return $this->hasMany(FinancialExternalMovement::class);
+    }
+
+    public function providerConnection(): HasOne
+    {
+        return $this->hasOne(
+            FinancialProviderConnection::class,
+            'financial_account_id'
+        );
     }
 }

@@ -183,6 +183,22 @@ final class FinancialAccountManager
                 }
             }
 
+            $providerConnection = $locked
+                ->providerConnection()
+                ->first();
+
+            if (
+                $providerConnection
+                && (
+                    $type !== $locked->type
+                    || $provider !== $locked->provider
+                    || $currency !== $locked->currency_code
+                )
+            ) {
+                throw new DomainException(
+                    'Tipo, proveedor y moneda no pueden cambiar mientras la cuenta conserve una conexión financiera.'
+                );
+            }
             $old = [
                 'name' => $locked->name,
                 'type' => $locked->type,
@@ -255,6 +271,16 @@ final class FinancialAccountManager
                 );
             }
 
+            if (
+                $locked->active
+                && $locked->providerConnection()
+                    ->where('active', true)
+                    ->exists()
+            ) {
+                throw new DomainException(
+                    'No puede inactivarse una cuenta financiera mientras su conexión de proveedor esté activa.'
+                );
+            }
             $old = ['active' => $locked->active];
 
             $locked->forceFill([

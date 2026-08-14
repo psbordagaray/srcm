@@ -352,6 +352,21 @@ ADR rector: `docs/35_ADR_HECHOS_MONETARIOS_APLICADO_ENTREGADO_VUELTO_OBLIGACION_
 - jobs/reintentos;
 - registro de fallos sin duplicar efectos.
 
+**P5.1 — Provider-neutral Ingestion Foundation**
+- `financial_provider_connections` vincula organización + `FinancialAccount` + proveedor + ID externo sin guardar secretos;
+- una cuenta de efectivo nunca se conecta a un proveedor financiero externo;
+- una cuenta conectada conserva tipo, proveedor y moneda como identidad estable;
+- `ExternalFinancialProviderAdapter` normaliza payload provider-specific a una observación financiera segura;
+- `ExternalFinancialProviderIngestor` admite únicamente API/webhook/polling y siempre termina en `ExternalFinancialMovementRecorder`;
+- la ingestión automática no inventa un usuario humano: `created_by_user_id` puede ser NULL y la auditoría conserva el hecho igualmente;
+- la misma `financial_account + external_operation_id + status` con mismos importes es idempotente incluso si reaparece por otro canal;
+- la misma operación/estado con contenido financiero distinto falla cerrado;
+- una transición de estado crea un nuevo `FinancialExternalMovement` inmutable; nunca actualiza el anterior;
+- registrar evidencia externa no concilia, no modifica Venta, no modifica Caja y no paga nada;
+- P5.2 incorporará el primer adaptador concreto, autenticación/firma, secretos, jobs, retry y observabilidad.
+
+ADR rector: `docs/36_ADR_ADAPTADORES_OPERACIONES_EXTERNAS_PROVIDER_NEUTRAL_V1.md`.
+
 ---
 
 ## 5. P6 — Centro de Conciliación

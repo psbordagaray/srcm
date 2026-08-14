@@ -434,6 +434,15 @@ Cada adapter debe declarar:
 3. importación estructurada;
 4. manual controlado.
 
+### P5.1 — límite provider-neutral
+- la conexión de proveedor referencia una cuenta financiera privada pero no conserva credenciales ni secretos;
+- adapters concretos producen observaciones seguras y el Core las ingiere sobre `FinancialExternalMovement` P3;
+- API/webhook/polling son transportes, no nuevas verdades financieras;
+- reintentos y entregas multicanal de la misma operación/estado no deben duplicar efectos;
+- cambios de estado externos son nuevos hechos inmutables, no updates retrospectivos;
+- una inconsistencia monetaria para la misma operación/estado falla cerrado;
+- conciliación sigue siendo un acto separado y verificable.
+
 ---
 
 ## 10. Estrategia de IA
