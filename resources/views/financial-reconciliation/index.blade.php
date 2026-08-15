@@ -112,6 +112,7 @@
                                                     <th class="px-4 py-3 text-right">Comisión</th>
                                                     <th class="px-4 py-3 text-right">Retención</th>
                                                     <th class="px-4 py-3 text-right">Dif. bruto</th>
+                                                    <th class="px-4 py-3 text-right">Decisión</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="divide-y divide-white/5">
@@ -153,6 +154,41 @@
                                                         <td class="px-4 py-3 text-right font-mono {{ $candidate->grossDifferenceMinor === 0 ? 'text-emerald-300' : 'text-amber-300' }}">
                                                             {{ $item->currencyCode }}
                                                             {{ number_format($candidate->grossDifferenceMinor / 100, 2, ',', '.') }}
+                                                        </td>
+                                                        <td class="min-w-64 px-4 py-3">
+                                                            <form
+                                                                method="POST"
+                                                                action="{{ route('financial-reconciliation.candidates.reconcile', [
+                                                                    'commercePayment' => $item->paymentId,
+                                                                    'financialExternalMovement' => $candidate->movementPublicId,
+                                                                ]) }}"
+                                                                class="space-y-2"
+                                                            >
+                                                                @csrf
+
+                                                                @if($candidate->grossDifferenceMinor !== 0)
+                                                                    <textarea
+                                                                        name="note"
+                                                                        rows="2"
+                                                                        minlength="10"
+                                                                        maxlength="2000"
+                                                                        required
+                                                                        placeholder="Explique la diferencia antes de confirmar"
+                                                                        class="sulu-input w-full text-xs"
+                                                                    ></textarea>
+                                                                @endif
+
+                                                                <button
+                                                                    type="submit"
+                                                                    class="w-full rounded-lg border border-cyan-400/30 px-3 py-2 text-xs font-black text-cyan-100 hover:border-cyan-300"
+                                                                >
+                                                                    Conciliar este movimiento
+                                                                </button>
+
+                                                                <p class="text-[10px] leading-4 text-slate-500">
+                                                                    Acción explícita. El ranking no concilia automáticamente.
+                                                                </p>
+                                                            </form>
                                                         </td>
                                                     </tr>
                                                 @endforeach
