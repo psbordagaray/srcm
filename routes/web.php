@@ -8,6 +8,7 @@ use App\Http\Controllers\CommerceSaleController;
 use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\FinancialReconciliationController;
 use App\Http\Controllers\FinancialStatementImportController;
+use App\Http\Controllers\FinancialManualExternalMovementController;
 use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -527,6 +528,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'financial/reconciliation/imports/csv',
                         [FinancialStatementImportController::class, 'store']
                     )->name('financial-statement-imports.csv.store');
+
+                    Route::get(
+                        'financial/reconciliation/movements/manual/create',
+                        [FinancialManualExternalMovementController::class, 'create']
+                    )->name('financial-manual-external-movements.create');
+
+                    Route::post(
+                        'financial/reconciliation/movements/manual',
+                        [FinancialManualExternalMovementController::class, 'store']
+                    )->name('financial-manual-external-movements.store');
 
                     Route::post(
                         'financial/reconciliation/payments/{commercePayment}/movements/{financialExternalMovement}',

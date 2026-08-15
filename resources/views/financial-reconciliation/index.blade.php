@@ -20,7 +20,14 @@
                     href="{{ route('financial-statement-imports.csv.create') }}"
                     class="rounded-xl border border-cyan-400/30 px-4 py-3 text-sm font-black text-cyan-200 hover:border-cyan-300"
                 >
-                    Previsualizar extracto CSV
+                    Previsualizar extracto CSV/XLSX
+                </a>
+
+                <a
+                    href="{{ route('financial-manual-external-movements.create') }}"
+                    class="rounded-xl border border-amber-400/30 px-4 py-3 text-sm font-black text-amber-200 hover:border-amber-300"
+                >
+                    Registrar movimiento manual
                 </a>
 
                 <a
