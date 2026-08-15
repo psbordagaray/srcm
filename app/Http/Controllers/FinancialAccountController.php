@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Finance\FinancialAccountManager;
+use App\Domain\Finance\FinancialProviderHealthProbeRunner;
+use App\Domain\Finance\FinancialProviderOperationalStatusReader;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\FinancialAccountType;
+use App\Enums\FinancialProviderCapability;
 use App\Http\Requests\StoreFinancialAccountRequest;
 use App\Http\Requests\UpdateFinancialAccountRequest;
 use App\Models\FinancialAccount;
+use App\Models\FinancialProviderConnection;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,17 +21,34 @@ class FinancialAccountController extends Controller
 {
     public function index(
         Request $request,
-        CurrentOrganization $currentOrganization
+        CurrentOrganization $currentOrganization,
+        FinancialProviderOperationalStatusReader $providerStatus
     ): View {
         $organizationId = $currentOrganization->id($request->user());
 
+        $accounts = FinancialAccount::query()
+            ->forOrganization($organizationId)
+            ->with('providerConnection')
+            ->orderByDesc('active')
+            ->orderBy('currency_code')
+            ->orderBy('name')
+            ->get();
+
+        $providerStatuses = [];
+
+        foreach ($accounts as $account) {
+            if ($account->providerConnection) {
+                $providerStatuses[$account->getKey()] =
+                    $providerStatus->read(
+                        $account->providerConnection,
+                        FinancialProviderCapability::Read
+                    );
+            }
+        }
+
         return view('financial-accounts.index', [
-            'accounts' => FinancialAccount::query()
-                ->forOrganization($organizationId)
-                ->orderByDesc('active')
-                ->orderBy('currency_code')
-                ->orderBy('name')
-                ->get(),
+            'accounts' => $accounts,
+            'providerStatuses' => $providerStatuses,
         ]);
     }
 
@@ -151,6 +172,38 @@ class FinancialAccountController extends Controller
                 $account->active
                     ? 'Cuenta financiera activada.'
                     : 'Cuenta financiera inactivada.'
+            );
+    }
+
+    public function probeProviderReadHealth(
+        Request $request,
+        FinancialProviderConnection $financialProviderConnection,
+        CurrentOrganization $currentOrganization,
+        FinancialProviderHealthProbeRunner $runner
+    ): RedirectResponse {
+        abort_unless(
+            (int) $financialProviderConnection->organization_id
+                === $currentOrganization->id($request->user()),
+            404
+        );
+
+        try {
+            $check = $runner->run(
+                $financialProviderConnection,
+                FinancialProviderCapability::Read
+            );
+        } catch (DomainException $exception) {
+            return back()->withErrors([
+                'provider_health' => $exception->getMessage(),
+            ]);
+        }
+
+        return redirect()
+            ->route('financial-accounts.index')
+            ->with(
+                'success',
+                'Health check de proveedor registrado: '
+                    .$check->health_status->value.'.'
             );
     }
 

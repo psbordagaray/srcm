@@ -516,6 +516,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         [FinancialAccountController::class, 'store']
                     )->name('financial-accounts.store');
 
+                    Route::post(
+                        'financial/provider-connections/{financialProviderConnection:public_id}/health/read',
+                        [FinancialAccountController::class, 'probeProviderReadHealth']
+                    )
+                        ->whereUuid('financialProviderConnection')
+                        ->name('financial-provider-connections.health.read');
+
                     Route::get(
                         'financial/accounts/{financialAccount:public_id}/edit',
                         [FinancialAccountController::class, 'edit']

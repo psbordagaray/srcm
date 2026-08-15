@@ -83,6 +83,49 @@
                                     <td class="px-5 py-4">
                                         <p class="text-slate-300">{{ $account->provider ?: '—' }}</p>
                                         <p class="mt-1 text-xs text-slate-500">{{ $account->external_label ?: 'Sin referencia externa' }}</p>
+
+                                        @if($account->providerConnection)
+                                            @php($providerStatus = $providerStatuses[$account->getKey()] ?? null)
+
+                                            <div class="mt-3 space-y-1 border-t border-white/5 pt-3 text-[11px] text-slate-500" data-provider-health>
+                                                <p>
+                                                    Contrato:
+                                                    <span class="font-mono text-slate-300">
+                                                        {{ $providerStatus?->registryKey ?: 'Sin binding' }}
+                                                    </span>
+                                                </p>
+                                                <p>
+                                                    Compatibilidad:
+                                                    <span class="font-semibold text-slate-300">
+                                                        {{ $providerStatus?->compatibilityStatus ?: 'unknown' }}
+                                                    </span>
+                                                    · read:
+                                                    <span class="font-semibold text-slate-300">
+                                                        {{ $providerStatus?->capabilityStatus ?: 'unknown' }}
+                                                    </span>
+                                                </p>
+                                                <p>
+                                                    Health lectura:
+                                                    <span class="font-semibold {{ $providerStatus?->healthStatus === 'healthy' ? 'text-emerald-300' : 'text-amber-300' }}">
+                                                        {{ $providerStatus?->healthStatus ?: 'Sin verificación' }}
+                                                    </span>
+                                                    @if($providerStatus?->diagnosticCode)
+                                                        · {{ $providerStatus->diagnosticCode }}
+                                                    @endif
+                                                </p>
+                                                <p>
+                                                    Último check:
+                                                    {{ $providerStatus?->checkedAt?->format('d/m/Y H:i:s') ?: '—' }}
+                                                </p>
+                                                <p>
+                                                    Automatización read:
+                                                    <span class="font-semibold {{ $providerStatus?->automationAllowed ? 'text-emerald-300' : 'text-amber-300' }}">
+                                                        {{ $providerStatus?->automationAllowed ? 'Habilitada' : 'Bloqueada' }}
+                                                    </span>
+                                                    · {{ $providerStatus?->automationReason ?: 'health_unknown' }}
+                                                </p>
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="px-5 py-4">
                                         <span class="rounded-full px-3 py-1 text-xs font-bold {{ $account->active ? 'bg-emerald-500/10 text-emerald-200' : 'bg-slate-700/50 text-slate-400' }}">
@@ -91,7 +134,25 @@
                                     </td>
                                     @can('manage-financial-accounts')
                                         <td class="px-5 py-4">
-                                            <div class="flex justify-end gap-2">
+                                            <div class="flex flex-wrap justify-end gap-2">
+                                                @if(
+                                                    $account->providerConnection
+                                                    && ($providerStatuses[$account->getKey()] ?? null)?->probeSupported
+                                                )
+                                                    <form
+                                                        method="POST"
+                                                        action="{{ route('financial-provider-connections.health.read', $account->providerConnection) }}"
+                                                    >
+                                                        @csrf
+                                                        <button
+                                                            type="submit"
+                                                            class="rounded-lg border border-cyan-400/20 px-3 py-2 text-xs font-bold text-cyan-200"
+                                                        >
+                                                            Verificar lectura
+                                                        </button>
+                                                    </form>
+                                                @endif
+
                                                 <a
                                                     href="{{ route('financial-accounts.edit', $account) }}"
                                                     class="rounded-lg border border-slate-700 px-3 py-2 text-xs font-bold text-slate-300 hover:border-slate-500 hover:text-white"
