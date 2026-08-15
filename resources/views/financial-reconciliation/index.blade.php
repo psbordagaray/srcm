@@ -15,12 +15,21 @@
                 </p>
             </div>
 
-            <a
-                href="{{ route('financial-accounts.index') }}"
-                class="rounded-xl border border-slate-700 px-4 py-3 text-sm font-black text-slate-300 hover:border-slate-500 hover:text-white"
-            >
-                Cuentas financieras
-            </a>
+            <div class="flex flex-wrap gap-2">
+                <a
+                    href="{{ route('financial-statement-imports.csv.create') }}"
+                    class="rounded-xl border border-cyan-400/30 px-4 py-3 text-sm font-black text-cyan-200 hover:border-cyan-300"
+                >
+                    Previsualizar extracto CSV
+                </a>
+
+                <a
+                    href="{{ route('financial-accounts.index') }}"
+                    class="rounded-xl border border-slate-700 px-4 py-3 text-sm font-black text-slate-300 hover:border-slate-500 hover:text-white"
+                >
+                    Cuentas financieras
+                </a>
+            </div>
         </div>
 
         <section class="sulu-card overflow-hidden">

@@ -7,6 +7,7 @@ use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CommerceSaleController;
 use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\FinancialReconciliationController;
+use App\Http\Controllers\FinancialStatementImportController;
 use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -511,6 +512,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'financial/reconciliation',
                         [FinancialReconciliationController::class, 'index']
                     )->name('financial-reconciliation.index');
+
+                    Route::get(
+                        'financial/reconciliation/imports/csv',
+                        [FinancialStatementImportController::class, 'create']
+                    )->name('financial-statement-imports.csv.create');
+
+                    Route::post(
+                        'financial/reconciliation/imports/csv/preview',
+                        [FinancialStatementImportController::class, 'preview']
+                    )->name('financial-statement-imports.csv.preview');
 
                     Route::post(
                         'financial/reconciliation/payments/{commercePayment}/movements/{financialExternalMovement}',
