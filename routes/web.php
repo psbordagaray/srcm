@@ -6,6 +6,7 @@ use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CommerceSaleController;
 use App\Http\Controllers\FinancialAccountController;
+use App\Http\Controllers\FinancialReconciliationController;
 use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
@@ -502,6 +503,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'financial/accounts',
                         [FinancialAccountController::class, 'index']
                     )->name('financial-accounts.index');
+                });
+
+            Route::middleware('can:review-financial-reconciliation')
+                ->group(function () {
+                    Route::get(
+                        'financial/reconciliation',
+                        [FinancialReconciliationController::class, 'index']
+                    )->name('financial-reconciliation.index');
                 });
 
             Route::middleware('can:manage-financial-accounts')

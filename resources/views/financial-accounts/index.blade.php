@@ -22,6 +22,15 @@
                     </a>
                 @endcan
 
+                @can('review-financial-reconciliation')
+                    <a
+                        href="{{ route('financial-reconciliation.index') }}"
+                        class="rounded-xl border border-cyan-400/30 px-4 py-3 text-sm font-black text-cyan-200 hover:border-cyan-300"
+                    >
+                        Centro de conciliación
+                    </a>
+                @endcan
+
                 @can('manage-financial-accounts')
                     <a
                         href="{{ route('financial-accounts.create') }}"
