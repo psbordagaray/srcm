@@ -524,6 +524,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )->name('financial-statement-imports.csv.preview');
 
                     Route::post(
+                        'financial/reconciliation/imports/csv',
+                        [FinancialStatementImportController::class, 'store']
+                    )->name('financial-statement-imports.csv.store');
+
+                    Route::post(
                         'financial/reconciliation/payments/{commercePayment}/movements/{financialExternalMovement}',
                         [FinancialReconciliationController::class, 'reconcileCandidate']
                     )

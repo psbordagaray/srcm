@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Finance\FinancialStatementCsvPreviewer;
+use App\Domain\Finance\FinancialStatementCsvImportManager;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\FinancialAccountType;
 use App\Models\FinancialAccount;
 use DomainException;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -43,8 +44,8 @@ class FinancialStatementImportController extends Controller
     public function preview(
         Request $request,
         CurrentOrganization $currentOrganization,
-        FinancialStatementCsvPreviewer $previewer
-    ): View|\Illuminate\Http\RedirectResponse {
+        FinancialStatementCsvImportManager $imports
+    ): View|RedirectResponse {
         $validated = $request->validate([
             'financial_account' => [
                 'required',
@@ -79,12 +80,15 @@ class FinancialStatementImportController extends Controller
         }
 
         try {
-            $preview = $previewer->preview(
+            $staged = $imports->stage(
                 $account,
                 $file->getRealPath(),
                 $file->getClientOriginalName(),
                 $request->user()
             );
+
+            $preview = $staged['preview'];
+            $token = $staged['token'];
         } catch (DomainException $exception) {
             return back()
                 ->withInput(
@@ -98,7 +102,49 @@ class FinancialStatementImportController extends Controller
 
         return view(
             'financial-reconciliation.import-csv-preview',
-            ['preview' => $preview]
+            [
+                'preview' => $preview,
+                'token' => $token,
+            ]
         );
+    }
+
+    public function store(
+        Request $request,
+        FinancialStatementCsvImportManager $imports
+    ): RedirectResponse {
+        $validated = $request->validate([
+            'token' => [
+                'required',
+                'uuid',
+            ],
+        ]);
+
+        try {
+            $result = $imports->commit(
+                $validated['token'],
+                $request->user()
+            );
+        } catch (DomainException $exception) {
+            return redirect()
+                ->route(
+                    'financial-statement-imports.csv.create'
+                )
+                ->with(
+                    'error',
+                    $exception->getMessage()
+                );
+        }
+
+        return redirect()
+            ->route('financial-reconciliation.index')
+            ->with(
+                'success',
+                'Extracto CSV importado: '
+                    .$result['created'].' nuevo(s), '
+                    .$result['deduplicated']
+                    .' ya existente(s). '
+                    .'No se conciliaron automáticamente.'
+            );
     }
 }

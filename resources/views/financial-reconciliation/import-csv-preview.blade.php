@@ -3,7 +3,7 @@
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
-                    Finanzas · P7.1
+                    Finanzas · P7.2
                 </p>
                 <h1 class="mt-2 text-2xl font-bold text-white">
                     Vista previa CSV validada
@@ -22,8 +22,39 @@
         </div>
 
         <div class="rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-3 text-sm text-emerald-100">
-            Vista previa solamente. Ningún movimiento fue importado y ninguna conciliación fue creada.
+            La vista previa sigue sin alterar la verdad financiera. El siguiente botón ejecuta un commit explícito e idempotente sobre el ledger externo.
         </div>
+
+        <section class="sulu-card p-5">
+            <form
+                method="POST"
+                action="{{ route('financial-statement-imports.csv.store') }}"
+                class="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center"
+            >
+                @csrf
+                <input
+                    type="hidden"
+                    name="token"
+                    value="{{ $token }}"
+                >
+
+                <div>
+                    <p class="text-sm font-black text-white">
+                        Confirmación explícita
+                    </p>
+                    <p class="mt-1 text-xs leading-5 text-slate-400">
+                        Se registrarán como movimientos externos CSV con estado posted. No se conciliará automáticamente ni se modificará Venta o Caja.
+                    </p>
+                </div>
+
+                <button
+                    type="submit"
+                    class="rounded-xl border border-cyan-400/30 bg-cyan-400/10 px-5 py-3 text-sm font-black text-cyan-100 hover:border-cyan-300"
+                >
+                    Importar estos movimientos
+                </button>
+            </form>
+        </section>
 
         <section class="sulu-card overflow-hidden">
             <div class="border-b border-white/10 px-5 py-4">

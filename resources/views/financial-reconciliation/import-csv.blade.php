@@ -3,13 +3,13 @@
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
-                    Finanzas · P7.1
+                    Finanzas · P7.2
                 </p>
                 <h1 class="mt-2 text-2xl font-bold text-white">
                     Previsualizar extracto CSV
                 </h1>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                    Esta etapa sólo valida y normaliza. No importa movimientos, no concilia y no modifica el libro financiero.
+                    Primero valida y normaliza sin tocar el libro financiero. Sólo una confirmación posterior y explícita importa movimientos; nunca concilia automáticamente.
                 </p>
             </div>
 
