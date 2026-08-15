@@ -147,7 +147,7 @@ class FinancialStatementImportController extends Controller
         if (! $file) {
             return back()->withErrors([
                 'statement_import' =>
-                    'No se recibió el archivo CSV.',
+                    'No se recibió el archivo CSV/XLSX.',
             ]);
         }
 
@@ -160,13 +160,29 @@ class FinancialStatementImportController extends Controller
                 )
                 : FinancialStatementCsvMapping::canonical();
 
-            $staged = $imports->stage(
-                $account,
-                $file->getRealPath(),
-                $file->getClientOriginalName(),
-                $request->user(),
-                $mapping
+            $extension = strtolower(
+                $file->getClientOriginalExtension()
             );
+
+            $staged = match ($extension) {
+                'csv' => $imports->stage(
+                    $account,
+                    $file->getRealPath(),
+                    $file->getClientOriginalName(),
+                    $request->user(),
+                    $mapping
+                ),
+                'xlsx' => $imports->stageXlsx(
+                    $account,
+                    $file->getRealPath(),
+                    $file->getClientOriginalName(),
+                    $request->user(),
+                    $mapping
+                ),
+                default => throw new DomainException(
+                    'P7.4 sólo admite archivos CSV o XLSX.'
+                ),
+            };
 
             $preview = $staged['preview'];
             $token = $staged['token'];
@@ -221,7 +237,7 @@ class FinancialStatementImportController extends Controller
             ->route('financial-reconciliation.index')
             ->with(
                 'success',
-                'Extracto CSV importado: '
+                'Extracto importado: '
                     .$result['created'].' nuevo(s), '
                     .$result['deduplicated']
                     .' ya existente(s). '

@@ -29,6 +29,7 @@ final class FinancialStatementCsvImportManager
     public function __construct(
         private readonly CurrentOrganization $currentOrganization,
         private readonly FinancialStatementCsvPreviewer $previewer,
+        private readonly FinancialStatementXlsxPreviewer $xlsxPreviewer,
         private readonly ExternalFinancialMovementRecorder $recorder,
         private readonly AuditRecorder $audit
     ) {
@@ -47,8 +48,6 @@ final class FinancialStatementCsvImportManager
         User $actor,
         ?FinancialStatementCsvMapping $mapping = null
     ): array {
-        $this->cleanupExpiredDrafts();
-
         $mapping ??=
             FinancialStatementCsvMapping::canonical();
 
@@ -60,7 +59,81 @@ final class FinancialStatementCsvImportManager
             $mapping
         );
 
-        $organizationId = $this->organizationId($actor);
+        return $this->stagePreview(
+            $account,
+            $preview,
+            $actor,
+            FinancialMovementSource::Csv,
+            $mapping
+        );
+    }
+
+    /**
+     * @return array{
+     *     preview: FinancialStatementImportPreview,
+     *     token: string
+     * }
+     */
+    public function stageXlsx(
+        FinancialAccount $account,
+        string $path,
+        string $originalName,
+        User $actor,
+        ?FinancialStatementCsvMapping $mapping = null
+    ): array {
+        $mapping ??=
+            FinancialStatementCsvMapping::canonical();
+
+        $preview = $this->xlsxPreviewer->preview(
+            $account,
+            $path,
+            $originalName,
+            $actor,
+            $mapping
+        );
+
+        return $this->stagePreview(
+            $account,
+            $preview,
+            $actor,
+            FinancialMovementSource::Xlsx,
+            $mapping
+        );
+    }
+
+    /**
+     * @return array{
+     *     preview: FinancialStatementImportPreview,
+     *     token: string
+     * }
+     */
+    private function stagePreview(
+        FinancialAccount $account,
+        FinancialStatementImportPreview $preview,
+        User $actor,
+        FinancialMovementSource $source,
+        FinancialStatementCsvMapping $mapping
+    ): array {
+        $this->cleanupExpiredDrafts();
+
+        if (
+            ! in_array(
+                $source,
+                [
+                    FinancialMovementSource::Csv,
+                    FinancialMovementSource::Xlsx,
+                ],
+                true
+            )
+        ) {
+            throw new DomainException(
+                'La fuente de importación tabular no está admitida.'
+            );
+        }
+
+        $organizationId =
+            $this->organizationId($actor);
+
         $token = (string) Str::uuid();
 
         $rows = array_map(
@@ -76,10 +149,12 @@ final class FinancialStatementCsvImportManager
                 'currency_code' => $row->currencyCode,
                 'gross_amount_minor' =>
                     $row->grossAmountMinor,
-                'fee_amount_minor' => $row->feeAmountMinor,
+                'fee_amount_minor' =>
+                    $row->feeAmountMinor,
                 'withholding_amount_minor' =>
                     $row->withholdingAmountMinor,
-                'net_amount_minor' => $row->netAmountMinor,
+                'net_amount_minor' =>
+                    $row->netAmountMinor,
                 'external_operation_id' =>
                     $row->externalOperationId,
                 'reference' => $row->reference,
@@ -88,20 +163,26 @@ final class FinancialStatementCsvImportManager
         );
 
         $this->writeDraft($token, [
-            'version' => 2,
+            'version' => 3,
+            'source' => $source->value,
             'organization_id' => $organizationId,
             'user_id' => (int) $actor->getKey(),
             'created_at' =>
                 CarbonImmutable::now()->toIso8601String(),
-            'account_id' => (int) $account->getKey(),
+            'account_id' =>
+                (int) $account->getKey(),
             'account_public_id' =>
                 $preview->accountPublicId,
-            'currency_code' => $preview->currencyCode,
-            'file_name' => $preview->fileName,
-            'file_sha256' => $preview->fileSha256,
+            'currency_code' =>
+                $preview->currencyCode,
+            'file_name' =>
+                $preview->fileName,
+            'file_sha256' =>
+                $preview->fileSha256,
             'mapping_fingerprint' =>
                 $mapping->fingerprint(),
-            'row_count' => $preview->rowCount(),
+            'row_count' =>
+                $preview->rowCount(),
             'rows' => $rows,
         ]);
 
@@ -131,7 +212,7 @@ final class FinancialStatementCsvImportManager
             (int) ($draft['version'] ?? 0);
 
         if (
-            ! in_array($version, [1, 2], true)
+            ! in_array($version, [1, 2, 3], true)
             || (int) ($draft['organization_id'] ?? 0)
                 !== $organizationId
             || (int) ($draft['user_id'] ?? 0)
@@ -220,9 +301,32 @@ final class FinancialStatementCsvImportManager
             );
         }
 
+        $source =
+            $version < 3
+                ? FinancialMovementSource::Csv
+                : FinancialMovementSource::tryFrom(
+                    (string) ($draft['source'] ?? '')
+                );
+
+        if (
+            ! in_array(
+                $source,
+                [
+                    FinancialMovementSource::Csv,
+                    FinancialMovementSource::Xlsx,
+                ],
+                true
+            )
+        ) {
+            throw new DomainException(
+                'La fuente de la previsualización privada no es válida.'
+            );
+        }
+
         $rows = $this->validateDraftRows(
             $draft,
-            $account
+            $account,
+            $source
         );
 
         $fileSha = (string) $draft['file_sha256'];
@@ -253,6 +357,7 @@ final class FinancialStatementCsvImportManager
             $rows,
             $fileSha,
             $mappingFingerprint,
+            $source,
             $actor
         ): array {
             $lockedAccount = FinancialAccount::query()
@@ -353,7 +458,7 @@ final class FinancialStatementCsvImportManager
                         )
                         ->where(
                             'source',
-                            FinancialMovementSource::Csv->value
+                            $source->value
                         )
                         ->where(
                             'source_key',
@@ -366,7 +471,7 @@ final class FinancialStatementCsvImportManager
                     $lockedAccount,
                     new ExternalFinancialMovementData(
                         source:
-                            FinancialMovementSource::Csv,
+                            $source,
                         sourceKey: $row['source_key'],
                         direction: $row['direction'],
                         status:
@@ -401,21 +506,21 @@ final class FinancialStatementCsvImportManager
                     $movement->status
                         !== FinancialMovementStatus::Posted
                     || $movement->source
-                        !== FinancialMovementSource::Csv
+                        !== $source
                 ) {
                     throw new DomainException(
-                        'El recorder devolvió un movimiento incompatible con el commit CSV.'
+                        'El recorder devolvió un movimiento incompatible con el commit del extracto.'
                     );
                 }
             }
 
             $this->audit->record(
                 $lockedAccount,
-                'financial_statement_csv_import_committed',
+                'financial_statement_'.$source->value.'_import_committed',
                 null,
                 [
                     'source' =>
-                        FinancialMovementSource::Csv->value,
+                        $source->value,
                     'file_sha256' => $fileSha,
                     'mapping_fingerprint' =>
                         $mappingFingerprint,
@@ -457,7 +562,8 @@ final class FinancialStatementCsvImportManager
      */
     private function validateDraftRows(
         array $draft,
-        FinancialAccount $account
+        FinancialAccount $account,
+        FinancialMovementSource $source
     ): array {
         $fileSha = $draft['file_sha256'] ?? null;
         $rawRows = $draft['rows'] ?? null;
@@ -507,7 +613,9 @@ final class FinancialStatementCsvImportManager
                 || $lineNumber < 2
                 || ! is_string($sourceKey)
                 || $sourceKey !==
-                    'csv:'.$fileSha.':'.$lineNumber
+                    $source->value
+                    .':'.$fileSha
+                    .':'.$lineNumber
                 || ! is_string($fingerprint)
                 || preg_match(
                     '/^[a-f0-9]{64}$/D',

@@ -3,10 +3,10 @@
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
-                    Finanzas · P7.3
+                    Finanzas · P7.4
                 </p>
                 <h1 class="mt-2 text-2xl font-bold text-white">
-                    Previsualizar extracto CSV
+                    Previsualizar extracto CSV/XLSX
                 </h1>
                 <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
                     Primero valida y normaliza sin tocar el libro financiero. Sólo una confirmación posterior y explícita importa movimientos; nunca concilia automáticamente.
@@ -62,12 +62,12 @@
 
                 <div>
                     <label class="mb-2 block text-xs font-black uppercase tracking-wider text-slate-400">
-                        Archivo CSV
+                        Archivo CSV o XLSX
                     </label>
                     <input
                         type="file"
                         name="statement"
-                        accept=".csv,text/csv"
+                        accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         required
                         class="sulu-input w-full"
                     >
@@ -104,12 +104,12 @@
                         </summary>
 
                         <p class="mt-3 text-xs leading-5 text-slate-400">
-                            Usá los nombres exactos de la cabecera del banco o billetera. Las columnas opcionales pueden quedar vacías. No uses separadores de miles en importes.
+                            Usá los nombres exactos de la cabecera del banco o billetera. Las columnas opcionales pueden quedar vacías. No uses separadores de miles en importes. En XLSX el separador de archivo se ignora; el separador decimal sigue definiendo cómo se normalizan celdas numéricas.
                         </p>
 
                         <div class="mt-4 grid gap-3 md:grid-cols-2">
                             <label class="text-xs text-slate-400">
-                                Separador CSV
+                                Separador CSV (sólo CSV)
                                 <select name="mapping_delimiter" class="sulu-input mt-1 w-full">
                                     <option value="comma" @selected(old('mapping_delimiter', 'comma') === 'comma')>Coma (,)</option>
                                     <option value="semicolon" @selected(old('mapping_delimiter') === 'semicolon')>Punto y coma (;)</option>
@@ -202,7 +202,7 @@
                         Contrato canónico P7.1
                     </p>
                     <p class="mt-2 text-xs leading-5 text-slate-500">
-                        UTF-8, separador coma, máximo 2 MiB y 1000 filas. Los importes usan punto decimal con hasta dos decimales. La moneda se toma de la cuenta seleccionada y no del archivo.
+                        CSV canónico: UTF-8, separador coma. XLSX: primera hoja, valores confirmados y sin fórmulas. Ambos: máximo 2 MiB y 1000 filas. La moneda se toma de la cuenta seleccionada y no del archivo.
                     </p>
                     <pre class="mt-3 overflow-x-auto text-[11px] leading-5 text-cyan-200">occurred_at,direction,gross_amount,fee_amount,withholding_amount,net_amount,external_operation_id,reference
 2026-08-15T10:30:00-03:00,credit,60000.00,3180.00,0.00,56820.00,OP-123,"Acreditación lote 123"</pre>
