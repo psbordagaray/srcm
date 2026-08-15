@@ -519,6 +519,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereNumber('commercePayment')
                         ->whereUuid('financialExternalMovement')
                         ->name('financial-reconciliation.candidates.reconcile');
+
+                    Route::post(
+                        'financial/reconciliation/payments/{commercePayment}/resolve-difference',
+                        [FinancialReconciliationController::class, 'resolveDifference']
+                    )
+                        ->whereNumber('commercePayment')
+                        ->name('financial-reconciliation.differences.resolve');
                 });
 
             Route::middleware('can:manage-financial-accounts')

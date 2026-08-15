@@ -261,6 +261,185 @@ final class PaymentReconciliationManager
         }, 3);
     }
 
+    public function resolveDifference(
+        CommercePayment $payment,
+        User $actor,
+        string $note
+    ): PaymentReconciliationEvent {
+        $organizationId = $this->organizationId($actor);
+        $note = trim($note);
+
+        if (mb_strlen($note) < 10) {
+            throw new DomainException(
+                'La resolución de una diferencia requiere una nota de al menos 10 caracteres.'
+            );
+        }
+
+        if (mb_strlen($note) > 2000) {
+            throw new DomainException(
+                'La nota de resolución supera la longitud admitida.'
+            );
+        }
+
+        return DB::transaction(function () use (
+            $organizationId,
+            $payment,
+            $actor,
+            $note
+        ): PaymentReconciliationEvent {
+            $lockedPayment = CommercePayment::query()
+                ->forOrganization($organizationId)
+                ->whereKey($payment->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedPayment) {
+                throw new DomainException(
+                    'El cobro declarado no pertenece a la organización activa.'
+                );
+            }
+
+            $case = PaymentReconciliation::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'commerce_payment_id',
+                    $lockedPayment->getKey()
+                )
+                ->lockForUpdate()
+                ->first();
+
+            if (! $case) {
+                throw new DomainException(
+                    'El cobro no posee una diferencia de conciliación para resolver.'
+                );
+            }
+
+            $latestEvent = PaymentReconciliationEvent::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'payment_reconciliation_id',
+                    $case->getKey()
+                )
+                ->orderByDesc('id')
+                ->lockForUpdate()
+                ->first();
+
+            if (! $latestEvent) {
+                throw new DomainException(
+                    'El expediente no posee una diferencia de conciliación para resolver.'
+                );
+            }
+
+            if (
+                $latestEvent->status
+                    === PaymentReconciliationStatus::Resolved
+            ) {
+                if (
+                    hash_equals(
+                        (string) $latestEvent->note,
+                        $note
+                    )
+                ) {
+                    return $latestEvent->load([
+                        'reconciliation.payment',
+                        'allocations.movement.account',
+                    ]);
+                }
+
+                throw new DomainException(
+                    'La diferencia ya fue resuelta con otra decisión.'
+                );
+            }
+
+            if (
+                $latestEvent->status
+                    !== PaymentReconciliationStatus::Difference
+            ) {
+                throw new DomainException(
+                    'Sólo una diferencia vigente puede resolverse.'
+                );
+            }
+
+            $idempotencyKey = implode(':', [
+                'p6',
+                'resolve',
+                (string) $organizationId,
+                (string) $lockedPayment->getKey(),
+                (string) $latestEvent->getKey(),
+            ]);
+
+            $existing = PaymentReconciliationEvent::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'idempotency_key',
+                    $idempotencyKey
+                )
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing) {
+                if (
+                    $existing->status
+                        !== PaymentReconciliationStatus::Resolved
+                    || ! hash_equals(
+                        (string) $existing->note,
+                        $note
+                    )
+                ) {
+                    throw new DomainException(
+                        'La resolución idempotente entra en conflicto con evidencia existente.'
+                    );
+                }
+
+                return $existing->load([
+                    'reconciliation.payment',
+                    'allocations.movement.account',
+                ]);
+            }
+
+            $resolved = PaymentReconciliationEvent::query()
+                ->create([
+                    'organization_id' => $organizationId,
+                    'payment_reconciliation_id' =>
+                        $case->getKey(),
+                    'idempotency_key' => $idempotencyKey,
+                    'status' =>
+                        PaymentReconciliationStatus::Resolved,
+                    'allocated_gross_amount_minor' =>
+                        (int) $latestEvent
+                            ->allocated_gross_amount_minor,
+                    'difference_minor' =>
+                        (int) $latestEvent->difference_minor,
+                    'note' => $note,
+                    'created_by_user_id' => $actor->getKey(),
+                    'occurred_at' => CarbonImmutable::now(),
+                    'created_at' => CarbonImmutable::now(),
+                ]);
+
+            $this->audit->record(
+                $resolved,
+                'commerce_payment_reconciliation_resolved',
+                null,
+                [
+                    'commerce_payment_id' =>
+                        $lockedPayment->getKey(),
+                    'difference_event_id' =>
+                        $latestEvent->getKey(),
+                    'allocated_gross_amount_minor' =>
+                        (int) $latestEvent
+                            ->allocated_gross_amount_minor,
+                    'difference_minor' =>
+                        (int) $latestEvent->difference_minor,
+                ]
+            );
+
+            return $resolved->refresh()->load([
+                'reconciliation.payment',
+                'allocations.movement.account',
+            ]);
+        }, 3);
+    }
+
     private function organizationId(User $actor): int
     {
         $organizationId = $this->currentOrganization->id($actor);

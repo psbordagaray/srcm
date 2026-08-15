@@ -421,6 +421,408 @@ class FinancialReconciliationExplicitDecisionTest
         );
     }
 
+    public function test_difference_resolution_is_append_only_and_preserves_original_allocation(): void
+    {
+        [$organization, $admin] =
+            $this->organizationWithUsers();
+
+        $this->actingAs($admin);
+
+        $account = $this->bankAccount(
+            $admin,
+            'Resolution'
+        );
+
+        $paidAt = CarbonImmutable::parse(
+            '2026-08-15 12:00:00',
+            'UTC'
+        );
+
+        $payment = $this->electronicPayment(
+            $organization,
+            $admin,
+            $account,
+            6000000,
+            'P63-DIFF',
+            $paidAt
+        );
+
+        $movement = $this->externalMovement(
+            $account,
+            $admin,
+            'p63-difference',
+            5900000,
+            'P63-DIFF',
+            $paidAt->addMinute()
+        );
+
+        app(
+            FinancialReconciliationDecisionManager::class
+        )->reconcileCandidate(
+            $payment,
+            $movement,
+            $admin,
+            'Diferencia inicial aceptada para revisión.'
+        );
+
+        $this->assertDatabaseCount(
+            'payment_reconciliation_events',
+            1
+        );
+
+        $this->assertDatabaseCount(
+            'payment_reconciliation_allocations',
+            1
+        );
+
+        $note =
+            'Diferencia revisada contra extracto y aceptada por administración.';
+
+        $this->post(
+            route(
+                'financial-reconciliation.differences.resolve',
+                ['commercePayment' => $payment->id]
+            ),
+            ['note' => $note]
+        )
+            ->assertRedirect(
+                route('financial-reconciliation.index')
+            )
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount(
+            'payment_reconciliation_events',
+            2
+        );
+
+        $this->assertDatabaseCount(
+            'payment_reconciliation_allocations',
+            1
+        );
+
+        $this->assertDatabaseHas(
+            'payment_reconciliation_events',
+            [
+                'status' =>
+                    PaymentReconciliationStatus::Difference->value,
+                'allocated_gross_amount_minor' => 5900000,
+                'difference_minor' => -100000,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'payment_reconciliation_events',
+            [
+                'status' =>
+                    PaymentReconciliationStatus::Resolved->value,
+                'allocated_gross_amount_minor' => 5900000,
+                'difference_minor' => -100000,
+                'note' => $note,
+            ]
+        );
+    }
+
+    public function test_same_resolution_is_idempotent_and_conflicting_resolution_fails_closed(): void
+    {
+        [$organization, $admin] =
+            $this->organizationWithUsers();
+
+        $this->actingAs($admin);
+
+        $account = $this->bankAccount(
+            $admin,
+            'Resolution idem'
+        );
+
+        $paidAt = CarbonImmutable::parse(
+            '2026-08-15 11:00:00',
+            'UTC'
+        );
+
+        $payment = $this->electronicPayment(
+            $organization,
+            $admin,
+            $account,
+            2000000,
+            'P63-IDEM',
+            $paidAt
+        );
+
+        $movement = $this->externalMovement(
+            $account,
+            $admin,
+            'p63-idem',
+            1900000,
+            'P63-IDEM',
+            $paidAt
+        );
+
+        app(
+            FinancialReconciliationDecisionManager::class
+        )->reconcileCandidate(
+            $payment,
+            $movement,
+            $admin,
+            'Diferencia inicial preparada para resolución.'
+        );
+
+        $route = route(
+            'financial-reconciliation.differences.resolve',
+            ['commercePayment' => $payment->id]
+        );
+
+        $note =
+            'Resolución administrativa confirmada con evidencia documental.';
+
+        $this->post($route, ['note' => $note])
+            ->assertSessionHasNoErrors();
+
+        $this->post($route, ['note' => $note])
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount(
+            'payment_reconciliation_events',
+            2
+        );
+
+        $this->from(
+            route('financial-reconciliation.index')
+        )->post($route, [
+            'note' =>
+                'Intento de cambiar una resolución ya confirmada.',
+        ])
+            ->assertRedirect(
+                route('financial-reconciliation.index')
+            )
+            ->assertSessionHasErrors(
+                'reconciliation_resolution'
+            );
+
+        $this->assertDatabaseCount(
+            'payment_reconciliation_events',
+            2
+        );
+    }
+
+    public function test_unreconciled_and_matched_payments_cannot_be_resolved_as_difference(): void
+    {
+        [$organization, $admin] =
+            $this->organizationWithUsers();
+
+        $this->actingAs($admin);
+
+        $account = $this->bankAccount(
+            $admin,
+            'Resolution guards'
+        );
+
+        $paidAt = CarbonImmutable::parse(
+            '2026-08-15 10:00:00',
+            'UTC'
+        );
+
+        $unreconciled = $this->electronicPayment(
+            $organization,
+            $admin,
+            $account,
+            1000000,
+            'P63-UNREC',
+            $paidAt
+        );
+
+        $unreconciledRoute = route(
+            'financial-reconciliation.differences.resolve',
+            ['commercePayment' => $unreconciled->id]
+        );
+
+        $this->from(
+            route('financial-reconciliation.index')
+        )->post($unreconciledRoute, [
+            'note' =>
+                'Intento explícito sobre un cobro sin diferencia.',
+        ])
+            ->assertSessionHasErrors(
+                'reconciliation_resolution'
+            );
+
+        $matched = $this->electronicPayment(
+            $organization,
+            $admin,
+            $account,
+            1100000,
+            'P63-MATCH',
+            $paidAt->addMinute()
+        );
+
+        $matchedMovement = $this->externalMovement(
+            $account,
+            $admin,
+            'p63-match',
+            1100000,
+            'P63-MATCH',
+            $paidAt->addMinute()
+        );
+
+        app(
+            FinancialReconciliationDecisionManager::class
+        )->reconcileCandidate(
+            $matched,
+            $matchedMovement,
+            $admin
+        );
+
+        $matchedRoute = route(
+            'financial-reconciliation.differences.resolve',
+            ['commercePayment' => $matched->id]
+        );
+
+        $this->from(
+            route('financial-reconciliation.index')
+        )->post($matchedRoute, [
+            'note' =>
+                'Intento explícito sobre un cobro ya coincidente.',
+        ])
+            ->assertSessionHasErrors(
+                'reconciliation_resolution'
+            );
+
+        $this->assertDatabaseCount(
+            'payment_reconciliation_events',
+            1
+        );
+    }
+
+    public function test_difference_resolution_http_is_permissioned_and_tenant_private(): void
+    {
+        [$organization, $admin, $operator] =
+            $this->organizationWithUsers();
+
+        [, $foreignAdmin] =
+            $this->organizationWithUsers();
+
+        $this->actingAs($admin);
+
+        $account = $this->bankAccount(
+            $admin,
+            'Resolution privacy'
+        );
+
+        $paidAt = CarbonImmutable::parse(
+            '2026-08-15 09:00:00',
+            'UTC'
+        );
+
+        $payment = $this->electronicPayment(
+            $organization,
+            $admin,
+            $account,
+            1000000,
+            'P63-PRIVATE',
+            $paidAt
+        );
+
+        $movement = $this->externalMovement(
+            $account,
+            $admin,
+            'p63-private',
+            900000,
+            'P63-PRIVATE',
+            $paidAt
+        );
+
+        app(
+            FinancialReconciliationDecisionManager::class
+        )->reconcileCandidate(
+            $payment,
+            $movement,
+            $admin,
+            'Diferencia preparada para validar privacidad.'
+        );
+
+        $route = route(
+            'financial-reconciliation.differences.resolve',
+            ['commercePayment' => $payment->id]
+        );
+
+        $this->actingAs($operator);
+
+        $this->post($route, [
+            'note' =>
+                'Operador intenta resolver sin autoridad suficiente.',
+        ])->assertForbidden();
+
+        $this->actingAs($foreignAdmin);
+
+        $this->post($route, [
+            'note' =>
+                'Administrador extranjero intenta resolver otro tenant.',
+        ])->assertNotFound();
+
+        $this->assertDatabaseCount(
+            'payment_reconciliation_events',
+            1
+        );
+    }
+
+    public function test_center_shows_resolution_only_for_current_difference_and_get_does_not_mutate(): void
+    {
+        [$organization, $admin] =
+            $this->organizationWithUsers();
+
+        $this->actingAs($admin);
+
+        $account = $this->bankAccount(
+            $admin,
+            'Resolution UI'
+        );
+
+        $paidAt = CarbonImmutable::parse(
+            '2026-08-15 08:00:00',
+            'UTC'
+        );
+
+        $payment = $this->electronicPayment(
+            $organization,
+            $admin,
+            $account,
+            1000000,
+            'P63-UI',
+            $paidAt
+        );
+
+        $movement = $this->externalMovement(
+            $account,
+            $admin,
+            'p63-ui',
+            950000,
+            'P63-UI',
+            $paidAt
+        );
+
+        app(
+            FinancialReconciliationDecisionManager::class
+        )->reconcileCandidate(
+            $payment,
+            $movement,
+            $admin,
+            'Diferencia preparada para revisión visual.'
+        );
+
+        $this->get(
+            route('financial-reconciliation.index')
+        )
+            ->assertOk()
+            ->assertSee('Resolver diferencia')
+            ->assertSee(
+                'La resolución es append-only'
+            );
+
+        $this->assertDatabaseCount(
+            'payment_reconciliation_events',
+            1
+        );
+    }
+
     private function externalMovement(
         FinancialAccount $account,
         User $admin,

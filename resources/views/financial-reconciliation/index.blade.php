@@ -91,6 +91,52 @@
                                 </div>
                             </div>
 
+                            @if($item->reconciliationStatus === 'difference')
+                                <div class="rounded-xl border border-amber-400/20 bg-amber-400/5 p-4" data-reconciliation-resolution>
+                                    <div class="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+                                        <div>
+                                            <p class="text-[10px] font-black uppercase tracking-wider text-amber-300">
+                                                Diferencia pendiente de resolución
+                                            </p>
+                                            <p class="mt-2 text-sm text-slate-300">
+                                                La evidencia ya quedó registrada. Resolver agrega un nuevo evento y no modifica el movimiento, el cobro ni la asignación original.
+                                            </p>
+                                        </div>
+
+                                        <form
+                                            method="POST"
+                                            action="{{ route('financial-reconciliation.differences.resolve', [
+                                                'commercePayment' => $item->paymentId,
+                                            ]) }}"
+                                            class="space-y-2"
+                                        >
+                                            @csrf
+
+                                            <textarea
+                                                name="note"
+                                                rows="3"
+                                                minlength="10"
+                                                maxlength="2000"
+                                                required
+                                                placeholder="Describa cómo se resolvió o aceptó esta diferencia"
+                                                class="sulu-input w-full text-xs"
+                                            ></textarea>
+
+                                            <button
+                                                type="submit"
+                                                class="w-full rounded-lg border border-amber-400/30 px-3 py-2 text-xs font-black text-amber-100 hover:border-amber-300"
+                                            >
+                                                Resolver diferencia
+                                            </button>
+
+                                            <p class="text-[10px] leading-4 text-slate-500">
+                                                La resolución es append-only y requiere una decisión humana explícita.
+                                            </p>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endif
+
                             <div>
                                 <p class="mb-2 text-[10px] font-black uppercase tracking-wider text-slate-500">
                                     Movimientos candidatos · orden informativo, sin auto-match
