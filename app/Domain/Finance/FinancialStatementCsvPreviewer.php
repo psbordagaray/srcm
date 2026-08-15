@@ -10,6 +10,7 @@ use App\Models\User;
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use DateTimeInterface;
+use DateTimeZone;
 use DomainException;
 
 final class FinancialStatementCsvPreviewer
@@ -38,12 +39,22 @@ final class FinancialStatementCsvPreviewer
         FinancialAccount $account,
         string $path,
         string $originalName,
-        User $actor
+        User $actor,
+        ?FinancialStatementCsvMapping $mapping = null
     ): FinancialStatementImportPreview {
-        $organizationId = $this->currentOrganization->id($actor);
-        $role = $this->currentOrganization->roleFor($actor);
+        $organizationId =
+            $this->currentOrganization->id($actor);
 
-        if (! ($role?->canReviewFinancialReconciliation() ?? false)) {
+        $role =
+            $this->currentOrganization->roleFor($actor);
+
+        if (
+            ! (
+                $role
+                    ?->canReviewFinancialReconciliation()
+                ?? false
+            )
+        ) {
             throw new DomainException(
                 'No posee permiso para previsualizar extractos financieros.'
             );
@@ -82,11 +93,15 @@ final class FinancialStatementCsvPreviewer
         }
 
         if (
-            strtolower(pathinfo($originalName, PATHINFO_EXTENSION))
-                !== 'csv'
+            strtolower(
+                pathinfo(
+                    $originalName,
+                    PATHINFO_EXTENSION
+                )
+            ) !== 'csv'
         ) {
             throw new DomainException(
-                'P7.1 sólo admite archivos CSV en su contrato canónico.'
+                'P7.3 sólo admite archivos CSV; XLSX se incorporará en un corte posterior.'
             );
         }
 
@@ -116,6 +131,9 @@ final class FinancialStatementCsvPreviewer
             );
         }
 
+        $mapping ??=
+            FinancialStatementCsvMapping::canonical();
+
         $handle = fopen($path, 'rb');
 
         if ($handle === false) {
@@ -128,7 +146,7 @@ final class FinancialStatementCsvPreviewer
             $header = fgetcsv(
                 $handle,
                 0,
-                ',',
+                $mapping->delimiter,
                 '"',
                 ''
             );
@@ -153,10 +171,43 @@ final class FinancialStatementCsvPreviewer
                 ) ?? $header[0];
             }
 
-            if ($header !== self::HEADER) {
+            if (
+                count($header)
+                !== count(array_unique($header))
+            ) {
+                throw new DomainException(
+                    'La cabecera CSV contiene nombres de columna duplicados.'
+                );
+            }
+
+            if (
+                $mapping->canonical
+                && $header !== self::HEADER
+            ) {
                 throw new DomainException(
                     'La cabecera CSV no coincide con el contrato canónico P7.1.'
                 );
+            }
+
+            if (! $mapping->canonical) {
+                foreach (
+                    $mapping->sourceHeaders()
+                    as $requiredHeader
+                ) {
+                    if (
+                        ! in_array(
+                            $requiredHeader,
+                            $header,
+                            true
+                        )
+                    ) {
+                        throw new DomainException(
+                            'La columna configurada "'
+                            .$requiredHeader
+                            .'" no existe en el CSV.'
+                        );
+                    }
+                }
             }
 
             $rows = [];
@@ -167,7 +218,7 @@ final class FinancialStatementCsvPreviewer
                 ($raw = fgetcsv(
                     $handle,
                     0,
-                    ',',
+                    $mapping->delimiter,
                     '"',
                     ''
                 )) !== false
@@ -178,9 +229,9 @@ final class FinancialStatementCsvPreviewer
                     continue;
                 }
 
-                if (count($raw) !== count(self::HEADER)) {
+                if (count($raw) !== count($header)) {
                     throw new DomainException(
-                        "La línea {$lineNumber} no posee 8 columnas."
+                        "La línea {$lineNumber} no coincide con la cantidad de columnas de la cabecera."
                     );
                 }
 
@@ -190,8 +241,8 @@ final class FinancialStatementCsvPreviewer
                     );
                 }
 
-                $row = array_combine(
-                    self::HEADER,
+                $sourceRow = array_combine(
+                    $header,
                     array_map(
                         static fn ($value): string =>
                             trim((string) $value),
@@ -199,49 +250,83 @@ final class FinancialStatementCsvPreviewer
                     )
                 );
 
-                if (! is_array($row)) {
+                if (! is_array($sourceRow)) {
                     throw new DomainException(
                         "No se pudo normalizar la línea {$lineNumber}."
                     );
                 }
 
                 $occurredAt = $this->parseOccurredAt(
-                    $row['occurred_at'],
-                    $lineNumber
+                    $this->requiredMappedValue(
+                        $sourceRow,
+                        $mapping->occurredAtHeader,
+                        $lineNumber
+                    ),
+                    $lineNumber,
+                    $mapping
                 );
 
-                $direction = match ($row['direction']) {
-                    FinancialMovementDirection::Credit->value =>
+                $directionRaw =
+                    $this->requiredMappedValue(
+                        $sourceRow,
+                        $mapping->directionHeader,
+                        $lineNumber
+                    );
+
+                $direction = match ($directionRaw) {
+                    $mapping->creditValue =>
                         FinancialMovementDirection::Credit,
-                    FinancialMovementDirection::Debit->value =>
+                    $mapping->debitValue =>
                         FinancialMovementDirection::Debit,
                     default => throw new DomainException(
-                        "La línea {$lineNumber} debe usar direction=credit o debit."
+                        "La línea {$lineNumber} contiene una dirección no reconocida por el mapeo."
                     ),
                 };
 
                 $gross = $this->parseAmountMinor(
-                    $row['gross_amount'],
+                    $this->requiredMappedValue(
+                        $sourceRow,
+                        $mapping->grossAmountHeader,
+                        $lineNumber
+                    ),
                     'gross_amount',
-                    $lineNumber
+                    $lineNumber,
+                    $mapping->decimalSeparator
                 );
 
                 $fee = $this->parseAmountMinor(
-                    $row['fee_amount'],
+                    $this->optionalMappedValue(
+                        $sourceRow,
+                        $mapping->feeAmountHeader,
+                        '0'
+                    ),
                     'fee_amount',
-                    $lineNumber
+                    $lineNumber,
+                    $mapping->decimalSeparator
                 );
 
-                $withholding = $this->parseAmountMinor(
-                    $row['withholding_amount'],
-                    'withholding_amount',
-                    $lineNumber
-                );
+                $withholding =
+                    $this->parseAmountMinor(
+                        $this->optionalMappedValue(
+                            $sourceRow,
+                            $mapping
+                                ->withholdingAmountHeader,
+                            '0'
+                        ),
+                        'withholding_amount',
+                        $lineNumber,
+                        $mapping->decimalSeparator
+                    );
 
                 $net = $this->parseAmountMinor(
-                    $row['net_amount'],
+                    $this->requiredMappedValue(
+                        $sourceRow,
+                        $mapping->netAmountHeader,
+                        $lineNumber
+                    ),
                     'net_amount',
-                    $lineNumber
+                    $lineNumber,
+                    $mapping->decimalSeparator
                 );
 
                 if ($gross <= 0) {
@@ -250,40 +335,62 @@ final class FinancialStatementCsvPreviewer
                     );
                 }
 
-                if ($net + $fee + $withholding !== $gross) {
+                if (
+                    $net + $fee + $withholding
+                    !== $gross
+                ) {
                     throw new DomainException(
                         "La línea {$lineNumber} no cumple gross = net + fee + withholding."
                     );
                 }
 
                 $externalId = $this->nullableText(
-                    $row['external_operation_id'],
+                    $this->optionalMappedValue(
+                        $sourceRow,
+                        $mapping
+                            ->externalOperationIdHeader,
+                        ''
+                    ),
                     191,
                     'external_operation_id',
                     $lineNumber
                 );
 
                 $reference = $this->nullableText(
-                    $row['reference'],
+                    $this->optionalMappedValue(
+                        $sourceRow,
+                        $mapping->referenceHeader,
+                        ''
+                    ),
                     500,
                     'reference',
                     $lineNumber
                 );
 
                 if ($externalId !== null) {
-                    if (isset($seenExternalIds[$externalId])) {
+                    if (
+                        isset(
+                            $seenExternalIds[
+                                $externalId
+                            ]
+                        )
+                    ) {
                         throw new DomainException(
                             "La operación externa {$externalId} está duplicada dentro del CSV."
                         );
                     }
 
-                    $seenExternalIds[$externalId] = true;
+                    $seenExternalIds[
+                        $externalId
+                    ] = true;
                 }
 
                 $canonical = [
                     'occurred_at' =>
-                        $occurredAt->toIso8601String(),
-                    'direction' => $direction->value,
+                        $occurredAt
+                            ->toIso8601String(),
+                    'direction' =>
+                        $direction->value,
                     'currency_code' =>
                         $scopedAccount->currency_code,
                     'gross_amount_minor' => $gross,
@@ -291,7 +398,8 @@ final class FinancialStatementCsvPreviewer
                     'withholding_amount_minor' =>
                         $withholding,
                     'net_amount_minor' => $net,
-                    'external_operation_id' => $externalId,
+                    'external_operation_id' =>
+                        $externalId,
                     'reference' => $reference,
                 ];
 
@@ -305,22 +413,27 @@ final class FinancialStatementCsvPreviewer
                     )
                 );
 
-                $rows[] = new FinancialStatementImportPreviewRow(
-                    lineNumber: $lineNumber,
-                    sourceKey:
-                        'csv:'.$fileSha.':'.$lineNumber,
-                    fingerprint: $fingerprint,
-                    occurredAt: $occurredAt,
-                    direction: $direction,
-                    currencyCode:
-                        $scopedAccount->currency_code,
-                    grossAmountMinor: $gross,
-                    feeAmountMinor: $fee,
-                    withholdingAmountMinor: $withholding,
-                    netAmountMinor: $net,
-                    externalOperationId: $externalId,
-                    reference: $reference
-                );
+                $rows[] =
+                    new FinancialStatementImportPreviewRow(
+                        lineNumber: $lineNumber,
+                        sourceKey:
+                            'csv:'.$fileSha
+                            .':'.$lineNumber,
+                        fingerprint: $fingerprint,
+                        occurredAt: $occurredAt,
+                        direction: $direction,
+                        currencyCode:
+                            $scopedAccount
+                                ->currency_code,
+                        grossAmountMinor: $gross,
+                        feeAmountMinor: $fee,
+                        withholdingAmountMinor:
+                            $withholding,
+                        netAmountMinor: $net,
+                        externalOperationId:
+                            $externalId,
+                        reference: $reference
+                    );
             }
         } finally {
             fclose($handle);
@@ -335,9 +448,11 @@ final class FinancialStatementCsvPreviewer
         return new FinancialStatementImportPreview(
             accountPublicId:
                 (string) $scopedAccount->public_id,
-            accountName: (string) $scopedAccount->name,
+            accountName:
+                (string) $scopedAccount->name,
             currencyCode:
-                (string) $scopedAccount->currency_code,
+                (string) $scopedAccount
+                    ->currency_code,
             fileName: basename($originalName),
             fileSha256: $fileSha,
             rows: $rows
@@ -356,16 +471,72 @@ final class FinancialStatementCsvPreviewer
         return true;
     }
 
+    /**
+     * @param array<string, string> $row
+     */
+    private function requiredMappedValue(
+        array $row,
+        string $header,
+        int $lineNumber
+    ): string {
+        if (! array_key_exists($header, $row)) {
+            throw new DomainException(
+                "La línea {$lineNumber} no contiene la columna {$header}."
+            );
+        }
+
+        $value = trim((string) $row[$header]);
+
+        if ($value === '') {
+            throw new DomainException(
+                "La línea {$lineNumber} requiere valor en la columna {$header}."
+            );
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<string, string> $row
+     */
+    private function optionalMappedValue(
+        array $row,
+        ?string $header,
+        string $default
+    ): string {
+        if ($header === null) {
+            return $default;
+        }
+
+        return trim(
+            (string) ($row[$header] ?? $default)
+        );
+    }
+
     private function parseOccurredAt(
         string $value,
-        int $lineNumber
+        int $lineNumber,
+        FinancialStatementCsvMapping $mapping
     ): CarbonImmutable {
-        $date = DateTimeImmutable::createFromFormat(
-            DateTimeInterface::ATOM,
-            $value
-        );
+        if ($mapping->dateFormat === 'iso8601') {
+            $date =
+                DateTimeImmutable::createFromFormat(
+                    DateTimeInterface::ATOM,
+                    $value
+                );
+        } else {
+            $date =
+                DateTimeImmutable::createFromFormat(
+                    '!'.$mapping->dateFormat,
+                    $value,
+                    new DateTimeZone(
+                        $mapping->timezone
+                    )
+                );
+        }
 
-        $errors = DateTimeImmutable::getLastErrors();
+        $errors =
+            DateTimeImmutable::getLastErrors();
 
         if (
             $date === false
@@ -378,41 +549,70 @@ final class FinancialStatementCsvPreviewer
             )
         ) {
             throw new DomainException(
-                "La línea {$lineNumber} requiere occurred_at ISO 8601, por ejemplo 2026-08-15T10:30:00-03:00."
+                "La línea {$lineNumber} contiene una fecha incompatible con el formato configurado."
             );
         }
 
-        return CarbonImmutable::instance($date)->utc();
+        if (
+            $mapping->dateFormat !== 'iso8601'
+            && $date->format(
+                $mapping->dateFormat
+            ) !== $value
+        ) {
+            throw new DomainException(
+                "La línea {$lineNumber} contiene una fecha ambigua o no canónica para el formato configurado."
+            );
+        }
+
+        return CarbonImmutable::instance(
+            $date
+        )->utc();
     }
 
     private function parseAmountMinor(
         string $value,
         string $field,
-        int $lineNumber
+        int $lineNumber,
+        string $decimalSeparator
     ): int {
+        $separator = preg_quote(
+            $decimalSeparator,
+            '/'
+        );
+
         if (
             preg_match(
-                '/^(0|[1-9]\d*)(?:\.(\d{1,2}))?$/D',
+                '/^(0|[1-9]\d*)(?:'
+                    .$separator
+                    .'(\d{1,2}))?$/D',
                 $value,
                 $matches
             ) !== 1
         ) {
             throw new DomainException(
-                "La línea {$lineNumber} contiene {$field} inválido; use decimal con punto y hasta 2 decimales."
+                "La línea {$lineNumber} contiene {$field} inválido; no use separadores de miles y respete el separador decimal configurado."
             );
         }
 
         $whole = (int) $matches[1];
         $fraction = $matches[2] ?? '';
-        $fraction = str_pad($fraction, 2, '0');
+        $fraction = str_pad(
+            $fraction,
+            2,
+            '0'
+        );
 
-        if ($whole > intdiv(PHP_INT_MAX, 100)) {
+        if (
+            $whole
+            > intdiv(PHP_INT_MAX, 100)
+        ) {
             throw new DomainException(
                 "La línea {$lineNumber} contiene {$field} fuera de rango."
             );
         }
 
-        return ($whole * 100) + (int) $fraction;
+        return ($whole * 100)
+            + (int) $fraction;
     }
 
     private function nullableText(

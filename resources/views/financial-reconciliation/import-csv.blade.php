@@ -3,7 +3,7 @@
         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-[0.2em] text-cyan-300">
-                    Finanzas · P7.2
+                    Finanzas · P7.3
                 </p>
                 <h1 class="mt-2 text-2xl font-bold text-white">
                     Previsualizar extracto CSV
@@ -74,6 +74,127 @@
                     @error('statement')
                         <p class="mt-2 text-xs text-rose-300">{{ $message }}</p>
                     @enderror
+                </div>
+
+                <div class="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+                    <label class="mb-2 block text-xs font-black uppercase tracking-wider text-cyan-200">
+                        Modo de columnas
+                    </label>
+                    <select
+                        name="mapping_mode"
+                        class="sulu-input w-full"
+                    >
+                        <option
+                            value="canonical"
+                            @selected(old('mapping_mode', 'canonical') === 'canonical')
+                        >
+                            Canónico SRCM
+                        </option>
+                        <option
+                            value="mapped"
+                            @selected(old('mapping_mode') === 'mapped')
+                        >
+                            Mapear columnas del extracto
+                        </option>
+                    </select>
+
+                    <details class="mt-4">
+                        <summary class="cursor-pointer text-xs font-black text-cyan-200">
+                            Configurar mapeo no canónico
+                        </summary>
+
+                        <p class="mt-3 text-xs leading-5 text-slate-400">
+                            Usá los nombres exactos de la cabecera del banco o billetera. Las columnas opcionales pueden quedar vacías. No uses separadores de miles en importes.
+                        </p>
+
+                        <div class="mt-4 grid gap-3 md:grid-cols-2">
+                            <label class="text-xs text-slate-400">
+                                Separador CSV
+                                <select name="mapping_delimiter" class="sulu-input mt-1 w-full">
+                                    <option value="comma" @selected(old('mapping_delimiter', 'comma') === 'comma')>Coma (,)</option>
+                                    <option value="semicolon" @selected(old('mapping_delimiter') === 'semicolon')>Punto y coma (;)</option>
+                                    <option value="tab" @selected(old('mapping_delimiter') === 'tab')>Tabulación</option>
+                                </select>
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Separador decimal
+                                <select name="mapping_decimal_separator" class="sulu-input mt-1 w-full">
+                                    <option value="dot" @selected(old('mapping_decimal_separator', 'dot') === 'dot')>Punto (1234.56)</option>
+                                    <option value="comma" @selected(old('mapping_decimal_separator') === 'comma')>Coma (1234,56)</option>
+                                </select>
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Formato de fecha
+                                <select name="mapping_date_format" class="sulu-input mt-1 w-full">
+                                    <option value="iso8601" @selected(old('mapping_date_format', 'iso8601') === 'iso8601')>ISO 8601 con offset</option>
+                                    <option value="ymd_his" @selected(old('mapping_date_format') === 'ymd_his')>AAAA-MM-DD HH:MM:SS</option>
+                                    <option value="dmy_his" @selected(old('mapping_date_format') === 'dmy_his')>DD/MM/AAAA HH:MM:SS</option>
+                                    <option value="dmy" @selected(old('mapping_date_format') === 'dmy')>DD/MM/AAAA</option>
+                                </select>
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Zona horaria de fechas sin offset
+                                <input
+                                    name="mapping_timezone"
+                                    value="{{ old('mapping_timezone', 'America/Argentina/Buenos_Aires') }}"
+                                    class="sulu-input mt-1 w-full"
+                                >
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Columna fecha *
+                                <input name="mapping_occurred_at_header" value="{{ old('mapping_occurred_at_header') }}" class="sulu-input mt-1 w-full">
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Columna dirección *
+                                <input name="mapping_direction_header" value="{{ old('mapping_direction_header') }}" class="sulu-input mt-1 w-full">
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Columna bruto *
+                                <input name="mapping_gross_amount_header" value="{{ old('mapping_gross_amount_header') }}" class="sulu-input mt-1 w-full">
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Columna neto *
+                                <input name="mapping_net_amount_header" value="{{ old('mapping_net_amount_header') }}" class="sulu-input mt-1 w-full">
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Columna comisión
+                                <input name="mapping_fee_amount_header" value="{{ old('mapping_fee_amount_header') }}" class="sulu-input mt-1 w-full">
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Columna retención
+                                <input name="mapping_withholding_amount_header" value="{{ old('mapping_withholding_amount_header') }}" class="sulu-input mt-1 w-full">
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Columna ID externo
+                                <input name="mapping_external_operation_id_header" value="{{ old('mapping_external_operation_id_header') }}" class="sulu-input mt-1 w-full">
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Columna referencia
+                                <input name="mapping_reference_header" value="{{ old('mapping_reference_header') }}" class="sulu-input mt-1 w-full">
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Valor que significa crédito *
+                                <input name="mapping_credit_value" value="{{ old('mapping_credit_value', 'credit') }}" class="sulu-input mt-1 w-full">
+                            </label>
+
+                            <label class="text-xs text-slate-400">
+                                Valor que significa débito *
+                                <input name="mapping_debit_value" value="{{ old('mapping_debit_value', 'debit') }}" class="sulu-input mt-1 w-full">
+                            </label>
+                        </div>
+                    </details>
                 </div>
 
                 <div class="rounded-xl border border-white/10 bg-slate-950/40 p-4">

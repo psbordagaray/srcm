@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Finance\FinancialStatementCsvImportManager;
+use App\Domain\Finance\FinancialStatementCsvMapping;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\FinancialAccountType;
 use App\Models\FinancialAccount;
@@ -56,6 +57,77 @@ class FinancialStatementImportController extends Controller
                 'file',
                 'max:2048',
             ],
+            'mapping_mode' => [
+                'nullable',
+                'in:canonical,mapped',
+            ],
+            'mapping_delimiter' => [
+                'nullable',
+                'in:comma,semicolon,tab',
+            ],
+            'mapping_decimal_separator' => [
+                'nullable',
+                'in:dot,comma',
+            ],
+            'mapping_date_format' => [
+                'nullable',
+                'in:iso8601,ymd_his,dmy_his,dmy',
+            ],
+            'mapping_timezone' => [
+                'nullable',
+                'string',
+                'max:64',
+            ],
+            'mapping_occurred_at_header' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'mapping_direction_header' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'mapping_gross_amount_header' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'mapping_fee_amount_header' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'mapping_withholding_amount_header' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'mapping_net_amount_header' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'mapping_external_operation_id_header' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'mapping_reference_header' => [
+                'nullable',
+                'string',
+                'max:191',
+            ],
+            'mapping_credit_value' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+            'mapping_debit_value' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
         ]);
 
         $organizationId = $currentOrganization->id(
@@ -80,11 +152,20 @@ class FinancialStatementImportController extends Controller
         }
 
         try {
+            $mapping =
+                ($validated['mapping_mode'] ?? 'canonical')
+                    === 'mapped'
+                ? FinancialStatementCsvMapping::fromInput(
+                    $validated
+                )
+                : FinancialStatementCsvMapping::canonical();
+
             $staged = $imports->stage(
                 $account,
                 $file->getRealPath(),
                 $file->getClientOriginalName(),
-                $request->user()
+                $request->user(),
+                $mapping
             );
 
             $preview = $staged['preview'];

@@ -44,15 +44,20 @@ final class FinancialStatementCsvImportManager
         FinancialAccount $account,
         string $path,
         string $originalName,
-        User $actor
+        User $actor,
+        ?FinancialStatementCsvMapping $mapping = null
     ): array {
         $this->cleanupExpiredDrafts();
+
+        $mapping ??=
+            FinancialStatementCsvMapping::canonical();
 
         $preview = $this->previewer->preview(
             $account,
             $path,
             $originalName,
-            $actor
+            $actor,
+            $mapping
         );
 
         $organizationId = $this->organizationId($actor);
@@ -83,7 +88,7 @@ final class FinancialStatementCsvImportManager
         );
 
         $this->writeDraft($token, [
-            'version' => 1,
+            'version' => 2,
             'organization_id' => $organizationId,
             'user_id' => (int) $actor->getKey(),
             'created_at' =>
@@ -94,6 +99,8 @@ final class FinancialStatementCsvImportManager
             'currency_code' => $preview->currencyCode,
             'file_name' => $preview->fileName,
             'file_sha256' => $preview->fileSha256,
+            'mapping_fingerprint' =>
+                $mapping->fingerprint(),
             'row_count' => $preview->rowCount(),
             'rows' => $rows,
         ]);
@@ -120,8 +127,11 @@ final class FinancialStatementCsvImportManager
         $organizationId = $this->organizationId($actor);
         $draft = $this->readDraft($token);
 
+        $version =
+            (int) ($draft['version'] ?? 0);
+
         if (
-            (int) ($draft['version'] ?? 0) !== 1
+            ! in_array($version, [1, 2], true)
             || (int) ($draft['organization_id'] ?? 0)
                 !== $organizationId
             || (int) ($draft['user_id'] ?? 0)
@@ -217,11 +227,32 @@ final class FinancialStatementCsvImportManager
 
         $fileSha = (string) $draft['file_sha256'];
 
+        $mappingFingerprint =
+            $version === 1
+                ? FinancialStatementCsvMapping::canonical()
+                    ->fingerprint()
+                : (string) (
+                    $draft['mapping_fingerprint']
+                    ?? ''
+                );
+
+        if (
+            preg_match(
+                '/^[a-f0-9]{64}$/D',
+                $mappingFingerprint
+            ) !== 1
+        ) {
+            throw new DomainException(
+                'La identidad del mapeo de la previsualización es inválida.'
+            );
+        }
+
         $result = DB::transaction(function () use (
             $organizationId,
             $account,
             $rows,
             $fileSha,
+            $mappingFingerprint,
             $actor
         ): array {
             $lockedAccount = FinancialAccount::query()
@@ -386,6 +417,8 @@ final class FinancialStatementCsvImportManager
                     'source' =>
                         FinancialMovementSource::Csv->value,
                     'file_sha256' => $fileSha,
+                    'mapping_fingerprint' =>
+                        $mappingFingerprint,
                     'row_count' => count($rows),
                     'created_count' => $created,
                     'deduplicated_count' =>
