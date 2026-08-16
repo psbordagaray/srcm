@@ -7,6 +7,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class CommercePayment extends Model
@@ -77,6 +78,14 @@ class CommercePayment extends Model
             PaymentReconciliation::class,
             'commerce_payment_id'
         );
+    }
+
+    public function externalRefundInstructions(): HasMany
+    {
+        return $this->hasMany(
+            CommercePostSaleExternalRefundInstruction::class,
+            'original_commerce_payment_id'
+        )->orderBy('requested_at')->orderBy('id');
     }
 
     public function receivedBy(): BelongsTo

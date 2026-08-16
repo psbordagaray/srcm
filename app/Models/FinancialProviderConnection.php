@@ -94,6 +94,14 @@ class FinancialProviderConnection extends Model
         );
     }
 
+    public function externalRefundInstructions(): HasMany
+    {
+        return $this->hasMany(
+            CommercePostSaleExternalRefundInstruction::class,
+            'financial_provider_connection_id'
+        )->orderBy('requested_at')->orderBy('id');
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');

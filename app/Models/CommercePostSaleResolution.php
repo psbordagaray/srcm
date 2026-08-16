@@ -115,6 +115,14 @@ class CommercePostSaleResolution extends Model
         );
     }
 
+    public function externalRefundInstruction(): HasOne
+    {
+        return $this->hasOne(
+            CommercePostSaleExternalRefundInstruction::class,
+            'commerce_post_sale_resolution_id'
+        );
+    }
+
     public function recognizedAmountMinor(): int
     {
         if ($this->relationLoaded('lines')) {

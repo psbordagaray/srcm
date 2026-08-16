@@ -81,6 +81,11 @@ enum UserRole: string
         return $this->canOperateCashRegister();
     }
 
+    public function canExecuteCommercePostSaleExternalRefund(): bool
+    {
+        return $this->canUseFinancialAccounts();
+    }
+
     public function canViewCustomers(): bool
     {
         return true;
