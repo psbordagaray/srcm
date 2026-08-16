@@ -18,6 +18,9 @@ class CustomerCreditConsumption extends Model
         'public_id',
         'business_party_id',
         'commerce_sale_id',
+        'target_kind',
+        'target_id',
+        'commerce_post_sale_exchange_execution_id',
         'payment_position',
         'currency_code',
         'amount_minor',
@@ -34,6 +37,8 @@ class CustomerCreditConsumption extends Model
             'organization_id' => 'integer',
             'business_party_id' => 'integer',
             'commerce_sale_id' => 'integer',
+            'target_id' => 'integer',
+            'commerce_post_sale_exchange_execution_id' => 'integer',
             'payment_position' => 'integer',
             'amount_minor' => 'integer',
             'consumed_by_user_id' => 'integer',
@@ -92,6 +97,14 @@ class CustomerCreditConsumption extends Model
         return $this->belongsTo(
             User::class,
             'consumed_by_user_id'
+        );
+    }
+
+    public function exchangeExecution(): BelongsTo
+    {
+        return $this->belongsTo(
+            CommercePostSaleExchangeExecution::class,
+            'commerce_post_sale_exchange_execution_id'
         );
     }
 

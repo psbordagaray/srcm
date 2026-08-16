@@ -164,6 +164,17 @@
                         <p class="mt-1 text-sm text-slate-500">
                             Seleccioná uno o más medios cuya suma sea exactamente $ {{ number_format($difference / 100, 2, ',', '.') }}. Los medios no efectivos se registran localmente; este flujo no fabrica movimientos externos ni llama proveedores.
                         </p>
+                        <p class="mt-2 text-sm text-emerald-200">
+                            Saldo a favor disponible:
+                            <span class="font-mono font-bold">
+                                $ {{ number_format($customerCreditBalanceMinor / 100, 2, ',', '.') }}
+                            </span>
+                            @if($selection->resolution->request->sale->customer_business_party_id === null)
+                                · requiere cliente identificado.
+                            @else
+                                · puede combinarse con otros medios.
+                            @endif
+                        </p>
 
                         <div class="mt-5 space-y-4">
                             @for($index = 0; $index < 3; $index++)
@@ -207,7 +218,7 @@
                                         </label>
 
                                         <label class="block">
-                                            <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Cuenta</span>
+                                            <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Cuenta · dejar vacía para Crédito en cuenta</span>
                                             <select
                                                 name="payments[{{ $index }}][financial_account_id]"
                                                 class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
@@ -242,7 +253,7 @@
                                                 name="payments[{{ $index }}][reference]"
                                                 value="{{ old("payments.$index.reference") }}"
                                                 maxlength="255"
-                                                placeholder="Obligatoria para medios no efectivos"
+                                                placeholder="No usar para Crédito en cuenta"
                                                 class="mt-1 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white"
                                             >
                                         </label>

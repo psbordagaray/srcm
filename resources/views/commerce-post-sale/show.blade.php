@@ -393,6 +393,21 @@
                                                     </div>
                                                 @endif
 
+                                                @if($resolution->exchangeSelection->execution->creditConsumptions->isNotEmpty())
+                                                    <div class="mt-3 space-y-2">
+                                                        @foreach($resolution->exchangeSelection->execution->creditConsumptions as $consumption)
+                                                            <div class="flex flex-col gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                                                <span class="text-xs text-emerald-200">
+                                                                    Saldo a favor consumido · posición {{ $consumption->payment_position }}
+                                                                </span>
+                                                                <span class="font-mono text-xs font-bold text-emerald-100">
+                                                                    $ {{ number_format($consumption->amount_minor / 100, 2, ',', '.') }}
+                                                                </span>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+
                                                 @if($resolution->exchangeSelection->execution->creditGrant)
                                                     <p class="mt-3 text-xs text-emerald-200">
                                                         Crédito específico por diferencia:
@@ -522,7 +537,7 @@
                 <section class="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6">
                     <p class="text-xs font-bold uppercase tracking-wider text-violet-300">Separación de responsabilidades</p>
                     <p class="mt-3 text-sm leading-6 text-slate-300">
-                        El expediente mantiene separados intake, recepción, resolución, materialización y ejecución. P8.5.5 habilita la ejecución física del cambio y el dispatch externo sólo detrás de sus Gates y confirmaciones explícitas; Mercado Pago sigue fallando cerrado mientras su refund gate permanezca degradado.
+                        El expediente mantiene separados intake, recepción, resolución, materialización y ejecución. P8.5.7 reutiliza el ledger convergente de saldo a favor también para diferencias positivas de cambio, sin convertirlo en caja ni proveedor externo; Mercado Pago sigue fallando cerrado mientras su refund gate permanezca degradado.
                     </p>
                 </section>
             </div>

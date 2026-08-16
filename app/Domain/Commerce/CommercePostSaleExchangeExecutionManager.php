@@ -43,7 +43,8 @@ final class CommercePostSaleExchangeExecutionManager
         private readonly InventoryMovementCreator $movementCreator,
         private readonly InventoryMovementConfirmer $movementConfirmer,
         private readonly CashRegisterSessionManager $cashSessions,
-        private readonly AuditRecorder $audit
+        private readonly AuditRecorder $audit,
+        private readonly CustomerCreditConsumer $creditConsumer
     ) {
     }
 
@@ -477,6 +478,14 @@ final class CommercePostSaleExchangeExecutionManager
                         $locked->currency_code,
                     'payment_count' =>
                         count($preparedPayments),
+                    'account_credit_consumption_count' =>
+                        collect($preparedPayments)
+                            ->filter(
+                                fn (array $payment): bool =>
+                                    $payment['method']
+                                        === CommercePaymentMethod::AccountCredit
+                            )
+                            ->count(),
                     'credit_amount_minor' =>
                         $differenceAmountMinor < 0
                             ? -$differenceAmountMinor
@@ -639,6 +648,11 @@ final class CommercePostSaleExchangeExecutionManager
 
         $ids =
             collect($payments)
+                ->reject(
+                    fn (array $payment): bool =>
+                        $payment['method']
+                            === CommercePaymentMethod::AccountCredit
+                )
                 ->pluck('financial_account_id')
                 ->map(
                     fn (mixed $id): int =>
@@ -693,6 +707,23 @@ final class CommercePostSaleExchangeExecutionManager
         $sequence = 1;
 
         foreach ($payments as $payment) {
+            if (
+                $payment['method']
+                    === CommercePaymentMethod::AccountCredit
+            ) {
+                $prepared[] = [
+                    ...$payment,
+                    'sequence' =>
+                        $sequence++,
+                    'cash_register_session_id' =>
+                        null,
+                    'cash_register_id' =>
+                        null,
+                ];
+
+                continue;
+            }
+
             $account =
                 $accounts->get(
                     $payment[
@@ -807,6 +838,59 @@ final class CommercePostSaleExchangeExecutionManager
         CarbonImmutable $executedAt
     ): void {
         foreach ($payments as $paymentData) {
+            if (
+                $paymentData['method']
+                    === CommercePaymentMethod::AccountCredit
+            ) {
+                $consumption =
+                    $this->creditConsumer
+                        ->consumeForExchangePayment(
+                            $execution,
+                            (int) $paymentData[
+                                'sequence'
+                            ],
+                            (int) $paymentData[
+                                'amount_minor'
+                            ],
+                            'p857:exchange-credit:'
+                            .hash(
+                                'sha256',
+                                $execution
+                                    ->idempotency_key
+                                .'|'
+                                .$paymentData[
+                                    'sequence'
+                                ]
+                            ),
+                            $actor
+                        );
+
+                $this->audit->record(
+                    $consumption,
+                    'commerce_post_sale_exchange_account_credit_consumed',
+                    null,
+                    [
+                        'commerce_post_sale_exchange_execution_id' =>
+                            (int) $execution->id,
+                        'payment_position' =>
+                            (int) $paymentData[
+                                'sequence'
+                            ],
+                        'business_party_id' =>
+                            (int) $consumption
+                                ->business_party_id,
+                        'amount_minor' =>
+                            (int) $consumption
+                                ->amount_minor,
+                        'currency_code' =>
+                            $execution
+                                ->currency_code,
+                    ]
+                );
+
+                continue;
+            }
+
             $paymentFingerprint =
                 $this->fingerprint([
                     'commerce_post_sale_exchange_execution_id' =>
@@ -1284,13 +1368,9 @@ final class CommercePostSaleExchangeExecutionManager
     private function normalizePayment(
         CommercePaymentData $payment
     ): array {
-        if (
-            $payment->amountMinor <= 0
-            || $payment->financialAccountId === null
-            || $payment->financialAccountId <= 0
-        ) {
+        if ($payment->amountMinor <= 0) {
             throw new DomainException(
-                'Cada pago de diferencia requiere importe y cuenta financiera válidos.'
+                'Cada pago de diferencia requiere un importe positivo.'
             );
         }
 
@@ -1298,8 +1378,71 @@ final class CommercePostSaleExchangeExecutionManager
             $payment->method
                 === CommercePaymentMethod::AccountCredit
         ) {
+            if (
+                $payment->financialAccountId !== null
+                || filled($payment->reference)
+                || $payment->tenderedAmountMinor !== null
+                || filled($payment->cardBrand)
+                || filled($payment->cardNetwork)
+                || filled($payment->cardLast4)
+                || $payment->installments !== null
+                || filled($payment->processor)
+                || filled($payment->externalOperationId)
+                || filled($payment->authorizationCode)
+                || filled($payment->providerStatus)
+                || $payment->paidAt !== null
+            ) {
+                throw new DomainException(
+                    'El saldo a favor no admite cuenta financiera, referencia, efectivo ni evidencia de proveedor.'
+                );
+            }
+
+            return [
+                'financial_account_id' =>
+                    null,
+                'method' =>
+                    $payment->method,
+                'amount_minor' =>
+                    $payment->amountMinor,
+                'tendered_amount_minor' =>
+                    null,
+                'change_amount_minor' =>
+                    null,
+                'reference' =>
+                    null,
+                'card_brand' =>
+                    null,
+                'card_network' =>
+                    null,
+                'card_last4' =>
+                    null,
+                'installments' =>
+                    null,
+                'processor' =>
+                    null,
+                'external_operation_id' =>
+                    null,
+                'authorization_code' =>
+                    null,
+                'provider_status' =>
+                    null,
+                'notes' =>
+                    $this->paymentText(
+                        $payment->notes,
+                        2000,
+                        'Las notas del pago'
+                    ),
+                'paid_at' =>
+                    null,
+            ];
+        }
+
+        if (
+            $payment->financialAccountId === null
+            || $payment->financialAccountId <= 0
+        ) {
             throw new DomainException(
-                'El saldo a favor todavía no puede consumirse como medio de pago de un cambio.'
+                'Cada pago convencional de diferencia requiere una cuenta financiera válida.'
             );
         }
 
@@ -1546,6 +1689,7 @@ final class CommercePostSaleExchangeExecutionManager
             'lines.sourceLocation',
             'payments.financialAccount',
             'payments.cashMovement',
+            'creditConsumptions.allocations',
             'creditGrant.party',
         ]);
     }

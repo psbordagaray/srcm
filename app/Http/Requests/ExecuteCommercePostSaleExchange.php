@@ -309,10 +309,6 @@ class ExecuteCommercePostSaleExchange extends FormRequest
                 Rule::enum(
                     CommercePaymentMethod::class
                 ),
-                Rule::notIn([
-                    CommercePaymentMethod::AccountCredit
-                        ->value,
-                ]),
             ],
             'payments.*.amount' => [
                 'required',
@@ -321,7 +317,7 @@ class ExecuteCommercePostSaleExchange extends FormRequest
                 'regex:/^(?=.*[1-9])\d{1,12}(?:\.\d{1,2})?$/',
             ],
             'payments.*.financial_account_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists(
                     'financial_accounts',
@@ -360,6 +356,95 @@ class ExecuteCommercePostSaleExchange extends FormRequest
         ];
     }
 
+
+    public function withValidator(
+        \Illuminate\Validation\Validator $validator
+    ): void {
+        $validator->after(
+            function (
+                \Illuminate\Validation\Validator $validator
+            ): void {
+                foreach (
+                    (array) $this->input(
+                        'payments',
+                        []
+                    )
+                    as $index => $payment
+                ) {
+                    if (! is_array($payment)) {
+                        continue;
+                    }
+
+                    $method =
+                        CommercePaymentMethod::tryFrom(
+                            (string) (
+                                $payment['method']
+                                ?? ''
+                            )
+                        );
+
+                    if (
+                        $method
+                            === CommercePaymentMethod::AccountCredit
+                    ) {
+                        if (
+                            filled(
+                                $payment[
+                                    'financial_account_id'
+                                ] ?? null
+                            )
+                        ) {
+                            $validator
+                                ->errors()
+                                ->add(
+                                    "payments.{$index}.financial_account_id",
+                                    'El saldo a favor no utiliza cuenta financiera.'
+                                );
+                        }
+
+                        if (
+                            filled(
+                                $payment[
+                                    'reference'
+                                ] ?? null
+                            )
+                            || filled(
+                                $payment[
+                                    'tendered_amount'
+                                ] ?? null
+                            )
+                        ) {
+                            $validator
+                                ->errors()
+                                ->add(
+                                    "payments.{$index}.method",
+                                    'El saldo a favor no admite referencia manual ni efectivo entregado.'
+                                );
+                        }
+
+                        continue;
+                    }
+
+                    if (
+                        $method !== null
+                        && blank(
+                            $payment[
+                                'financial_account_id'
+                            ] ?? null
+                        )
+                    ) {
+                        $validator
+                            ->errors()
+                            ->add(
+                                "payments.{$index}.financial_account_id",
+                                'El medio de pago requiere una cuenta financiera activa.'
+                            );
+                    }
+                }
+            }
+        );
+    }
+
     public function messages(): array
     {
         return [
@@ -367,8 +452,6 @@ class ExecuteCommercePostSaleExchange extends FormRequest
                 'Confirmá explícitamente la entrega de mercadería y sus efectos económicos.',
             'lines.*.source_location_id.exists' =>
                 'Una ubicación de origen no está activa o no pertenece a la organización.',
-            'payments.*.method.not_in' =>
-                'El saldo a favor todavía no puede consumirse como pago de una diferencia de cambio.',
         ];
     }
 }

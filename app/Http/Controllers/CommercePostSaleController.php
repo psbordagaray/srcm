@@ -304,6 +304,7 @@ class CommercePostSaleController extends Controller
             'resolutions.exchangeSelection.execution.executedBy',
             'resolutions.exchangeSelection.execution.inventoryMovement',
             'resolutions.exchangeSelection.execution.payments.financialAccount',
+            'resolutions.exchangeSelection.execution.creditConsumptions.allocations',
             'resolutions.exchangeSelection.execution.creditGrant.party',
         ]);
 

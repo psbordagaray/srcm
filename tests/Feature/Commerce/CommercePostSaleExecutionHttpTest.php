@@ -201,6 +201,29 @@ class CommercePostSaleExecutionHttpTest extends TestCase
                 'Cambio sin diferencia monetaria'
             );
 
+        $positiveSurface =
+            $this->exchangeContext(
+                'account-credit-surface',
+                15000
+            );
+
+        $this->actingAs(
+            $positiveSurface['operator']
+        )
+            ->get(
+                route(
+                    'commerce-post-sale.exchange-executions.create',
+                    $positiveSurface['selection']
+                )
+            )
+            ->assertOk()
+            ->assertSee(
+                'Crédito en cuenta'
+            )
+            ->assertSee(
+                'Saldo a favor disponible'
+            );
+
         $inventoryBefore =
             DB::table(
                 'inventory_movements'
@@ -402,6 +425,208 @@ class CommercePostSaleExecutionHttpTest extends TestCase
         Http::assertNothingSent();
     }
 
+
+    public function test_http_consumes_account_credit_for_positive_exchange_difference_and_shows_fact(): void
+    {
+        $target =
+            $this->exchangeContext(
+                'account-credit-target',
+                15000
+            );
+
+        $source =
+            $this->exchangeContext(
+                'account-credit-source',
+                8000,
+                $target['party']
+            );
+
+        $sourceLine =
+            $source['selection']
+                ->lines
+                ->sole();
+
+        $this->actingAs(
+            $source['operator']
+        )
+            ->post(
+                route(
+                    'commerce-post-sale.exchange-executions.store',
+                    $source['selection']
+                ),
+                [
+                    'confirm_execution' =>
+                        '1',
+                    'idempotency_key' =>
+                        'p857:http:credit-source',
+                    'lines' => [[
+                        'commerce_post_sale_exchange_selection_line_id' =>
+                            $sourceLine->id,
+                        'source_balance' =>
+                            $source['location']->id
+                            .'|'
+                            .InventoryCondition::New->value,
+                    ]],
+                ]
+            )
+            ->assertRedirect(
+                route(
+                    'commerce-post-sale.show',
+                    $source['request']
+                )
+            )
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas(
+            'commerce_post_sale_exchange_credit_grants',
+            [
+                'business_party_id' =>
+                    $target['party']->id,
+                'amount_minor' =>
+                    2000,
+                'currency_code' =>
+                    'ARS',
+            ]
+        );
+
+        $targetLine =
+            $target['selection']
+                ->lines
+                ->sole();
+
+        $this->actingAs(
+            $target['operator']
+        )
+            ->get(
+                route(
+                    'commerce-post-sale.exchange-executions.create',
+                    $target['selection']
+                )
+            )
+            ->assertOk()
+            ->assertSee(
+                'Crédito en cuenta'
+            )
+            ->assertSee(
+                '20,00'
+            );
+
+        $this->actingAs(
+            $target['operator']
+        )
+            ->post(
+                route(
+                    'commerce-post-sale.exchange-executions.store',
+                    $target['selection']
+                ),
+                [
+                    'confirm_execution' =>
+                        '1',
+                    'idempotency_key' =>
+                        'p857:http:credit-target',
+                    'lines' => [[
+                        'commerce_post_sale_exchange_selection_line_id' =>
+                            $targetLine->id,
+                        'source_balance' =>
+                            $target['location']->id
+                            .'|'
+                            .InventoryCondition::New->value,
+                    ]],
+                    'payments' => [
+                        [
+                            'selected' =>
+                                '1',
+                            'method' =>
+                                CommercePaymentMethod::AccountCredit
+                                    ->value,
+                            'amount' =>
+                                '20,00',
+                        ],
+                        [
+                            'selected' =>
+                                '1',
+                            'method' =>
+                                CommercePaymentMethod::BankTransfer
+                                    ->value,
+                            'amount' =>
+                                '30,00',
+                            'financial_account_id' =>
+                                $target['bank']->id,
+                            'reference' =>
+                                'P857-HTTP-BANK',
+                        ],
+                    ],
+                ]
+            )
+            ->assertRedirect(
+                route(
+                    'commerce-post-sale.show',
+                    $target['request']
+                )
+            )
+            ->assertSessionHasNoErrors();
+
+        $executionId =
+            DB::table(
+                'commerce_post_sale_exchange_executions'
+            )
+                ->where(
+                    'commerce_post_sale_exchange_selection_id',
+                    $target['selection']->id
+                )
+                ->value('id');
+
+        $this->assertNotNull(
+            $executionId
+        );
+
+        $this->assertDatabaseHas(
+            'customer_credit_consumptions',
+            [
+                'target_kind' =>
+                    'exchange_payment',
+                'target_id' =>
+                    $executionId,
+                'commerce_post_sale_exchange_execution_id' =>
+                    $executionId,
+                'business_party_id' =>
+                    $target['party']->id,
+                'amount_minor' =>
+                    2000,
+            ]
+        );
+
+        $this->assertDatabaseHas(
+            'commerce_post_sale_exchange_payments',
+            [
+                'commerce_post_sale_exchange_execution_id' =>
+                    $executionId,
+                'method' =>
+                    CommercePaymentMethod::BankTransfer
+                        ->value,
+                'amount_minor' =>
+                    3000,
+            ]
+        );
+
+        $this->actingAs(
+            $target['operator']
+        )
+            ->get(
+                route(
+                    'commerce-post-sale.show',
+                    $target['request']
+                )
+            )
+            ->assertOk()
+            ->assertSee(
+                'Saldo a favor consumido'
+            )
+            ->assertSee(
+                '20,00'
+            );
+    }
+
     public function test_execution_requires_explicit_confirmation_and_show_exposes_action_only_to_separate_operator(): void
     {
         $context =
@@ -486,7 +711,8 @@ class CommercePostSaleExecutionHttpTest extends TestCase
      */
     private function exchangeContext(
         string $suffix,
-        int $replacementPriceMinor
+        int $replacementPriceMinor,
+        ?BusinessParty $party = null
     ): array {
         $organization =
             Organization::query()
@@ -517,7 +743,7 @@ class CommercePostSaleExecutionHttpTest extends TestCase
                 ->orderBy('id')
                 ->firstOrFail();
 
-        $party =
+        $party ??=
             BusinessParty::query()
                 ->create([
                     'organization_id' =>

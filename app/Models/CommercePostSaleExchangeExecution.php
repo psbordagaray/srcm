@@ -119,4 +119,12 @@ class CommercePostSaleExchangeExecution extends Model
             'commerce_post_sale_exchange_execution_id'
         );
     }
+
+    public function creditConsumptions(): HasMany
+    {
+        return $this->hasMany(
+            CustomerCreditConsumption::class,
+            'commerce_post_sale_exchange_execution_id'
+        )->orderBy('payment_position');
+    }
 }

@@ -21,6 +21,7 @@ use App\Domain\Commerce\CommercePostSaleResolutionData;
 use App\Domain\Commerce\CommercePostSaleResolutionLineData;
 use App\Domain\Commerce\CommercePostSaleResolutionManager;
 use App\Domain\Commerce\CommerceProductLineData;
+use App\Domain\Commerce\CustomerCreditBalanceReader;
 use App\Domain\Commerce\OrganizationProductPriceManager;
 use App\Domain\Finance\CashRegisterManager;
 use App\Domain\Finance\CashRegisterSessionManager;
@@ -45,6 +46,7 @@ use App\Models\CommercePostSaleExchangeCreditGrant;
 use App\Models\CommercePostSaleExchangeExecution;
 use App\Models\CommercePostSaleExchangeExecutionLine;
 use App\Models\CommercePostSaleExchangeSelection;
+use App\Models\CustomerCreditConsumption;
 use App\Models\InventoryLocation;
 use App\Models\Organization;
 use App\Models\OrganizationMembership;
@@ -137,6 +139,18 @@ class CommercePostSaleExchangeExecutionFoundationTest extends TestCase
             Schema::hasColumn(
                 'cash_movements',
                 'post_sale_exchange_payment_id'
+            )
+        );
+
+        $this->assertTrue(
+            Schema::hasColumns(
+                'customer_credit_consumptions',
+                [
+                    'target_kind',
+                    'target_id',
+                    'commerce_post_sale_exchange_execution_id',
+                    'payment_position',
+                ]
             )
         );
 
@@ -471,7 +485,7 @@ class CommercePostSaleExchangeExecutionFoundationTest extends TestCase
         );
     }
 
-    public function test_segregation_second_operation_and_account_credit_fail_closed(): void
+    public function test_segregation_and_second_operation_fail_closed(): void
     {
         $context =
             $this->context(
@@ -553,32 +567,224 @@ class CommercePostSaleExchangeExecutionFoundationTest extends TestCase
                 ->count()
         );
 
-        $other =
+    }
+
+
+    public function test_positive_difference_consumes_converged_credit_and_can_split_with_bank(): void
+    {
+        $target =
             $this->context(
-                'account-credit',
+                'account-credit-target',
                 replacementPriceMinor: 9000
             );
 
-        $this->assertDomainFailure(
-            fn () => $manager->execute(
-                $other['selection'],
+        $source =
+            $this->context(
+                'account-credit-source',
+                replacementPriceMinor: 5000,
+                party: $target['party']
+            );
+
+        app(
+            CommercePostSaleExchangeExecutionManager::class
+        )->execute(
+            $source['selection'],
+            $this->executionData(
+                $source,
+                'p857:credit-source'
+            ),
+            $source['operator']
+        );
+
+        $this->assertSame(
+            2000,
+            app(
+                CustomerCreditBalanceReader::class
+            )->balanceMinor(
+                $target['organization']->id,
+                $target['party']->id,
+                'ARS'
+            )
+        );
+
+        $bank =
+            app(
+                FinancialAccountManager::class
+            )->create(
+                'Banco P8.5.7 split',
+                FinancialAccountType::BankAccount,
+                'ARS',
+                $target['admin']
+            );
+
+        $cashBefore =
+            DB::table('cash_movements')
+                ->count();
+        $externalBefore =
+            DB::table(
+                'financial_external_movements'
+            )->count();
+
+        $execution =
+            app(
+                CommercePostSaleExchangeExecutionManager::class
+            )->execute(
+                $target['selection'],
                 $this->executionData(
-                    $other,
-                    'p845:account-credit',
+                    $target,
+                    'p857:account-credit-split',
                     payments: [
                         new CommercePaymentData(
                             method:
                                 CommercePaymentMethod::AccountCredit,
-                            amountMinor: 2000,
+                            amountMinor: 1500
+                        ),
+                        new CommercePaymentData(
+                            method:
+                                CommercePaymentMethod::BankTransfer,
+                            amountMinor: 500,
                             reference:
-                                'CREDITO',
+                                'P857-BANK-500',
                             financialAccountId:
                                 $bank->id
                         ),
                     ]
                 ),
-                $other['operator']
+                $target['operator']
             )
+            ->load([
+                'payments',
+                'creditConsumptions.allocations',
+            ]);
+
+        $this->assertSame(
+            2000,
+            $execution->difference_amount_minor
+        );
+
+        $this->assertCount(
+            1,
+            $execution->payments
+        );
+
+        $this->assertSame(
+            500,
+            $execution
+                ->payments
+                ->sole()
+                ->amount_minor
+        );
+
+        $consumption =
+            $execution
+                ->creditConsumptions
+                ->sole();
+
+        $this->assertInstanceOf(
+            CustomerCreditConsumption::class,
+            $consumption
+        );
+
+        $this->assertSame(
+            'exchange_payment',
+            $consumption->target_kind
+        );
+
+        $this->assertSame(
+            $execution->id,
+            $consumption->target_id
+        );
+
+        $this->assertSame(
+            $execution->id,
+            $consumption
+                ->commerce_post_sale_exchange_execution_id
+        );
+
+        $this->assertSame(
+            1,
+            $consumption->payment_position
+        );
+
+        $this->assertSame(
+            1500,
+            $consumption->amount_minor
+        );
+
+        $this->assertSame(
+            500,
+            app(
+                CustomerCreditBalanceReader::class
+            )->balanceMinor(
+                $target['organization']->id,
+                $target['party']->id,
+                'ARS'
+            )
+        );
+
+        $this->assertSame(
+            $cashBefore,
+            DB::table('cash_movements')
+                ->count()
+        );
+
+        $this->assertSame(
+            $externalBefore,
+            DB::table(
+                'financial_external_movements'
+            )->count()
+        );
+    }
+
+    public function test_insufficient_exchange_account_credit_rolls_back_inventory_and_execution(): void
+    {
+        $context =
+            $this->context(
+                'account-credit-insufficient',
+                replacementPriceMinor: 9000
+            );
+
+        $inventoryBefore =
+            DB::table('inventory_movements')
+                ->count();
+
+        $this->assertDomainFailure(
+            fn () => app(
+                CommercePostSaleExchangeExecutionManager::class
+            )->execute(
+                $context['selection'],
+                $this->executionData(
+                    $context,
+                    'p857:account-credit-insufficient',
+                    payments: [
+                        new CommercePaymentData(
+                            method:
+                                CommercePaymentMethod::AccountCredit,
+                            amountMinor: 2000
+                        ),
+                    ]
+                ),
+                $context['operator']
+            )
+        );
+
+        $this->assertDatabaseMissing(
+            'commerce_post_sale_exchange_executions',
+            [
+                'commerce_post_sale_exchange_selection_id' =>
+                    $context['selection']->id,
+            ]
+        );
+
+        $this->assertDatabaseCount(
+            'customer_credit_consumptions',
+            0
+        );
+
+        $this->assertSame(
+            $inventoryBefore,
+            DB::table('inventory_movements')
+                ->count()
         );
     }
 
@@ -711,7 +917,8 @@ class CommercePostSaleExchangeExecutionFoundationTest extends TestCase
     private function context(
         string $suffix,
         int $replacementPriceMinor,
-        bool $stockReplacement = true
+        bool $stockReplacement = true,
+        ?BusinessParty $party = null
     ): array {
         $organization =
             Organization::query()
@@ -742,7 +949,7 @@ class CommercePostSaleExchangeExecutionFoundationTest extends TestCase
                 ->orderBy('id')
                 ->firstOrFail();
 
-        $party =
+        $party ??=
             BusinessParty::query()
                 ->create([
                     'organization_id' =>

@@ -6,6 +6,7 @@ use App\Domain\Commerce\CommercePaymentData;
 use App\Domain\Commerce\CommercePostSaleExchangeExecutionData;
 use App\Domain\Commerce\CommercePostSaleExchangeExecutionLineData;
 use App\Domain\Commerce\CommercePostSaleExchangeExecutionManager;
+use App\Domain\Commerce\CustomerCreditBalanceReader;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\CommercePaymentMethod;
 use App\Enums\FinancialAccountType;
@@ -26,7 +27,8 @@ class CommercePostSaleExchangeExecutionController extends Controller
     public function create(
         Request $request,
         CommercePostSaleExchangeSelection $exchangeSelection,
-        CurrentOrganization $currentOrganization
+        CurrentOrganization $currentOrganization,
+        CustomerCreditBalanceReader $creditBalances
     ): View {
         $organizationId =
             $currentOrganization->id($request->user());
@@ -143,14 +145,26 @@ class CommercePostSaleExchangeExecutionController extends Controller
             collect(
                 CommercePaymentMethod::cases()
             )
-                ->reject(
-                    fn (
-                        CommercePaymentMethod $method
-                    ): bool =>
-                        $method
-                            === CommercePaymentMethod::AccountCredit
-                )
                 ->values();
+
+        $sale =
+            $exchangeSelection
+                ->resolution
+                ->request
+                ->sale;
+
+        $customerCreditBalanceMinor =
+            $sale->customer_business_party_id
+                !== null
+                ? $creditBalances
+                    ->balanceMinor(
+                        $organizationId,
+                        (int) $sale
+                            ->customer_business_party_id,
+                        (string) $exchangeSelection
+                            ->currency_code
+                    )
+                : 0;
 
         return view(
             'commerce-post-sale.exchange-execution-create',
@@ -165,6 +179,8 @@ class CommercePostSaleExchangeExecutionController extends Controller
                     $accounts,
                 'paymentMethods' =>
                     $methods,
+                'customerCreditBalanceMinor' =>
+                    $customerCreditBalanceMinor,
                 'idempotencyKey' =>
                     'ui:commerce-post-sale-exchange-execution:'
                     .Str::uuid(),
@@ -254,9 +270,15 @@ class CommercePostSaleExchangeExecutionController extends Controller
                                                     'notes'
                                                 ] ?? null,
                                             financialAccountId:
-                                                (int) $payment[
-                                                    'financial_account_id'
-                                                ],
+                                                filled(
+                                                    $payment[
+                                                        'financial_account_id'
+                                                    ] ?? null
+                                                )
+                                                    ? (int) $payment[
+                                                        'financial_account_id'
+                                                    ]
+                                                    : null,
                                             tenderedAmountMinor:
                                                 filled(
                                                     $payment[
