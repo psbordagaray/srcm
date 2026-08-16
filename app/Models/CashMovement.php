@@ -27,6 +27,7 @@ class CashMovement extends Model
         'cash_security_drop_request_id',
         'purchase_payment_execution_id',
         'post_sale_cash_refund_execution_id',
+        'post_sale_exchange_payment_id',
         'commerce_payment_id',
         'direction',
         'type',
@@ -128,6 +129,14 @@ class CashMovement extends Model
         return $this->belongsTo(
             CommercePostSaleCashRefundExecution::class,
             'post_sale_cash_refund_execution_id'
+        );
+    }
+
+    public function postSaleExchangePayment(): BelongsTo
+    {
+        return $this->belongsTo(
+            CommercePostSaleExchangePayment::class,
+            'post_sale_exchange_payment_id'
         );
     }
 

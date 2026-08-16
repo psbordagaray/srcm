@@ -76,6 +76,12 @@ enum UserRole: string
         return $this->canResolveCommercePostSale();
     }
 
+    public function canExecuteCommercePostSaleExchange(): bool
+    {
+        return $this->canManageCommerce()
+            && $this->canIssueInventory();
+    }
+
     public function canExecuteCommercePostSaleCashRefund(): bool
     {
         return $this->canOperateCashRegister();

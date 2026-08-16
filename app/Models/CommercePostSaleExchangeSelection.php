@@ -7,6 +7,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class CommercePostSaleExchangeSelection extends Model
@@ -85,6 +86,14 @@ class CommercePostSaleExchangeSelection extends Model
             CommercePostSaleExchangeSelectionLine::class,
             'commerce_post_sale_exchange_selection_id'
         )->orderBy('sequence');
+    }
+
+    public function execution(): HasOne
+    {
+        return $this->hasOne(
+            CommercePostSaleExchangeExecution::class,
+            'commerce_post_sale_exchange_selection_id'
+        );
     }
 
     public function replacementAmountMinor(): int
