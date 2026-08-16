@@ -140,4 +140,11 @@ class CommerceSale extends Model
         return $this->hasMany(CommercePayment::class)
             ->orderBy('position');
     }
+
+    public function postSaleRequests(): HasMany
+    {
+        return $this->hasMany(
+            CommercePostSaleRequest::class
+        )->latest('requested_at')->latest('id');
+    }
 }

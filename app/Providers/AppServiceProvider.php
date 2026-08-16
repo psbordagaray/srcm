@@ -102,6 +102,10 @@ class AppServiceProvider extends ServiceProvider
         foreach ([
             'view-commerce-sales' => 'canViewCommerceSales',
             'record-commerce-sales' => 'canRecordCommerceSale',
+            'view-commerce-post-sale' =>
+                'canViewCommercePostSaleRequests',
+            'record-commerce-post-sale' =>
+                'canRecordCommercePostSaleRequest',
         ] as $ability => $method) {
             Gate::define(
                 $ability,

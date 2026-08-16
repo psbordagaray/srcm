@@ -50,6 +50,16 @@ enum UserRole: string
         return true;
     }
 
+    public function canViewCommercePostSaleRequests(): bool
+    {
+        return $this->canViewCommerceSales();
+    }
+
+    public function canRecordCommercePostSaleRequest(): bool
+    {
+        return $this->canManageCommerce();
+    }
+
     public function canViewCustomers(): bool
     {
         return true;
