@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Adapters\Finance\MercadoPago\EnvironmentMercadoPagoConnectionSecretStore;
+use App\Adapters\Finance\MercadoPago\MercadoPagoPointRefundAdapter;
 use App\Contracts\Finance\MercadoPagoConnectionSecretStore;
+use App\Domain\Finance\FinancialProviderRefundAdapterRegistry;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Models\Brand;
 use App\Models\BusinessParty;
@@ -36,6 +38,16 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(
             MercadoPagoConnectionSecretStore::class,
             EnvironmentMercadoPagoConnectionSecretStore::class
+        );
+
+        $this->app->singleton(
+            FinancialProviderRefundAdapterRegistry::class,
+            fn ($app) =>
+                new FinancialProviderRefundAdapterRegistry([
+                    $app->make(
+                        MercadoPagoPointRefundAdapter::class
+                    ),
+                ])
         );
     }
 

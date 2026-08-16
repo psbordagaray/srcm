@@ -3,6 +3,7 @@
 namespace App\Domain\Finance;
 
 use App\Adapters\Finance\MercadoPago\MercadoPagoReadOnlyConnectionHealthProbe;
+use App\Adapters\Finance\MercadoPago\MercadoPagoRefundReadinessHealthProbe;
 use App\Contracts\Finance\FinancialProviderConnectionHealthProbe;
 use App\Enums\FinancialProviderCapability;
 use App\Models\FinancialProviderConnection;
@@ -16,10 +17,12 @@ final class FinancialProviderHealthProbeRegistry
     private array $probes;
 
     public function __construct(
-        MercadoPagoReadOnlyConnectionHealthProbe $mercadoPagoRead
+        MercadoPagoReadOnlyConnectionHealthProbe $mercadoPagoRead,
+        MercadoPagoRefundReadinessHealthProbe $mercadoPagoRefundReadiness
     ) {
         $this->probes = [
             $mercadoPagoRead,
+            $mercadoPagoRefundReadiness,
         ];
     }
 
