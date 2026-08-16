@@ -118,6 +118,8 @@ class AppServiceProvider extends ServiceProvider
                 'canViewCommercePostSaleRequests',
             'record-commerce-post-sale' =>
                 'canRecordCommercePostSaleRequest',
+            'resolve-commerce-post-sale' =>
+                'canResolveCommercePostSale',
         ] as $ability => $method) {
             Gate::define(
                 $ability,

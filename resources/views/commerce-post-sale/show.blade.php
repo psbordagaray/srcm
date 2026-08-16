@@ -21,6 +21,13 @@
             </div>
 
             <div class="flex flex-wrap gap-3">
+                @can('resolve-commerce-post-sale')
+                    @if($case->receipts->isNotEmpty())
+                        <a href="{{ route('commerce-post-sale.resolutions.create', $case) }}" class="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-300">
+                            Registrar resolución económica
+                        </a>
+                    @endif
+                @endcan
                 @can('record-commerce-post-sale')
                     <a href="{{ route('commerce-post-sale.receipts.create', $case) }}" class="rounded-xl bg-cyan-300 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-200">
                         Registrar recepción física
@@ -208,6 +215,48 @@
                                         $ {{ number_format($resolution->recognizedAmountMinor() / 100, 2, ',', '.') }}
                                     </p>
                                 </div>
+
+                                <div class="mt-4 space-y-2">
+                                    @foreach($resolution->lines as $resolutionLine)
+                                        <div class="rounded-lg border border-white/10 bg-slate-950/40 p-3">
+                                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                <div>
+                                                    <p class="text-sm font-semibold text-white">
+                                                        {{ $resolutionLine->receiptLine->requestLine->saleLine->description }}
+                                                    </p>
+                                                    <p class="mt-1 text-xs text-slate-500">
+                                                        {{ rtrim(rtrim($resolutionLine->quantity, '0'), '.') }}
+                                                        {{ $resolutionLine->receiptLine->requestLine->saleLine->product?->base_unit_code }}
+                                                        · base $ {{ number_format($resolutionLine->baseline_amount_minor / 100, 2, ',', '.') }}
+                                                    </p>
+                                                </div>
+                                                <p class="font-mono text-sm font-bold text-amber-100">
+                                                    Reconocido $ {{ number_format($resolutionLine->recognized_amount_minor / 100, 2, ',', '.') }}
+                                                </p>
+                                            </div>
+
+                                            @if($resolutionLine->adjustment_reason)
+                                                <p class="mt-2 text-xs text-slate-400">
+                                                    Ajuste: {{ $resolutionLine->adjustment_reason }}
+                                                </p>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                @if($resolution->preferredOriginalPayment)
+                                    <p class="mt-3 text-xs text-slate-400">
+                                        Medio original preferido:
+                                        <span class="font-semibold text-slate-200">
+                                            {{ $resolution->preferredOriginalPayment->method->label() }}
+                                            · $ {{ number_format($resolution->preferredOriginalPayment->amount_minor / 100, 2, ',', '.') }}
+                                        </span>
+                                    </p>
+                                @endif
+
+                                <p class="mt-3 border-t border-white/10 pt-3 text-xs text-slate-400">
+                                    {{ $resolution->reason }}
+                                </p>
                             </article>
                         @empty
                             <p class="rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-500">
@@ -244,7 +293,7 @@
                 <section class="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6">
                     <p class="text-xs font-bold uppercase tracking-wider text-violet-300">Separación de responsabilidades</p>
                     <p class="mt-3 text-sm leading-6 text-slate-300">
-                        Este expediente muestra la evidencia confirmada. P8.5.1 no permite desde esta pantalla recibir físicamente, resolver valor ni ejecutar dinero o reemplazos.
+                        El expediente permite registrar recepción física y resolución económica como hechos separados. La materialización del saldo a favor, reembolso o cambio continúa en acciones posteriores con sus permisos propios.
                     </p>
                 </section>
             </div>
