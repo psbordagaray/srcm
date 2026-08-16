@@ -12,6 +12,9 @@
 
             <div class="flex flex-wrap gap-3">
                 <a href="{{ route('commerce-sales.index') }}" class="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white">Volver a ventas</a>
+                @can('record-commerce-post-sale')
+                    <a href="{{ route('commerce-post-sale.create', $sale) }}" class="rounded-xl border border-violet-400/30 px-4 py-2.5 text-sm font-semibold text-violet-200 transition hover:border-violet-300">Iniciar posventa</a>
+                @endcan
                 @can('record-commerce-sales')
                     <a href="{{ route('commerce-sales.create') }}" class="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-300">Nueva venta</a>
                 @endcan
@@ -209,6 +212,31 @@
                         <a href="{{ route('service-orders.show', $sale->serviceOrder) }}" class="mt-4 inline-flex rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-200 transition hover:border-cyan-300">Abrir expediente</a>
                     </section>
                 @endif
+
+                <section class="sulu-card p-6">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Posventa</h2>
+                            <p class="mt-2 text-sm text-slate-400">
+                                {{ $sale->postSaleRequests->count() }} solicitud{{ $sale->postSaleRequests->count() === 1 ? '' : 'es' }} registrada{{ $sale->postSaleRequests->count() === 1 ? '' : 's' }}.
+                            </p>
+                        </div>
+                        <a href="{{ route('commerce-post-sale.index', ['search' => $sale->sale_number]) }}" class="text-xs font-semibold text-violet-200 hover:text-violet-100">Ver módulo</a>
+                    </div>
+
+                    @if($sale->postSaleRequests->isNotEmpty())
+                        <div class="mt-4 space-y-2">
+                            @foreach($sale->postSaleRequests->take(3) as $postSale)
+                                <a href="{{ route('commerce-post-sale.show', $postSale) }}" class="block rounded-xl border border-violet-500/20 bg-violet-500/5 p-3 transition hover:border-violet-400/40">
+                                    <p class="text-sm font-bold text-violet-100">{{ $postSale->intent->label() }}</p>
+                                    <p class="mt-1 text-xs text-slate-500">{{ $postSale->requested_at->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }} · {{ $postSale->requestedBy->name }}</p>
+                                </a>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="mt-4 text-xs text-slate-500">Sin antecedentes de posventa.</p>
+                    @endif
+                </section>
 
                 <section class="sulu-card p-6">
                     <h2 class="text-lg font-bold text-white">Salida de inventario</h2>

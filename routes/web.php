@@ -5,6 +5,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CommerceSaleController;
+use App\Http\Controllers\CommercePostSaleController;
 use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\FinancialReconciliationController;
 use App\Http\Controllers\FinancialStatementImportController;
@@ -609,6 +610,38 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )
                         ->whereUuid('commerceSale')
                         ->name('commerce-sales.show');
+                });
+
+            Route::middleware('can:view-commerce-post-sale')
+                ->group(function () {
+                    Route::get(
+                        'commerce/post-sale',
+                        [CommercePostSaleController::class, 'index']
+                    )->name('commerce-post-sale.index');
+
+                    Route::get(
+                        'commerce/post-sale/{commercePostSaleRequest:public_id}',
+                        [CommercePostSaleController::class, 'show']
+                    )
+                        ->whereUuid('commercePostSaleRequest')
+                        ->name('commerce-post-sale.show');
+                });
+
+            Route::middleware('can:record-commerce-post-sale')
+                ->group(function () {
+                    Route::get(
+                        'commerce/sales/{commerceSale:public_id}/post-sale/create',
+                        [CommercePostSaleController::class, 'create']
+                    )
+                        ->whereUuid('commerceSale')
+                        ->name('commerce-post-sale.create');
+
+                    Route::post(
+                        'commerce/sales/{commerceSale:public_id}/post-sale',
+                        [CommercePostSaleController::class, 'store']
+                    )
+                        ->whereUuid('commerceSale')
+                        ->name('commerce-post-sale.store');
                 });
 
             Route::middleware('can:record-commerce-sales')

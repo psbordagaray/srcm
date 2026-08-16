@@ -185,6 +185,14 @@
             'disabled' => $currentOrganization === null
                 || ! request()->user()?->can('view-commerce-sales'),
         ],
+        [
+            'label' => 'Posventa',
+            'route' => 'commerce-post-sale.index',
+            'active' => 'commerce-post-sale.*',
+            'icon' => 'receipt',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('view-commerce-post-sale'),
+        ],
     ];
 @endphp
 

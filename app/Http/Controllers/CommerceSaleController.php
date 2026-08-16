@@ -478,6 +478,7 @@ class CommerceSaleController extends Controller
             'lines.inventoryMovementLine',
             'payments.receivedBy',
             'payments.financialAccount',
+            'postSaleRequests.requestedBy',
             'inventoryMovement.lines.product',
             'inventoryMovement.lines.sourceLocation',
         ]);
