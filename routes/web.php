@@ -6,6 +6,7 @@ use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CommerceSaleController;
 use App\Http\Controllers\CommercePostSaleController;
+use App\Http\Controllers\CommercePostSaleReceiptController;
 use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\FinancialReconciliationController;
 use App\Http\Controllers\FinancialStatementImportController;
@@ -642,6 +643,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )
                         ->whereUuid('commerceSale')
                         ->name('commerce-post-sale.store');
+
+                    Route::get(
+                        'commerce/post-sale/{commercePostSaleRequest:public_id}/receipts/create',
+                        [CommercePostSaleReceiptController::class, 'create']
+                    )
+                        ->whereUuid('commercePostSaleRequest')
+                        ->name('commerce-post-sale.receipts.create');
+
+                    Route::post(
+                        'commerce/post-sale/{commercePostSaleRequest:public_id}/receipts',
+                        [CommercePostSaleReceiptController::class, 'store']
+                    )
+                        ->whereUuid('commercePostSaleRequest')
+                        ->name('commerce-post-sale.receipts.store');
                 });
 
             Route::middleware('can:record-commerce-sales')

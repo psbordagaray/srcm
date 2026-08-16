@@ -21,6 +21,11 @@
             </div>
 
             <div class="flex flex-wrap gap-3">
+                @can('record-commerce-post-sale')
+                    <a href="{{ route('commerce-post-sale.receipts.create', $case) }}" class="rounded-xl bg-cyan-300 px-4 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-cyan-200">
+                        Registrar recepción física
+                    </a>
+                @endcan
                 <a href="{{ route('commerce-post-sale.index') }}" class="rounded-xl border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white">
                     Volver a posventa
                 </a>
@@ -98,14 +103,52 @@
                     <div class="mt-5 space-y-3">
                         @forelse($case->receipts as $receipt)
                             <article class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
-                                <p class="text-sm font-bold text-cyan-100">
-                                    Recepción {{ \Illuminate\Support\Str::limit($receipt->public_id, 18) }}
-                                </p>
-                                <p class="mt-1 text-xs text-slate-500">
-                                    {{ $receipt->received_at->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }}
-                                    · {{ $receipt->receivedBy->name }}
-                                    · {{ $receipt->lines->count() }} línea{{ $receipt->lines->count() === 1 ? '' : 's' }}
-                                </p>
+                                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                    <div>
+                                        <p class="text-sm font-bold text-cyan-100">
+                                            Recepción {{ \Illuminate\Support\Str::limit($receipt->public_id, 18) }}
+                                        </p>
+                                        <p class="mt-1 text-xs text-slate-500">
+                                            {{ $receipt->received_at->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }}
+                                            · {{ $receipt->receivedBy->name }}
+                                        </p>
+                                    </div>
+                                    <span class="rounded-lg border border-cyan-500/20 bg-slate-950/40 px-3 py-1.5 text-xs font-semibold text-cyan-200">
+                                        CustomerReturn #{{ $receipt->inventoryMovement->id }}
+                                    </span>
+                                </div>
+
+                                <div class="mt-4 space-y-2">
+                                    @foreach($receipt->lines as $receiptLine)
+                                        <div class="rounded-lg border border-white/10 bg-slate-950/40 p-3">
+                                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                <div>
+                                                    <p class="text-sm font-semibold text-white">
+                                                        {{ $receiptLine->requestLine->saleLine->description }}
+                                                    </p>
+                                                    <p class="mt-1 text-xs text-slate-500">
+                                                        {{ $receiptLine->condition->label() }}
+                                                        · {{ $receiptLine->destinationLocation->name }}
+                                                    </p>
+                                                </div>
+                                                <p class="font-mono text-sm font-bold text-cyan-100">
+                                                    {{ rtrim(rtrim($receiptLine->quantity, '0'), '.') }}
+                                                    {{ $receiptLine->requestLine->saleLine->product?->base_unit_code }}
+                                                </p>
+                                            </div>
+
+                                            @if($receiptLine->notes)
+                                                <p class="mt-2 text-xs text-slate-400">{{ $receiptLine->notes }}</p>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                @if($receipt->notes)
+                                    <p class="mt-3 border-t border-white/10 pt-3 text-xs text-slate-400">
+                                        {{ $receipt->notes }}
+                                    </p>
+                                @endif
                             </article>
                         @empty
                             <p class="rounded-xl border border-slate-800 bg-slate-950/40 p-4 text-sm text-slate-500">
