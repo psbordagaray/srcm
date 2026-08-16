@@ -107,6 +107,14 @@ class CommercePostSaleResolution extends Model
         );
     }
 
+    public function cashRefundExecution(): HasOne
+    {
+        return $this->hasOne(
+            CommercePostSaleCashRefundExecution::class,
+            'commerce_post_sale_resolution_id'
+        );
+    }
+
     public function recognizedAmountMinor(): int
     {
         if ($this->relationLoaded('lines')) {
