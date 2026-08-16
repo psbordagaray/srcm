@@ -4,7 +4,6 @@ namespace Tests\Feature\Finance;
 
 use App\Adapters\Finance\MercadoPago\MercadoPagoConnectionSecrets;
 use App\Domain\Finance\MercadoPagoPointRefundSandboxSmokeRunner;
-use App\Enums\FinancialMovementStatus;
 use DomainException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
@@ -20,13 +19,13 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
         Http::preventStrayRequests();
     }
 
-    public function test_sandbox_smoke_creates_virtual_order_processes_and_refunds_without_real_money(): void
+    public function test_sandbox_smoke_uses_official_processed_then_refunded_simulation_without_refund_endpoint(): void
     {
         Http::fake([
             'https://api.mercadopago.com/v1/orders' =>
                 Http::response([
                     'id' =>
-                        'ORD_P8435',
+                        'ORD_P8436',
                     'type' =>
                         'point',
                     'status' =>
@@ -35,17 +34,22 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
                         false,
                 ], 201),
 
-            'https://api.mercadopago.com/v1/orders/ORD_P8435/events' =>
-                Http::response(
-                    null,
-                    204
-                ),
+            'https://api.mercadopago.com/v1/orders/ORD_P8436/events' =>
+                Http::sequence()
+                    ->push(
+                        null,
+                        204
+                    )
+                    ->push(
+                        null,
+                        204
+                    ),
 
-            'https://api.mercadopago.com/v1/orders/ORD_P8435' =>
+            'https://api.mercadopago.com/v1/orders/ORD_P8436' =>
                 Http::sequence()
                     ->push([
                         'id' =>
-                            'ORD_P8435',
+                            'ORD_P8436',
                         'type' =>
                             'point',
                         'status' =>
@@ -57,7 +61,7 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
                         'transactions' => [
                             'payments' => [[
                                 'id' =>
-                                    'PAY_P8435',
+                                    'PAY_P8436',
                                 'paid_amount' =>
                                     '1.00',
                                 'status' =>
@@ -67,7 +71,7 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
                     ], 200)
                     ->push([
                         'id' =>
-                            'ORD_P8435',
+                            'ORD_P8436',
                         'type' =>
                             'point',
                         'status' =>
@@ -79,46 +83,14 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
                         'transactions' => [
                             'payments' => [[
                                 'id' =>
-                                    'PAY_P8435',
+                                    'PAY_P8436',
                                 'paid_amount' =>
-                                    '1.00',
-                                'status' =>
-                                    'processed',
-                            ]],
-                            'refunds' => [[
-                                'id' =>
-                                    'REF_P8435',
-                                'transaction_id' =>
-                                    'PAY_P8435',
-                                'amount' =>
                                     '1.00',
                                 'status' =>
                                     'processed',
                             ]],
                         ],
                     ], 200),
-
-            'https://api.mercadopago.com/v1/orders/ORD_P8435/refund' =>
-                Http::response([
-                    'id' =>
-                        'ORD_P8435',
-                    'status' =>
-                        'refunded',
-                    'status_detail' =>
-                        'refunded',
-                    'transactions' => [
-                        'refunds' => [[
-                            'id' =>
-                                'REF_P8435',
-                            'transaction_id' =>
-                                'PAY_P8435',
-                            'amount' =>
-                                '1.00',
-                            'status' =>
-                                'processing',
-                        ]],
-                    ],
-                ], 201),
         ]);
 
         $result =
@@ -130,13 +102,13 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
             );
 
         $this->assertSame(
-            'ORD_P8435',
+            'ORD_P8436',
             $result->orderId
         );
 
         $this->assertSame(
-            'REF_P8435',
-            $result->refundId
+            'PAY_P8436',
+            $result->paymentId
         );
 
         $this->assertSame(
@@ -155,8 +127,8 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
         );
 
         $this->assertSame(
-            FinancialMovementStatus::Posted,
-            $result->status
+            'refunded',
+            $result->orderStatus
         );
 
         Http::assertSentCount(5);
@@ -172,11 +144,6 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
                     'config.point.terminal_id'
                 )
                     === 'NEWLAND_N950__SBX0000001'
-                && data_get(
-                    $request->data(),
-                    'transactions.payments.0.amount'
-                )
-                    === '1.00'
         );
 
         Http::assertSent(
@@ -184,7 +151,7 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
                 $request->method()
                     === 'POST'
                 && $request->url()
-                    === 'https://api.mercadopago.com/v1/orders/ORD_P8435/events'
+                    === 'https://api.mercadopago.com/v1/orders/ORD_P8436/events'
                 && ($request->data()['status'] ?? null)
                     === 'processed'
         );
@@ -194,11 +161,16 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
                 $request->method()
                     === 'POST'
                 && $request->url()
-                    === 'https://api.mercadopago.com/v1/orders/ORD_P8435/refund'
-                && $request->data()
-                    === []
-                && $request->hasHeader(
-                    'X-Idempotency-Key'
+                    === 'https://api.mercadopago.com/v1/orders/ORD_P8436/events'
+                && ($request->data()['status'] ?? null)
+                    === 'refunded'
+        );
+
+        Http::assertNotSent(
+            fn (Request $request): bool =>
+                str_ends_with(
+                    $request->url(),
+                    '/refund'
                 )
         );
     }
@@ -231,7 +203,7 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
         Http::assertNothingSent();
     }
 
-    public function test_provider_must_confirm_live_mode_false_before_processing_or_refund(): void
+    public function test_provider_must_confirm_live_mode_false_before_any_state_simulation(): void
     {
         Http::fake([
             'https://api.mercadopago.com/v1/orders' =>
@@ -264,14 +236,10 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
                     $request->url(),
                     '/events'
                 )
-                || str_ends_with(
-                    $request->url(),
-                    '/refund'
-                )
         );
     }
 
-    public function test_processed_payment_amount_must_match_created_amount_before_refund(): void
+    public function test_processed_payment_amount_must_match_created_amount_before_refunded_simulation(): void
     {
         Http::fake([
             'https://api.mercadopago.com/v1/orders' =>
@@ -330,6 +298,89 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
             fn (Request $request): bool =>
                 str_ends_with(
                     $request->url(),
+                    '/events'
+                )
+                && ($request->data()['status'] ?? null)
+                    === 'refunded'
+        );
+    }
+
+    public function test_refunded_simulation_requires_refunded_order_observation(): void
+    {
+        $processed = [
+            'id' =>
+                'ORD_REFUND_POLL_GUARD',
+            'type' =>
+                'point',
+            'status' =>
+                'processed',
+            'live_mode' =>
+                false,
+            'country_code' =>
+                'ARG',
+            'transactions' => [
+                'payments' => [[
+                    'id' =>
+                        'PAY_REFUND_POLL_GUARD',
+                    'paid_amount' =>
+                        '1.00',
+                    'status' =>
+                        'processed',
+                ]],
+            ],
+        ];
+
+        $pollSequence =
+            Http::sequence();
+
+        for ($i = 0; $i < 13; $i++) {
+            $pollSequence->push(
+                $processed,
+                200
+            );
+        }
+
+        Http::fake([
+            'https://api.mercadopago.com/v1/orders' =>
+                Http::response([
+                    'id' =>
+                        'ORD_REFUND_POLL_GUARD',
+                    'type' =>
+                        'point',
+                    'status' =>
+                        'created',
+                    'live_mode' =>
+                        false,
+                ], 201),
+
+            'https://api.mercadopago.com/v1/orders/ORD_REFUND_POLL_GUARD/events' =>
+                Http::sequence()
+                    ->push(
+                        null,
+                        204
+                    )
+                    ->push(
+                        null,
+                        204
+                    ),
+
+            'https://api.mercadopago.com/v1/orders/ORD_REFUND_POLL_GUARD' =>
+                $pollSequence,
+        ]);
+
+        $this->assertDomainFailure(
+            fn () => app(
+                MercadoPagoPointRefundSandboxSmokeRunner::class
+            )->run(
+                $this->testSecrets(),
+                100
+            )
+        );
+
+        Http::assertNotSent(
+            fn (Request $request): bool =>
+                str_ends_with(
+                    $request->url(),
                     '/refund'
                 )
         );
@@ -341,7 +392,7 @@ class MercadoPagoPointRefundSandboxSmokeHarnessTest
             webhookSecret:
                 'sandbox-not-used',
             accessToken:
-                'APP_USR_TEST_P8435',
+                'APP_USR_TEST_P8436',
             applicationId:
                 '987654321',
             userId:

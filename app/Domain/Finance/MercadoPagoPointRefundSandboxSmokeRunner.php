@@ -4,9 +4,7 @@ namespace App\Domain\Finance;
 
 use App\Adapters\Finance\MercadoPago\MercadoPagoConnectionSecrets;
 use App\Adapters\Finance\MercadoPago\MercadoPagoPointOrdersClient;
-use App\Adapters\Finance\MercadoPago\MercadoPagoPointRefundAdapter;
 use App\Adapters\Finance\MercadoPago\MercadoPagoPointSandboxOrdersClient;
-use App\Enums\FinancialMovementStatus;
 use DomainException;
 use Illuminate\Support\Str;
 
@@ -19,8 +17,7 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
 
     public function __construct(
         private readonly MercadoPagoPointOrdersClient $orders,
-        private readonly MercadoPagoPointSandboxOrdersClient $sandbox,
-        private readonly MercadoPagoPointRefundAdapter $refunds
+        private readonly MercadoPagoPointSandboxOrdersClient $sandbox
     ) {
     }
 
@@ -31,7 +28,7 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
     ): MercadoPagoPointRefundSandboxSmokeResult {
         if ($secrets->liveMode) {
             throw new DomainException(
-                'El smoke P8.4.3.5 rechaza credenciales live.'
+                'El smoke P8.4.3.6 rechaza credenciales live.'
             );
         }
 
@@ -50,7 +47,7 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
             );
 
         $reference =
-            'srcm-p8435-'
+            'srcm-p8436-'
             .Str::lower(
                 Str::random(12)
             );
@@ -71,7 +68,7 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
                 idempotencyKey:
                     $createKey,
                 description:
-                    'SRCM P8.4.3.5 sandbox refund smoke'
+                    'SRCM P8.4.3.6 sandbox refund simulation'
             );
 
         $this->assertSandboxOrder(
@@ -90,9 +87,10 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
         );
 
         $processed =
-            $this->waitForProcessedOrder(
+            $this->waitForOrderStatus(
                 $secrets,
-                $orderId
+                $orderId,
+                'processed'
             );
 
         $this->assertArgentinaOrder(
@@ -124,92 +122,45 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
             );
         }
 
-        $refundKey =
-            'srcm-sandbox-refund:'
-            .Str::uuid();
+        $this->sandbox->simulateRefunded(
+            $secrets->accessToken,
+            $orderId
+        );
 
-        $refundOrder =
-            $this->orders->refundOrder(
-                accessToken:
-                    $secrets->accessToken,
-                orderId:
-                    $orderId,
-                paymentTransactionId:
-                    $paymentId,
-                amountMinor:
-                    $amountMinor,
-                idempotencyKey:
-                    $refundKey,
-                total:
-                    true
+        $refunded =
+            $this->waitForOrderStatus(
+                $secrets,
+                $orderId,
+                'refunded'
             );
 
-        $refund =
-            $this->singleMatchingRefund(
-                $refundOrder,
-                $paymentId,
-                $amountMinor
-            );
-
-        $refundId =
-            $this->requiredIdentifier(
-                $refund['id'] ?? null,
-                'refund id'
-            );
-
-        $observation =
-            $this->refunds
-                ->normalizeObservedRefund(
-                    $refundOrder,
-                    $refundId,
-                    $amountMinor,
-                    'ARS'
-                );
-
-        if (
-            $observation->status
-                === FinancialMovementStatus::Pending
-        ) {
-            $observation =
-                $this->waitForPostedRefund(
-                    $secrets,
-                    $orderId,
-                    $refundId,
-                    $amountMinor
-                );
-        }
-
-        if (
-            $observation->status
-                !== FinancialMovementStatus::Posted
-        ) {
-            throw new DomainException(
-                'El smoke sandbox no obtuvo evidencia final Posted del refund.'
-            );
-        }
+        $this->assertArgentinaOrder(
+            $refunded
+        );
 
         return new MercadoPagoPointRefundSandboxSmokeResult(
             orderId:
                 $orderId,
-            refundId:
-                $refundId,
+            paymentId:
+                $paymentId,
             terminalId:
                 $terminalId,
             amountMinor:
                 $amountMinor,
             currencyCode:
                 'ARS',
-            status:
-                $observation->status
+            orderStatus:
+                'refunded'
         );
     }
 
     /**
      * @return array<string,mixed>
      */
-    private function waitForProcessedOrder(
+    private function waitForOrderStatus(
         MercadoPagoConnectionSecrets $secrets,
-        string $orderId
+        string $orderId,
+        string $expectedStatus
     ): array {
         for (
             $attempt = 1;
@@ -232,7 +183,7 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
                         (string)
                         ($order['status'] ?? '')
                     )
-                ) === 'processed'
+                ) === $expectedStatus
             ) {
                 return $order;
             }
@@ -248,67 +199,9 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
         }
 
         throw new DomainException(
-            'La order sandbox no alcanzó processed dentro de la ventana segura.'
-        );
-    }
-
-    private function waitForPostedRefund(
-        MercadoPagoConnectionSecrets $secrets,
-        string $orderId,
-        string $refundId,
-        int $amountMinor
-    ) {
-        for (
-            $attempt = 1;
-            $attempt <= self::MAX_POLL_ATTEMPTS;
-            $attempt++
-        ) {
-            $order =
-                $this->orders->getOrder(
-                    $secrets->accessToken,
-                    $orderId
-                );
-
-            $this->assertSandboxOrder(
-                $order
-            );
-
-            $this->assertArgentinaOrder(
-                $order
-            );
-
-            try {
-                $observation =
-                    $this->refunds
-                        ->normalizeObservedRefund(
-                            $order,
-                            $refundId,
-                            $amountMinor,
-                            'ARS'
-                        );
-
-                if (
-                    $observation->status
-                        === FinancialMovementStatus::Posted
-                ) {
-                    return $observation;
-                }
-            } catch (DomainException) {
-                // La propagación puede tardar algunos segundos en sandbox.
-            }
-
-            if (
-                $attempt
-                    < self::MAX_POLL_ATTEMPTS
-            ) {
-                usleep(
-                    1_000_000
-                );
-            }
-        }
-
-        throw new DomainException(
-            'El refund sandbox no alcanzó Posted dentro de la ventana segura.'
+            'La order sandbox no alcanzó '
+            .$expectedStatus
+            .' dentro de la ventana segura.'
         );
     }
 
@@ -355,7 +248,7 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
             )
         ) {
             throw new DomainException(
-                'El smoke P8.4.3.5 sólo valida Point Argentina / ARS.'
+                'El smoke P8.4.3.6 sólo valida Point Argentina / ARS.'
             );
         }
     }
@@ -382,54 +275,6 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
         }
 
         return $payments[0];
-    }
-
-    /**
-     * @param array<string,mixed> $order
-     * @return array<string,mixed>
-     */
-    private function singleMatchingRefund(
-        array $order,
-        string $paymentId,
-        int $amountMinor
-    ): array {
-        $refunds =
-            $order['transactions']['refunds']
-            ?? null;
-
-        if (! is_array($refunds)) {
-            throw new DomainException(
-                'La respuesta sandbox no incluye refunds.'
-            );
-        }
-
-        $matches = [];
-
-        foreach ($refunds as $refund) {
-            if (! is_array($refund)) {
-                continue;
-            }
-
-            if (
-                $this->identifierOrNull(
-                    $refund['transaction_id'] ?? null
-                ) === $paymentId
-                && $this->moneyToMinor(
-                    $refund['amount'] ?? null
-                ) === $amountMinor
-            ) {
-                $matches[] =
-                    $refund;
-            }
-        }
-
-        if (count($matches) !== 1) {
-            throw new DomainException(
-                'La respuesta sandbox no identifica un refund único para el pago creado.'
-            );
-        }
-
-        return $matches[0];
     }
 
     /**
@@ -536,19 +381,6 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
         }
 
         return $minor;
-    }
-
-    private function identifierOrNull(
-        mixed $value
-    ): ?string {
-        try {
-            return $this->requiredIdentifier(
-                $value,
-                'provider id'
-            );
-        } catch (DomainException) {
-            return null;
-        }
     }
 
     private function requiredIdentifier(

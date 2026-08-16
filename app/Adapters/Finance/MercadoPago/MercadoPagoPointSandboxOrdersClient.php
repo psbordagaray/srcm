@@ -15,6 +15,29 @@ final class MercadoPagoPointSandboxOrdersClient
         string $accessToken,
         string $orderId
     ): void {
+        $this->simulateStatus(
+            $accessToken,
+            $orderId,
+            'processed'
+        );
+    }
+
+    public function simulateRefunded(
+        string $accessToken,
+        string $orderId
+    ): void {
+        $this->simulateStatus(
+            $accessToken,
+            $orderId,
+            'refunded'
+        );
+    }
+
+    private function simulateStatus(
+        string $accessToken,
+        string $orderId,
+        string $status
+    ): void {
         $token =
             $this->accessToken(
                 $accessToken
@@ -24,6 +47,21 @@ final class MercadoPagoPointSandboxOrdersClient
             $this->orderId(
                 $orderId
             );
+
+        if (
+            ! in_array(
+                $status,
+                [
+                    'processed',
+                    'refunded',
+                ],
+                true
+            )
+        ) {
+            throw new DomainException(
+                'El estado sandbox solicitado no está permitido.'
+            );
+        }
 
         $response =
             Http::acceptJson()
@@ -37,13 +75,15 @@ final class MercadoPagoPointSandboxOrdersClient
                     .'/events',
                     [
                         'status' =>
-                            'processed',
+                            $status,
                     ]
                 );
 
         if ($response->status() !== 204) {
             throw new DomainException(
-                'Mercado Pago sandbox processed simulation falló '
+                'Mercado Pago sandbox '
+                .$status
+                .' simulation falló '
                 .$this->safeFailure(
                     $response
                 )
