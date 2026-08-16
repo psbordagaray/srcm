@@ -28,7 +28,7 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
     ): MercadoPagoPointRefundSandboxSmokeResult {
         if ($secrets->liveMode) {
             throw new DomainException(
-                'El smoke P8.4.3.6 rechaza credenciales live.'
+                'El smoke sandbox rechaza credenciales marcadas como live.'
             );
         }
 
@@ -47,7 +47,7 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
             );
 
         $reference =
-            'srcm-p8436-'
+            'srcm-p8437-'
             .Str::lower(
                 Str::random(12)
             );
@@ -68,12 +68,31 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
                 idempotencyKey:
                     $createKey,
                 description:
-                    'SRCM P8.4.3.6 sandbox refund simulation'
+                    'SRCM P8.4.3.7 sandbox refund simulation'
             );
 
-        $this->assertSandboxOrder(
+        $this->assertSandboxApiOrder(
+            $order,
+            $secrets,
+            $terminalId
+        );
+
+        $this->assertArgentinaOrder(
             $order
         );
+
+        if (
+            strtolower(
+                trim(
+                    (string)
+                    ($order['status'] ?? '')
+                )
+            ) !== 'created'
+        ) {
+            throw new DomainException(
+                'La Point Order sandbox no fue creada en estado created.'
+            );
+        }
 
         $orderId =
             $this->requiredIdentifier(
@@ -89,13 +108,10 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
         $processed =
             $this->waitForOrderStatus(
                 $secrets,
+                $terminalId,
                 $orderId,
                 'processed'
             );
-
-        $this->assertArgentinaOrder(
-            $processed
-        );
 
         $payment =
             $this->singlePayment(
@@ -127,15 +143,11 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
             $orderId
         );
 
-        $refunded =
-            $this->waitForOrderStatus(
-                $secrets,
-                $orderId,
-                'refunded'
-            );
-
-        $this->assertArgentinaOrder(
-            $refunded
+        $this->waitForOrderStatus(
+            $secrets,
+            $terminalId,
+            $orderId,
+            'refunded'
         );
 
         return new MercadoPagoPointRefundSandboxSmokeResult(
@@ -159,6 +171,7 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
      */
     private function waitForOrderStatus(
         MercadoPagoConnectionSecrets $secrets,
+        string $terminalId,
         string $orderId,
         string $expectedStatus
     ): array {
@@ -173,7 +186,13 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
                     $orderId
                 );
 
-            $this->assertSandboxOrder(
+            $this->assertSandboxApiOrder(
+                $order,
+                $secrets,
+                $terminalId
+            );
+
+            $this->assertArgentinaOrder(
                 $order
             );
 
@@ -206,19 +225,71 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
     }
 
     /**
+     * Orders API resources do not document live_mode. The sandbox proof is
+     * therefore bound to the explicit local non-live secret classification,
+     * exact provider user identity and the standard virtual terminal.
+     *
+     * If Mercado Pago unexpectedly returns live_mode, it must still be false.
+     *
      * @param array<string,mixed> $order
      */
-    private function assertSandboxOrder(
-        array $order
+    private function assertSandboxApiOrder(
+        array $order,
+        MercadoPagoConnectionSecrets $secrets,
+        string $terminalId
     ): void {
         if (
             ($order['type'] ?? null)
                 !== 'point'
-            || ($order['live_mode'] ?? null)
+        ) {
+            throw new DomainException(
+                'Mercado Pago no devolvió una Point Order.'
+            );
+        }
+
+        $providerUserId =
+            $this->requiredIdentifier(
+                $order['user_id'] ?? null,
+                'order user id'
+            );
+
+        if (
+            $providerUserId
+                !== trim($secrets->userId)
+        ) {
+            throw new DomainException(
+                'La Point Order no pertenece al usuario sandbox esperado.'
+            );
+        }
+
+        $providerTerminalId =
+            trim(
+                (string)
+                (
+                    $order['config']['point']['terminal_id']
+                    ?? ''
+                )
+            );
+
+        if (
+            $providerTerminalId
+                !== $terminalId
+        ) {
+            throw new DomainException(
+                'La Point Order no pertenece a la terminal virtual esperada.'
+            );
+        }
+
+        if (
+            array_key_exists(
+                'live_mode',
+                $order
+            )
+            && $order['live_mode']
                 !== false
         ) {
             throw new DomainException(
-                'El smoke abortó porque Mercado Pago no confirmó una Point Order sandbox.'
+                'Mercado Pago devolvió live_mode incompatible con sandbox.'
             );
         }
     }
@@ -248,7 +319,7 @@ final class MercadoPagoPointRefundSandboxSmokeRunner
             )
         ) {
             throw new DomainException(
-                'El smoke P8.4.3.6 sólo valida Point Argentina / ARS.'
+                'El smoke sandbox sólo valida Point Argentina / ARS.'
             );
         }
     }
