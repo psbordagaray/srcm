@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CommercePostSaleRequestLine extends Model
 {
@@ -58,5 +59,13 @@ class CommercePostSaleRequestLine extends Model
             CommerceSaleLine::class,
             'commerce_sale_line_id'
         );
+    }
+
+    public function receiptLines(): HasMany
+    {
+        return $this->hasMany(
+            CommercePostSaleReceiptLine::class,
+            'commerce_post_sale_request_line_id'
+        )->orderBy('id');
     }
 }

@@ -90,6 +90,14 @@ class InventoryMovement extends Model
         return $this->hasOne(CommerceSale::class);
     }
 
+    public function postSaleReceipt(): HasOne
+    {
+        return $this->hasOne(
+            CommercePostSaleReceipt::class,
+            'inventory_movement_id'
+        );
+    }
+
     public function negativeAuthorizationRequest(): HasOne
     {
         return $this->hasOne(

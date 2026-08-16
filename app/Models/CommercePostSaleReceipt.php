@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\CommercePostSaleIntent;
 use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
@@ -10,19 +9,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-class CommercePostSaleRequest extends Model
+class CommercePostSaleReceipt extends Model
 {
     use BelongsToOrganization;
 
     protected $fillable = [
         'organization_id',
         'public_id',
-        'commerce_sale_id',
-        'intent',
-        'reason',
+        'commerce_post_sale_request_id',
+        'inventory_movement_id',
+        'received_by_user_id',
+        'received_at',
         'notes',
-        'requested_by_user_id',
-        'requested_at',
         'idempotency_key',
         'fingerprint',
     ];
@@ -30,22 +28,23 @@ class CommercePostSaleRequest extends Model
     protected static function booted(): void
     {
         static::creating(function (
-            CommercePostSaleRequest $request
+            CommercePostSaleReceipt $receipt
         ): void {
-            if (blank($request->public_id)) {
-                $request->public_id = (string) Str::uuid();
+            if (blank($receipt->public_id)) {
+                $receipt->public_id =
+                    (string) Str::uuid();
             }
         });
 
         static::updating(
             fn () => throw new DomainException(
-                'Una solicitud de posventa confirmada es inmutable.'
+                'Una recepción física de posventa confirmada es inmutable.'
             )
         );
 
         static::deleting(
             fn () => throw new DomainException(
-                'Una solicitud de posventa confirmada no puede eliminarse.'
+                'Una recepción física de posventa confirmada no puede eliminarse.'
             )
         );
     }
@@ -53,8 +52,7 @@ class CommercePostSaleRequest extends Model
     protected function casts(): array
     {
         return [
-            'intent' => CommercePostSaleIntent::class,
-            'requested_at' => 'immutable_datetime',
+            'received_at' => 'immutable_datetime',
         ];
     }
 
@@ -63,33 +61,34 @@ class CommercePostSaleRequest extends Model
         return 'public_id';
     }
 
-    public function sale(): BelongsTo
+    public function request(): BelongsTo
     {
         return $this->belongsTo(
-            CommerceSale::class,
-            'commerce_sale_id'
+            CommercePostSaleRequest::class,
+            'commerce_post_sale_request_id'
         );
     }
 
-    public function requestedBy(): BelongsTo
+    public function inventoryMovement(): BelongsTo
+    {
+        return $this->belongsTo(
+            InventoryMovement::class,
+            'inventory_movement_id'
+        );
+    }
+
+    public function receivedBy(): BelongsTo
     {
         return $this->belongsTo(
             User::class,
-            'requested_by_user_id'
+            'received_by_user_id'
         );
     }
 
     public function lines(): HasMany
     {
         return $this->hasMany(
-            CommercePostSaleRequestLine::class
+            CommercePostSaleReceiptLine::class
         )->orderBy('id');
-    }
-
-    public function receipts(): HasMany
-    {
-        return $this->hasMany(
-            CommercePostSaleReceipt::class
-        )->orderBy('received_at')->orderBy('id');
     }
 }

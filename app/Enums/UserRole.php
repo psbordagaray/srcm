@@ -60,6 +60,12 @@ enum UserRole: string
         return $this->canManageCommerce();
     }
 
+    public function canReceiveCommercePostSaleReturn(): bool
+    {
+        return $this->canManageCommerce()
+            && $this->canProcessInventoryReturns();
+    }
+
     public function canViewCustomers(): bool
     {
         return true;
