@@ -123,6 +123,15 @@ class CommercePostSaleResolution extends Model
         );
     }
 
+
+    public function exchangeSelection(): HasOne
+    {
+        return $this->hasOne(
+            CommercePostSaleExchangeSelection::class,
+            'commerce_post_sale_resolution_id'
+        );
+    }
+
     public function recognizedAmountMinor(): int
     {
         if ($this->relationLoaded('lines')) {
