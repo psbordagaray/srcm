@@ -71,6 +71,68 @@ final class MercadoPagoPointOrdersClient
         return $this->orderResponse($response, 'get order', [200]);
     }
 
+    /**
+     * @return array<string,mixed>
+     */
+    public function refundOrder(
+        string $accessToken,
+        string $orderId,
+        string $paymentTransactionId,
+        int $amountMinor,
+        string $idempotencyKey,
+        bool $total
+    ): array {
+        $token = $this->accessToken($accessToken);
+        $id = $this->orderId($orderId);
+        $paymentId = $this->paymentTransactionId(
+            $paymentTransactionId
+        );
+        $amount = $this->minorToDecimal($amountMinor);
+        $idempotency = $this->refundIdempotencyKey(
+            $idempotencyKey
+        );
+
+        $request = Http::acceptJson()
+            ->asJson()
+            ->withToken($token)
+            ->withHeaders([
+                'X-Idempotency-Key' => $idempotency,
+            ])
+            ->timeout(20);
+
+        $url = self::BASE_URL
+            .'/v1/orders/'
+            .rawurlencode($id)
+            .'/refund';
+
+        $response = $total
+            ? $request->send('POST', $url)
+            : $request->post($url, [
+                'transactions' => [[
+                    'id' => $paymentId,
+                    'amount' => $amount,
+                ]],
+            ]);
+
+        $json = $this->refundResponse(
+            $response,
+            'refund order'
+        );
+
+        if (
+            trim(
+                (string)
+                ($json['id'] ?? '')
+            ) !== $id
+        ) {
+            throw new DomainException(
+                'Mercado Pago refund order devolvió otra identidad de order.'
+            );
+        }
+
+        return $json;
+    }
+
     private function accessToken(string $value): string
     {
         $value = trim($value);
@@ -134,6 +196,25 @@ final class MercadoPagoPointOrdersClient
         return $value;
     }
 
+    private function refundIdempotencyKey(
+        string $value
+    ): string {
+        $value = trim($value);
+
+        if (
+            preg_match(
+                '/^[A-Za-z0-9][A-Za-z0-9._:-]{0,179}$/D',
+                $value
+            ) !== 1
+        ) {
+            throw new DomainException(
+                'La X-Idempotency-Key del refund Mercado Pago no es válida.'
+            );
+        }
+
+        return $value;
+    }
+
     private function minorToDecimal(int $minor): string
     {
         if ($minor <= 0) {
@@ -183,6 +264,27 @@ final class MercadoPagoPointOrdersClient
         return $value;
     }
 
+    private function paymentTransactionId(
+        string $value
+    ): string {
+        $value = trim($value);
+
+        if (
+            $value === ''
+            || strlen($value) > 191
+            || preg_match(
+                '/^[A-Za-z0-9][A-Za-z0-9._:-]*$/D',
+                $value
+            ) !== 1
+        ) {
+            throw new DomainException(
+                'El ID de la transacción Point no es válido.'
+            );
+        }
+
+        return $value;
+    }
+
     /**
      * @param list<int> $expectedStatuses
      * @return array<string, mixed>
@@ -222,6 +324,66 @@ final class MercadoPagoPointOrdersClient
         if (! is_string($json['status'] ?? null) || trim($json['status']) === '') {
             throw new DomainException(
                 'Mercado Pago '.$operation.' no devolvió status de order.'
+            );
+        }
+
+        return $json;
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    private function refundResponse(
+        Response $response,
+        string $operation
+    ): array {
+        if ($response->status() !== 201) {
+            throw new DomainException(
+                'Mercado Pago '.$operation.' falló '
+                .$this->safeProviderFailure($response).'.'
+            );
+        }
+
+        $json = $response->json();
+
+        if (! is_array($json)) {
+            throw new DomainException(
+                'Mercado Pago '.$operation
+                .' devolvió JSON inválido.'
+            );
+        }
+
+        if (
+            ! is_string($json['id'] ?? null)
+            || trim($json['id']) === ''
+        ) {
+            throw new DomainException(
+                'Mercado Pago '.$operation
+                .' no devolvió ID de order.'
+            );
+        }
+
+        if (
+            ! is_string($json['status'] ?? null)
+            || trim($json['status']) === ''
+        ) {
+            throw new DomainException(
+                'Mercado Pago '.$operation
+                .' no devolvió status de order.'
+            );
+        }
+
+        $refunds =
+            $json['transactions']['refunds']
+            ?? null;
+
+        if (
+            ! is_array($refunds)
+            || $refunds === []
+        ) {
+            throw new DomainException(
+                'Mercado Pago '.$operation
+                .' no devolvió transacciones de refund.'
             );
         }
 

@@ -275,6 +275,101 @@ final class FinancialProviderCompatibilityRegistry
         return [$mercadoPago, $payway];
     }
 
+    public function registerMercadoPagoPointRefundContractV1():
+        FinancialProviderCompatibility {
+        return $this->register(
+            registryKey:
+                'mercado-pago:orders-v1:point-refund-v1:p8.4.3.3',
+            providerKey:
+                'mercado-pago',
+            providerLabel:
+                'Mercado Pago',
+            providerContractVersion:
+                'orders-v1-point-refund-v1',
+            providerContractReference:
+                'Mercado Pago Point Orders POST /v1/orders/{order_id}/refund; documentación oficial verificada 2026-08-16.',
+            adapterClass:
+                'App\\Adapters\\Finance\\MercadoPago\\MercadoPagoPointRefundAdapter',
+            adapterContractVersion:
+                'point-refund-v1',
+            status:
+                FinancialProviderCompatibilityStatus::Compatible,
+            migrationRequired:
+                false,
+            srcmVersion:
+                'p8.4.3.3-contract-harness',
+            verifiedAt:
+                CarbonImmutable::parse(
+                    '2026-08-16 00:00:00',
+                    'America/Argentina/Buenos_Aires'
+                ),
+            capabilities: [
+                [
+                    'capability' =>
+                        FinancialProviderCapability::Create,
+                    'status' =>
+                        FinancialProviderCompatibilityStatus::Compatible,
+                    'required' =>
+                        true,
+                    'evidence_reference' =>
+                        'P5.3 Orders create harness vigente.',
+                    'notes' =>
+                        null,
+                ],
+                [
+                    'capability' =>
+                        FinancialProviderCapability::Read,
+                    'status' =>
+                        FinancialProviderCompatibilityStatus::Compatible,
+                    'required' =>
+                        true,
+                    'evidence_reference' =>
+                        'GET /v1/orders/{id} vigente y reutilizado como preflight/polling.',
+                    'notes' =>
+                        null,
+                ],
+                [
+                    'capability' =>
+                        FinancialProviderCapability::Webhook,
+                    'status' =>
+                        FinancialProviderCompatibilityStatus::Compatible,
+                    'required' =>
+                        true,
+                    'evidence_reference' =>
+                        'P5.6 webhook autenticado vigente.',
+                    'notes' =>
+                        null,
+                ],
+                [
+                    'capability' =>
+                        FinancialProviderCapability::Refund,
+                    'status' =>
+                        FinancialProviderCompatibilityStatus::Compatible,
+                    'required' =>
+                        true,
+                    'evidence_reference' =>
+                        'P8.4.3.3 Point Orders refund contract + Http fake harness.',
+                    'notes' =>
+                        'Total: body vacío. Parcial: transactions[id,amount]. X-Idempotency-Key obligatoria.',
+                ],
+                [
+                    'capability' =>
+                        FinancialProviderCapability::Reconciliation,
+                    'status' =>
+                        FinancialProviderCompatibilityStatus::Compatible,
+                    'required' =>
+                        false,
+                    'evidence_reference' =>
+                        'P8.4.3.2 FinancialExternalMovement evidence bridge.',
+                    'notes' =>
+                        null,
+                ],
+            ],
+            notes:
+                'Snapshot append-only; no migra bindings existentes ni habilita producción automáticamente.'
+        );
+    }
+
     private function registryKey(string $value): string
     {
         $value = trim($value);
