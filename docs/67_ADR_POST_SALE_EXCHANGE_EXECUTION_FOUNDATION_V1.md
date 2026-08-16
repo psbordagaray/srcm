@@ -1,6 +1,6 @@
 # ADR 67 — Post-Sale Exchange Execution Foundation V1
 
-Estado: Propuesta para P8.4.5
+Estado: Aceptada para P8.4.5
 
 Checkpoint de partida:
 `e7174131a980fec1430cf64fa1ef2de8a1839d33`
