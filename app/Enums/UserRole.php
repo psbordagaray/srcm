@@ -66,6 +66,11 @@ enum UserRole: string
             && $this->canProcessInventoryReturns();
     }
 
+    public function canResolveCommercePostSale(): bool
+    {
+        return $this === self::Admin;
+    }
+
     public function canViewCustomers(): bool
     {
         return true;

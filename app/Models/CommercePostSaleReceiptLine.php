@@ -7,6 +7,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CommercePostSaleReceiptLine extends Model
 {
@@ -80,5 +81,13 @@ class CommercePostSaleReceiptLine extends Model
             InventoryLocation::class,
             'destination_location_id'
         );
+    }
+
+    public function resolutionLines(): HasMany
+    {
+        return $this->hasMany(
+            CommercePostSaleResolutionLine::class,
+            'commerce_post_sale_receipt_line_id'
+        )->orderBy('id');
     }
 }

@@ -92,4 +92,11 @@ class CommercePostSaleRequest extends Model
             CommercePostSaleReceipt::class
         )->orderBy('received_at')->orderBy('id');
     }
+
+    public function resolutions(): HasMany
+    {
+        return $this->hasMany(
+            CommercePostSaleResolution::class
+        )->orderBy('resolved_at')->orderBy('id');
+    }
 }
