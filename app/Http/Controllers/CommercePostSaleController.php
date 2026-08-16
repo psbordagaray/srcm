@@ -295,10 +295,16 @@ class CommercePostSaleController extends Controller
             'resolutions.lines.receiptLine.requestLine.saleLine.product',
             'resolutions.customerCreditGrant.party',
             'resolutions.cashRefundExecution.cashMovement',
-            'resolutions.externalRefundInstruction',
+            'resolutions.externalRefundInstruction.requestedBy',
+            'resolutions.externalRefundInstruction.providerConnection',
+            'resolutions.externalRefundInstruction.dispatch.evidence.financialMovement',
             'resolutions.exchangeSelection.lines.product',
             'resolutions.exchangeSelection.lines.price',
-            'resolutions.exchangeSelection.execution',
+            'resolutions.exchangeSelection.selectedBy',
+            'resolutions.exchangeSelection.execution.executedBy',
+            'resolutions.exchangeSelection.execution.inventoryMovement',
+            'resolutions.exchangeSelection.execution.payments.financialAccount',
+            'resolutions.exchangeSelection.execution.creditGrant.party',
         ]);
 
         return view(

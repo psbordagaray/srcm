@@ -128,6 +128,10 @@ class AppServiceProvider extends ServiceProvider
                 'canExecuteCommercePostSaleExternalRefund',
             'select-commerce-post-sale-exchange' =>
                 'canResolveCommercePostSale',
+            'execute-commerce-post-sale-exchange' =>
+                'canExecuteCommercePostSaleExchange',
+            'dispatch-commerce-post-sale-external-refund' =>
+                'canExecuteCommercePostSaleExternalRefund',
         ] as $ability => $method) {
             Gate::define(
                 $ability,

@@ -350,6 +350,58 @@
                                                 </div>
                                             @endforeach
                                         </div>
+
+                                        @if(!$resolution->exchangeSelection->execution)
+                                            @can('execute-commerce-post-sale-exchange')
+                                                <div class="mt-4 border-t border-violet-500/20 pt-4">
+                                                    @if(
+                                                        (int) $resolution->resolved_by_user_id !== (int) request()->user()->id
+                                                        && (int) $resolution->exchangeSelection->selected_by_user_id !== (int) request()->user()->id
+                                                    )
+                                                        <a href="{{ route('commerce-post-sale.exchange-executions.create', $resolution->exchangeSelection) }}" class="inline-flex rounded-xl bg-violet-300 px-4 py-2.5 text-sm font-bold text-slate-950">
+                                                            Ejecutar entrega y diferencia
+                                                        </a>
+                                                    @else
+                                                        <p class="text-xs font-semibold text-amber-200">
+                                                            El resolutor o selector económico no puede ejecutar físicamente este cambio.
+                                                        </p>
+                                                    @endif
+                                                </div>
+                                            @endcan
+                                        @else
+                                            <div class="mt-4 border-t border-violet-500/20 pt-4">
+                                                <p class="text-xs font-bold uppercase tracking-wider text-emerald-300">Cambio ejecutado</p>
+                                                <p class="mt-2 text-xs text-slate-400">
+                                                    {{ $resolution->exchangeSelection->execution->executed_at->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }}
+                                                    · {{ $resolution->exchangeSelection->execution->executedBy->name }}
+                                                    · InventoryMovement #{{ $resolution->exchangeSelection->execution->inventory_movement_id }}
+                                                </p>
+
+                                                @if($resolution->exchangeSelection->execution->payments->isNotEmpty())
+                                                    <div class="mt-3 space-y-2">
+                                                        @foreach($resolution->exchangeSelection->execution->payments as $payment)
+                                                            <div class="flex flex-col gap-1 rounded-lg border border-white/10 bg-slate-950/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                                                <span class="text-xs text-slate-300">
+                                                                    {{ $payment->method->label() }}
+                                                                    · {{ $payment->financialAccount->name }}
+                                                                </span>
+                                                                <span class="font-mono text-xs font-bold text-emerald-100">
+                                                                    $ {{ number_format($payment->amount_minor / 100, 2, ',', '.') }}
+                                                                </span>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+
+                                                @if($resolution->exchangeSelection->execution->creditGrant)
+                                                    <p class="mt-3 text-xs text-emerald-200">
+                                                        Crédito específico por diferencia:
+                                                        $ {{ number_format($resolution->exchangeSelection->execution->creditGrant->amount_minor / 100, 2, ',', '.') }}
+                                                        · {{ $resolution->exchangeSelection->execution->creditGrant->party->name }}
+                                                    </p>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                 @endif
 
@@ -361,6 +413,74 @@
                                             · $ {{ number_format($resolution->preferredOriginalPayment->amount_minor / 100, 2, ',', '.') }}
                                         </span>
                                     </p>
+                                @endif
+
+                                @if($resolution->externalRefundInstruction)
+                                    @php
+                                        $instruction = $resolution->externalRefundInstruction;
+                                        $dispatch = $instruction->dispatch;
+                                        $evidence = $dispatch?->evidence ?? collect();
+                                    @endphp
+
+                                    <div class="mt-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                            <div>
+                                                <p class="text-xs font-bold uppercase tracking-wider text-cyan-300">Reembolso externo instruido</p>
+                                                <p class="mt-1 text-xs text-slate-500">
+                                                    {{ \Illuminate\Support\Str::limit($instruction->public_id, 14) }}
+                                                    · {{ $instruction->requestedBy->name }}
+                                                    · {{ $instruction->providerConnection?->provider_key }}
+                                                </p>
+                                            </div>
+                                            <p class="font-mono text-sm font-bold text-white">
+                                                $ {{ number_format($instruction->amount_minor / 100, 2, ',', '.') }}
+                                            </p>
+                                        </div>
+
+                                        @if($dispatch)
+                                            <p class="mt-3 text-xs text-slate-400">
+                                                Dispatch {{ \Illuminate\Support\Str::limit($dispatch->public_id, 14) }}
+                                                · clave provider-neutral preservada
+                                            </p>
+                                        @endif
+
+                                        @if($evidence->isNotEmpty())
+                                            <div class="mt-3 space-y-2">
+                                                @foreach($evidence as $item)
+                                                    <div class="rounded-lg border border-white/10 bg-slate-950/40 p-3">
+                                                        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                                            <span class="text-xs text-slate-300">
+                                                                {{ $item->source->value }}
+                                                                · {{ $item->financialMovement->status->value }}
+                                                            </span>
+                                                            <span class="font-mono text-xs font-bold text-cyan-100">
+                                                                $ {{ number_format($item->financialMovement->gross_amount_minor / 100, 2, ',', '.') }}
+                                                            </span>
+                                                        </div>
+                                                        <p class="mt-1 text-[11px] text-slate-500">
+                                                            {{ $item->observed_at->timezone(config('app.display_timezone'))->format('d/m/Y H:i') }}
+                                                            · {{ $item->financialMovement->external_operation_id }}
+                                                        </p>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            @can('dispatch-commerce-post-sale-external-refund')
+                                                <form method="POST" action="{{ route('commerce-post-sale.external-refunds.submit', $instruction) }}" class="mt-4 border-t border-cyan-500/20 pt-4">
+                                                    @csrf
+                                                    <label class="flex items-start gap-3">
+                                                        <input type="checkbox" name="confirm_submission" value="1" required class="mt-1 h-4 w-4 rounded border-slate-600 bg-slate-950 text-cyan-400">
+                                                        <span class="text-xs leading-5 text-slate-300">
+                                                            Confirmo el envío real al proveedor. El gate financiero se vuelve a validar antes del dispatch.
+                                                        </span>
+                                                    </label>
+                                                    <button type="submit" class="mt-3 rounded-xl bg-cyan-300 px-4 py-2.5 text-sm font-bold text-slate-950">
+                                                        {{ $dispatch ? 'Reintentar mismo dispatch' : 'Enviar reembolso al proveedor' }}
+                                                    </button>
+                                                </form>
+                                            @endcan
+                                        @endif
+                                    </div>
                                 @endif
 
                                 <p class="mt-3 border-t border-white/10 pt-3 text-xs text-slate-400">
@@ -402,7 +522,7 @@
                 <section class="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6">
                     <p class="text-xs font-bold uppercase tracking-wider text-violet-300">Separación de responsabilidades</p>
                     <p class="mt-3 text-sm leading-6 text-slate-300">
-                        El expediente mantiene separados intake, recepción, resolución y materialización. P8.5.4 permite saldo a favor, reembolso de caja, instrucción externa y selección de reemplazo con Gates distintos; el dispatch externo y la ejecución física del cambio siguen fuera de esta pantalla.
+                        El expediente mantiene separados intake, recepción, resolución, materialización y ejecución. P8.5.5 habilita la ejecución física del cambio y el dispatch externo sólo detrás de sus Gates y confirmaciones explícitas; Mercado Pago sigue fallando cerrado mientras su refund gate permanezca degradado.
                     </p>
                 </section>
             </div>

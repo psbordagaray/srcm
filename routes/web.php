@@ -12,6 +12,8 @@ use App\Http\Controllers\CommercePostSaleCustomerCreditController;
 use App\Http\Controllers\CommercePostSaleCashRefundController;
 use App\Http\Controllers\CommercePostSaleExternalRefundController;
 use App\Http\Controllers\CommercePostSaleExchangeSelectionController;
+use App\Http\Controllers\CommercePostSaleExchangeExecutionController;
+use App\Http\Controllers\CommercePostSaleExternalRefundSubmissionController;
 use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\FinancialReconciliationController;
 use App\Http\Controllers\FinancialStatementImportController;
@@ -737,6 +739,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 )
                     ->whereUuid('commercePostSaleResolution')
                     ->name('commerce-post-sale.exchange-selections.store');
+            });
+
+            Route::middleware(
+                'can:execute-commerce-post-sale-exchange'
+            )->group(function () {
+                Route::get(
+                    'commerce/post-sale/exchange-selections/{exchangeSelection:public_id}/execute',
+                    [CommercePostSaleExchangeExecutionController::class, 'create']
+                )
+                    ->whereUuid('exchangeSelection')
+                    ->name('commerce-post-sale.exchange-executions.create');
+
+                Route::post(
+                    'commerce/post-sale/exchange-selections/{exchangeSelection:public_id}/execute',
+                    [CommercePostSaleExchangeExecutionController::class, 'store']
+                )
+                    ->whereUuid('exchangeSelection')
+                    ->name('commerce-post-sale.exchange-executions.store');
+            });
+
+            Route::middleware(
+                'can:dispatch-commerce-post-sale-external-refund'
+            )->group(function () {
+                Route::post(
+                    'commerce/post-sale/external-refund-instructions/{externalRefundInstruction:public_id}/submit',
+                    [CommercePostSaleExternalRefundSubmissionController::class, 'store']
+                )
+                    ->whereUuid('externalRefundInstruction')
+                    ->name('commerce-post-sale.external-refunds.submit');
             });
 
             Route::middleware('can:record-commerce-sales')
