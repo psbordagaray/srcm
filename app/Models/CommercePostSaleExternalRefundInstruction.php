@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class CommercePostSaleExternalRefundInstruction extends Model
@@ -105,6 +106,14 @@ class CommercePostSaleExternalRefundInstruction extends Model
         return $this->belongsTo(
             User::class,
             'requested_by_user_id'
+        );
+    }
+
+    public function dispatch(): HasOne
+    {
+        return $this->hasOne(
+            CommercePostSaleExternalRefundDispatch::class,
+            'commerce_post_sale_external_refund_instruction_id'
         );
     }
 }
