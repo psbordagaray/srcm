@@ -219,6 +219,8 @@ class StoreCommercePostSaleResolution extends FormRequest
             'preferred_original_payment_id' => [
                 'nullable',
                 'integer',
+                'required_if:outcome,refund',
+                'prohibited_unless:outcome,refund',
                 Rule::exists(
                     'commerce_payments',
                     'id'
@@ -285,6 +287,10 @@ class StoreCommercePostSaleResolution extends FormRequest
                 'La cantidad a resolver debe ser positiva y puede tener hasta 6 decimales.',
             'lines.*.recognized_amount.regex' =>
                 'El valor reconocido debe tener formato monetario con hasta 2 decimales.',
+            'preferred_original_payment_id.required_if' =>
+                'Un reembolso operativo debe quedar ligado explícitamente a un pago original.',
+            'preferred_original_payment_id.prohibited_unless' =>
+                'Sólo un reembolso puede señalar un pago original.',
             'preferred_original_payment_id.exists' =>
                 'El medio original preferido debe pertenecer a esta venta.',
         ];

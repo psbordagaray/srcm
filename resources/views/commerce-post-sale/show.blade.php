@@ -48,6 +48,17 @@
             </div>
         @endif
 
+        @if($errors->any())
+            <div role="alert" class="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                <p class="font-bold">La acción de posventa no pudo completarse.</p>
+                <ul class="mt-2 list-disc space-y-1 pl-5">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <div class="grid gap-4 md:grid-cols-4">
             <article class="sulu-card p-5">
                 <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Líneas solicitadas</p>
@@ -216,6 +227,73 @@
                                     </p>
                                 </div>
 
+                                @if(
+                                    !$resolution->customerCreditGrant
+                                    && !$resolution->cashRefundExecution
+                                    && !$resolution->externalRefundInstruction
+                                    && !$resolution->exchangeSelection
+                                )
+                                    <div class="mt-4 rounded-xl border border-white/10 bg-slate-950/40 p-4">
+                                        @if($resolution->outcome === \App\Enums\CommercePostSaleResolutionOutcome::CustomerCredit)
+                                            @can('materialize-commerce-post-sale-customer-credit')
+                                                <form method="POST" action="{{ route('commerce-post-sale.customer-credits.store', $resolution) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="idempotency_key" value="ui:commerce-post-sale-credit:{{ \Illuminate\Support\Str::uuid() }}">
+                                                    <p class="text-xs text-slate-400">
+                                                        Materializa el saldo reconocido a nombre del cliente. No mueve caja.
+                                                    </p>
+                                                    <button type="submit" class="mt-3 rounded-xl bg-emerald-300 px-4 py-2.5 text-sm font-bold text-slate-950">
+                                                        Materializar saldo a favor
+                                                    </button>
+                                                </form>
+                                            @endcan
+                                        @elseif($resolution->outcome === \App\Enums\CommercePostSaleResolutionOutcome::Refund)
+                                            @if(!$resolution->preferredOriginalPayment)
+                                                <p class="text-xs font-semibold text-amber-200">
+                                                    Esta resolución histórica no fijó un pago original y no tiene camino operativo de reembolso. P8.5.4 impide crear nuevos casos así.
+                                                </p>
+                                            @elseif($resolution->preferredOriginalPayment->method === \App\Enums\CommercePaymentMethod::Cash)
+                                                @can('execute-commerce-post-sale-cash-refund')
+                                                    @if((int) $resolution->resolved_by_user_id !== (int) request()->user()->id)
+                                                        <a href="{{ route('commerce-post-sale.cash-refunds.create', $resolution) }}" class="inline-flex rounded-xl bg-rose-300 px-4 py-2.5 text-sm font-bold text-slate-950">
+                                                            Ejecutar reembolso en efectivo
+                                                        </a>
+                                                    @else
+                                                        <p class="text-xs font-semibold text-amber-200">
+                                                            El resolutor económico no puede ejecutar su propio reembolso. Debe hacerlo otro operador con la caja correspondiente abierta.
+                                                        </p>
+                                                    @endif
+                                                @endcan
+                                            @else
+                                                @can('execute-commerce-post-sale-external-refund')
+                                                    @if((int) $resolution->resolved_by_user_id !== (int) request()->user()->id)
+                                                        <form method="POST" action="{{ route('commerce-post-sale.external-refunds.store', $resolution) }}">
+                                                            @csrf
+                                                            <input type="hidden" name="idempotency_key" value="ui:commerce-post-sale-external-refund:{{ \Illuminate\Support\Str::uuid() }}">
+                                                            <p class="text-xs text-slate-400">
+                                                                Crea sólo la instrucción local. El gate del proveedor puede bloquearla y este paso no envía HTTP externo.
+                                                            </p>
+                                                            <button type="submit" class="mt-3 rounded-xl bg-cyan-300 px-4 py-2.5 text-sm font-bold text-slate-950">
+                                                                Crear instrucción de reembolso externo
+                                                            </button>
+                                                        </form>
+                                                    @else
+                                                        <p class="text-xs font-semibold text-amber-200">
+                                                            El resolutor económico no puede instruir su propio reembolso externo.
+                                                        </p>
+                                                    @endif
+                                                @endcan
+                                            @endif
+                                        @elseif($resolution->outcome === \App\Enums\CommercePostSaleResolutionOutcome::Exchange)
+                                            @can('select-commerce-post-sale-exchange')
+                                                <a href="{{ route('commerce-post-sale.exchange-selections.create', $resolution) }}" class="inline-flex rounded-xl bg-violet-300 px-4 py-2.5 text-sm font-bold text-slate-950">
+                                                    Seleccionar reemplazo
+                                                </a>
+                                            @endcan
+                                        @endif
+                                    </div>
+                                @endif
+
                                 <div class="mt-4 space-y-2">
                                     @foreach($resolution->lines as $resolutionLine)
                                         <div class="rounded-lg border border-white/10 bg-slate-950/40 p-3">
@@ -243,6 +321,37 @@
                                         </div>
                                     @endforeach
                                 </div>
+
+                                @if($resolution->exchangeSelection)
+                                    <div class="mt-4 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                            <div>
+                                                <p class="text-xs font-bold uppercase tracking-wider text-violet-300">Reemplazo fijado</p>
+                                                <p class="mt-1 text-xs text-slate-500">
+                                                    Diferencia:
+                                                    <span class="font-mono font-bold text-violet-100">
+                                                        $ {{ number_format($resolution->exchangeSelection->differenceAmountMinor() / 100, 2, ',', '.') }}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <p class="font-mono text-sm font-bold text-white">
+                                                Total $ {{ number_format($resolution->exchangeSelection->replacementAmountMinor() / 100, 2, ',', '.') }}
+                                            </p>
+                                        </div>
+
+                                        <div class="mt-3 space-y-2">
+                                            @foreach($resolution->exchangeSelection->lines as $selectionLine)
+                                                <div class="flex flex-col gap-1 rounded-lg border border-white/10 bg-slate-950/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+                                                    <span class="text-sm text-slate-200">{{ $selectionLine->product->name }}</span>
+                                                    <span class="font-mono text-xs text-violet-100">
+                                                        {{ rtrim(rtrim($selectionLine->quantity, '0'), '.') }}
+                                                        × $ {{ number_format($selectionLine->unit_price_minor / 100, 2, ',', '.') }}
+                                                    </span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
 
                                 @if($resolution->preferredOriginalPayment)
                                     <p class="mt-3 text-xs text-slate-400">
@@ -293,7 +402,7 @@
                 <section class="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6">
                     <p class="text-xs font-bold uppercase tracking-wider text-violet-300">Separación de responsabilidades</p>
                     <p class="mt-3 text-sm leading-6 text-slate-300">
-                        El expediente permite registrar recepción física y resolución económica como hechos separados. La materialización del saldo a favor, reembolso o cambio continúa en acciones posteriores con sus permisos propios.
+                        El expediente mantiene separados intake, recepción, resolución y materialización. P8.5.4 permite saldo a favor, reembolso de caja, instrucción externa y selección de reemplazo con Gates distintos; el dispatch externo y la ejecución física del cambio siguen fuera de esta pantalla.
                     </p>
                 </section>
             </div>

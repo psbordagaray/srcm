@@ -8,6 +8,10 @@ use App\Http\Controllers\CommerceSaleController;
 use App\Http\Controllers\CommercePostSaleController;
 use App\Http\Controllers\CommercePostSaleReceiptController;
 use App\Http\Controllers\CommercePostSaleResolutionController;
+use App\Http\Controllers\CommercePostSaleCustomerCreditController;
+use App\Http\Controllers\CommercePostSaleCashRefundController;
+use App\Http\Controllers\CommercePostSaleExternalRefundController;
+use App\Http\Controllers\CommercePostSaleExchangeSelectionController;
 use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\FinancialReconciliationController;
 use App\Http\Controllers\FinancialStatementImportController;
@@ -676,6 +680,64 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereUuid('commercePostSaleRequest')
                         ->name('commerce-post-sale.resolutions.store');
                 });
+
+            Route::middleware(
+                'can:materialize-commerce-post-sale-customer-credit'
+            )->group(function () {
+                Route::post(
+                    'commerce/post-sale/resolutions/{commercePostSaleResolution:public_id}/customer-credit',
+                    [CommercePostSaleCustomerCreditController::class, 'store']
+                )
+                    ->whereUuid('commercePostSaleResolution')
+                    ->name('commerce-post-sale.customer-credits.store');
+            });
+
+            Route::middleware(
+                'can:execute-commerce-post-sale-cash-refund'
+            )->group(function () {
+                Route::get(
+                    'commerce/post-sale/resolutions/{commercePostSaleResolution:public_id}/cash-refund',
+                    [CommercePostSaleCashRefundController::class, 'create']
+                )
+                    ->whereUuid('commercePostSaleResolution')
+                    ->name('commerce-post-sale.cash-refunds.create');
+
+                Route::post(
+                    'commerce/post-sale/resolutions/{commercePostSaleResolution:public_id}/cash-refund',
+                    [CommercePostSaleCashRefundController::class, 'store']
+                )
+                    ->whereUuid('commercePostSaleResolution')
+                    ->name('commerce-post-sale.cash-refunds.store');
+            });
+
+            Route::middleware(
+                'can:execute-commerce-post-sale-external-refund'
+            )->group(function () {
+                Route::post(
+                    'commerce/post-sale/resolutions/{commercePostSaleResolution:public_id}/external-refund',
+                    [CommercePostSaleExternalRefundController::class, 'store']
+                )
+                    ->whereUuid('commercePostSaleResolution')
+                    ->name('commerce-post-sale.external-refunds.store');
+            });
+
+            Route::middleware(
+                'can:select-commerce-post-sale-exchange'
+            )->group(function () {
+                Route::get(
+                    'commerce/post-sale/resolutions/{commercePostSaleResolution:public_id}/exchange-selection',
+                    [CommercePostSaleExchangeSelectionController::class, 'create']
+                )
+                    ->whereUuid('commercePostSaleResolution')
+                    ->name('commerce-post-sale.exchange-selections.create');
+
+                Route::post(
+                    'commerce/post-sale/resolutions/{commercePostSaleResolution:public_id}/exchange-selection',
+                    [CommercePostSaleExchangeSelectionController::class, 'store']
+                )
+                    ->whereUuid('commercePostSaleResolution')
+                    ->name('commerce-post-sale.exchange-selections.store');
+            });
 
             Route::middleware('can:record-commerce-sales')
                 ->group(function () {

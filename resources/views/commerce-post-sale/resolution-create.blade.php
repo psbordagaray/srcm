@@ -88,7 +88,7 @@
                                 name="preferred_original_payment_id"
                                 class="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm text-white"
                             >
-                                <option value="">Sin preferencia</option>
+                                <option value="">Seleccioná un pago original para Reembolso</option>
                                 @foreach($payments as $payment)
                                     <option value="{{ $payment->id }}" @selected((string) old('preferred_original_payment_id') === (string) $payment->id)>
                                         {{ $payment->method->label() }}
@@ -100,7 +100,7 @@
                                 @endforeach
                             </select>
                             <p class="mt-2 text-xs text-slate-500">
-                                Sólo aplica a outcome Reembolso. No ejecuta el pago.
+                                Es obligatorio para Reembolso y queda prohibido para los demás outcomes. Seleccionarlo no ejecuta el pago.
                             </p>
                         </label>
                     </div>

@@ -293,9 +293,11 @@ class CommercePostSaleController extends Controller
             'resolutions.resolvedBy',
             'resolutions.preferredOriginalPayment.financialAccount',
             'resolutions.lines.receiptLine.requestLine.saleLine.product',
-            'resolutions.customerCreditGrant',
-            'resolutions.cashRefundExecution',
+            'resolutions.customerCreditGrant.party',
+            'resolutions.cashRefundExecution.cashMovement',
             'resolutions.externalRefundInstruction',
+            'resolutions.exchangeSelection.lines.product',
+            'resolutions.exchangeSelection.lines.price',
             'resolutions.exchangeSelection.execution',
         ]);
 
