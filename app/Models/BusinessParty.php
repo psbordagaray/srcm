@@ -164,6 +164,14 @@ class BusinessParty extends Model
         );
     }
 
+    public function customerCreditGrants(): HasMany
+    {
+        return $this->hasMany(
+            CustomerCreditGrant::class,
+            'business_party_id'
+        )->orderBy('granted_at')->orderBy('id');
+    }
+
     public function requestedServiceCancellations(): HasMany
     {
         return $this->hasMany(

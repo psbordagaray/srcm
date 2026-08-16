@@ -71,6 +71,11 @@ enum UserRole: string
         return $this === self::Admin;
     }
 
+    public function canMaterializeCommercePostSaleCustomerCredit(): bool
+    {
+        return $this->canResolveCommercePostSale();
+    }
+
     public function canViewCustomers(): bool
     {
         return true;

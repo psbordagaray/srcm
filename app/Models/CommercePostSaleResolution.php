@@ -8,6 +8,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class CommercePostSaleResolution extends Model
@@ -96,6 +97,14 @@ class CommercePostSaleResolution extends Model
         return $this->hasMany(
             CommercePostSaleResolutionLine::class
         )->orderBy('id');
+    }
+
+    public function customerCreditGrant(): HasOne
+    {
+        return $this->hasOne(
+            CustomerCreditGrant::class,
+            'commerce_post_sale_resolution_id'
+        );
     }
 
     public function recognizedAmountMinor(): int
