@@ -42,7 +42,8 @@ final class CommerceCheckoutManager
         private readonly InventoryMovementConfirmer $movementConfirmer,
         private readonly OrganizationProductPriceReader $prices,
         private readonly CashRegisterSessionManager $cashSessions,
-        private readonly CashLedgerRecorder $cashLedger
+        private readonly CashLedgerRecorder $cashLedger,
+        private readonly CustomerCreditConsumer $creditConsumer
     ) {
     }
 
@@ -236,11 +237,51 @@ final class CommerceCheckoutManager
                     );
                 }
 
+                $paymentReference =
+                    $payment['reference'];
+                $financialAccountId =
+                    $payment['financial_account_id'];
+
+                if (
+                    $payment['method']
+                        === CommercePaymentMethod::AccountCredit->value
+                ) {
+                    if (
+                        $sale->customer_business_party_id
+                            === null
+                    ) {
+                        throw new DomainException(
+                            'El crédito en cuenta requiere un cliente vinculado.'
+                        );
+                    }
+
+                    $consumption =
+                        $this->creditConsumer
+                            ->consumeForSalePayment(
+                                $sale,
+                                $index + 1,
+                                $payment[
+                                    'amount_minor'
+                                ],
+                                $normalized[
+                                    'idempotency_key'
+                                ]
+                                .':account-credit:'
+                                .($index + 1),
+                                $actor
+                            );
+
+                    $paymentReference =
+                        $consumption->public_id;
+                    $financialAccountId =
+                        null;
+                }
+
                 $recordedPayment = CommercePayment::query()->create([
                     'organization_id' => $organizationId,
                     'commerce_sale_id' => $sale->id,
                     'financial_account_id' =>
-                        $payment['financial_account_id'],
+                        $financialAccountId,
                     'position' => $index + 1,
                     'method' => $payment['method'],
                     'amount_minor' => $payment['amount_minor'],
@@ -248,7 +289,7 @@ final class CommerceCheckoutManager
                         $payment['tendered_amount_minor'],
                     'change_amount_minor' =>
                         $payment['change_amount_minor'],
-                    'reference' => $payment['reference'],
+                    'reference' => $paymentReference,
                     'card_brand' => $payment['card_brand'],
                     'card_network' => $payment['card_network'],
                     'card_last4' => $payment['card_last4'],
@@ -681,6 +722,39 @@ final class CommerceCheckoutManager
                 throw new DomainException(
                     'Cada pago debe poseer un importe positivo.'
                 );
+            }
+
+            if (
+                $payment->method
+                    === CommercePaymentMethod::AccountCredit
+            ) {
+                if ($financialAccountId !== null) {
+                    throw new DomainException(
+                        'El crédito en cuenta no utiliza una cuenta financiera destino.'
+                    );
+                }
+
+                if ($reference !== null) {
+                    throw new DomainException(
+                        'La referencia del crédito en cuenta es generada por SRCM.'
+                    );
+                }
+
+                if (
+                    $tenderedAmountMinor !== null
+                    || $cardBrand !== null
+                    || $cardNetwork !== null
+                    || $cardLast4 !== null
+                    || $payment->installments !== null
+                    || $processor !== null
+                    || $externalOperationId !== null
+                    || $authorizationCode !== null
+                    || $providerStatus !== null
+                ) {
+                    throw new DomainException(
+                        'El crédito en cuenta no admite efectivo, tarjeta ni evidencia de proveedor.'
+                    );
+                }
             }
 
             if ($payment->method->requiresReference() && $reference === null) {

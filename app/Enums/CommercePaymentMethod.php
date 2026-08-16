@@ -27,6 +27,13 @@ enum CommercePaymentMethod: string
 
     public function requiresReference(): bool
     {
-        return $this !== self::Cash;
+        return ! in_array(
+            $this,
+            [
+                self::Cash,
+                self::AccountCredit,
+            ],
+            true
+        );
     }
 }

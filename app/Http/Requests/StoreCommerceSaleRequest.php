@@ -266,7 +266,7 @@ class StoreCommerceSaleRequest extends FormRequest
             'payments.*.amount' => $positiveMoney,
             'payments.*.tendered_amount' => $optionalPositiveMoney,
             'payments.*.financial_account_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('financial_accounts', 'id')
                     ->where('organization_id', $organizationId)
@@ -396,6 +396,103 @@ class StoreCommerceSaleRequest extends FormRequest
                 );
 
                 $tendered = $payment['tendered_amount'] ?? null;
+
+                if (
+                    $method
+                        === CommercePaymentMethod::AccountCredit
+                ) {
+                    if (
+                        blank(
+                            $this->input(
+                                'customer_business_party_id'
+                            )
+                        )
+                    ) {
+                        $validator->errors()->add(
+                            "payments.{$index}.method",
+                            'El crédito en cuenta requiere un cliente vinculado.'
+                        );
+                    }
+
+                    if (
+                        filled(
+                            $payment[
+                                'financial_account_id'
+                            ] ?? null
+                        )
+                    ) {
+                        $validator->errors()->add(
+                            "payments.{$index}.financial_account_id",
+                            'El crédito en cuenta no utiliza cuenta financiera.'
+                        );
+                    }
+
+                    if (
+                        filled(
+                            $payment['reference']
+                                ?? null
+                        )
+                    ) {
+                        $validator->errors()->add(
+                            "payments.{$index}.reference",
+                            'La referencia del crédito en cuenta es generada por SRCM.'
+                        );
+                    }
+
+                    if (
+                        collect([
+                            $payment[
+                                'tendered_amount'
+                            ] ?? null,
+                            $payment[
+                                'card_brand'
+                            ] ?? null,
+                            $payment[
+                                'card_network'
+                            ] ?? null,
+                            $payment[
+                                'card_last4'
+                            ] ?? null,
+                            $payment[
+                                'installments'
+                            ] ?? null,
+                            $payment[
+                                'processor'
+                            ] ?? null,
+                            $payment[
+                                'external_operation_id'
+                            ] ?? null,
+                            $payment[
+                                'authorization_code'
+                            ] ?? null,
+                            $payment[
+                                'provider_status'
+                            ] ?? null,
+                        ])->contains(
+                            fn (
+                                mixed $value
+                            ): bool =>
+                                filled($value)
+                        )
+                    ) {
+                        $validator->errors()->add(
+                            "payments.{$index}.method",
+                            'El crédito en cuenta no admite efectivo, tarjeta ni evidencia de proveedor.'
+                        );
+                    }
+                } elseif (
+                    $method !== null
+                    && blank(
+                        $payment[
+                            'financial_account_id'
+                        ] ?? null
+                    )
+                ) {
+                    $validator->errors()->add(
+                        "payments.{$index}.financial_account_id",
+                        'El medio de pago requiere una cuenta financiera activa.'
+                    );
+                }
 
                 if ($method === CommercePaymentMethod::Cash) {
                     if (filled($tendered)) {

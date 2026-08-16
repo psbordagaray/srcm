@@ -9,6 +9,7 @@ use App\Domain\Commerce\OrganizationProductPriceReader;
 use App\Domain\Finance\CashRegisterSessionManager;
 use App\Domain\Commerce\CommercePaymentData;
 use App\Domain\Commerce\CommerceProductLineData;
+use App\Domain\Commerce\CustomerCreditBalanceReader;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\CommercePaymentMethod;
 use App\Enums\InventoryCondition;
@@ -132,7 +133,8 @@ class CommerceSaleController extends Controller
         CurrentOrganization $currentOrganization,
         OrganizationProductPriceReader $priceReader,
         CommerceSalePolicyGuard $salePolicy,
-        CashRegisterSessionManager $cashSessions
+        CashRegisterSessionManager $cashSessions,
+        CustomerCreditBalanceReader $creditBalances
     ): View {
         $organizationId = $currentOrganization->id($request->user());
         $unsettledOrders = ServiceOrder::query()
@@ -323,6 +325,10 @@ class CommerceSaleController extends Controller
                 ->orderBy('name')
                 ->get(['id', 'name']),
             'paymentMethods' => CommercePaymentMethod::cases(),
+            'customerCreditBalances' =>
+                $creditBalances->matrixForOrganization(
+                    $organizationId
+                ),
             'activeCashSession' => $cashSessions->currentFor(
                 $request->user()
             ),
@@ -402,7 +408,15 @@ class CommerceSaleController extends Controller
                                 providerStatus:
                                     $payment['provider_status'] ?? null,
                                 financialAccountId:
-                                    (int) $payment['financial_account_id'],
+                                    filled(
+                                        $payment[
+                                            'financial_account_id'
+                                        ] ?? null
+                                    )
+                                        ? (int) $payment[
+                                            'financial_account_id'
+                                        ]
+                                        : null,
                                 tenderedAmountMinor: filled(
                                     $payment['tendered_amount'] ?? null
                                 )

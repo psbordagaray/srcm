@@ -141,6 +141,7 @@
                 serviceTotals: {{ \Illuminate\Support\Js::from($serviceTotals) }},
                 serviceCurrencies: {{ \Illuminate\Support\Js::from($serviceCurrencies) }},
                 paymentMethodLabels: {{ \Illuminate\Support\Js::from($paymentMethodLabels) }},
+                customerCreditBalances: {{ \Illuminate\Support\Js::from($customerCreditBalances) }},
                 financialAccounts: {{ \Illuminate\Support\Js::from(
                     $financialAccounts->map(
                         fn ($account) => [
@@ -261,10 +262,51 @@
                         return;
                     }
 
+                    if (
+                        method === 'account_credit'
+                        && ! this.customerBusinessPartyId
+                    ) {
+                        this.paymentError =
+                            'Vinculá un cliente antes de utilizar Crédito en cuenta.';
+                        this.paymentReviewOpen = false;
+                        return;
+                    }
+
+                    if (
+                        method === 'account_credit'
+                        && this.customerCreditMinor() <= 0
+                    ) {
+                        this.paymentError =
+                            'El cliente no posee saldo a favor disponible en esta moneda.';
+                        this.paymentReviewOpen = false;
+                        return;
+                    }
+
                     const payment = this.blankPayment(method);
                     this.syncOperationalCashAccount(payment);
 
                     if (
+                        method === 'account_credit'
+                        && this.saleTotalMinor() > 0
+                        && this.serviceCurrencyMatches()
+                    ) {
+                        const remaining = Math.max(
+                            0,
+                            this.saleTotalMinor()
+                                - this.paymentTotalMinor()
+                        );
+                        payment.amount = this.moneyInput(
+                            Math.min(
+                                remaining,
+                                Math.max(
+                                    0,
+                                    this.customerCreditMinor()
+                                        - this.accountCreditPaymentTotalMinor()
+                                )
+                            )
+                        );
+                        payment._manual = false;
+                    } else if (
                         this.payments.length === 0
                         && method
                         && this.saleTotalMinor() > 0
@@ -407,6 +449,36 @@
                     return this.paymentTotalMinor()
                         - this.saleTotalMinor();
                 },
+                customerCreditMinor() {
+                    if (! this.customerBusinessPartyId) {
+                        return 0;
+                    }
+
+                    return Number(
+                        this.customerCreditBalances[
+                            Number(
+                                this.customerBusinessPartyId
+                            )
+                        ]?.[this.currencyCode]
+                        ?? 0
+                    );
+                },
+                accountCreditPaymentTotalMinor() {
+                    return this.payments
+                        .filter(
+                            payment =>
+                                payment.method
+                                    === 'account_credit'
+                        )
+                        .reduce(
+                            (total, payment) =>
+                                total
+                                + this.paymentAmountMinor(
+                                    payment.amount
+                                ),
+                            0
+                        );
+                },
                 paymentMethodLabel(method) {
                     return this.paymentMethodLabels[method]
                         ?? 'Medio sin seleccionar';
@@ -451,6 +523,24 @@
                             : '';
                 },
                 onPaymentMethodChanged(payment) {
+                    if (
+                        payment.method
+                            === 'account_credit'
+                    ) {
+                        payment.financial_account_id = '';
+                        payment.tendered_amount = '';
+                        payment.reference = '';
+                        payment.card_brand = '';
+                        payment.card_network = '';
+                        payment.card_last4 = '';
+                        payment.installments = '';
+                        payment.processor = '';
+                        payment.external_operation_id = '';
+                        payment.authorization_code = '';
+                        payment.provider_status = '';
+                        payment._tenderManual = false;
+                    }
+
                     if (payment.method === 'cash') {
                         this.syncOperationalCashAccount(payment);
                         this.syncCashTenderToApplied(payment);
@@ -498,7 +588,9 @@
                     }
                 },
                 paymentRequiresReference(method) {
-                    return Boolean(method) && method !== 'cash';
+                    return Boolean(method)
+                        && method !== 'cash'
+                        && method !== 'account_credit';
                 },
                 paymentIsCard(method) {
                     return method === 'debit_card'
@@ -557,7 +649,34 @@
                     if (
                         ! payment.method
                         || this.paymentAmountMinor(payment.amount) <= 0
-                        || ! this.financialAccountFor(
+                    ) {
+                        return false;
+                    }
+
+                    if (
+                        payment.method
+                            === 'account_credit'
+                    ) {
+                        return Boolean(
+                            this.customerBusinessPartyId
+                        )
+                            && ! payment.financial_account_id
+                            && ! String(
+                                payment.reference ?? ''
+                            ).trim()
+                            && ! String(
+                                payment.tendered_amount
+                                    ?? ''
+                            ).trim()
+                            && ! this.paymentHasStructuredEvidence(
+                                payment
+                            )
+                            && this.accountCreditPaymentTotalMinor()
+                                <= this.customerCreditMinor();
+                    }
+
+                    if (
+                        ! this.financialAccountFor(
                             payment.financial_account_id
                         )
                     ) {
@@ -2611,7 +2730,15 @@
                                                     </div>
                                                 </template>
 
-                                                <template x-if="payment.method !== 'cash'">
+                                                <template x-if="payment.method === 'account_credit'">
+                                                    <div class="mt-2 rounded-xl border border-emerald-400/25 bg-emerald-400/5 px-3 py-2.5">
+                                                        <p class="text-[10px] font-black uppercase tracking-wider text-emerald-300">Saldo disponible</p>
+                                                        <p class="mt-1 font-mono text-sm font-black text-emerald-100" x-text="`${currencyCode} ${money(customerCreditMinor())}`"></p>
+                                                        <p class="mt-1 text-[11px] text-slate-500">Derivado de grants append-only menos consumos previos. Sin cuenta financiera.</p>
+                                                    </div>
+                                                </template>
+
+                                                <template x-if="payment.method !== 'cash' && payment.method !== 'account_credit'">
                                                     <div>
                                                         <select
                                                             :name="`payments[${index}][financial_account_id]`"
@@ -2690,13 +2817,14 @@
                                             <div>
                                                 <label class="text-xs font-bold text-slate-400">Referencia</label>
                                                 <input
-                                                    :name="`payments[${index}][reference]`"
+                                                    :name="payment.method !== 'account_credit' ? `payments[${index}][reference]` : null"
                                                     x-model="payment.reference"
                                                     @input="paymentReviewOpen = false; paymentError = ''"
                                                     type="text"
                                                     maxlength="255"
                                                     :required="paymentRequiresReference(payment.method)"
-                                                    :placeholder="paymentRequiresReference(payment.method) ? 'Obligatoria para este medio' : 'Opcional en efectivo'"
+                                                    :disabled="payment.method === 'account_credit'"
+                                                    :placeholder="payment.method === 'account_credit' ? 'Generada por SRCM al consumir saldo' : (paymentRequiresReference(payment.method) ? 'Obligatoria para este medio' : 'Opcional en efectivo')"
                                                     class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-emerald-400 focus:ring-emerald-400"
                                                 >
                                             </div>
@@ -2713,7 +2841,7 @@
                                         </div>
 
                                         <div
-                                            x-show="payment.method && payment.method !== 'cash'"
+                                            x-show="payment.method && payment.method !== 'cash' && payment.method !== 'account_credit'"
                                             x-cloak
                                             class="mt-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/[0.04] p-4"
                                             data-sale-payment-structured-evidence
