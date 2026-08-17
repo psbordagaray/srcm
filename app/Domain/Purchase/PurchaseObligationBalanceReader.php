@@ -3,6 +3,7 @@
 namespace App\Domain\Purchase;
 
 use App\Models\PurchaseObligation;
+use App\Models\PurchasePaymentDisbursementAllocation;
 use App\Models\PurchasePaymentExecution;
 use App\Models\SupplierAdvanceApplication;
 use App\Models\SupplierCreditApplication;
@@ -26,12 +27,21 @@ final class PurchaseObligationBalanceReader
         $organizationId =
             (int) $obligation->organization_id;
 
-        $executions = PurchasePaymentExecution::query()
-            ->forOrganization($organizationId)
-            ->where(
-                'purchase_obligation_id',
-                $obligation->id
-            );
+        $legacyExecutions =
+            PurchasePaymentExecution::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'purchase_obligation_id',
+                    $obligation->id
+                );
+
+        $disbursementAllocations =
+            PurchasePaymentDisbursementAllocation::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'purchase_obligation_id',
+                    $obligation->id
+                );
 
         $noteApplications =
             SupplierCreditApplication::query()
@@ -50,14 +60,25 @@ final class PurchaseObligationBalanceReader
                 );
 
         if ($lock) {
-            $executions->lockForUpdate();
+            $legacyExecutions->lockForUpdate();
+            $disbursementAllocations->lockForUpdate();
             $noteApplications->lockForUpdate();
             $advanceApplications->lockForUpdate();
         }
 
-        $executedMinor = (int) $executions
-            ->get(['amount_minor'])
-            ->sum('amount_minor');
+        $legacyExecutedMinor =
+            (int) $legacyExecutions
+                ->get(['amount_minor'])
+                ->sum('amount_minor');
+
+        $disbursementExecutedMinor =
+            (int) $disbursementAllocations
+                ->get(['amount_minor'])
+                ->sum('amount_minor');
+
+        $executedMinor =
+            $legacyExecutedMinor
+            + $disbursementExecutedMinor;
 
         $noteAppliedMinor =
             (int) $noteApplications
@@ -83,6 +104,10 @@ final class PurchaseObligationBalanceReader
         return [
             'obligation_minor' =>
                 $obligationMinor,
+            'legacy_execution_minor' =>
+                $legacyExecutedMinor,
+            'disbursement_execution_minor' =>
+                $disbursementExecutedMinor,
             'executed_minor' =>
                 $executedMinor,
             'supplier_credit_note_applied_minor' =>

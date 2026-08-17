@@ -227,16 +227,27 @@ class SupplierAdvanceApplication extends Model
             )
             ->sum('amount_minor');
 
-        $executed = (int) PurchasePaymentExecution::query()
-            ->where(
-                'organization_id',
-                $this->organization_id
-            )
-            ->where(
-                'purchase_obligation_id',
-                $obligation->id
-            )
-            ->sum('amount_minor');
+        $executed =
+            (int) PurchasePaymentExecution::query()
+                ->where(
+                    'organization_id',
+                    $this->organization_id
+                )
+                ->where(
+                    'purchase_obligation_id',
+                    $obligation->id
+                )
+                ->sum('amount_minor')
+            + (int) PurchasePaymentDisbursementAllocation::query()
+                ->where(
+                    'organization_id',
+                    $this->organization_id
+                )
+                ->where(
+                    'purchase_obligation_id',
+                    $obligation->id
+                )
+                ->sum('amount_minor');
 
         if (
             (int) $this->amount_minor <= 0

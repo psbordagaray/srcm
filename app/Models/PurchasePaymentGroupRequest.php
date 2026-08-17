@@ -8,6 +8,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class PurchasePaymentGroupRequest extends Model
@@ -180,5 +181,13 @@ class PurchasePaymentGroupRequest extends Model
             PurchasePaymentGroupRequestItem::class,
             'purchase_payment_group_request_id'
         )->orderBy('id');
+    }
+
+    public function disbursement(): HasOne
+    {
+        return $this->hasOne(
+            PurchasePaymentDisbursement::class,
+            'purchase_payment_group_request_id'
+        );
     }
 }

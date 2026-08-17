@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PurchasePaymentGroupRequestItem extends Model
 {
@@ -74,6 +75,14 @@ class PurchasePaymentGroupRequestItem extends Model
         return $this->belongsTo(
             PurchaseObligation::class,
             'purchase_obligation_id'
+        );
+    }
+
+    public function disbursementAllocation(): HasOne
+    {
+        return $this->hasOne(
+            PurchasePaymentDisbursementAllocation::class,
+            'purchase_payment_group_request_item_id'
         );
     }
 }

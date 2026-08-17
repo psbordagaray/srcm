@@ -12,6 +12,7 @@ enum CashMovementType: string
     case CustomerCollection = 'customer_collection';
     case CustomerAdvance = 'customer_advance';
     case SupplierAdvance = 'supplier_advance';
+    case PurchasePaymentDisbursement = 'purchase_payment_disbursement';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum CashMovementType: string
             self::CustomerCollection => 'Cobranza de cuenta corriente',
             self::CustomerAdvance => 'Anticipo de cliente',
             self::SupplierAdvance => 'Anticipo a proveedor',
+            self::PurchasePaymentDisbursement => 'Pago a proveedor · desembolso unificado',
         };
     }
 }

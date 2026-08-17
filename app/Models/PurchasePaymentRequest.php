@@ -169,6 +169,22 @@ class PurchasePaymentRequest extends Model
         );
     }
 
+    public function disbursement(): HasOne
+    {
+        return $this->hasOne(
+            PurchasePaymentDisbursement::class,
+            'purchase_payment_request_id'
+        );
+    }
+
+    public function disbursementAllocation(): HasOne
+    {
+        return $this->hasOne(
+            PurchasePaymentDisbursementAllocation::class,
+            'purchase_payment_request_id'
+        );
+    }
+
     private function guardCreation(): void
     {
         $status = $this->status
@@ -205,6 +221,16 @@ class PurchasePaymentRequest extends Model
                     $obligation->id
                 )
                 ->sum('amount_minor')
+                + (int) PurchasePaymentDisbursementAllocation::query()
+                    ->where(
+                        'organization_id',
+                        $this->organization_id
+                    )
+                    ->where(
+                        'purchase_obligation_id',
+                        $obligation->id
+                    )
+                    ->sum('amount_minor')
             : 0;
         $remainingMinor = $obligation
             ? max(

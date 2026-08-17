@@ -127,6 +127,14 @@ class PurchaseObligation extends Model
         )->orderBy('id');
     }
 
+    public function paymentDisbursementAllocations(): HasMany
+    {
+        return $this->hasMany(
+            PurchasePaymentDisbursementAllocation::class,
+            'purchase_obligation_id'
+        )->orderBy('id');
+    }
+
     public function supplierCreditApplications(): HasMany
     {
         return $this->hasMany(
