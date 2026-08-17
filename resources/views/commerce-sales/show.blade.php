@@ -39,7 +39,7 @@
                 <p class="mt-3 text-xl font-bold text-emerald-200">{{ $sale->payments->count() }}</p>
             </article>
             <article class="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5">
-                <p class="text-[10px] font-semibold uppercase tracking-wider text-amber-300">Total cobrado</p>
+                <p class="text-[10px] font-semibold uppercase tracking-wider text-amber-300">Total venta</p>
                 <p class="mt-3 font-mono text-2xl font-bold text-white">$ {{ number_format($sale->total_minor / 100, 2, ',', '.') }}</p>
             </article>
         </div>
@@ -76,9 +76,43 @@
                     </div>
                 </section>
 
+                @if($sale->receivable)
+                    <section class="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-6" data-sale-receivable-detail>
+                        <div class="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Cuenta corriente · CxC</p>
+                                <h2 class="mt-2 text-lg font-bold text-white">Saldo pendiente reconocido</h2>
+                                <p class="mt-1 text-sm text-slate-300">
+                                    {{ $sale->receivable->customer->name }}
+                                    · reconocido por {{ $sale->receivable->recognizedBy->name }}
+                                </p>
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Vencimiento:
+                                    {{ $sale->receivable->due_on
+                                        ? $sale->receivable->due_on->format('d/m/Y')
+                                        : 'sin fecha definida' }}
+                                </p>
+                            </div>
+                            <p class="font-mono text-2xl font-black text-amber-100">
+                                {{ $sale->receivable->currency_code }}
+                                {{ number_format($sale->receivable->amount_minor / 100, 2, ',', '.') }}
+                            </p>
+                        </div>
+                        <p class="mt-3 text-xs text-amber-100/80">Este importe no es un pago recibido. Es un hecho append-only de deuda del cliente.</p>
+                    </section>
+                @endif
+
                 <section class="sulu-card p-6">
                     <h2 class="text-lg font-bold text-white">Pagos exactos</h2>
-                    <p class="mt-1 text-sm text-slate-500">La suma confirmada coincide con el total de la operación.</p>
+                    <p class="mt-1 text-sm text-slate-500">
+                        {{ $sale->receivable
+                            ? 'Los pagos recibidos más el saldo pendiente coinciden con el total de la operación.'
+                            : 'La suma confirmada coincide con el total de la operación.' }}
+                    </p>
+
+                    @if($sale->payments->isEmpty())
+                        <p class="mt-5 rounded-xl border border-slate-700 bg-slate-950/50 px-4 py-3 text-sm text-slate-400">La venta no tuvo cobro inmediato.</p>
+                    @endif
 
                     <div class="mt-5 space-y-3">
                         @foreach($sale->payments as $payment)

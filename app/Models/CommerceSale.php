@@ -8,6 +8,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class CommerceSale extends Model
@@ -139,6 +140,14 @@ class CommerceSale extends Model
     {
         return $this->hasMany(CommercePayment::class)
             ->orderBy('position');
+    }
+
+    public function receivable(): HasOne
+    {
+        return $this->hasOne(
+            CustomerReceivable::class,
+            'commerce_sale_id'
+        );
     }
 
     public function postSaleRequests(): HasMany

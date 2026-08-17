@@ -29,6 +29,8 @@
             fn (string $key): bool =>
                 $key === 'commerce'
                 || $key === 'payments'
+                || $key === 'receivable_amount'
+                || $key === 'receivable_due_on'
                 || str_starts_with($key, 'payments.')
         );
 
@@ -54,7 +56,7 @@
         <div>
             <p class="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">Comercio · Confirmación atómica</p>
             <h1 class="mt-2 text-2xl font-bold text-white">Nueva venta y cobro</h1>
-            <p class="mt-2 text-sm text-slate-400">La reparación se deriva del presupuesto aprobado. Los productos generan su salida de inventario y los pagos deben cancelar exactamente el total.</p>
+            <p class="mt-2 text-sm text-slate-400">La reparación se deriva del presupuesto aprobado. Los productos generan su salida de inventario y la venta se liquida con pagos recibidos más, si un Administrador lo autoriza, saldo pendiente en cuenta corriente.</p>
             <div class="mt-3 inline-flex flex-wrap items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-300" data-sale-shortcut-help>
                 <span class="rounded-md bg-slate-800 px-2 py-1 font-mono text-amber-200">F1</span><span>Nueva venta</span>
                 <span class="text-slate-600">·</span>
@@ -90,6 +92,9 @@
                 customerBusinessPartyId: {{ \Illuminate\Support\Js::from((string) $selectedCustomerId) }},
                 customerName: {{ \Illuminate\Support\Js::from(old('customer_name', '')) }},
                 customerDocument: {{ \Illuminate\Support\Js::from(old('customer_document', '')) }},
+                canCreateCustomerReceivable: {{ \Illuminate\Support\Js::from($canCreateCustomerReceivable) }},
+                receivableAmount: {{ \Illuminate\Support\Js::from(old('receivable_amount', '')) }},
+                receivableDueOn: {{ \Illuminate\Support\Js::from(old('receivable_due_on', '')) }},
                 setupOpen: false,
                 customerOpen: false,
                 paymentOverlayOpen: {{ \Illuminate\Support\Js::from($paymentValidationFailed) }},
@@ -221,6 +226,10 @@
                         () => this.syncAutomaticPayment()
                     );
                     this.$watch(
+                        'receivableAmount',
+                        () => this.syncAutomaticPayment()
+                    );
+                    this.$watch(
                         'currencyCode',
                         () => {
                             this.payments.forEach(payment => {
@@ -294,6 +303,7 @@
                             0,
                             this.saleTotalMinor()
                                 - this.paymentTotalMinor()
+                                - this.receivableAmountMinor()
                         );
                         payment.amount = this.moneyInput(
                             Math.min(
@@ -313,7 +323,11 @@
                         && this.serviceCurrencyMatches()
                     ) {
                         payment.amount = this.moneyInput(
-                            this.saleTotalMinor()
+                            Math.max(
+                                0,
+                                this.saleTotalMinor()
+                                    - this.receivableAmountMinor()
+                            )
                         );
                         payment._manual = false;
                         this.syncCashTenderToApplied(payment);
@@ -445,8 +459,32 @@
                     return this.serviceSubtotalMinor()
                         + this.productsSubtotalMinor();
                 },
-                paymentDifferenceMinor() {
+                receivableAmountMinor() {
+                    return this.paymentAmountMinor(
+                        this.receivableAmount
+                    );
+                },
+                receivableComplete() {
+                    const amount = this.receivableAmountMinor();
+                    const dueOn = String(
+                        this.receivableDueOn ?? ''
+                    ).trim();
+
+                    if (amount <= 0) {
+                        return dueOn === '';
+                    }
+
+                    return this.canCreateCustomerReceivable
+                        && Boolean(
+                            this.customerBusinessPartyId
+                        );
+                },
+                settlementTotalMinor() {
                     return this.paymentTotalMinor()
+                        + this.receivableAmountMinor();
+                },
+                paymentDifferenceMinor() {
+                    return this.settlementTotalMinor()
                         - this.saleTotalMinor();
                 },
                 customerCreditMinor() {
@@ -711,11 +749,15 @@
                 paymentExact() {
                     return this.serviceCurrencyMatches()
                         && this.saleTotalMinor() > 0
-                        && this.payments.length > 0
+                        && (
+                            this.payments.length > 0
+                            || this.receivableAmountMinor() > 0
+                        )
                         && this.payments.every(
                             payment => this.paymentComplete(payment)
                         )
-                        && this.paymentTotalMinor()
+                        && this.receivableComplete()
+                        && this.settlementTotalMinor()
                             === this.saleTotalMinor();
                 },
                 paymentStatus() {
@@ -724,22 +766,26 @@
                     }
 
                     const total = this.saleTotalMinor();
-                    const paid = this.paymentTotalMinor();
+                    const settled = this.settlementTotalMinor();
 
                     if (total <= 0) {
                         return 'empty';
                     }
 
-                    if (paid === total) {
-                        return this.payments.length > 0
+                    if (settled === total) {
+                        return (
+                            this.payments.length > 0
+                            || this.receivableAmountMinor() > 0
+                        )
                             && this.payments.every(
                                 payment => this.paymentComplete(payment)
                             )
+                            && this.receivableComplete()
                                 ? 'exact'
                                 : 'incomplete';
                     }
 
-                    return paid < total ? 'short' : 'excess';
+                    return settled < total ? 'short' : 'excess';
                 },
                 paymentStatusAmountMinor() {
                     return Math.abs(this.paymentDifferenceMinor());
@@ -762,7 +808,13 @@
 
                     this.payments[0].amount =
                         this.saleTotalMinor() > 0
-                            ? this.moneyInput(this.saleTotalMinor())
+                            ? this.moneyInput(
+                                Math.max(
+                                    0,
+                                    this.saleTotalMinor()
+                                        - this.receivableAmountMinor()
+                                )
+                            )
                             : '';
                     this.syncCashTenderToApplied(this.payments[0]);
                 },
@@ -786,7 +838,9 @@
                                     ),
                         0
                     );
-                    const balance = this.saleTotalMinor() - others;
+                    const balance = this.saleTotalMinor()
+                        - this.receivableAmountMinor()
+                        - others;
 
                     if (balance <= 0) {
                         this.paymentError =
@@ -836,9 +890,20 @@
                         return;
                     }
 
-                    if (this.payments.length === 0) {
+                    if (
+                        this.payments.length === 0
+                        && this.receivableAmountMinor() <= 0
+                    ) {
                         this.paymentError =
-                            'Elegí al menos un medio de pago.';
+                            'Registrá al menos un pago o un saldo pendiente autorizado.';
+                        return;
+                    }
+
+                    if (! this.receivableComplete()) {
+                        this.paymentError =
+                            this.receivableAmountMinor() > 0
+                                ? 'El saldo pendiente requiere autorización de Administrador y cliente vinculado.'
+                                : 'No puede informarse vencimiento sin saldo pendiente.';
                         return;
                     }
 
@@ -853,25 +918,25 @@
                     }
 
                     if (
-                        this.paymentTotalMinor()
+                        this.settlementTotalMinor()
                             !== this.saleTotalMinor()
                     ) {
                         this.paymentError =
-                            this.paymentTotalMinor()
+                            this.settlementTotalMinor()
                                 < this.saleTotalMinor()
                                 ? `Falta ${
                                     this.currencyCode
                                 } ${
                                     this.money(
                                         this.saleTotalMinor()
-                                            - this.paymentTotalMinor()
+                                            - this.settlementTotalMinor()
                                     )
                                 }.`
-                                : `Los pagos exceden el total en ${
+                                : `La liquidación excede el total en ${
                                     this.currencyCode
                                 } ${
                                     this.money(
-                                        this.paymentTotalMinor()
+                                        this.settlementTotalMinor()
                                             - this.saleTotalMinor()
                                     )
                                 }.`;
@@ -2505,7 +2570,7 @@
                 </div>
 
                 <div class="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-xs leading-5 text-amber-100">
-                    La confirmación es inmutable. Si falla el saldo, la identidad, la moneda o el pago exacto, toda la operación se revierte.
+                    La confirmación es inmutable. Si falla el stock, la identidad, la moneda o la liquidación exacta entre pagos y saldo pendiente, toda la operación se revierte.
                 </div>
 
                 <div class="mt-5 flex flex-wrap justify-end gap-3 border-t border-slate-800 pt-5">
@@ -2662,6 +2727,61 @@
                                     @endforeach
                                 </div>
                             </section>
+
+                            @if($canCreateCustomerReceivable)
+                                <section
+                                    class="rounded-2xl border border-amber-400/25 bg-amber-400/[0.06] p-5"
+                                    data-sale-customer-receivable
+                                >
+                                    <div class="flex flex-wrap items-start justify-between gap-3">
+                                        <div>
+                                            <p class="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Saldo pendiente / cuenta corriente</p>
+                                            <p class="mt-1 text-xs leading-5 text-slate-400">No es un cobro. Registra cuánto queda debiendo el cliente después de los pagos recibidos.</p>
+                                        </div>
+                                        <span class="rounded-lg border border-amber-400/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-200">Administrador</span>
+                                    </div>
+
+                                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                                        <div>
+                                            <label for="receivable_amount" class="text-xs font-bold text-slate-400">Importe pendiente</label>
+                                            <input
+                                                id="receivable_amount"
+                                                name="receivable_amount"
+                                                x-model="receivableAmount"
+                                                @input="paymentReviewOpen = false; paymentError = ''; syncAutomaticPayment()"
+                                                type="text"
+                                                inputmode="decimal"
+                                                placeholder="0,00"
+                                                class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-lg font-black text-white focus:border-amber-400 focus:ring-amber-400"
+                                            >
+                                        </div>
+                                        <div>
+                                            <label for="receivable_due_on" class="text-xs font-bold text-slate-400">Vencimiento opcional</label>
+                                            <input
+                                                id="receivable_due_on"
+                                                name="receivable_due_on"
+                                                x-model="receivableDueOn"
+                                                @change="paymentReviewOpen = false; paymentError = ''"
+                                                type="date"
+                                                min="{{ now()->toDateString() }}"
+                                                class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-amber-400 focus:ring-amber-400"
+                                            >
+                                        </div>
+                                    </div>
+
+                                    <p
+                                        x-show="receivableAmountMinor() > 0 && ! customerBusinessPartyId"
+                                        class="mt-3 text-xs font-bold text-red-300"
+                                    >
+                                        Vinculá un cliente antes de dejar saldo pendiente.
+                                    </p>
+                                    <p
+                                        x-show="receivableAmountMinor() > 0"
+                                        class="mt-3 font-mono text-sm font-black text-amber-100"
+                                        x-text="`Pendiente: ${currencyCode} ${money(receivableAmountMinor())}`"
+                                    ></p>
+                                </section>
+                            @endif
 
                             <section class="space-y-4">
                                 <div
@@ -3045,7 +3165,7 @@
                         >
                             <div class="mx-auto max-w-3xl text-center">
                                 <p class="text-xs font-black uppercase tracking-[0.24em] text-amber-300">Confirmación final</p>
-                                <h3 class="mt-3 text-2xl font-black text-white sm:text-3xl">CONFIRMAR COBRO</h3>
+                                <h3 class="mt-3 text-2xl font-black text-white sm:text-3xl">CONFIRMAR VENTA</h3>
                                 <p class="mt-4 font-mono text-5xl font-black tracking-tight text-white">
                                     <span class="text-xl text-slate-400" x-text="currencyCode"></span>
                                     <span x-text="money(saleTotalMinor())"></span>
@@ -3084,9 +3204,35 @@
                                             </p>
                                         </div>
                                     </template>
+
+                                    <div
+                                        x-show="receivableAmountMinor() > 0"
+                                        class="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4"
+                                        data-sale-receivable-review
+                                    >
+                                        <div class="flex flex-wrap items-center justify-between gap-3">
+                                            <strong class="text-lg text-amber-100">Saldo pendiente en cuenta corriente</strong>
+                                            <strong class="font-mono text-xl text-amber-100" x-text="`${currencyCode} ${money(receivableAmountMinor())}`"></strong>
+                                        </div>
+                                        <p class="mt-2 text-sm text-slate-300">
+                                            Cliente: <span class="font-bold text-white" x-text="customerSummary()"></span>
+                                        </p>
+                                        <p x-show="receivableDueOn" class="mt-1 text-xs text-slate-400">
+                                            Vencimiento: <span x-text="receivableDueOn"></span>
+                                        </p>
+                                        <p class="mt-2 text-xs text-slate-500">Este importe no se registra como pago recibido.</p>
+                                    </div>
                                 </div>
 
-                                <p x-show="payments.length === 1 && payments[0]?.method === 'cash'" class="mt-7 text-lg font-bold leading-8 text-slate-100">
+                                <p x-show="receivableAmountMinor() > 0" class="mt-7 text-lg font-bold text-slate-100">
+                                    ¿Confirmás la venta con
+                                    <span class="font-mono text-white" x-text="`${currencyCode} ${money(paymentTotalMinor())}`"></span>
+                                    recibido y
+                                    <span class="font-mono text-amber-200" x-text="`${currencyCode} ${money(receivableAmountMinor())}`"></span>
+                                    pendiente en cuenta corriente?
+                                </p>
+
+                                <p x-show="receivableAmountMinor() <= 0 && payments.length === 1 && payments[0]?.method === 'cash'" class="mt-7 text-lg font-bold leading-8 text-slate-100">
                                     ¿Confirmás aplicar
                                     <span class="font-mono text-white" x-text="`${currencyCode} ${money(paymentAmountMinor(payments[0]?.amount))}`"></span>,
                                     recibir
@@ -3095,13 +3241,13 @@
                                     <span class="font-mono text-emerald-200" x-text="`${currencyCode} ${money(paymentChangeMinor(payments[0]))}`"></span>
                                     de vuelto?
                                 </p>
-                                <p x-show="payments.length === 1 && payments[0]?.method !== 'cash'" class="mt-7 text-lg font-bold text-slate-100">
+                                <p x-show="receivableAmountMinor() <= 0 && payments.length === 1 && payments[0]?.method !== 'cash'" class="mt-7 text-lg font-bold text-slate-100">
                                     ¿Confirmás que recibiste
                                     <span class="font-mono text-white" x-text="`${currencyCode} ${money(saleTotalMinor())}`"></span>
                                     en
                                     <span class="text-emerald-200" x-text="paymentMethodLabel(payments[0]?.method)"></span>?
                                 </p>
-                                <p x-show="payments.length > 1" class="mt-7 text-lg font-bold text-slate-100">
+                                <p x-show="receivableAmountMinor() <= 0 && payments.length > 1" class="mt-7 text-lg font-bold text-slate-100">
                                     ¿Confirmás que estos son los medios e importes recibidos?
                                 </p>
 

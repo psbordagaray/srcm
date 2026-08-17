@@ -43,7 +43,8 @@ final class CommerceCheckoutManager
         private readonly OrganizationProductPriceReader $prices,
         private readonly CashRegisterSessionManager $cashSessions,
         private readonly CashLedgerRecorder $cashLedger,
-        private readonly CustomerCreditConsumer $creditConsumer
+        private readonly CustomerCreditConsumer $creditConsumer,
+        private readonly CustomerReceivableRecorder $receivableRecorder
     ) {
     }
 
@@ -78,6 +79,7 @@ final class CommerceCheckoutManager
                     'lines.quoteLine',
                     'lines.product',
                     'payments',
+                    'receivable',
                     'inventoryMovement.lines',
                 ]);
             }
@@ -127,10 +129,17 @@ final class CommerceCheckoutManager
                 $normalized['payments'],
                 'amount_minor'
             ));
+            $receivableAmount =
+                $normalized['receivable_amount_minor'] ?? 0;
+            $settledTotal = $this->sumMoney(
+                $paymentTotal,
+                $receivableAmount,
+                'La liquidación de la venta supera el importe admitido.'
+            );
 
-            if ($total <= 0 || $paymentTotal !== $total) {
+            if ($total <= 0 || $settledTotal !== $total) {
                 throw new DomainException(
-                    'Los pagos deben cancelar exactamente el total de la venta.'
+                    'Los pagos y el saldo pendiente deben cubrir exactamente el total de la venta.'
                 );
             }
 
@@ -140,6 +149,19 @@ final class CommerceCheckoutManager
                     $data,
                     $service
                 );
+
+            if ($receivableAmount > 0) {
+                if (! $customer) {
+                    throw new DomainException(
+                        'Una venta con saldo pendiente requiere un cliente vinculado.'
+                    );
+                }
+
+                $this->guardReceivableAuthority(
+                    $organizationId,
+                    $actor
+                );
+            }
             $publicId = (string) Str::uuid();
             $movement = $products['lines'] === []
                 ? null
@@ -323,6 +345,15 @@ final class CommerceCheckoutManager
                 }
             }
 
+            if ($receivableAmount > 0) {
+                $this->receivableRecorder->recordForSale(
+                    $sale,
+                    $receivableAmount,
+                    $normalized['receivable_due_on'],
+                    $actor
+                );
+            }
+
             $sale->status = CommerceSaleStatus::Confirmed;
             $sale->confirmed_at = CarbonImmutable::now();
             $sale->save();
@@ -331,6 +362,7 @@ final class CommerceCheckoutManager
                 'lines.quoteLine',
                 'lines.product',
                 'payments',
+                'receivable',
                 'inventoryMovement.lines',
             ]);
         }, 3);
@@ -626,9 +658,38 @@ final class CommerceCheckoutManager
             ];
         }
 
-        if ($data->payments === []) {
+        $receivableAmount = $data->receivableAmountMinor;
+
+        if (
+            $receivableAmount !== null
+            && $receivableAmount <= 0
+        ) {
             throw new DomainException(
-                'La venta requiere al menos un medio de pago.'
+                'El saldo pendiente debe poseer un importe positivo.'
+            );
+        }
+
+        $receivableDueOn = $data->receivableDueOn === null
+            ? null
+            : CarbonImmutable::instance(
+                $data->receivableDueOn
+            )->toDateString();
+
+        if (
+            $receivableAmount === null
+            && $receivableDueOn !== null
+        ) {
+            throw new DomainException(
+                'No puede informarse vencimiento sin saldo pendiente.'
+            );
+        }
+
+        if (
+            $data->payments === []
+            && $receivableAmount === null
+        ) {
+            throw new DomainException(
+                'La venta requiere un pago o un saldo pendiente autorizado.'
             );
         }
 
@@ -858,6 +919,8 @@ final class CommerceCheckoutManager
                 : null,
             'product_lines' => $productLines,
             'payments' => $payments,
+            'receivable_amount_minor' => $receivableAmount,
+            'receivable_due_on' => $receivableDueOn,
             'idempotency_key' => $this->idempotencyKey(
                 $data->idempotencyKey
             ),
@@ -1083,6 +1146,24 @@ final class CommerceCheckoutManager
         if (! $membership?->role->canRecordCommerceSale()) {
             throw new DomainException(
                 'El usuario no puede confirmar operaciones comerciales.'
+            );
+        }
+    }
+
+    private function guardReceivableAuthority(
+        int $organizationId,
+        User $actor
+    ): void {
+        $membership = OrganizationMembership::query()
+            ->where('organization_id', $organizationId)
+            ->where('user_id', $actor->id)
+            ->where('active', true)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $membership?->role->canCreateCustomerReceivable()) {
+            throw new DomainException(
+                'Sólo un Administrador puede autorizar una venta con saldo pendiente.'
             );
         }
     }

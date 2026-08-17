@@ -14,6 +14,8 @@ final readonly class CommerceCheckoutData
         public string $currencyCode,
         public string $idempotencyKey,
         public array $payments,
+        public ?int $receivableAmountMinor = null,
+        public ?DateTimeInterface $receivableDueOn = null,
         public array $productLines = [],
         public ?int $serviceOrderId = null,
         public ?int $customerBusinessPartyId = null,

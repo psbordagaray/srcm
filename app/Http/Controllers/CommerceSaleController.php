@@ -351,6 +351,10 @@ class CommerceSaleController extends Controller
             ),
             'availabilityMatrix' =>
                 $salePolicy->availabilityMatrix($request->user()),
+            'canCreateCustomerReceivable' =>
+                $request->user()->can(
+                    'create-customer-receivables'
+                ),
             'idempotencyKey' => 'service-ui:commerce-sale:'.Str::uuid(),
         ]);
     }
@@ -380,7 +384,9 @@ class CommerceSaleController extends Controller
                 new CommerceCheckoutData(
                     currencyCode: $validated['currency_code'],
                     idempotencyKey: $validated['idempotency_key'],
-                    payments: collect($validated['payments'])
+                    payments: collect(
+                        $validated['payments'] ?? []
+                    )
                         ->map(
                             fn (array $payment): CommercePaymentData => new CommercePaymentData(
                                 method: CommercePaymentMethod::from(
@@ -428,6 +434,20 @@ class CommerceSaleController extends Controller
                         )
                         ->values()
                         ->all(),
+                    receivableAmountMinor: filled(
+                        $validated['receivable_amount'] ?? null
+                    )
+                        ? $this->moneyMinor(
+                            $validated['receivable_amount']
+                        )
+                        : null,
+                    receivableDueOn: filled(
+                        $validated['receivable_due_on'] ?? null
+                    )
+                        ? CarbonImmutable::parse(
+                            $validated['receivable_due_on']
+                        )
+                        : null,
                     productLines: $salePolicy->productLines(
                         $validatedProductLines
                     ),
@@ -459,12 +479,15 @@ class CommerceSaleController extends Controller
                 ]);
         }
 
+        $sale->loadMissing('receivable');
+
+        $message = $sale->receivable
+            ? "Venta #{$sale->sale_number} confirmada con saldo pendiente registrado en cuenta corriente."
+            : "Venta #{$sale->sale_number} confirmada con cobro exacto.";
+
         return redirect()
             ->route('commerce-sales.show', $sale)
-            ->with(
-                'success',
-                "Venta #{$sale->sale_number} confirmada con cobro exacto."
-            );
+            ->with('success', $message);
     }
 
     public function show(
@@ -492,6 +515,8 @@ class CommerceSaleController extends Controller
             'lines.inventoryMovementLine',
             'payments.receivedBy',
             'payments.financialAccount',
+            'receivable.customer',
+            'receivable.recognizedBy',
             'postSaleRequests.requestedBy',
             'inventoryMovement.lines.product',
             'inventoryMovement.lines.sourceLocation',

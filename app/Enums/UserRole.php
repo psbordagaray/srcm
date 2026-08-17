@@ -40,6 +40,16 @@ enum UserRole: string
         return $this->canManageCommerce();
     }
 
+    public function canCreateCustomerReceivable(): bool
+    {
+        return $this === self::Admin;
+    }
+
+    public function canViewCustomerReceivables(): bool
+    {
+        return true;
+    }
+
     public function canManageCommercePrices(): bool
     {
         return $this === self::Admin;

@@ -163,6 +163,20 @@ class StoreCommerceSaleRequest extends FormRequest
             'notes' => $this->optional(
                 (string) $this->input('notes')
             ),
+            'receivable_amount' => $this->optional(
+                $this->money(
+                    (string) $this->input(
+                        'receivable_amount',
+                        ''
+                    )
+                )
+            ),
+            'receivable_due_on' => $this->optional(
+                (string) $this->input(
+                    'receivable_due_on',
+                    ''
+                )
+            ),
             'sold_at' => $this->optional(
                 (string) $this->input('sold_at')
             ),
@@ -254,10 +268,14 @@ class StoreCommerceSaleRequest extends FormRequest
                 'regex:/^(?=.*[1-9])\d{1,12}(?:\.\d{1,6})?$/',
             ],
             'payments' => [
-                'required',
                 'array',
-                'min:1',
                 'max:10',
+            ],
+            'receivable_amount' => $optionalPositiveMoney,
+            'receivable_due_on' => [
+                'nullable',
+                'date_format:Y-m-d',
+                'after_or_equal:today',
             ],
             'payments.*.method' => [
                 'required',
@@ -357,6 +375,59 @@ class StoreCommerceSaleRequest extends FormRequest
                 $validator->errors()->add(
                     'product_lines',
                     'La venta requiere una reparación entregada o al menos un producto.'
+                );
+            }
+
+            $receivableAmount = $this->moneyMinorValue(
+                $this->input('receivable_amount')
+            );
+            $receivableDueOn = $this->input(
+                'receivable_due_on'
+            );
+            $payments = (array) $this->input(
+                'payments',
+                []
+            );
+
+            if (
+                $payments === []
+                && $receivableAmount === null
+            ) {
+                $validator->errors()->add(
+                    'payments',
+                    'La venta requiere un pago o un saldo pendiente autorizado.'
+                );
+            }
+
+            if ($receivableAmount !== null) {
+                if (blank(
+                    $this->input(
+                        'customer_business_party_id'
+                    )
+                )) {
+                    $validator->errors()->add(
+                        'receivable_amount',
+                        'El saldo pendiente requiere un cliente vinculado.'
+                    );
+                }
+
+                if (! $this->user()?->can(
+                    'create-customer-receivables'
+                )) {
+                    $validator->errors()->add(
+                        'receivable_amount',
+                        'Sólo un Administrador puede autorizar una venta con saldo pendiente.'
+                    );
+                }
+            }
+
+            if (
+                filled($receivableDueOn)
+                && $receivableAmount === null
+            ) {
+                $validator->errors()->add(
+                    'receivable_due_on',
+                    'No puede informarse vencimiento sin saldo pendiente.'
                 );
             }
 
@@ -582,7 +653,9 @@ class StoreCommerceSaleRequest extends FormRequest
             'product_lines.*.catalog_product_id.exists' => 'El producto no existe o está inactivo.',
             'product_lines.*.source_location_id.exists' => 'La ubicación no pertenece a la organización activa o está inactiva.',
             'product_lines.*.quantity.regex' => 'La cantidad debe ser positiva y admitir hasta seis decimales.',
-            'payments.min' => 'La venta requiere al menos un medio de pago.',
+            'receivable_amount.regex' => 'El saldo pendiente debe ser positivo y admitir hasta dos decimales.',
+            'receivable_due_on.date_format' => 'El vencimiento debe expresarse como fecha válida.',
+            'receivable_due_on.after_or_equal' => 'El vencimiento no puede ser anterior a hoy.',
             'payments.*.amount.regex' => 'Cada pago debe ser positivo y admitir hasta dos decimales.',
             'payments.*.tendered_amount.regex' => 'El dinero entregado debe ser positivo y admitir hasta dos decimales.',
             'payments.*.financial_account_id.required' => 'Cada pago requiere una cuenta destino.',
