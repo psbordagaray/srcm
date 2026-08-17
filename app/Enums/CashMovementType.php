@@ -11,6 +11,7 @@ enum CashMovementType: string
     case PostSaleExchangeDifference = 'post_sale_exchange_difference';
     case CustomerCollection = 'customer_collection';
     case CustomerAdvance = 'customer_advance';
+    case SupplierAdvance = 'supplier_advance';
 
     public function label(): string
     {
@@ -22,6 +23,7 @@ enum CashMovementType: string
             self::PostSaleExchangeDifference => 'Cobro diferencia de cambio posventa',
             self::CustomerCollection => 'Cobranza de cuenta corriente',
             self::CustomerAdvance => 'Anticipo de cliente',
+            self::SupplierAdvance => 'Anticipo a proveedor',
         };
     }
 }

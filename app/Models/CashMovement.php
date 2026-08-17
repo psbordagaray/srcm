@@ -30,6 +30,7 @@ class CashMovement extends Model
         'post_sale_exchange_payment_id',
         'customer_collection_id',
         'customer_advance_id',
+        'supplier_advance_id',
         'commerce_payment_id',
         'direction',
         'type',
@@ -147,6 +148,14 @@ class CashMovement extends Model
         return $this->belongsTo(
             CustomerAdvance::class,
             'customer_advance_id'
+        );
+    }
+
+    public function supplierAdvance(): BelongsTo
+    {
+        return $this->belongsTo(
+            SupplierAdvance::class,
+            'supplier_advance_id'
         );
     }
 
