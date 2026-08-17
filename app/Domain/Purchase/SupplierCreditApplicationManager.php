@@ -5,6 +5,7 @@ namespace App\Domain\Purchase;
 use App\Domain\Audit\AuditRecorder;
 use App\Enums\PurchasePaymentRequestStatus;
 use App\Models\PurchaseObligation;
+use App\Models\PurchasePaymentGroupRequestItem;
 use App\Models\PurchasePaymentRequest;
 use App\Models\SupplierCreditApplication;
 use App\Models\SupplierCreditNote;
@@ -136,9 +137,25 @@ final class SupplierCreditApplicationManager
                     ])
                     ->lockForUpdate()
                     ->exists()
+                || PurchasePaymentGroupRequestItem::query()
+                    ->forOrganization($organizationId)
+                    ->where(
+                        'purchase_obligation_id',
+                        $obligation->id
+                    )
+                    ->whereHas(
+                        'request',
+                        fn ($query) => $query
+                            ->whereIn('status', [
+                                PurchasePaymentRequestStatus::Pending->value,
+                                PurchasePaymentRequestStatus::Approved->value,
+                            ])
+                    )
+                    ->lockForUpdate()
+                    ->exists()
             ) {
                 throw new DomainException(
-                    'La obligación posee una solicitud de pago activa. Debe resolverse antes de aplicar crédito del proveedor.'
+                    'La obligación posee una autorización de pago activa. Debe resolverse antes de aplicar crédito del proveedor.'
                 );
             }
 

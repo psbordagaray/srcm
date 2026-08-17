@@ -7,6 +7,7 @@ use App\Enums\PurchasePaymentRequestStatus;
 use App\Models\FinancialAccount;
 use App\Models\PurchaseObligation;
 use App\Models\PurchasePaymentExecution;
+use App\Models\PurchasePaymentGroupRequestItem;
 use App\Models\PurchasePaymentRequest;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -137,6 +138,29 @@ final class PurchasePaymentRequestManager
             ) {
                 throw new DomainException(
                     'La obligación ya posee una solicitud de pago pendiente o autorizada.'
+                );
+            }
+
+            if (
+                PurchasePaymentGroupRequestItem::query()
+                    ->forOrganization($organizationId)
+                    ->where(
+                        'purchase_obligation_id',
+                        $obligation->id
+                    )
+                    ->whereHas(
+                        'request',
+                        fn ($query) => $query
+                            ->whereIn('status', [
+                                PurchasePaymentRequestStatus::Pending->value,
+                                PurchasePaymentRequestStatus::Approved->value,
+                            ])
+                    )
+                    ->lockForUpdate()
+                    ->exists()
+            ) {
+                throw new DomainException(
+                    'La obligación participa en una solicitud de pago agrupada activa.'
                 );
             }
 
