@@ -6,6 +6,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
@@ -152,5 +153,14 @@ class SupplierAdvance extends Model
             CashMovement::class,
             'supplier_advance_id'
         );
+    }
+
+    public function applications(): HasMany
+    {
+        return $this->hasMany(
+            SupplierAdvanceApplication::class,
+            'supplier_advance_id'
+        )->orderBy('applied_at')
+            ->orderBy('id');
     }
 }

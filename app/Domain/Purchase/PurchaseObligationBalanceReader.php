@@ -4,6 +4,7 @@ namespace App\Domain\Purchase;
 
 use App\Models\PurchaseObligation;
 use App\Models\PurchasePaymentExecution;
+use App\Models\SupplierAdvanceApplication;
 use App\Models\SupplierCreditApplication;
 
 final class PurchaseObligationBalanceReader
@@ -22,34 +23,76 @@ final class PurchaseObligationBalanceReader
         PurchaseObligation $obligation,
         bool $lock
     ): array {
-        $executions = PurchasePaymentExecution::query()
-            ->forOrganization((int) $obligation->organization_id)
-            ->where('purchase_obligation_id', $obligation->id);
+        $organizationId =
+            (int) $obligation->organization_id;
 
-        $applications = SupplierCreditApplication::query()
-            ->forOrganization((int) $obligation->organization_id)
-            ->where('purchase_obligation_id', $obligation->id);
+        $executions = PurchasePaymentExecution::query()
+            ->forOrganization($organizationId)
+            ->where(
+                'purchase_obligation_id',
+                $obligation->id
+            );
+
+        $noteApplications =
+            SupplierCreditApplication::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'purchase_obligation_id',
+                    $obligation->id
+                );
+
+        $advanceApplications =
+            SupplierAdvanceApplication::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'purchase_obligation_id',
+                    $obligation->id
+                );
 
         if ($lock) {
             $executions->lockForUpdate();
-            $applications->lockForUpdate();
+            $noteApplications->lockForUpdate();
+            $advanceApplications->lockForUpdate();
         }
 
         $executedMinor = (int) $executions
             ->get(['amount_minor'])
             ->sum('amount_minor');
-        $creditMinor = (int) $applications
-            ->get(['amount_minor'])
-            ->sum('amount_minor');
 
-        $obligationMinor = (int) $obligation->amount_minor;
-        $settledMinor = $executedMinor + $creditMinor;
+        $noteAppliedMinor =
+            (int) $noteApplications
+                ->get(['amount_minor'])
+                ->sum('amount_minor');
+
+        $advanceAppliedMinor =
+            (int) $advanceApplications
+                ->get(['amount_minor'])
+                ->sum('amount_minor');
+
+        $supplierCreditAppliedMinor =
+            $noteAppliedMinor
+            + $advanceAppliedMinor;
+
+        $obligationMinor =
+            (int) $obligation->amount_minor;
+
+        $settledMinor =
+            $executedMinor
+            + $supplierCreditAppliedMinor;
 
         return [
-            'obligation_minor' => $obligationMinor,
-            'executed_minor' => $executedMinor,
-            'supplier_credit_applied_minor' => $creditMinor,
-            'settled_minor' => $settledMinor,
+            'obligation_minor' =>
+                $obligationMinor,
+            'executed_minor' =>
+                $executedMinor,
+            'supplier_credit_note_applied_minor' =>
+                $noteAppliedMinor,
+            'supplier_advance_applied_minor' =>
+                $advanceAppliedMinor,
+            'supplier_credit_applied_minor' =>
+                $supplierCreditAppliedMinor,
+            'settled_minor' =>
+                $settledMinor,
             'remaining_minor' => max(
                 0,
                 $obligationMinor - $settledMinor

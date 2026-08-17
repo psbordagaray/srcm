@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
-class SupplierCreditApplication extends Model
+class SupplierAdvanceApplication extends Model
 {
     use BelongsToOrganization;
 
@@ -19,7 +19,7 @@ class SupplierCreditApplication extends Model
     protected $fillable = [
         'organization_id',
         'public_id',
-        'supplier_credit_note_id',
+        'supplier_advance_id',
         'purchase_obligation_id',
         'supplier_id',
         'beneficiary_business_party_id',
@@ -36,7 +36,7 @@ class SupplierCreditApplication extends Model
     protected static function booted(): void
     {
         static::creating(function (
-            SupplierCreditApplication $application
+            SupplierAdvanceApplication $application
         ): void {
             if (blank($application->public_id)) {
                 $application->public_id =
@@ -48,13 +48,13 @@ class SupplierCreditApplication extends Model
 
         static::updating(
             fn () => throw new DomainException(
-                'Una aplicación de crédito de proveedor es inmutable.'
+                'Una aplicación de anticipo de proveedor es inmutable.'
             )
         );
 
         static::deleting(
             fn () => throw new DomainException(
-                'Una aplicación de crédito de proveedor no puede eliminarse.'
+                'Una aplicación de anticipo de proveedor no puede eliminarse.'
             )
         );
     }
@@ -73,11 +73,11 @@ class SupplierCreditApplication extends Model
         return 'public_id';
     }
 
-    public function creditNote(): BelongsTo
+    public function advance(): BelongsTo
     {
         return $this->belongsTo(
-            SupplierCreditNote::class,
-            'supplier_credit_note_id'
+            SupplierAdvance::class,
+            'supplier_advance_id'
         );
     }
 
@@ -114,10 +114,8 @@ class SupplierCreditApplication extends Model
 
     private function guardCreation(): void
     {
-        $creditNote = SupplierCreditNote::query()
-            ->whereKey(
-                $this->supplier_credit_note_id
-            )
+        $advance = SupplierAdvance::query()
+            ->whereKey($this->supplier_advance_id)
             ->where(
                 'organization_id',
                 $this->organization_id
@@ -163,7 +161,7 @@ class SupplierCreditApplication extends Model
             ->first();
 
         if (
-            ! $creditNote
+            ! $advance
             || ! $obligation
             || ! $supplier
             || (int) $supplier->business_party_id
@@ -171,7 +169,7 @@ class SupplierCreditApplication extends Model
                     ->beneficiary_business_party_id
         ) {
             throw new DomainException(
-                'La aplicación no conserva proveedor, beneficiario, moneda y organización.'
+                'La aplicación de anticipo no conserva proveedor, beneficiario, moneda y organización.'
             );
         }
 
@@ -192,7 +190,7 @@ class SupplierCreditApplication extends Model
                 ->exists()
         ) {
             throw new DomainException(
-                'No puede aplicarse crédito con una solicitud de pago activa.'
+                'No puede aplicarse un anticipo con una solicitud de pago activa.'
             );
         }
 
@@ -202,32 +200,32 @@ class SupplierCreditApplication extends Model
                 $this->organization_id
             )
             ->where(
-                'supplier_credit_note_id',
-                $creditNote->id
+                'supplier_advance_id',
+                $advance->id
             )
             ->sum('amount_minor');
 
-        $obligationApplied =
-            (int) self::query()
-                ->where(
-                    'organization_id',
-                    $this->organization_id
-                )
-                ->where(
-                    'purchase_obligation_id',
-                    $obligation->id
-                )
-                ->sum('amount_minor')
-            + (int) SupplierAdvanceApplication::query()
-                ->where(
-                    'organization_id',
-                    $this->organization_id
-                )
-                ->where(
-                    'purchase_obligation_id',
-                    $obligation->id
-                )
-                ->sum('amount_minor');
+        $advanceApplied = (int) self::query()
+            ->where(
+                'organization_id',
+                $this->organization_id
+            )
+            ->where(
+                'purchase_obligation_id',
+                $obligation->id
+            )
+            ->sum('amount_minor');
+
+        $noteApplied = (int) SupplierCreditApplication::query()
+            ->where(
+                'organization_id',
+                $this->organization_id
+            )
+            ->where(
+                'purchase_obligation_id',
+                $obligation->id
+            )
+            ->sum('amount_minor');
 
         $executed = (int) PurchasePaymentExecution::query()
             ->where(
@@ -244,21 +242,22 @@ class SupplierCreditApplication extends Model
             (int) $this->amount_minor <= 0
             || $sourceApplied
                 + (int) $this->amount_minor
-                > (int) $creditNote->amount_minor
-            || $obligationApplied
+                > (int) $advance->amount_minor
+            || $advanceApplied
+                + $noteApplied
                 + $executed
                 + (int) $this->amount_minor
                 > (int) $obligation->amount_minor
         ) {
             throw new DomainException(
-                'La aplicación excede el crédito o el saldo de obligación disponible.'
+                'La aplicación excede el anticipo o el saldo de obligación disponible.'
             );
         }
 
         $this->application_note =
             PurchasePayload::optionalText(
                 $this->application_note,
-                'La nota de aplicación',
+                'La nota de aplicación del anticipo',
                 1000
             );
 
@@ -272,7 +271,7 @@ class SupplierCreditApplication extends Model
             || $this->created_at === null
         ) {
             throw new DomainException(
-                'La aplicación requiere idempotencia, huella, actor y tiempo.'
+                'La aplicación de anticipo requiere idempotencia, huella, actor y tiempo.'
             );
         }
     }
