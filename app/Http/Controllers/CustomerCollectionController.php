@@ -68,7 +68,11 @@ class CustomerCollectionController extends Controller
                             $validated['tendered_amount']
                         )
                         : null,
-                    notes: $validated['notes'] ?? null
+                    notes: $validated['notes'] ?? null,
+                    retainExcessAsCredit:
+                        (bool) $validated[
+                            'retain_excess_as_credit'
+                        ]
                 ),
                 $request->user()
             );
@@ -85,7 +89,7 @@ class CustomerCollectionController extends Controller
             ->route('customers.account', $customer)
             ->with(
                 'success',
-                'Cobranza confirmada y aplicada a la cuenta corriente.'
+                'Cobranza confirmada; el excedente, si fue aceptado explícitamente, quedó como saldo a favor.'
             );
     }
 

@@ -248,6 +248,10 @@ final class CustomerCollectionManager
                 'method' => $normalized['method'],
                 'currency_code' => $normalized['currency_code'],
                 'amount_minor' => $normalized['amount_minor'],
+                'retain_excess_as_credit' =>
+                    $normalized[
+                        'retain_excess_as_credit'
+                    ],
                 'tendered_amount_minor' =>
                     $normalized['tendered_amount_minor'],
                 'change_amount_minor' =>
@@ -319,6 +323,8 @@ final class CustomerCollectionManager
      *     currency_code: string,
      *     method: string,
      *     amount_minor: int,
+     *     retain_excess_as_credit: bool,
+     *     overpayment_minor: int,
      *     financial_account_id: int,
      *     allocations: list<array{
      *         customer_receivable_id: int,
@@ -463,11 +469,26 @@ final class CustomerCollectionManager
             $allocationTotal += $allocation['amount_minor'];
         }
 
-        if ($allocationTotal !== $data->amountMinor) {
+        if ($allocationTotal > $data->amountMinor) {
             throw new DomainException(
-                'Las aplicaciones deben sumar exactamente el importe de la cobranza.'
+                'Las aplicaciones no pueden superar el importe recibido.'
             );
         }
+
+        $overpaymentMinor =
+            $data->amountMinor - $allocationTotal;
+
+        if (
+            $overpaymentMinor > 0
+            && ! $data->retainExcessAsCredit
+        ) {
+            throw new DomainException(
+                'El excedente debe confirmarse explícitamente para quedar como saldo a favor.'
+            );
+        }
+
+        $retainExcessAsCredit =
+            $overpaymentMinor > 0;
 
         $idempotencyKey = Str::of(
             $data->idempotencyKey
@@ -486,6 +507,10 @@ final class CustomerCollectionManager
             'currency_code' => $currency,
             'method' => $data->method->value,
             'amount_minor' => $data->amountMinor,
+            'retain_excess_as_credit' =>
+                $retainExcessAsCredit,
+            'overpayment_minor' =>
+                $overpaymentMinor,
             'financial_account_id' => $data->financialAccountId,
             'allocations' => $allocations,
             'reference' => $reference,

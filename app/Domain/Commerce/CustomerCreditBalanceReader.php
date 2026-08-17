@@ -3,8 +3,10 @@
 namespace App\Domain\Commerce;
 
 use App\Enums\CustomerAdvanceStatus;
+use App\Enums\CustomerCollectionStatus;
 use App\Models\CommercePostSaleExchangeCreditGrant;
 use App\Models\CustomerAdvance;
+use App\Models\CustomerCollection;
 use App\Models\CustomerCreditConsumptionAllocation;
 use App\Models\CustomerCreditGrant;
 
@@ -64,6 +66,46 @@ final class CustomerCreditBalanceReader
                 )
                 ->sum('amount_minor');
 
+        $collectionOverpaymentGranted =
+            (int) CustomerCollection::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'business_party_id',
+                    $businessPartyId
+                )
+                ->where(
+                    'currency_code',
+                    $currencyCode
+                )
+                ->where(
+                    'status',
+                    CustomerCollectionStatus::Confirmed->value
+                )
+                ->where(
+                    'retain_excess_as_credit',
+                    true
+                )
+                ->withSum(
+                    'allocations',
+                    'amount_minor'
+                )
+                ->get()
+                ->sum(
+                    fn (
+                        CustomerCollection $collection
+                    ): int =>
+                        max(
+                            0,
+                            (int) $collection
+                                ->amount_minor
+                            - (int) (
+                                $collection
+                                    ->allocations_sum_amount_minor
+                                ?? 0
+                            )
+                        )
+                );
+
         $consumed =
             (int) CustomerCreditConsumptionAllocation::query()
                 ->where(
@@ -90,6 +132,7 @@ final class CustomerCreditBalanceReader
             $standardGranted
             + $exchangeGranted
             + $advanceGranted
+            + $collectionOverpaymentGranted
             - $consumed
         );
     }
@@ -172,6 +215,47 @@ final class CustomerCreditBalanceReader
                 (int) $advance->business_party_id,
                 (string) $advance->currency_code,
                 (int) $advance->amount_minor
+            );
+        }
+
+        foreach (
+            CustomerCollection::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'status',
+                    CustomerCollectionStatus::Confirmed->value
+                )
+                ->where(
+                    'retain_excess_as_credit',
+                    true
+                )
+                ->withSum(
+                    'allocations',
+                    'amount_minor'
+                )
+                ->get()
+            as $collection
+        ) {
+            $overpaymentMinor =
+                max(
+                    0,
+                    (int) $collection->amount_minor
+                    - (int) (
+                        $collection
+                            ->allocations_sum_amount_minor
+                        ?? 0
+                    )
+                );
+
+            if ($overpaymentMinor === 0) {
+                continue;
+            }
+
+            $push(
+                $matrix,
+                (int) $collection->business_party_id,
+                (string) $collection->currency_code,
+                $overpaymentMinor
             );
         }
 

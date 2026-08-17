@@ -18,6 +18,7 @@ class CustomerCreditConsumptionAllocation extends Model
         'customer_credit_grant_id',
         'commerce_post_sale_exchange_credit_grant_id',
         'customer_advance_id',
+        'customer_collection_id',
         'amount_minor',
         'fingerprint',
         'created_at',
@@ -31,6 +32,8 @@ class CustomerCreditConsumptionAllocation extends Model
             'sequence' => 'integer',
             'customer_credit_grant_id' => 'integer',
             'commerce_post_sale_exchange_credit_grant_id' => 'integer',
+            'customer_advance_id' => 'integer',
+            'customer_collection_id' => 'integer',
             'amount_minor' => 'integer',
             'created_at' => 'immutable_datetime',
         ];
@@ -90,6 +93,14 @@ class CustomerCreditConsumptionAllocation extends Model
         return $this->belongsTo(
             CustomerAdvance::class,
             'customer_advance_id'
+        );
+    }
+
+    public function customerCollection(): BelongsTo
+    {
+        return $this->belongsTo(
+            CustomerCollection::class,
+            'customer_collection_id'
         );
     }
 }

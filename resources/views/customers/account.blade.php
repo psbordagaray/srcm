@@ -350,7 +350,7 @@
             @if($openRows->isNotEmpty())
                 <section class="sulu-card p-6" data-customer-collection-form>
                     <h2 class="text-lg font-bold text-white">Registrar cobranza</h2>
-                    <p class="mt-1 text-sm text-slate-500">Una cobranza puede aplicarse parcialmente a una deuda o distribuirse entre varias de la misma moneda. En deudas con cuotas propias, SRCM imputa automáticamente a la cuota más antigua primero. No genera saldo a favor en este corte.</p>
+                    <p class="mt-1 text-sm text-slate-500">Una cobranza puede aplicarse parcialmente a una deuda o distribuirse entre varias de la misma moneda. En deudas con cuotas propias, SRCM imputa automáticamente a la cuota más antigua primero. Si el importe recibido supera lo aplicado, el excedente sólo queda como saldo a favor con confirmación explícita.</p>
 
                     <form method="POST" action="{{ route('customers.collections.store', $customer) }}" class="mt-5 space-y-5">
                         @csrf
@@ -401,6 +401,25 @@
                             </div>
                         </div>
 
+                        <input
+                            type="hidden"
+                            name="retain_excess_as_credit"
+                            value="0"
+                        >
+                        <label class="flex items-start gap-3 rounded-xl border border-amber-400/25 bg-amber-400/5 px-4 py-3 text-sm text-slate-300">
+                            <input
+                                type="checkbox"
+                                name="retain_excess_as_credit"
+                                value="1"
+                                @checked(old('retain_excess_as_credit'))
+                                class="mt-1 rounded border-slate-600 bg-slate-950 text-cyan-400"
+                            >
+                            <span>
+                                <strong class="text-amber-200">Dejar cualquier excedente como saldo a favor.</strong>
+                                Si el importe cobrado supera la suma aplicada a las deudas, SRCM bloqueará la operación salvo que confirmes esta decisión. El efectivo entregado que vuelve como cambio no forma parte del saldo a favor.
+                            </span>
+                        </label>
+
                         @if($currentCashSession)
                             <div class="rounded-xl border border-cyan-500/20 bg-cyan-500/5 px-4 py-3 text-xs text-cyan-100">
                                 Turno de caja activo: {{ $currentCashSession->register->name }} · {{ $currentCashSession->currency_code }}. El efectivo sólo puede ingresar por la cuenta de ese turno.
@@ -449,6 +468,15 @@
                             @foreach($collection->allocations as $allocation)
                                 <span class="mr-3">Venta #{{ $allocation->receivable->sale->sale_number }}: {{ number_format($allocation->amount_minor / 100, 2, ',', '.') }}</span>
                             @endforeach
+
+                            @php($collectionApplied = (int) $collection->allocations->sum('amount_minor'))
+                            @php($collectionCredit = $collection->retain_excess_as_credit ? max(0, $collection->amount_minor - $collectionApplied) : 0)
+
+                            @if($collectionCredit > 0)
+                                <span class="mr-3 font-bold text-emerald-300">
+                                    Saldo a favor generado: {{ number_format($collectionCredit / 100, 2, ',', '.') }}
+                                </span>
+                            @endif
                         </div>
                     </div>
                 @empty

@@ -18,7 +18,8 @@ final readonly class CustomerCollectionData
         public string $idempotencyKey,
         public ?string $reference = null,
         public ?int $tenderedAmountMinor = null,
-        public ?string $notes = null
+        public ?string $notes = null,
+        public bool $retainExcessAsCredit = false
     ) {
     }
 }

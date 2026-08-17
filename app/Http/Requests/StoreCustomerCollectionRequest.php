@@ -86,6 +86,10 @@ class StoreCustomerCollectionRequest extends FormRequest
                     ''
                 )
             ),
+            'retain_excess_as_credit' =>
+                $this->boolean(
+                    'retain_excess_as_credit'
+                ),
         ]);
     }
 
@@ -162,6 +166,10 @@ class StoreCustomerCollectionRequest extends FormRequest
                 'required',
                 'string',
                 'max:180',
+            ],
+            'retain_excess_as_credit' => [
+                'required',
+                'boolean',
             ],
         ];
     }

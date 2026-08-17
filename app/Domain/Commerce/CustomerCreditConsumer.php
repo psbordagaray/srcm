@@ -5,8 +5,10 @@ namespace App\Domain\Commerce;
 use App\Models\CommercePostSaleExchangeCreditGrant;
 use App\Models\CommercePostSaleExchangeExecution;
 use App\Enums\CustomerAdvanceStatus;
+use App\Enums\CustomerCollectionStatus;
 use App\Models\CommerceSale;
 use App\Models\CustomerAdvance;
+use App\Models\CustomerCollection;
 use App\Models\CustomerCreditConsumption;
 use App\Models\CustomerCreditConsumptionAllocation;
 use App\Models\CustomerCreditGrant;
@@ -228,6 +230,36 @@ final class CustomerCreditConsumer
                     ->lockForUpdate()
                     ->get();
 
+            $collectionOverpayments =
+                CustomerCollection::query()
+                    ->forOrganization(
+                        $organizationId
+                    )
+                    ->where(
+                        'business_party_id',
+                        $partyId
+                    )
+                    ->where(
+                        'currency_code',
+                        $currencyCode
+                    )
+                    ->where(
+                        'status',
+                        CustomerCollectionStatus::Confirmed->value
+                    )
+                    ->where(
+                        'retain_excess_as_credit',
+                        true
+                    )
+                    ->withSum(
+                        'allocations',
+                        'amount_minor'
+                    )
+                    ->orderBy('collected_at')
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
             $sources =
                 collect()
                     ->concat(
@@ -292,6 +324,36 @@ final class CustomerCreditConsumer
                                         ),
                             ]
                         )
+                    )
+                    ->concat(
+                        $collectionOverpayments
+                            ->map(
+                                fn (
+                                    CustomerCollection $collection
+                                ): array => [
+                                    'kind' =>
+                                        'collection_overpayment',
+                                    'id' =>
+                                        (int) $collection->id,
+                                    'amount_minor' =>
+                                        max(
+                                            0,
+                                            (int) $collection
+                                                ->amount_minor
+                                            - (int) (
+                                                $collection
+                                                    ->allocations_sum_amount_minor
+                                                ?? 0
+                                            )
+                                        ),
+                                    'granted_at' =>
+                                        $collection
+                                            ->collected_at
+                                            ->format(
+                                                'Y-m-d H:i:s.u'
+                                            ),
+                                ]
+                            )
                     )
                     ->sortBy(
                         fn (array $source): string =>
@@ -359,6 +421,24 @@ final class CustomerCreditConsumer
                         'customer_advance_id'
                     );
 
+            $collectionOverpaymentConsumed =
+                CustomerCreditConsumptionAllocation::query()
+                    ->whereIn(
+                        'customer_collection_id',
+                        $collectionOverpayments
+                            ->pluck('id')
+                    )
+                    ->selectRaw(
+                        'customer_collection_id, SUM(amount_minor) AS allocated_minor'
+                    )
+                    ->groupBy(
+                        'customer_collection_id'
+                    )
+                    ->pluck(
+                        'allocated_minor',
+                        'customer_collection_id'
+                    );
+
             $plan = [];
             $remaining = $amountMinor;
 
@@ -381,6 +461,12 @@ final class CustomerCreditConsumer
                     'customer_advance' =>
                         (int) (
                             $advanceConsumed[
+                                $source['id']
+                            ] ?? 0
+                        ),
+                    'collection_overpayment' =>
+                        (int) (
+                            $collectionOverpaymentConsumed[
                                 $source['id']
                             ] ?? 0
                         ),
@@ -482,6 +568,11 @@ final class CustomerCreditConsumer
                         'customer_advance_id' =>
                             $item['kind']
                                 === 'customer_advance'
+                                ? $item['id']
+                                : null,
+                        'customer_collection_id' =>
+                            $item['kind']
+                                === 'collection_overpayment'
                                 ? $item['id']
                                 : null,
                         'amount_minor' =>
@@ -746,6 +837,36 @@ final class CustomerCreditConsumer
                     ->lockForUpdate()
                     ->get();
 
+            $collectionOverpayments =
+                CustomerCollection::query()
+                    ->forOrganization(
+                        $organizationId
+                    )
+                    ->where(
+                        'business_party_id',
+                        $partyId
+                    )
+                    ->where(
+                        'currency_code',
+                        $currencyCode
+                    )
+                    ->where(
+                        'status',
+                        CustomerCollectionStatus::Confirmed->value
+                    )
+                    ->where(
+                        'retain_excess_as_credit',
+                        true
+                    )
+                    ->withSum(
+                        'allocations',
+                        'amount_minor'
+                    )
+                    ->orderBy('collected_at')
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
             $sources =
                 collect()
                     ->concat(
@@ -810,6 +931,36 @@ final class CustomerCreditConsumer
                                         ),
                             ]
                         )
+                    )
+                    ->concat(
+                        $collectionOverpayments
+                            ->map(
+                                fn (
+                                    CustomerCollection $collection
+                                ): array => [
+                                    'kind' =>
+                                        'collection_overpayment',
+                                    'id' =>
+                                        (int) $collection->id,
+                                    'amount_minor' =>
+                                        max(
+                                            0,
+                                            (int) $collection
+                                                ->amount_minor
+                                            - (int) (
+                                                $collection
+                                                    ->allocations_sum_amount_minor
+                                                ?? 0
+                                            )
+                                        ),
+                                    'granted_at' =>
+                                        $collection
+                                            ->collected_at
+                                            ->format(
+                                                'Y-m-d H:i:s.u'
+                                            ),
+                                ]
+                            )
                     )
                     ->sortBy(
                         fn (array $source): string =>
@@ -877,6 +1028,24 @@ final class CustomerCreditConsumer
                         'customer_advance_id'
                     );
 
+            $collectionOverpaymentConsumed =
+                CustomerCreditConsumptionAllocation::query()
+                    ->whereIn(
+                        'customer_collection_id',
+                        $collectionOverpayments
+                            ->pluck('id')
+                    )
+                    ->selectRaw(
+                        'customer_collection_id, SUM(amount_minor) AS allocated_minor'
+                    )
+                    ->groupBy(
+                        'customer_collection_id'
+                    )
+                    ->pluck(
+                        'allocated_minor',
+                        'customer_collection_id'
+                    );
+
             $plan = [];
             $remaining = $amountMinor;
 
@@ -899,6 +1068,12 @@ final class CustomerCreditConsumer
                     'customer_advance' =>
                         (int) (
                             $advanceConsumed[
+                                $source['id']
+                            ] ?? 0
+                        ),
+                    'collection_overpayment' =>
+                        (int) (
+                            $collectionOverpaymentConsumed[
                                 $source['id']
                             ] ?? 0
                         ),
@@ -1000,6 +1175,11 @@ final class CustomerCreditConsumer
                         'customer_advance_id' =>
                             $item['kind']
                                 === 'customer_advance'
+                                ? $item['id']
+                                : null,
+                        'customer_collection_id' =>
+                            $item['kind']
+                                === 'collection_overpayment'
                                 ? $item['id']
                                 : null,
                         'amount_minor' =>
