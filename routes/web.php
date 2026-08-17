@@ -23,6 +23,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerAccountController;
 use App\Http\Controllers\CustomerAgingController;
 use App\Http\Controllers\CustomerCollectionController;
+use App\Http\Controllers\CustomerCreditPolicyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\PurchaseObligationController;
@@ -412,6 +413,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereNumber('customer')
                         ->name('customers.collections.store');
                 });
+
+            Route::middleware(
+                'can:manage-customer-credit-policies'
+            )->group(function () {
+                Route::post(
+                    'customers/{customer}/credit-policies',
+                    [CustomerCreditPolicyController::class, 'store']
+                )
+                    ->whereNumber('customer')
+                    ->name(
+                        'customers.credit-policies.store'
+                    );
+            });
 
             Route::middleware('can:manage-customers')
                 ->group(function () {

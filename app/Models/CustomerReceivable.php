@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CommerceSaleStatus;
+use App\Enums\CustomerCreditDecisionType;
 use App\Models\Concerns\BelongsToOrganization;
 use Carbon\CarbonImmutable;
 use DomainException;
@@ -25,6 +26,15 @@ class CustomerReceivable extends Model
         'currency_code',
         'amount_minor',
         'due_on',
+        'customer_credit_policy_id',
+        'customer_credit_override_id',
+        'credit_decision',
+        'credit_limit_minor',
+        'credit_exposure_before_minor',
+        'credit_projected_exposure_minor',
+        'credit_overdue_minor',
+        'credit_oldest_days_overdue',
+        'credit_snapshot_fingerprint',
         'idempotency_key',
         'fingerprint',
         'recognized_by_user_id',
@@ -34,9 +44,12 @@ class CustomerReceivable extends Model
 
     protected static function booted(): void
     {
-        static::creating(function (CustomerReceivable $receivable): void {
+        static::creating(function (
+            CustomerReceivable $receivable
+        ): void {
             if (blank($receivable->public_id)) {
-                $receivable->public_id = (string) Str::uuid();
+                $receivable->public_id =
+                    (string) Str::uuid();
             }
 
             $receivable->guardCreation();
@@ -56,6 +69,16 @@ class CustomerReceivable extends Model
         return [
             'amount_minor' => 'integer',
             'due_on' => 'immutable_date',
+            'credit_decision' =>
+                CustomerCreditDecisionType::class,
+            'credit_limit_minor' => 'integer',
+            'credit_exposure_before_minor' =>
+                'integer',
+            'credit_projected_exposure_minor' =>
+                'integer',
+            'credit_overdue_minor' => 'integer',
+            'credit_oldest_days_overdue' =>
+                'integer',
             'recognized_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',
         ];
@@ -90,6 +113,22 @@ class CustomerReceivable extends Model
         );
     }
 
+    public function creditPolicy(): BelongsTo
+    {
+        return $this->belongsTo(
+            CustomerCreditPolicy::class,
+            'customer_credit_policy_id'
+        );
+    }
+
+    public function creditOverride(): BelongsTo
+    {
+        return $this->belongsTo(
+            CustomerCreditOverride::class,
+            'customer_credit_override_id'
+        );
+    }
+
     public function allocations(): HasMany
     {
         return $this->hasMany(
@@ -102,7 +141,10 @@ class CustomerReceivable extends Model
     {
         $sale = CommerceSale::query()
             ->whereKey($this->commerce_sale_id)
-            ->where('organization_id', $this->organization_id)
+            ->where(
+                'organization_id',
+                $this->organization_id
+            )
             ->where(
                 'status',
                 CommerceSaleStatus::Building->value
@@ -117,7 +159,8 @@ class CustomerReceivable extends Model
             || (string) $sale->currency_code
                 !== (string) $this->currency_code
             || (int) $this->amount_minor <= 0
-            || (int) $this->amount_minor > (int) $sale->total_minor
+            || (int) $this->amount_minor
+                > (int) $sale->total_minor
         ) {
             throw new DomainException(
                 'La cuenta por cobrar no coincide con una venta en preparación y un cliente identificado.'
@@ -126,10 +169,14 @@ class CustomerReceivable extends Model
 
         $isActiveCustomer = BusinessParty::query()
             ->whereKey($this->business_party_id)
-            ->where('organization_id', $this->organization_id)
+            ->where(
+                'organization_id',
+                $this->organization_id
+            )
             ->whereHas(
                 'customer',
-                fn ($customer) => $customer->where('active', true)
+                fn ($customer) =>
+                    $customer->where('active', true)
             )
             ->exists();
 
@@ -150,9 +197,85 @@ class CustomerReceivable extends Model
             );
         }
 
+        $decision = $this->credit_decision
+            instanceof CustomerCreditDecisionType
+                ? $this->credit_decision
+                : CustomerCreditDecisionType::tryFrom(
+                    (string) $this->credit_decision
+                );
+
+        if (
+            ! $decision
+            || $this->credit_exposure_before_minor === null
+            || $this->credit_projected_exposure_minor === null
+            || $this->credit_overdue_minor === null
+            || $this->credit_oldest_days_overdue === null
+            || (
+                (int) $this->credit_projected_exposure_minor
+                !== (int) $this->credit_exposure_before_minor
+                    + (int) $this->amount_minor
+            )
+            || blank($this->credit_snapshot_fingerprint)
+            || strlen(
+                (string) $this->credit_snapshot_fingerprint
+            ) !== 64
+        ) {
+            throw new DomainException(
+                'La cuenta por cobrar requiere evidencia de decisión de crédito.'
+            );
+        }
+
+        if (
+            $decision
+                === CustomerCreditDecisionType::LegacyAdmin
+            && (
+                $this->customer_credit_policy_id !== null
+                || $this->customer_credit_override_id
+                    !== null
+                || $this->credit_limit_minor !== null
+            )
+        ) {
+            throw new DomainException(
+                'La decisión legacy no puede fingir una política configurada.'
+            );
+        }
+
+        if (
+            $decision
+                === CustomerCreditDecisionType::WithinPolicy
+            && (
+                $this->customer_credit_policy_id === null
+                || $this->customer_credit_override_id
+                    !== null
+                || $this->credit_limit_minor === null
+                || (int) $this->credit_overdue_minor > 0
+                || (
+                    (int) $this
+                        ->credit_projected_exposure_minor
+                    > (int) $this->credit_limit_minor
+                )
+            )
+        ) {
+            throw new DomainException(
+                'La decisión dentro de política no coincide con la exposición.'
+            );
+        }
+
+        if (
+            $decision
+                === CustomerCreditDecisionType::AdminOverride
+            && $this->customer_credit_override_id === null
+        ) {
+            throw new DomainException(
+                'La decisión excepcional requiere su autorización Administrador.'
+            );
+        }
+
         if (
             blank($this->idempotency_key)
-            || mb_strlen((string) $this->idempotency_key) > 90
+            || mb_strlen(
+                (string) $this->idempotency_key
+            ) > 90
             || blank($this->fingerprint)
             || strlen((string) $this->fingerprint) !== 64
             || $this->recognized_by_user_id === null

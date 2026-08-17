@@ -25,7 +25,93 @@
                 </ul>
             </div>
         @endif
+        <section class="sulu-card p-6" data-customer-credit-policy>
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-violet-300">Política de crédito</p>
+                    <h2 class="mt-2 text-lg font-bold text-white">Cupo controlado por cliente y moneda</h2>
+                    <p class="mt-1 text-sm text-slate-500">El cupo usa exposición derivada. Con política vigente, deuda vencida o sobrelímite bloquean al Operador y requieren una excepción explícita de Administrador.</p>
+                </div>
+            </div>
 
+            <div class="mt-5 grid gap-4 xl:grid-cols-2">
+                @foreach($creditPolicySnapshots as $currency => $snapshot)
+                    <article class="rounded-2xl border border-slate-800 bg-slate-950/45 p-5" data-credit-policy-currency="{{ $currency }}">
+                        <div class="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <p class="font-mono text-lg font-black text-white">{{ $currency }}</p>
+                                @if($snapshot['policy_configured'])
+                                    <p class="mt-1 text-xs font-semibold text-emerald-300">Política vigente · versión {{ $snapshot['policy']->version }}</p>
+                                @else
+                                    <p class="mt-1 text-xs font-semibold text-amber-300">Modo transitorio · sólo Administrador puede vender a crédito hasta configurar el primer límite.</p>
+                                @endif
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs uppercase tracking-wider text-slate-500">Límite</p>
+                                <p class="mt-1 font-mono text-lg font-black text-violet-200">
+                                    {{ $snapshot['policy_configured'] ? number_format($snapshot['limit_minor'] / 100, 2, ',', '.') : 'Sin configurar' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                            <div class="rounded-xl border border-slate-800 p-3">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Exposición</p>
+                                <p class="mt-1 font-mono font-bold text-amber-200">{{ number_format($snapshot['exposure_minor'] / 100, 2, ',', '.') }}</p>
+                            </div>
+                            <div class="rounded-xl border border-slate-800 p-3">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Vencido</p>
+                                <p class="mt-1 font-mono font-bold {{ $snapshot['overdue_minor'] > 0 ? 'text-red-300' : 'text-slate-300' }}">{{ number_format($snapshot['overdue_minor'] / 100, 2, ',', '.') }}</p>
+                            </div>
+                            <div class="rounded-xl border border-slate-800 p-3">
+                                <p class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Disponible</p>
+                                <p class="mt-1 font-mono font-bold text-emerald-200">{{ $snapshot['policy_configured'] ? number_format($snapshot['available_minor'] / 100, 2, ',', '.') : '—' }}</p>
+                            </div>
+                        </div>
+
+                        @if($snapshot['overdue_minor'] > 0)
+                            <p class="mt-3 rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-xs font-bold text-red-200">
+                                Hay deuda vencida. Aunque exista cupo disponible, el nuevo crédito requiere excepción de Administrador.
+                            </p>
+                        @endif
+
+                        @can('manage-customer-credit-policies')
+                            <form method="POST" action="{{ route('customers.credit-policies.store', $customer) }}" class="mt-5 space-y-3 border-t border-slate-800 pt-4">
+                                @csrf
+                                <input type="hidden" name="currency_code" value="{{ $currency }}">
+                                <input type="hidden" name="idempotency_key" value="{{ $creditPolicyIdempotencyKeys[$currency] }}">
+
+                                <div>
+                                    <label class="text-xs font-bold text-slate-400">Nuevo límite {{ $currency }}</label>
+                                    <input
+                                        name="limit"
+                                        inputmode="decimal"
+                                        value="{{ old('currency_code') === $currency ? old('limit') : ($snapshot['policy_configured'] ? number_format($snapshot['limit_minor'] / 100, 2, '.', '') : '') }}"
+                                        placeholder="0,00"
+                                        required
+                                        class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-white"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-slate-400">Motivo de la nueva versión</label>
+                                    <textarea
+                                        name="reason"
+                                        rows="2"
+                                        maxlength="2000"
+                                        required
+                                        class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white"
+                                        placeholder="Fundamento administrativo del cupo."
+                                    >{{ old('currency_code') === $currency ? old('reason') : '' }}</textarea>
+                                </div>
+                                <button class="rounded-xl border border-violet-400/30 px-4 py-2 text-sm font-black text-violet-200">
+                                    Registrar nueva versión
+                                </button>
+                            </form>
+                        @endcan
+                    </article>
+                @endforeach
+            </div>
+        </section>
         <div class="grid gap-4 md:grid-cols-3">
             @forelse($account['totals'] as $currency => $total)
                 <div class="sulu-card p-5">

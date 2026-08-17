@@ -67,7 +67,7 @@ class CustomerReceivableFoundationTest extends TestCase
         $this->assertTrue(
             UserRole::Admin->canCreateCustomerReceivable()
         );
-        $this->assertFalse(
+        $this->assertTrue(
             UserRole::Operator->canCreateCustomerReceivable()
         );
         $this->assertFalse(
@@ -342,7 +342,7 @@ class CustomerReceivableFoundationTest extends TestCase
         $this->actingAs($operator)
             ->get(route('commerce-sales.create'))
             ->assertOk()
-            ->assertDontSee('name="receivable_amount"', false);
+            ->assertSee('name="receivable_amount"', false);
 
         $payload = [
             'currency_code' => 'ARS',
@@ -381,7 +381,7 @@ class CustomerReceivableFoundationTest extends TestCase
                 $operatorPayload
             )
             ->assertRedirect(route('commerce-sales.create'))
-            ->assertSessionHasErrors('receivable_amount');
+            ->assertSessionHasErrors('commerce');
 
         $this->assertDatabaseCount('commerce_sales', 1);
         $this->assertDatabaseCount('customer_receivables', 1);

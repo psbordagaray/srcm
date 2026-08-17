@@ -116,6 +116,10 @@ class AppServiceProvider extends ServiceProvider
             'record-commerce-sales' => 'canRecordCommerceSale',
             'create-customer-receivables' =>
                 'canCreateCustomerReceivable',
+            'manage-customer-credit-policies' =>
+                'canManageCustomerCreditPolicy',
+            'override-customer-credit' =>
+                'canOverrideCustomerCredit',
             'view-customer-receivables' =>
                 'canViewCustomerReceivables',
             'view-customer-account' =>

@@ -3,7 +3,9 @@
 namespace App\Domain\Commerce;
 
 use App\Enums\CommerceSaleStatus;
+use App\Enums\CustomerCreditDecisionType;
 use App\Models\CommerceSale;
+use App\Models\CustomerCreditOverride;
 use App\Models\CustomerReceivable;
 use App\Models\OrganizationMembership;
 use App\Models\User;
@@ -17,6 +19,8 @@ final class CustomerReceivableRecorder
         CommerceSale $sale,
         int $amountMinor,
         ?string $dueOn,
+        CustomerCreditDecision $creditDecision,
+        ?CustomerCreditOverride $creditOverride,
         User $actor
     ): CustomerReceivable {
         $organizationId = (int) $sale->organization_id;
@@ -47,9 +51,64 @@ final class CustomerReceivableRecorder
             ->lockForUpdate()
             ->first();
 
-        if (! $membership?->role->canCreateCustomerReceivable()) {
+        if (
+            ! $membership
+            || ! $membership->role
+                ->canCreateCustomerReceivable()
+        ) {
             throw new DomainException(
-                'Sólo un Administrador puede autorizar una venta con saldo pendiente.'
+                'El usuario no puede registrar una venta con saldo pendiente.'
+            );
+        }
+
+        if (
+            $creditDecision->projectedExposureMinor
+                !== $creditDecision->exposureBeforeMinor
+                    + $amountMinor
+            || (
+                $creditDecision->type
+                    === CustomerCreditDecisionType::LegacyAdmin
+                && ! $membership->role
+                    ->canOverrideCustomerCredit()
+            )
+            || (
+                $creditDecision->type
+                    === CustomerCreditDecisionType::WithinPolicy
+                && (
+                    ! $creditDecision->policy
+                    || $creditDecision->limitMinor === null
+                    || $creditDecision->overLimit
+                    || $creditDecision->overdue
+                    || $creditOverride !== null
+                )
+            )
+            || (
+                $creditDecision->type
+                    === CustomerCreditDecisionType::AdminOverride
+                && (
+                    ! $membership->role
+                        ->canOverrideCustomerCredit()
+                    || ! $creditOverride
+                    || (int) $creditOverride->commerce_sale_id
+                        !== (int) $lockedSale->id
+                    || (
+                        $creditDecision->policy
+                        && (int) $creditOverride
+                            ->customer_credit_policy_id
+                            !== (int) $creditDecision
+                                ->policy->id
+                    )
+                    || (
+                        ! $creditDecision->policy
+                        && $creditOverride
+                            ->customer_credit_policy_id
+                            !== null
+                    )
+                )
+            )
+        ) {
+            throw new DomainException(
+                'La decisión de crédito no coincide con la venta pendiente.'
             );
         }
 
@@ -78,6 +137,24 @@ final class CustomerReceivableRecorder
             'currency_code' => $lockedSale->currency_code,
             'amount_minor' => $amountMinor,
             'due_on' => $normalizedDueOn,
+            'credit_decision' =>
+                $creditDecision->type->value,
+            'credit_policy_public_id' =>
+                $creditDecision->policy?->public_id,
+            'credit_override_public_id' =>
+                $creditOverride?->public_id,
+            'credit_limit_minor' =>
+                $creditDecision->limitMinor,
+            'credit_exposure_before_minor' =>
+                $creditDecision->exposureBeforeMinor,
+            'credit_projected_exposure_minor' =>
+                $creditDecision->projectedExposureMinor,
+            'credit_overdue_minor' =>
+                $creditDecision->overdueMinor,
+            'credit_oldest_days_overdue' =>
+                $creditDecision->oldestDaysOverdue,
+            'credit_snapshot_fingerprint' =>
+                $creditDecision->snapshotFingerprint,
         ]);
 
         $existing = CustomerReceivable::query()
@@ -87,7 +164,10 @@ final class CustomerReceivableRecorder
             ->first();
 
         if ($existing) {
-            if (! hash_equals($existing->fingerprint, $fingerprint)) {
+            if (! hash_equals(
+                $existing->fingerprint,
+                $fingerprint
+            )) {
                 throw new DomainException(
                     'La cuenta por cobrar ya fue registrada con otros datos.'
                 );
@@ -117,6 +197,24 @@ final class CustomerReceivableRecorder
             'currency_code' => $lockedSale->currency_code,
             'amount_minor' => $amountMinor,
             'due_on' => $normalizedDueOn,
+            'customer_credit_policy_id' =>
+                $creditDecision->policy?->id,
+            'customer_credit_override_id' =>
+                $creditOverride?->id,
+            'credit_decision' =>
+                $creditDecision->type->value,
+            'credit_limit_minor' =>
+                $creditDecision->limitMinor,
+            'credit_exposure_before_minor' =>
+                $creditDecision->exposureBeforeMinor,
+            'credit_projected_exposure_minor' =>
+                $creditDecision->projectedExposureMinor,
+            'credit_overdue_minor' =>
+                $creditDecision->overdueMinor,
+            'credit_oldest_days_overdue' =>
+                $creditDecision->oldestDaysOverdue,
+            'credit_snapshot_fingerprint' =>
+                $creditDecision->snapshotFingerprint,
             'idempotency_key' => $idempotencyKey,
             'fingerprint' => $fingerprint,
             'recognized_by_user_id' => $actor->id,

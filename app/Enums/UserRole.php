@@ -42,6 +42,16 @@ enum UserRole: string
 
     public function canCreateCustomerReceivable(): bool
     {
+        return $this->canManageCommerce();
+    }
+
+    public function canManageCustomerCreditPolicy(): bool
+    {
+        return $this === self::Admin;
+    }
+
+    public function canOverrideCustomerCredit(): bool
+    {
         return $this === self::Admin;
     }
 

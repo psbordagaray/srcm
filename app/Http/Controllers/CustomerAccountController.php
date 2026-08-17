@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Commerce\CustomerCreditExposureReader;
 use App\Domain\Commerce\CustomerReceivableBalanceReader;
 use App\Domain\Finance\CashRegisterSessionManager;
 use App\Domain\Tenancy\CurrentOrganization;
@@ -19,6 +20,7 @@ class CustomerAccountController extends Controller
         Customer $customer,
         CurrentOrganization $currentOrganization,
         CustomerReceivableBalanceReader $reader,
+        CustomerCreditExposureReader $creditExposure,
         CashRegisterSessionManager $cashSessions
     ): View {
         $organizationId = $currentOrganization->id(
@@ -45,10 +47,33 @@ class CustomerAccountController extends Controller
             ->orderBy('name')
             ->get();
 
+        $creditPolicySnapshots = collect([
+            'ARS',
+            'USD',
+        ])->mapWithKeys(
+            fn (string $currency): array => [
+                $currency => $creditExposure->snapshot(
+                    $customer,
+                    $currency,
+                    $request->user()
+                ),
+            ]
+        );
+
         return view('customers.account', [
             'customer' => $customer,
             'party' => $customer->party,
             'account' => $account,
+            'creditPolicySnapshots' =>
+                $creditPolicySnapshots,
+            'creditPolicyIdempotencyKeys' => [
+                'ARS' =>
+                    'customer-credit-policy-ui:'
+                    .Str::uuid(),
+                'USD' =>
+                    'customer-credit-policy-ui:'
+                    .Str::uuid(),
+            ],
             'financialAccounts' => $financialAccounts,
             'methods' => collect(
                 CommercePaymentMethod::cases()

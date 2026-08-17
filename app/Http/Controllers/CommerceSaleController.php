@@ -10,6 +10,7 @@ use App\Domain\Finance\CashRegisterSessionManager;
 use App\Domain\Commerce\CommercePaymentData;
 use App\Domain\Commerce\CommerceProductLineData;
 use App\Domain\Commerce\CustomerCreditBalanceReader;
+use App\Domain\Commerce\CustomerCreditExposureReader;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\CommercePaymentMethod;
 use App\Enums\InventoryCondition;
@@ -134,7 +135,8 @@ class CommerceSaleController extends Controller
         OrganizationProductPriceReader $priceReader,
         CommerceSalePolicyGuard $salePolicy,
         CashRegisterSessionManager $cashSessions,
-        CustomerCreditBalanceReader $creditBalances
+        CustomerCreditBalanceReader $creditBalances,
+        CustomerCreditExposureReader $creditExposure
     ): View {
         $organizationId = $currentOrganization->id($request->user());
         $unsettledOrders = ServiceOrder::query()
@@ -305,18 +307,20 @@ class CommerceSaleController extends Controller
             ->values()
             ->all();
 
+        $customers = BusinessParty::query()
+            ->forOrganization($organizationId)
+            ->whereHas(
+                'customer',
+                fn (Builder $customer): Builder =>
+                    $customer->where('active', true)
+            )
+            ->orderBy('name')
+            ->get(['id', 'name', 'tax_id']);
+
         return view('commerce-sales.create', [
             'unsettledOrders' => $unsettledOrders,
             'selectedServiceOrder' => $selectedServiceOrder,
-            'customers' => BusinessParty::query()
-                ->forOrganization($organizationId)
-                ->whereHas(
-                    'customer',
-                    fn (Builder $customer): Builder =>
-                        $customer->where('active', true)
-                )
-                ->orderBy('name')
-                ->get(['id', 'name', 'tax_id']),
+            'customers' => $customers,
             'products' => $products,
             'productSearchIndex' => $productSearchIndex,
             'locations' => InventoryLocation::query()
@@ -328,6 +332,11 @@ class CommerceSaleController extends Controller
             'customerCreditBalances' =>
                 $creditBalances->matrixForOrganization(
                     $organizationId
+                ),
+            'customerCreditPolicyMatrix' =>
+                $creditExposure->matrixForParties(
+                    $customers,
+                    $request->user()
                 ),
             'activeCashSession' => $cashSessions->currentFor(
                 $request->user()
@@ -354,6 +363,10 @@ class CommerceSaleController extends Controller
             'canCreateCustomerReceivable' =>
                 $request->user()->can(
                     'create-customer-receivables'
+                ),
+            'canOverrideCustomerCredit' =>
+                $request->user()->can(
+                    'override-customer-credit'
                 ),
             'idempotencyKey' => 'service-ui:commerce-sale:'.Str::uuid(),
         ]);
@@ -458,7 +471,11 @@ class CommerceSaleController extends Controller
                     customerName: $validated['customer_name'] ?? null,
                     customerDocument: $validated['customer_document'] ?? null,
                     notes: $validated['notes'] ?? null,
-                    soldAt: $soldAt
+                    soldAt: $soldAt,
+                    customerCreditOverrideReason:
+                        $validated[
+                            'customer_credit_override_reason'
+                        ] ?? null
                 ),
                 $request->user()
             );
@@ -517,6 +534,8 @@ class CommerceSaleController extends Controller
             'payments.financialAccount',
             'receivable.customer',
             'receivable.recognizedBy',
+            'receivable.creditPolicy',
+            'receivable.creditOverride.approvedBy',
             'postSaleRequests.requestedBy',
             'inventoryMovement.lines.product',
             'inventoryMovement.lines.sourceLocation',

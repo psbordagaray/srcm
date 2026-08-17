@@ -44,6 +44,8 @@ final class CommerceCheckoutManager
         private readonly CashRegisterSessionManager $cashSessions,
         private readonly CashLedgerRecorder $cashLedger,
         private readonly CustomerCreditConsumer $creditConsumer,
+        private readonly CustomerCreditPolicyGuard $creditPolicyGuard,
+        private readonly CustomerCreditOverrideRecorder $creditOverrideRecorder,
         private readonly CustomerReceivableRecorder $receivableRecorder
     ) {
     }
@@ -150,6 +152,8 @@ final class CommerceCheckoutManager
                     $service
                 );
 
+            $creditDecision = null;
+
             if ($receivableAmount > 0) {
                 if (! $customer) {
                     throw new DomainException(
@@ -157,11 +161,19 @@ final class CommerceCheckoutManager
                     );
                 }
 
-                $this->guardReceivableAuthority(
-                    $organizationId,
-                    $actor
-                );
+                $creditDecision =
+                    $this->creditPolicyGuard->decide(
+                        $customer,
+                        $normalized['currency_code'],
+                        $receivableAmount,
+                        $normalized[
+                            'customer_credit_override_reason'
+                        ],
+                        $soldAt,
+                        $actor
+                    );
             }
+
             $publicId = (string) Str::uuid();
             $movement = $products['lines'] === []
                 ? null
@@ -346,10 +358,33 @@ final class CommerceCheckoutManager
             }
 
             if ($receivableAmount > 0) {
+                if (! $creditDecision) {
+                    throw new DomainException(
+                        'La venta a crédito perdió su decisión de política.'
+                    );
+                }
+
+                $creditOverride = null;
+
+                if (
+                    $creditDecision
+                        ->requiresOverrideRecord()
+                ) {
+                    $creditOverride =
+                        $this->creditOverrideRecorder
+                            ->recordForSale(
+                                $sale,
+                                $creditDecision,
+                                $actor
+                            );
+                }
+
                 $this->receivableRecorder->recordForSale(
                     $sale,
                     $receivableAmount,
                     $normalized['receivable_due_on'],
+                    $creditDecision,
+                    $creditOverride,
                     $actor
                 );
             }
@@ -693,6 +728,21 @@ final class CommerceCheckoutManager
             );
         }
 
+        $creditOverrideReason = $this->paymentText(
+            $data->customerCreditOverrideReason,
+            2000,
+            'El motivo de excepción de crédito'
+        );
+
+        if (
+            $receivableAmount === null
+            && $creditOverrideReason !== null
+        ) {
+            throw new DomainException(
+                'No puede informarse una excepción de crédito sin saldo pendiente.'
+            );
+        }
+
         $payments = [];
 
         foreach ($data->payments as $payment) {
@@ -921,6 +971,8 @@ final class CommerceCheckoutManager
             'payments' => $payments,
             'receivable_amount_minor' => $receivableAmount,
             'receivable_due_on' => $receivableDueOn,
+            'customer_credit_override_reason' =>
+                $creditOverrideReason,
             'idempotency_key' => $this->idempotencyKey(
                 $data->idempotencyKey
             ),
@@ -1163,7 +1215,7 @@ final class CommerceCheckoutManager
 
         if (! $membership?->role->canCreateCustomerReceivable()) {
             throw new DomainException(
-                'Sólo un Administrador puede autorizar una venta con saldo pendiente.'
+                'El usuario no puede registrar una venta con saldo pendiente.'
             );
         }
     }

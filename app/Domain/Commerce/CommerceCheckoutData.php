@@ -22,7 +22,8 @@ final readonly class CommerceCheckoutData
         public ?string $customerName = null,
         public ?string $customerDocument = null,
         public ?string $notes = null,
-        public ?DateTimeInterface $soldAt = null
+        public ?DateTimeInterface $soldAt = null,
+        public ?string $customerCreditOverrideReason = null
     ) {
     }
 }

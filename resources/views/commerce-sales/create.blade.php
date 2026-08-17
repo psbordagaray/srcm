@@ -31,6 +31,7 @@
                 || $key === 'payments'
                 || $key === 'receivable_amount'
                 || $key === 'receivable_due_on'
+                || $key === 'customer_credit_override_reason'
                 || str_starts_with($key, 'payments.')
         );
 
@@ -56,7 +57,7 @@
         <div>
             <p class="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">Comercio · Confirmación atómica</p>
             <h1 class="mt-2 text-2xl font-bold text-white">Nueva venta y cobro</h1>
-            <p class="mt-2 text-sm text-slate-400">La reparación se deriva del presupuesto aprobado. Los productos generan su salida de inventario y la venta se liquida con pagos recibidos más, si un Administrador lo autoriza, saldo pendiente en cuenta corriente.</p>
+            <p class="mt-2 text-sm text-slate-400">La reparación se deriva del presupuesto aprobado. Los productos generan su salida de inventario y la venta se liquida con pagos recibidos más saldo pendiente sujeto a la política de crédito del cliente; una excepción requiere Administrador.</p>
             <div class="mt-3 inline-flex flex-wrap items-center gap-2 rounded-xl border border-slate-700/80 bg-slate-900/70 px-3 py-2 text-xs font-semibold text-slate-300" data-sale-shortcut-help>
                 <span class="rounded-md bg-slate-800 px-2 py-1 font-mono text-amber-200">F1</span><span>Nueva venta</span>
                 <span class="text-slate-600">·</span>
@@ -93,8 +94,11 @@
                 customerName: {{ \Illuminate\Support\Js::from(old('customer_name', '')) }},
                 customerDocument: {{ \Illuminate\Support\Js::from(old('customer_document', '')) }},
                 canCreateCustomerReceivable: {{ \Illuminate\Support\Js::from($canCreateCustomerReceivable) }},
+                canOverrideCustomerCredit: {{ \Illuminate\Support\Js::from($canOverrideCustomerCredit) }},
+                customerCreditPolicyMatrix: {{ \Illuminate\Support\Js::from($customerCreditPolicyMatrix) }},
                 receivableAmount: {{ \Illuminate\Support\Js::from(old('receivable_amount', '')) }},
                 receivableDueOn: {{ \Illuminate\Support\Js::from(old('receivable_due_on', '')) }},
+                customerCreditOverrideReason: {{ \Illuminate\Support\Js::from(old('customer_credit_override_reason', '')) }},
                 setupOpen: false,
                 customerOpen: false,
                 paymentOverlayOpen: {{ \Illuminate\Support\Js::from($paymentValidationFailed) }},
@@ -464,20 +468,127 @@
                         this.receivableAmount
                     );
                 },
+                creditPolicySnapshot() {
+                    if (! this.customerBusinessPartyId) {
+                        return null;
+                    }
+
+                    return this.customerCreditPolicyMatrix[
+                        Number(this.customerBusinessPartyId)
+                    ]?.[this.currencyCode] ?? null;
+                },
+                creditPolicyConfigured() {
+                    return Boolean(
+                        this.creditPolicySnapshot()
+                            ?.policy_configured
+                    );
+                },
+                creditLimitMinor() {
+                    return Number(
+                        this.creditPolicySnapshot()
+                            ?.limit_minor ?? 0
+                    );
+                },
+                creditExposureMinor() {
+                    return Number(
+                        this.creditPolicySnapshot()
+                            ?.exposure_minor ?? 0
+                    );
+                },
+                creditAvailableMinor() {
+                    return Number(
+                        this.creditPolicySnapshot()
+                            ?.available_minor ?? 0
+                    );
+                },
+                creditOverdueMinor() {
+                    return Number(
+                        this.creditPolicySnapshot()
+                            ?.overdue_minor ?? 0
+                    );
+                },
+                creditOldestDaysOverdue() {
+                    return Number(
+                        this.creditPolicySnapshot()
+                            ?.oldest_days_overdue ?? 0
+                    );
+                },
+                creditProjectedMinor() {
+                    return this.creditExposureMinor()
+                        + this.receivableAmountMinor();
+                },
+                creditOverLimit() {
+                    return this.creditPolicyConfigured()
+                        && this.receivableAmountMinor() > 0
+                        && this.creditProjectedMinor()
+                            > this.creditLimitMinor();
+                },
+                creditHasOverdue() {
+                    return this.creditPolicyConfigured()
+                        && this.creditOverdueMinor() > 0;
+                },
+                creditNeedsOverride() {
+                    return this.receivableAmountMinor() > 0
+                        && this.creditPolicyConfigured()
+                        && (
+                            this.creditOverLimit()
+                            || this.creditHasOverdue()
+                        );
+                },
+                creditPolicyStatusLabel() {
+                    if (! this.customerBusinessPartyId) {
+                        return 'Seleccioná un cliente';
+                    }
+
+                    if (! this.creditPolicyConfigured()) {
+                        return this.canOverrideCustomerCredit
+                            ? 'Modo transitorio · sólo Administrador'
+                            : 'Sin límite configurado · crédito bloqueado para Operador';
+                    }
+
+                    if (this.creditHasOverdue()) {
+                        return `Deuda vencida ${this.currencyCode} ${this.money(this.creditOverdueMinor())}`;
+                    }
+
+                    if (this.creditOverLimit()) {
+                        return `Proyectado ${this.currencyCode} ${this.money(this.creditProjectedMinor())} supera límite ${this.money(this.creditLimitMinor())}`;
+                    }
+
+                    return `Disponible ${this.currencyCode} ${this.money(this.creditAvailableMinor())}`;
+                },
                 receivableComplete() {
                     const amount = this.receivableAmountMinor();
                     const dueOn = String(
                         this.receivableDueOn ?? ''
                     ).trim();
+                    const overrideReason = String(
+                        this.customerCreditOverrideReason
+                            ?? ''
+                    ).trim();
 
                     if (amount <= 0) {
-                        return dueOn === '';
+                        return dueOn === ''
+                            && overrideReason === '';
                     }
 
-                    return this.canCreateCustomerReceivable
-                        && Boolean(
-                            this.customerBusinessPartyId
-                        );
+                    if (
+                        ! this.canCreateCustomerReceivable
+                        || ! this.customerBusinessPartyId
+                    ) {
+                        return false;
+                    }
+
+                    if (! this.creditPolicyConfigured()) {
+                        return this.canOverrideCustomerCredit
+                            && overrideReason === '';
+                    }
+
+                    if (this.creditNeedsOverride()) {
+                        return this.canOverrideCustomerCredit
+                            && overrideReason !== '';
+                    }
+
+                    return overrideReason === '';
                 },
                 settlementTotalMinor() {
                     return this.paymentTotalMinor()
@@ -2738,9 +2849,82 @@
                                             <p class="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Saldo pendiente / cuenta corriente</p>
                                             <p class="mt-1 text-xs leading-5 text-slate-400">No es un cobro. Registra cuánto queda debiendo el cliente después de los pagos recibidos.</p>
                                         </div>
-                                        <span class="rounded-lg border border-amber-400/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-200">Administrador</span>
+                                        <span class="rounded-lg border border-amber-400/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-amber-200">{{ $canOverrideCustomerCredit ? 'Administrador' : 'Dentro de política' }}</span>
                                     </div>
+                                    <div
+                                        x-show="receivableAmountMinor() > 0 && customerBusinessPartyId"
+                                        x-cloak
+                                        class="mt-4 rounded-xl border border-violet-400/20 bg-violet-400/[0.05] p-4"
+                                        data-sale-credit-policy
+                                    >
+                                        <div class="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <p class="text-[10px] font-black uppercase tracking-[0.18em] text-violet-300">Política de crédito</p>
+                                                <p class="mt-1 text-sm font-bold text-white" x-text="creditPolicyStatusLabel()"></p>
+                                            </div>
+                                            <template x-if="creditPolicyConfigured()">
+                                                <div class="text-right text-xs text-slate-400">
+                                                    <p>Límite <strong class="font-mono text-violet-200" x-text="`${currencyCode} ${money(creditLimitMinor())}`"></strong></p>
+                                                    <p class="mt-1">Exposición <strong class="font-mono text-amber-200" x-text="`${currencyCode} ${money(creditExposureMinor())}`"></strong></p>
+                                                </div>
+                                            </template>
+                                        </div>
 
+                                        <p
+                                            x-show="! creditPolicyConfigured()"
+                                            class="mt-3 text-xs font-semibold"
+                                            :class="canOverrideCustomerCredit ? 'text-amber-200' : 'text-red-300'"
+                                        >
+                                            <span x-show="canOverrideCustomerCredit">Modo transitorio P9.1: el Administrador puede confirmar; configurá el límite para habilitar crédito ordinario del Operador.</span>
+                                            <span x-show="! canOverrideCustomerCredit">El Operador no puede vender a crédito hasta que un Administrador configure el primer límite.</span>
+                                        </p>
+
+                                        <p
+                                            x-show="creditPolicyConfigured() && creditHasOverdue()"
+                                            class="mt-3 text-xs font-bold text-red-300"
+                                        >
+                                            Deuda vencida: bloquea nuevo crédito aunque exista cupo disponible.
+                                        </p>
+
+                                        <p
+                                            x-show="creditPolicyConfigured() && creditOverLimit()"
+                                            class="mt-2 text-xs font-bold text-red-300"
+                                        >
+                                            La exposición proyectada supera el límite vigente.
+                                        </p>
+
+                                        @if($canOverrideCustomerCredit)
+                                            <div
+                                                x-show="creditNeedsOverride()"
+                                                x-cloak
+                                                class="mt-4 border-t border-violet-400/15 pt-4"
+                                                data-sale-credit-override
+                                            >
+                                                <label for="customer_credit_override_reason" class="text-xs font-black uppercase tracking-[0.14em] text-red-200">Excepción de crédito · motivo Administrador</label>
+                                                <textarea
+                                                    id="customer_credit_override_reason"
+                                                    name="customer_credit_override_reason"
+                                                    x-model="customerCreditOverrideReason"
+                                                    @input="paymentReviewOpen = false; paymentError = ''"
+                                                    :required="creditNeedsOverride()"
+                                                    rows="3"
+                                                    maxlength="2000"
+                                                    class="mt-2 w-full rounded-xl border-red-400/30 bg-slate-950 text-white focus:border-red-300 focus:ring-red-300"
+                                                    placeholder="Fundamento explícito para autorizar deuda vencida o sobrelímite."
+                                                ></textarea>
+                                            </div>
+                                        @endif
+
+                                        @if(! $canOverrideCustomerCredit)
+                                            <p
+                                                x-show="creditNeedsOverride()"
+                                                x-cloak
+                                                class="mt-3 rounded-xl border border-red-400/30 bg-red-400/10 px-3 py-2 text-xs font-black text-red-200"
+                                            >
+                                                Crédito bloqueado. Requiere una excepción explícita de Administrador.
+                                            </p>
+                                        @endif
+                                    </div>
                                     <div class="mt-4 grid gap-4 sm:grid-cols-2">
                                         <div>
                                             <label for="receivable_amount" class="text-xs font-bold text-slate-400">Importe pendiente</label>
@@ -3221,6 +3405,15 @@
                                             Vencimiento: <span x-text="receivableDueOn"></span>
                                         </p>
                                         <p class="mt-2 text-xs text-slate-500">Este importe no se registra como pago recibido.</p>
+                                        <p x-show="creditPolicyConfigured()" class="mt-2 text-xs text-violet-200">
+                                            Política: <span x-text="creditPolicyStatusLabel()"></span>
+                                        </p>
+                                        <p x-show="creditNeedsOverride()" class="mt-2 text-xs font-bold text-red-200">
+                                            Excepción de crédito: <span x-text="customerCreditOverrideReason"></span>
+                                        </p>
+                                        <p x-show="! creditPolicyConfigured() && canOverrideCustomerCredit" class="mt-2 text-xs font-semibold text-amber-200">
+                                            Modo transitorio Administrador hasta configurar el primer límite.
+                                        </p>
                                     </div>
                                 </div>
 

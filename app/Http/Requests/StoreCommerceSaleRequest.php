@@ -177,6 +177,13 @@ class StoreCommerceSaleRequest extends FormRequest
                     ''
                 )
             ),
+            'customer_credit_override_reason' =>
+                $this->optional(
+                    (string) $this->input(
+                        'customer_credit_override_reason',
+                        ''
+                    )
+                ),
             'sold_at' => $this->optional(
                 (string) $this->input('sold_at')
             ),
@@ -276,6 +283,11 @@ class StoreCommerceSaleRequest extends FormRequest
                 'nullable',
                 'date_format:Y-m-d',
                 'after_or_equal:today',
+            ],
+            'customer_credit_override_reason' => [
+                'nullable',
+                'string',
+                'max:2000',
             ],
             'payments.*.method' => [
                 'required',
@@ -416,9 +428,23 @@ class StoreCommerceSaleRequest extends FormRequest
                 )) {
                     $validator->errors()->add(
                         'receivable_amount',
-                        'Sólo un Administrador puede autorizar una venta con saldo pendiente.'
+                        'El rol no puede registrar una venta con saldo pendiente.'
                     );
                 }
+            }
+
+            if (
+                filled(
+                    $this->input(
+                        'customer_credit_override_reason'
+                    )
+                )
+                && $receivableAmount === null
+            ) {
+                $validator->errors()->add(
+                    'customer_credit_override_reason',
+                    'No puede informarse una excepción de crédito sin saldo pendiente.'
+                );
             }
 
             if (
