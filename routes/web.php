@@ -31,6 +31,7 @@ use App\Http\Controllers\PurchaseObligationController;
 use App\Http\Controllers\PurchasePaymentRequestController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseReceiptController;
+use App\Http\Controllers\PurchaseThreeWayMatchController;
 use App\Http\Controllers\SupplierInvoiceController;
 use App\Http\Controllers\CompatibilityController;
 use App\Http\Controllers\EntityController;
@@ -855,6 +856,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )
                         ->whereUuid('purchaseOrder')
                         ->name('purchase-orders.show');
+
+                    Route::get(
+                        'purchases/{purchaseOrder}/three-way-match',
+                        [PurchaseThreeWayMatchController::class, 'show']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->name('purchase-orders.three-way-match');
                 });
 
             Route::middleware('can:draft-purchase-orders')

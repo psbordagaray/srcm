@@ -3,6 +3,9 @@
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div><p class="text-sm font-semibold uppercase tracking-[0.2em] text-amber-300">Compras · Expediente</p><h1 class="mt-2 text-2xl font-bold text-white">Orden {{ strtoupper(substr($order->public_id, 0, 8)) }}</h1><p class="mt-2 break-all font-mono text-xs text-slate-500">{{ $order->public_id }}</p></div>
             <div class="flex flex-wrap gap-2">
+                @if($order->status !== \App\Enums\PurchaseOrderStatus::Draft)
+                    <a href="{ route('purchase-orders.three-way-match', $order) }" class="rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-200">3-way match</a>
+                @endif
                 @if($order->status === \App\Enums\PurchaseOrderStatus::Draft)
                     @can('draft-purchase-orders')<a href="{{ route('purchase-orders.edit', $order) }}" class="rounded-xl border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-200">Editar borrador</a>@endcan
                     @can('issue-purchase-orders')<form method="POST" action="{{ route('purchase-orders.issue', $order) }}">@csrf<button class="rounded-xl bg-amber-400 px-4 py-2 text-sm font-bold text-slate-950">Emitir orden</button></form>@endcan
