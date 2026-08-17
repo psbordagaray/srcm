@@ -32,6 +32,7 @@ use App\Http\Controllers\PurchasePaymentRequestController;
 use App\Http\Controllers\PurchaseOrderController;
 use App\Http\Controllers\PurchaseReceiptController;
 use App\Http\Controllers\PurchaseThreeWayMatchController;
+use App\Http\Controllers\SupplierCreditNoteController;
 use App\Http\Controllers\SupplierInvoiceController;
 use App\Http\Controllers\CompatibilityController;
 use App\Http\Controllers\EntityController;
@@ -924,6 +925,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )
                         ->whereUuid('purchaseOrder')
                         ->name('purchase-orders.supplier-invoices.store');
+
+                    Route::post(
+                        'purchases/{purchaseOrder}/supplier-invoices/{supplierInvoice}/credit-notes',
+                        [SupplierCreditNoteController::class, 'store']
+                    )
+                        ->whereUuid('purchaseOrder')
+                        ->whereUuid('supplierInvoice')
+                        ->name('purchase-orders.supplier-credit-notes.store');
                 });
 
             Route::middleware('can:create-purchase-obligations')

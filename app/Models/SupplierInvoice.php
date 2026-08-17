@@ -109,6 +109,15 @@ class SupplierInvoice extends Model
         )->orderBy('sequence');
     }
 
+    public function creditNotes(): HasMany
+    {
+        return $this->hasMany(
+            SupplierCreditNote::class,
+            'supplier_invoice_id'
+        )->orderBy('issued_on')
+            ->orderBy('id');
+    }
+
     private function guardCreation(): void
     {
         $order = PurchaseOrder::query()
