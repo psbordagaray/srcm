@@ -20,6 +20,8 @@ use App\Http\Controllers\FinancialStatementImportController;
 use App\Http\Controllers\FinancialManualExternalMovementController;
 use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\CustomerAccountController;
+use App\Http\Controllers\CustomerCollectionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\PurchaseObligationController;
@@ -383,6 +385,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )
                         ->whereNumber('customer')
                         ->name('customers.show');
+                });
+
+            Route::middleware('can:view-customer-account')
+                ->group(function () {
+                    Route::get(
+                        'customers/{customer}/account',
+                        [CustomerAccountController::class, 'show']
+                    )
+                        ->whereNumber('customer')
+                        ->name('customers.account');
+                });
+
+            Route::middleware('can:record-customer-collections')
+                ->group(function () {
+                    Route::post(
+                        'customers/{customer}/collections',
+                        [CustomerCollectionController::class, 'store']
+                    )
+                        ->whereNumber('customer')
+                        ->name('customers.collections.store');
                 });
 
             Route::middleware('can:manage-customers')

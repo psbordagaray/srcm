@@ -9,6 +9,7 @@ enum CashMovementType: string
     case PurchasePayment = 'purchase_payment';
     case PostSaleRefund = 'post_sale_refund';
     case PostSaleExchangeDifference = 'post_sale_exchange_difference';
+    case CustomerCollection = 'customer_collection';
 
     public function label(): string
     {
@@ -18,6 +19,7 @@ enum CashMovementType: string
             self::PurchasePayment => 'Pago a proveedor',
             self::PostSaleRefund => 'Reembolso posventa',
             self::PostSaleExchangeDifference => 'Cobro diferencia de cambio posventa',
+            self::CustomerCollection => 'Cobranza de cuenta corriente',
         };
     }
 }

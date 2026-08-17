@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class CustomerReceivable extends Model
@@ -87,6 +88,14 @@ class CustomerReceivable extends Model
             User::class,
             'recognized_by_user_id'
         );
+    }
+
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(
+            CustomerCollectionAllocation::class,
+            'customer_receivable_id'
+        )->orderBy('sequence');
     }
 
     private function guardCreation(): void

@@ -28,6 +28,7 @@ class CashMovement extends Model
         'purchase_payment_execution_id',
         'post_sale_cash_refund_execution_id',
         'post_sale_exchange_payment_id',
+        'customer_collection_id',
         'commerce_payment_id',
         'direction',
         'type',
@@ -113,6 +114,14 @@ class CashMovement extends Model
         return $this->belongsTo(
             CommercePayment::class,
             'commerce_payment_id'
+        );
+    }
+
+    public function customerCollection(): BelongsTo
+    {
+        return $this->belongsTo(
+            CustomerCollection::class,
+            'customer_collection_id'
         );
     }
 

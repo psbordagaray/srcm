@@ -50,6 +50,17 @@ enum UserRole: string
         return true;
     }
 
+    public function canViewCustomerAccount(): bool
+    {
+        return $this->canViewCustomers();
+    }
+
+    public function canRecordCustomerCollections(): bool
+    {
+        return $this->canManageCommerce()
+            && $this->canUseFinancialAccounts();
+    }
+
     public function canManageCommercePrices(): bool
     {
         return $this === self::Admin;

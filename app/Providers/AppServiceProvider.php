@@ -118,6 +118,10 @@ class AppServiceProvider extends ServiceProvider
                 'canCreateCustomerReceivable',
             'view-customer-receivables' =>
                 'canViewCustomerReceivables',
+            'view-customer-account' =>
+                'canViewCustomerAccount',
+            'record-customer-collections' =>
+                'canRecordCustomerCollections',
             'view-commerce-post-sale' =>
                 'canViewCommercePostSaleRequests',
             'record-commerce-post-sale' =>
