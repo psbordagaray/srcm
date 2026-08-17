@@ -21,6 +21,7 @@ use App\Http\Controllers\FinancialManualExternalMovementController;
 use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerAccountController;
+use App\Http\Controllers\CustomerAgingController;
 use App\Http\Controllers\CustomerCollectionController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GlobalSearchController;
@@ -389,6 +390,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::middleware('can:view-customer-account')
                 ->group(function () {
+                    Route::get(
+                        'customers/aging',
+                        [CustomerAgingController::class, 'index']
+                    )->name('customers.aging');
+
                     Route::get(
                         'customers/{customer}/account',
                         [CustomerAccountController::class, 'show']

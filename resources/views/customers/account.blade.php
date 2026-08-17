@@ -6,7 +6,10 @@
                 <h1 class="mt-2 text-2xl font-bold text-white">{{ $party->name }}</h1>
                 <p class="mt-2 text-sm text-slate-400">Las deudas y cobranzas son hechos separados. El saldo se deriva de las aplicaciones confirmadas.</p>
             </div>
-            <a href="{{ route('customers.show', $customer) }}" class="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200">Volver al cliente</a>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('customers.aging') }}" class="rounded-xl border border-amber-400/30 px-4 py-2 text-sm font-semibold text-amber-200">Reporte de aging</a>
+                <a href="{{ route('customers.show', $customer) }}" class="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200">Volver al cliente</a>
+            </div>
         </div>
 
         @if(session('success'))
@@ -54,6 +57,7 @@
                         <tr>
                             <th class="px-3 py-2">Venta</th>
                             <th class="px-3 py-2">Vencimiento</th>
+                            <th class="px-3 py-2">Aging</th>
                             <th class="px-3 py-2 text-right">Original</th>
                             <th class="px-3 py-2 text-right">Cobrado</th>
                             <th class="px-3 py-2 text-right">Pendiente</th>
@@ -70,12 +74,18 @@
                                 <td class="px-3 py-3 {{ $row['overdue'] ? 'font-bold text-red-300' : 'text-slate-300' }}">
                                     {{ $row['receivable']->due_on ? $row['receivable']->due_on->format('d/m/Y') : 'Sin vencimiento' }}
                                 </td>
+                                <td class="px-3 py-3">
+                                    <span class="{{ $row['overdue'] ? 'font-bold text-red-300' : 'text-slate-300' }}">{{ $row['aging_label'] }}</span>
+                                    @if($row['days_overdue'])
+                                        <span class="ml-1 text-xs text-slate-500">({{ $row['days_overdue'] }} días)</span>
+                                    @endif
+                                </td>
                                 <td class="px-3 py-3 text-right font-mono text-slate-300">{{ $row['receivable']->currency_code }} {{ number_format($row['original_minor'] / 100, 2, ',', '.') }}</td>
                                 <td class="px-3 py-3 text-right font-mono text-emerald-300">{{ number_format($row['collected_minor'] / 100, 2, ',', '.') }}</td>
                                 <td class="px-3 py-3 text-right font-mono font-black {{ $row['outstanding_minor'] > 0 ? 'text-amber-200' : 'text-slate-500' }}">{{ number_format($row['outstanding_minor'] / 100, 2, ',', '.') }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">Sin deudas reconocidas.</td></tr>
+                            <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Sin deudas reconocidas.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
