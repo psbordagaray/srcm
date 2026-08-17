@@ -475,7 +475,17 @@ class CommerceSaleController extends Controller
                     customerCreditOverrideReason:
                         $validated[
                             'customer_credit_override_reason'
-                        ] ?? null
+                        ] ?? null,
+                    receivableInstallmentCount:
+                        filled(
+                            $validated[
+                                'receivable_installment_count'
+                            ] ?? null
+                        )
+                            ? (int) $validated[
+                                'receivable_installment_count'
+                            ]
+                            : null
                 ),
                 $request->user()
             );

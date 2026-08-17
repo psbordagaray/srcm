@@ -133,7 +133,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-bold text-white">Deudas del cliente</h2>
-                    <p class="mt-1 text-sm text-slate-500">El pendiente nunca se edita: se calcula desde la deuda original menos cobranzas confirmadas.</p>
+                    <p class="mt-1 text-sm text-slate-500">El pendiente nunca se edita: se calcula desde la deuda original menos cobranzas confirmadas. En cuotas propias, la cobranza se imputa a la cuota más antigua primero.</p>
                 </div>
             </div>
 
@@ -158,7 +158,10 @@
                                     </a>
                                 </td>
                                 <td class="px-3 py-3 {{ $row['overdue'] ? 'font-bold text-red-300' : 'text-slate-300' }}">
-                                    {{ $row['receivable']->due_on ? $row['receivable']->due_on->format('d/m/Y') : 'Sin vencimiento' }}
+                                    {{ $row['next_due_on'] ? $row['next_due_on']->format('d/m/Y') : ($row['outstanding_minor'] > 0 ? 'Sin vencimiento' : 'Cancelado') }}
+                                    @if($row['planned_installments'])
+                                        <p class="mt-1 text-[11px] font-semibold text-amber-200">Cronograma de {{ $row['installment_count'] }} cuotas</p>
+                                    @endif
                                 </td>
                                 <td class="px-3 py-3">
                                     <span class="{{ $row['overdue'] ? 'font-bold text-red-300' : 'text-slate-300' }}">{{ $row['aging_label'] }}</span>
@@ -170,6 +173,31 @@
                                 <td class="px-3 py-3 text-right font-mono text-emerald-300">{{ number_format($row['collected_minor'] / 100, 2, ',', '.') }}</td>
                                 <td class="px-3 py-3 text-right font-mono font-black {{ $row['outstanding_minor'] > 0 ? 'text-amber-200' : 'text-slate-500' }}">{{ number_format($row['outstanding_minor'] / 100, 2, ',', '.') }}</td>
                             </tr>
+                            @if($row['planned_installments'])
+                                <tr class="bg-slate-950/30" data-customer-installment-schedule>
+                                    <td colspan="6" class="px-3 pb-4 pt-1">
+                                        <div class="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                                            @foreach($row['installments'] as $installment)
+                                                <div class="rounded-xl border border-slate-800 px-3 py-2 text-xs">
+                                                    <div class="flex items-center justify-between gap-3">
+                                                        <span class="font-black text-slate-200">Cuota {{ $installment['sequence'] }}/{{ $installment['installment_count'] }}</span>
+                                                        <span class="{{ $installment['overdue'] ? 'font-bold text-red-300' : 'text-slate-400' }}">
+                                                            {{ $installment['due_on']?->format('d/m/Y') ?? 'Sin vencimiento' }}
+                                                        </span>
+                                                    </div>
+                                                    <p class="mt-1 font-mono text-slate-400">
+                                                        Original {{ number_format($installment['original_minor'] / 100, 2, ',', '.') }}
+                                                        · Cobrado {{ number_format($installment['collected_minor'] / 100, 2, ',', '.') }}
+                                                        · Pendiente <strong class="{{ $installment['outstanding_minor'] > 0 ? 'text-amber-200' : 'text-emerald-300' }}">{{ number_format($installment['outstanding_minor'] / 100, 2, ',', '.') }}</strong>
+                                                    </p>
+                                                    <p class="mt-1 {{ $installment['overdue'] ? 'font-bold text-red-300' : 'text-slate-500' }}">{{ $installment['aging_label'] }}</p>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <p class="mt-2 text-[11px] font-semibold text-cyan-300">FIFO: cada cobranza aplicada a esta deuda consume la cuota pendiente más antigua primero.</p>
+                                    </td>
+                                </tr>
+                            @endif
                         @empty
                             <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Sin deudas reconocidas.</td></tr>
                         @endforelse
@@ -183,7 +211,7 @@
             @if($openRows->isNotEmpty())
                 <section class="sulu-card p-6" data-customer-collection-form>
                     <h2 class="text-lg font-bold text-white">Registrar cobranza</h2>
-                    <p class="mt-1 text-sm text-slate-500">Una cobranza puede aplicarse parcialmente a una deuda o distribuirse entre varias de la misma moneda. No genera saldo a favor en este corte.</p>
+                    <p class="mt-1 text-sm text-slate-500">Una cobranza puede aplicarse parcialmente a una deuda o distribuirse entre varias de la misma moneda. En deudas con cuotas propias, SRCM imputa automáticamente a la cuota más antigua primero. No genera saldo a favor en este corte.</p>
 
                     <form method="POST" action="{{ route('customers.collections.store', $customer) }}" class="mt-5 space-y-5">
                         @csrf

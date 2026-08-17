@@ -46,6 +46,7 @@ final class CommerceCheckoutManager
         private readonly CustomerCreditConsumer $creditConsumer,
         private readonly CustomerCreditPolicyGuard $creditPolicyGuard,
         private readonly CustomerCreditOverrideRecorder $creditOverrideRecorder,
+        private readonly CustomerReceivableInstallmentScheduler $installmentScheduler,
         private readonly CustomerReceivableRecorder $receivableRecorder
     ) {
     }
@@ -379,14 +380,33 @@ final class CommerceCheckoutManager
                             );
                 }
 
-                $this->receivableRecorder->recordForSale(
-                    $sale,
-                    $receivableAmount,
-                    $normalized['receivable_due_on'],
-                    $creditDecision,
-                    $creditOverride,
-                    $actor
-                );
+                $receivable =
+                    $this->receivableRecorder
+                        ->recordForSale(
+                            $sale,
+                            $receivableAmount,
+                            $normalized[
+                                'receivable_due_on'
+                            ],
+                            $creditDecision,
+                            $creditOverride,
+                            $actor
+                        );
+
+                if (
+                    $normalized[
+                        'receivable_installment_count'
+                    ] > 1
+                ) {
+                    $this->installmentScheduler
+                        ->schedule(
+                            $receivable,
+                            $normalized[
+                                'receivable_installment_count'
+                            ],
+                            $actor
+                        );
+                }
             }
 
             $sale->status = CommerceSaleStatus::Confirmed;
@@ -719,6 +739,47 @@ final class CommerceCheckoutManager
             );
         }
 
+        $receivableInstallmentCount =
+            $data->receivableInstallmentCount;
+
+        if ($receivableAmount === null) {
+            if ($receivableInstallmentCount !== null) {
+                throw new DomainException(
+                    'No pueden informarse cuotas propias sin saldo pendiente.'
+                );
+            }
+        } else {
+            $receivableInstallmentCount ??= 1;
+
+            if (
+                $receivableInstallmentCount < 1
+                || $receivableInstallmentCount > 120
+            ) {
+                throw new DomainException(
+                    'La cantidad de cuotas propias debe estar entre 1 y 120.'
+                );
+            }
+
+            if (
+                $receivableInstallmentCount > 1
+                && $receivableDueOn === null
+            ) {
+                throw new DomainException(
+                    'Las cuotas propias requieren un primer vencimiento.'
+                );
+            }
+
+            if (
+                $receivableInstallmentCount > 1
+                && $receivableAmount
+                    < $receivableInstallmentCount
+            ) {
+                throw new DomainException(
+                    'El importe pendiente es demasiado pequeño para repartirlo en esa cantidad de cuotas.'
+                );
+            }
+        }
+
         if (
             $data->payments === []
             && $receivableAmount === null
@@ -971,6 +1032,8 @@ final class CommerceCheckoutManager
             'payments' => $payments,
             'receivable_amount_minor' => $receivableAmount,
             'receivable_due_on' => $receivableDueOn,
+            'receivable_installment_count' =>
+                $receivableInstallmentCount,
             'customer_credit_override_reason' =>
                 $creditOverrideReason,
             'idempotency_key' => $this->idempotencyKey(

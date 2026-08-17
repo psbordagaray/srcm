@@ -84,11 +84,10 @@ final class CustomerCreditExposureReader
         $exposureMinor = (int) $rows->sum(
             'outstanding_minor'
         );
-        $overdueRows = $rows->where('overdue', true);
-        $overdueMinor = (int) $overdueRows->sum(
-            'outstanding_minor'
+        $overdueMinor = (int) $rows->sum(
+            'overdue_minor'
         );
-        $oldestDays = (int) $overdueRows->max(
+        $oldestDays = (int) $rows->max(
             fn (array $row): int =>
                 $row['days_overdue'] ?? 0
         );
@@ -209,10 +208,34 @@ final class CustomerCreditExposureReader
                             $row['receivable']->public_id,
                         'outstanding_minor' =>
                             (int) $row['outstanding_minor'],
-                        'due_on' =>
-                            $row['receivable']->due_on?->toDateString(),
+                        'overdue_minor' =>
+                            (int) $row['overdue_minor'],
+                        'next_due_on' =>
+                            $row['next_due_on']
+                                ?->toDateString(),
                         'aging_bucket' =>
                             $row['aging_bucket'],
+                        'installments' =>
+                            $row['installments']
+                                ->map(
+                                    fn (array $line): array => [
+                                        'sequence' =>
+                                            $line['sequence'],
+                                        'count' =>
+                                            $line[
+                                                'installment_count'
+                                            ],
+                                        'due_on' =>
+                                            $line['due_on']
+                                                ?->toDateString(),
+                                        'outstanding_minor' =>
+                                            $line[
+                                                'outstanding_minor'
+                                            ],
+                                    ]
+                                )
+                                ->values()
+                                ->all(),
                     ]
                 )
                 ->sortBy('id')

@@ -3,14 +3,12 @@
 namespace App\Domain\Commerce;
 
 use App\Domain\Tenancy\CurrentOrganization;
-use App\Enums\CustomerCollectionStatus;
 use App\Models\Customer;
 use App\Models\CustomerReceivable;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 final class CustomerReceivableAgingReader
 {
@@ -23,7 +21,8 @@ final class CustomerReceivableAgingReader
     public const BUCKET_SETTLED = 'settled';
 
     public function __construct(
-        private readonly CurrentOrganization $currentOrganization
+        private readonly CurrentOrganization $currentOrganization,
+        private readonly CustomerReceivableInstallmentScheduleReader $scheduleReader
     ) {
     }
 
@@ -44,6 +43,9 @@ final class CustomerReceivableAgingReader
     }
 
     /**
+     * One aggregate row per receivable, preserving the P9.3/P9.4
+     * account and collection contract.
+     *
      * @return Collection<int, array<string, mixed>>
      */
     public function rowsForCustomer(
@@ -59,7 +61,7 @@ final class CustomerReceivableAgingReader
             );
         }
 
-        return $this->rows(
+        return $this->aggregateRows(
             $organizationId,
             (int) $customer->business_party_id,
             $asOf
@@ -67,13 +69,15 @@ final class CustomerReceivableAgingReader
     }
 
     /**
+     * One aggregate row per receivable.
+     *
      * @return Collection<int, array<string, mixed>>
      */
     public function rowsForOrganization(
         User $actor,
         ?CarbonImmutable $asOf = null
     ): Collection {
-        return $this->rows(
+        return $this->aggregateRows(
             $this->currentOrganization->id($actor),
             null,
             $asOf
@@ -96,8 +100,9 @@ final class CustomerReceivableAgingReader
         $asOf = ($asOf ?? CarbonImmutable::today())
             ->startOfDay();
 
-        $openRows = $this->rowsForOrganization(
-            $actor,
+        $openRows = $this->expandedRows(
+            $this->currentOrganization->id($actor),
+            null,
             $asOf
         )
             ->filter(
@@ -144,6 +149,11 @@ final class CustomerReceivableAgingReader
                                 ->where('overdue', true)
                                 ->sum('outstanding_minor'),
                         'receivable_count' =>
+                            $currencyRows
+                                ->pluck('receivable.id')
+                                ->unique()
+                                ->count(),
+                        'installment_line_count' =>
                             $currencyRows->count(),
                         'buckets' => $buckets,
                     ];
@@ -177,6 +187,11 @@ final class CustomerReceivableAgingReader
                                 ->where('overdue', true)
                                 ->sum('outstanding_minor'),
                         'receivable_count' =>
+                            $customerRows
+                                ->pluck('receivable.id')
+                                ->unique()
+                                ->count(),
+                        'installment_line_count' =>
                             $customerRows->count(),
                         'oldest_days_overdue' =>
                             (int) $customerRows->max(
@@ -227,39 +242,14 @@ final class CustomerReceivableAgingReader
     public function outstandingMinor(
         CustomerReceivable $receivable
     ): int {
-        $collectedMinor = (int) DB::table(
-            'customer_collection_allocations as allocation'
-        )
-            ->join(
-                'customer_collections as collection',
-                'collection.id',
-                '=',
-                'allocation.customer_collection_id'
-            )
-            ->where(
-                'allocation.organization_id',
-                $receivable->organization_id
-            )
-            ->where(
-                'allocation.customer_receivable_id',
-                $receivable->id
-            )
-            ->where(
-                'collection.status',
-                CustomerCollectionStatus::Confirmed->value
-            )
-            ->sum('allocation.amount_minor');
-
-        return max(
-            0,
-            $receivable->amount_minor - $collectedMinor
-        );
+        return $this->scheduleReader
+            ->outstandingMinor($receivable);
     }
 
     /**
      * @return Collection<int, array<string, mixed>>
      */
-    private function rows(
+    private function aggregateRows(
         int $organizationId,
         ?int $businessPartyId,
         ?CarbonImmutable $asOf
@@ -267,11 +257,212 @@ final class CustomerReceivableAgingReader
         $asOf = ($asOf ?? CarbonImmutable::today())
             ->startOfDay();
 
+        $receivables = $this->receivables(
+            $organizationId,
+            $businessPartyId
+        );
+        $schedules = $this->scheduleReader
+            ->rowsForReceivables($receivables);
+
+        return $receivables->map(
+            function (
+                CustomerReceivable $receivable
+            ) use ($schedules, $asOf): array {
+                /** @var Collection<int, array<string, mixed>> $lines */
+                $lines = $schedules->get(
+                    (int) $receivable->id,
+                    collect()
+                );
+
+                $enriched = $lines->map(
+                    fn (array $line): array =>
+                        $this->enrichLine(
+                            $receivable,
+                            $line,
+                            $asOf
+                        )
+                );
+
+                $open = $enriched
+                    ->where('outstanding_minor', '>', 0)
+                    ->values();
+                $overdue = $open
+                    ->where('overdue', true)
+                    ->values();
+
+                $next = $open
+                    ->sort(
+                        static function (
+                            array $left,
+                            array $right
+                        ): int {
+                            $leftDue = $left['due_on'];
+                            $rightDue = $right['due_on'];
+
+                            if (
+                                $leftDue === null
+                                && $rightDue === null
+                            ) {
+                                return $left['sequence']
+                                    <=> $right['sequence'];
+                            }
+
+                            if ($leftDue === null) {
+                                return 1;
+                            }
+
+                            if ($rightDue === null) {
+                                return -1;
+                            }
+
+                            $byDue =
+                                $leftDue->getTimestamp()
+                                <=> $rightDue->getTimestamp();
+
+                            return $byDue !== 0
+                                ? $byDue
+                                : $left['sequence']
+                                    <=> $right['sequence'];
+                        }
+                    )
+                    ->first();
+
+                if ($open->isEmpty()) {
+                    $bucket = self::BUCKET_SETTLED;
+                    $daysOverdue = 0;
+                } elseif ($overdue->isNotEmpty()) {
+                    $oldest = $overdue
+                        ->sortBy('due_on')
+                        ->first();
+                    $bucket = $oldest['aging_bucket'];
+                    $daysOverdue =
+                        $oldest['days_overdue'];
+                } else {
+                    $bucket = $next['aging_bucket'];
+                    $daysOverdue =
+                        $next['days_overdue'];
+                }
+
+                return [
+                    'receivable' => $receivable,
+                    'sale' => $receivable->sale,
+                    'party' => $receivable->customer,
+                    'customer' =>
+                        $receivable->customer?->customer,
+                    'original_minor' =>
+                        (int) $enriched->sum(
+                            'original_minor'
+                        ),
+                    'collected_minor' =>
+                        (int) $enriched->sum(
+                            'collected_minor'
+                        ),
+                    'outstanding_minor' =>
+                        (int) $open->sum(
+                            'outstanding_minor'
+                        ),
+                    'overdue_minor' =>
+                        (int) $overdue->sum(
+                            'outstanding_minor'
+                        ),
+                    'overdue' =>
+                        $overdue->isNotEmpty(),
+                    'days_overdue' =>
+                        $daysOverdue,
+                    'aging_bucket' => $bucket,
+                    'aging_label' =>
+                        $this->bucketLabels()[$bucket],
+                    'next_due_on' =>
+                        $next['due_on'] ?? null,
+                    'installment_count' =>
+                        (int) (
+                            $enriched
+                                ->max('installment_count')
+                            ?? 1
+                        ),
+                    'planned_installments' =>
+                        (bool) $enriched
+                            ->contains('planned', true),
+                    'installments' => $enriched,
+                ];
+            }
+        );
+    }
+
+    /**
+     * One row per scheduled installment. Legacy receivables remain one
+     * synthetic line, preserving the same total debt without duplication.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function expandedRows(
+        int $organizationId,
+        ?int $businessPartyId,
+        CarbonImmutable $asOf
+    ): Collection {
+        $receivables = $this->receivables(
+            $organizationId,
+            $businessPartyId
+        );
+        $schedules = $this->scheduleReader
+            ->rowsForReceivables($receivables);
+
+        return $receivables
+            ->flatMap(
+                function (
+                    CustomerReceivable $receivable
+                ) use ($schedules, $asOf): Collection {
+                    /** @var Collection<int, array<string, mixed>> $lines */
+                    $lines = $schedules->get(
+                        (int) $receivable->id,
+                        collect()
+                    );
+
+                    return $lines->map(
+                        function (
+                            array $line
+                        ) use (
+                            $receivable,
+                            $asOf
+                        ): array {
+                            $line = $this->enrichLine(
+                                $receivable,
+                                $line,
+                                $asOf
+                            );
+
+                            return [
+                                'receivable' => $receivable,
+                                'sale' => $receivable->sale,
+                                'party' =>
+                                    $receivable->customer,
+                                'customer' =>
+                                    $receivable
+                                        ->customer
+                                        ?->customer,
+                                ...$line,
+                            ];
+                        }
+                    );
+                }
+            )
+            ->values();
+    }
+
+    /**
+     * @return Collection<int, CustomerReceivable>
+     */
+    private function receivables(
+        int $organizationId,
+        ?int $businessPartyId
+    ): Collection {
         $query = CustomerReceivable::query()
             ->forOrganization($organizationId)
             ->with([
                 'sale',
                 'customer.customer',
+                'installmentPlan',
+                'installments',
             ])
             ->orderByRaw('due_on IS NULL')
             ->orderBy('due_on')
@@ -285,91 +476,46 @@ final class CustomerReceivableAgingReader
             );
         }
 
-        $receivables = $query->get();
+        return $query->get();
+    }
 
-        $collected = DB::table(
-            'customer_collection_allocations as allocation'
-        )
-            ->join(
-                'customer_collections as collection',
-                'collection.id',
-                '=',
-                'allocation.customer_collection_id'
-            )
-            ->where(
-                'allocation.organization_id',
-                $organizationId
-            )
-            ->where(
-                'collection.organization_id',
-                $organizationId
-            )
-            ->where(
-                'collection.status',
-                CustomerCollectionStatus::Confirmed->value
-            )
-            ->whereIn(
-                'allocation.customer_receivable_id',
-                $receivables->pluck('id')->all()
-            )
-            ->groupBy('allocation.customer_receivable_id')
-            ->selectRaw(
-                'allocation.customer_receivable_id, '
-                .'SUM(allocation.amount_minor) AS collected_minor'
-            )
-            ->pluck(
-                'collected_minor',
-                'customer_receivable_id'
-            );
-
-        return $receivables->map(
-            function (
-                CustomerReceivable $receivable
-            ) use ($collected, $asOf): array {
-                $collectedMinor = (int) (
-                    $collected[$receivable->id] ?? 0
-                );
-
-                $outstandingMinor = max(
-                    0,
-                    $receivable->amount_minor - $collectedMinor
-                );
-
-                [
-                    $bucket,
-                    $daysOverdue,
-                ] = $this->classify(
-                    $receivable,
-                    $outstandingMinor,
-                    $asOf
-                );
-
-                return [
-                    'receivable' => $receivable,
-                    'sale' => $receivable->sale,
-                    'party' => $receivable->customer,
-                    'customer' =>
-                        $receivable->customer?->customer,
-                    'original_minor' =>
-                        $receivable->amount_minor,
-                    'collected_minor' => $collectedMinor,
-                    'outstanding_minor' => $outstandingMinor,
-                    'overdue' => $daysOverdue !== null
-                        && $daysOverdue > 0,
-                    'days_overdue' => $daysOverdue,
-                    'aging_bucket' => $bucket,
-                    'aging_label' =>
-                        $this->bucketLabels()[$bucket],
-                ];
-            }
+    /**
+     * @param array<string, mixed> $line
+     * @return array<string, mixed>
+     */
+    private function enrichLine(
+        CustomerReceivable $receivable,
+        array $line,
+        CarbonImmutable $asOf
+    ): array {
+        [
+            $bucket,
+            $daysOverdue,
+        ] = $this->classify(
+            $line['due_on'],
+            (int) $line['outstanding_minor'],
+            $asOf
         );
+
+        return [
+            ...$line,
+            'receivable_public_id' =>
+                $receivable->public_id,
+            'overdue' =>
+                $daysOverdue !== null
+                && $daysOverdue > 0,
+            'days_overdue' => $daysOverdue,
+            'aging_bucket' => $bucket,
+            'aging_label' =>
+                $this->bucketLabels()[$bucket],
+        ];
     }
 
     /**
      * @return array{0: string, 1: ?int}
      */
     private function classify(
-        CustomerReceivable $receivable,
+        ?CarbonImmutable $dueOn,
         int $outstandingMinor,
         CarbonImmutable $asOf
     ): array {
@@ -377,11 +523,11 @@ final class CustomerReceivableAgingReader
             return [self::BUCKET_SETTLED, 0];
         }
 
-        if ($receivable->due_on === null) {
+        if ($dueOn === null) {
             return [self::BUCKET_UNDATED, null];
         }
 
-        $dueOn = $receivable->due_on->startOfDay();
+        $dueOn = $dueOn->startOfDay();
 
         if ($dueOn->gte($asOf)) {
             return [self::BUCKET_CURRENT, 0];

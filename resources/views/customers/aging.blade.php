@@ -86,8 +86,8 @@
 
         <section class="sulu-card p-6">
             <div>
-                <h2 class="text-lg font-bold text-white">Detalle de deudas abiertas</h2>
-                <p class="mt-1 text-sm text-slate-500">Los buckets son una clasificación de lectura; no modifican vencimientos, saldos ni políticas de crédito.</p>
+                <h2 class="text-lg font-bold text-white">Detalle de vencimientos abiertos</h2>
+                <p class="mt-1 text-sm text-slate-500">Una deuda con cuotas propias aparece por vencimiento para clasificar sólo la porción realmente vencida. Los buckets siguen siendo una lectura derivada.</p>
             </div>
 
             <div class="mt-5 overflow-x-auto">
@@ -96,6 +96,7 @@
                         <tr>
                             <th class="px-3 py-2">Cliente</th>
                             <th class="px-3 py-2">Venta</th>
+                            <th class="px-3 py-2">Cuota</th>
                             <th class="px-3 py-2">Vencimiento</th>
                             <th class="px-3 py-2">Aging</th>
                             <th class="px-3 py-2 text-right">Pendiente</th>
@@ -114,7 +115,10 @@
                                 <td class="px-3 py-3">
                                     <a href="{{ route('commerce-sales.show', $row['sale']) }}" class="text-cyan-200 hover:text-cyan-100">#{{ $row['sale']->sale_number }}</a>
                                 </td>
-                                <td class="px-3 py-3 text-slate-300">{{ $row['receivable']->due_on ? $row['receivable']->due_on->format('d/m/Y') : 'Sin vencimiento' }}</td>
+                                <td class="px-3 py-3 text-slate-300">
+                                    {{ $row['planned'] ? 'Cuota '.$row['sequence'].'/'.$row['installment_count'] : 'Única' }}
+                                </td>
+                                <td class="px-3 py-3 text-slate-300">{{ $row['due_on'] ? $row['due_on']->format('d/m/Y') : 'Sin vencimiento' }}</td>
                                 <td class="px-3 py-3">
                                     <span class="{{ $row['overdue'] ? 'font-bold text-red-300' : 'text-slate-300' }}">{{ $row['aging_label'] }}</span>
                                     @if($row['days_overdue'])
@@ -124,7 +128,7 @@
                                 <td class="px-3 py-3 text-right font-mono font-black text-amber-200">{{ $row['receivable']->currency_code }} {{ number_format($row['outstanding_minor'] / 100, 2, ',', '.') }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-3 py-6 text-center text-slate-500">Sin deudas abiertas.</td></tr>
+                            <tr><td colspan="6" class="px-3 py-6 text-center text-slate-500">Sin vencimientos abiertos.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

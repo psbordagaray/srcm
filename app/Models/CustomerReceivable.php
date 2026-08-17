@@ -10,6 +10,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class CustomerReceivable extends Model
@@ -127,6 +128,22 @@ class CustomerReceivable extends Model
             CustomerCreditOverride::class,
             'customer_credit_override_id'
         );
+    }
+
+    public function installmentPlan(): HasOne
+    {
+        return $this->hasOne(
+            CustomerReceivableInstallmentPlan::class,
+            'customer_receivable_id'
+        );
+    }
+
+    public function installments(): HasMany
+    {
+        return $this->hasMany(
+            CustomerReceivableInstallment::class,
+            'customer_receivable_id'
+        )->orderBy('sequence');
     }
 
     public function allocations(): HasMany

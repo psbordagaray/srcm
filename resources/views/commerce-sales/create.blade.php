@@ -31,6 +31,7 @@
                 || $key === 'payments'
                 || $key === 'receivable_amount'
                 || $key === 'receivable_due_on'
+                || $key === 'receivable_installment_count'
                 || $key === 'customer_credit_override_reason'
                 || str_starts_with($key, 'payments.')
         );
@@ -98,6 +99,7 @@
                 customerCreditPolicyMatrix: {{ \Illuminate\Support\Js::from($customerCreditPolicyMatrix) }},
                 receivableAmount: {{ \Illuminate\Support\Js::from(old('receivable_amount', '')) }},
                 receivableDueOn: {{ \Illuminate\Support\Js::from(old('receivable_due_on', '')) }},
+                receivableInstallmentCount: {{ \Illuminate\Support\Js::from(old('receivable_installment_count', '1')) }},
                 customerCreditOverrideReason: {{ \Illuminate\Support\Js::from(old('customer_credit_override_reason', '')) }},
                 setupOpen: false,
                 customerOpen: false,
@@ -556,6 +558,71 @@
 
                     return `Disponible ${this.currencyCode} ${this.money(this.creditAvailableMinor())}`;
                 },
+                receivableInstallments() {
+                    const value = Number.parseInt(
+                        String(
+                            this.receivableInstallmentCount
+                                ?? '1'
+                        ),
+                        10
+                    );
+
+                    return Number.isFinite(value)
+                        ? value
+                        : 0;
+                },
+                receivableInstallmentPlanValid() {
+                    const amount =
+                        this.receivableAmountMinor();
+                    const count =
+                        this.receivableInstallments();
+
+                    if (amount <= 0) {
+                        return true;
+                    }
+
+                    if (count < 1 || count > 120) {
+                        return false;
+                    }
+
+                    if (count === 1) {
+                        return true;
+                    }
+
+                    return amount >= count
+                        && Boolean(
+                            String(
+                                this.receivableDueOn ?? ''
+                            ).trim()
+                        );
+                },
+                receivableInstallmentBaseMinor() {
+                    const count =
+                        this.receivableInstallments();
+
+                    return count > 1
+                        ? Math.floor(
+                            this.receivableAmountMinor()
+                                / count
+                        )
+                        : this.receivableAmountMinor();
+                },
+                receivableInstallmentLastMinor() {
+                    const count =
+                        this.receivableInstallments();
+                    const amount =
+                        this.receivableAmountMinor();
+
+                    if (count <= 1) {
+                        return amount;
+                    }
+
+                    const base =
+                        this.receivableInstallmentBaseMinor();
+
+                    return amount
+                        - base * (count - 1);
+                },
                 receivableComplete() {
                     const amount = this.receivableAmountMinor();
                     const dueOn = String(
@@ -568,11 +635,13 @@
 
                     if (amount <= 0) {
                         return dueOn === ''
-                            && overrideReason === '';
+                            && overrideReason === ''
+                            && this.receivableInstallmentPlanValid();
                     }
 
                     if (
-                        ! this.canCreateCustomerReceivable
+                        ! this.receivableInstallmentPlanValid()
+                        || ! this.canCreateCustomerReceivable
                         || ! this.customerBusinessPartyId
                     ) {
                         return false;
@@ -2925,7 +2994,7 @@
                                             </p>
                                         @endif
                                     </div>
-                                    <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                                    <div class="mt-4 grid gap-4 sm:grid-cols-3">
                                         <div>
                                             <label for="receivable_amount" class="text-xs font-bold text-slate-400">Importe pendiente</label>
                                             <input
@@ -2940,17 +3009,55 @@
                                             >
                                         </div>
                                         <div>
-                                            <label for="receivable_due_on" class="text-xs font-bold text-slate-400">Vencimiento opcional</label>
+                                            <label for="receivable_installment_count" class="text-xs font-bold text-slate-400">Cuotas propias</label>
+                                            <input
+                                                id="receivable_installment_count"
+                                                name="receivable_installment_count"
+                                                x-model="receivableInstallmentCount"
+                                                @input="paymentReviewOpen = false; paymentError = ''"
+                                                :disabled="receivableAmountMinor() <= 0"
+                                                type="number"
+                                                min="1"
+                                                max="120"
+                                                step="1"
+                                                class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-slate-100 focus:border-amber-400 focus:ring-amber-400 disabled:opacity-50"
+                                            >
+                                        </div>
+                                        <div>
+                                            <label for="receivable_due_on" class="text-xs font-bold text-slate-400" x-text="receivableInstallments() > 1 ? 'Primer vencimiento' : 'Vencimiento opcional'"></label>
                                             <input
                                                 id="receivable_due_on"
                                                 name="receivable_due_on"
                                                 x-model="receivableDueOn"
                                                 @change="paymentReviewOpen = false; paymentError = ''"
+                                                :required="receivableInstallments() > 1 && receivableAmountMinor() > 0"
                                                 type="date"
                                                 min="{{ now()->toDateString() }}"
                                                 class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-slate-100 focus:border-amber-400 focus:ring-amber-400"
                                             >
                                         </div>
+                                    </div>
+
+                                    <div
+                                        x-show="receivableAmountMinor() > 0 && receivableInstallments() > 1"
+                                        x-cloak
+                                        class="mt-3 rounded-xl border border-amber-400/20 bg-slate-950/45 px-4 py-3 text-xs text-slate-300"
+                                        data-sale-own-installment-preview
+                                    >
+                                        <p class="font-black text-amber-200">
+                                            Cuotas propias mensuales · FIFO
+                                        </p>
+                                        <p class="mt-1">
+                                            Cada cobranza se aplica a la cuota más antigua primero. Las primeras
+                                            <span x-text="Math.max(0, receivableInstallments() - 1)"></span>
+                                            cuota(s) serán de
+                                            <strong class="font-mono" x-text="`${currencyCode} ${money(receivableInstallmentBaseMinor())}`"></strong>
+                                            y la última de
+                                            <strong class="font-mono" x-text="`${currencyCode} ${money(receivableInstallmentLastMinor())}`"></strong>.
+                                        </p>
+                                        <p class="mt-1 text-slate-500">
+                                            La diferencia de centavos, si existe, queda únicamente en la última cuota.
+                                        </p>
                                     </div>
 
                                     <p

@@ -177,6 +177,16 @@ class StoreCommerceSaleRequest extends FormRequest
                     ''
                 )
             ),
+            'receivable_installment_count' =>
+                filled(
+                    $this->input(
+                        'receivable_installment_count'
+                    )
+                )
+                    ? (int) $this->input(
+                        'receivable_installment_count'
+                    )
+                    : null,
             'customer_credit_override_reason' =>
                 $this->optional(
                     (string) $this->input(
@@ -283,6 +293,12 @@ class StoreCommerceSaleRequest extends FormRequest
                 'nullable',
                 'date_format:Y-m-d',
                 'after_or_equal:today',
+            ],
+            'receivable_installment_count' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:120',
             ],
             'customer_credit_override_reason' => [
                 'nullable',
@@ -396,6 +412,10 @@ class StoreCommerceSaleRequest extends FormRequest
             $receivableDueOn = $this->input(
                 'receivable_due_on'
             );
+            $receivableInstallmentCount =
+                $this->input(
+                    'receivable_installment_count'
+                );
             $payments = (array) $this->input(
                 'payments',
                 []
@@ -454,6 +474,40 @@ class StoreCommerceSaleRequest extends FormRequest
                 $validator->errors()->add(
                     'receivable_due_on',
                     'No puede informarse vencimiento sin saldo pendiente.'
+                );
+            }
+
+            if (
+                $receivableInstallmentCount !== null
+                && $receivableAmount === null
+            ) {
+                $validator->errors()->add(
+                    'receivable_installment_count',
+                    'No pueden informarse cuotas propias sin saldo pendiente.'
+                );
+            }
+
+            if (
+                (int) ($receivableInstallmentCount ?? 1) > 1
+                && blank($receivableDueOn)
+            ) {
+                $validator->errors()->add(
+                    'receivable_due_on',
+                    'Las cuotas propias requieren un primer vencimiento.'
+                );
+            }
+
+            if (
+                $receivableAmount !== null
+                && (int) (
+                    $receivableInstallmentCount ?? 1
+                ) > 1
+                && $receivableAmount
+                    < (int) $receivableInstallmentCount
+            ) {
+                $validator->errors()->add(
+                    'receivable_installment_count',
+                    'El importe pendiente es demasiado pequeño para esa cantidad de cuotas.'
                 );
             }
 
