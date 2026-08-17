@@ -29,6 +29,7 @@ class CashMovement extends Model
         'post_sale_cash_refund_execution_id',
         'post_sale_exchange_payment_id',
         'customer_collection_id',
+        'customer_advance_id',
         'commerce_payment_id',
         'direction',
         'type',
@@ -45,30 +46,41 @@ class CashMovement extends Model
 
     protected static function booted(): void
     {
-        static::creating(function (CashMovement $movement): void {
+        static::creating(function (
+            CashMovement $movement
+        ): void {
             if (blank($movement->public_id)) {
-                $movement->public_id = (string) Str::uuid();
+                $movement->public_id =
+                    (string) Str::uuid();
             }
         });
 
-        static::updating(fn () => throw new DomainException(
-            'Un movimiento de efectivo registrado es inmutable.'
-        ));
+        static::updating(
+            fn () => throw new DomainException(
+                'Un movimiento de efectivo registrado es inmutable.'
+            )
+        );
 
-        static::deleting(fn () => throw new DomainException(
-            'Un movimiento de efectivo registrado no puede eliminarse.'
-        ));
+        static::deleting(
+            fn () => throw new DomainException(
+                'Un movimiento de efectivo registrado no puede eliminarse.'
+            )
+        );
     }
 
     protected function casts(): array
     {
         return [
-            'direction' => CashMovementDirection::class,
+            'direction' =>
+                CashMovementDirection::class,
             'type' => CashMovementType::class,
-            'reason_code' => CashSecurityDropReason::class,
+            'reason_code' =>
+                CashSecurityDropReason::class,
             'amount_minor' => 'integer',
-            'occurred_at' => 'immutable_datetime',
-            'created_at' => 'immutable_datetime',
+            'occurred_at' =>
+                'immutable_datetime',
+            'created_at' =>
+                'immutable_datetime',
         ];
     }
 
@@ -82,7 +94,10 @@ class CashMovement extends Model
 
     public function register(): BelongsTo
     {
-        return $this->belongsTo(CashRegister::class, 'cash_register_id');
+        return $this->belongsTo(
+            CashRegister::class,
+            'cash_register_id'
+        );
     }
 
     public function financialAccount(): BelongsTo
@@ -93,7 +108,8 @@ class CashMovement extends Model
         );
     }
 
-    public function destinationFinancialAccount(): BelongsTo
+    public function destinationFinancialAccount():
+        BelongsTo
     {
         return $this->belongsTo(
             FinancialAccount::class,
@@ -101,7 +117,8 @@ class CashMovement extends Model
         );
     }
 
-    public function securityDropRequest(): BelongsTo
+    public function securityDropRequest():
+        BelongsTo
     {
         return $this->belongsTo(
             CashSecurityDropRequest::class,
@@ -125,7 +142,16 @@ class CashMovement extends Model
         );
     }
 
-    public function purchasePaymentExecution(): BelongsTo
+    public function customerAdvance(): BelongsTo
+    {
+        return $this->belongsTo(
+            CustomerAdvance::class,
+            'customer_advance_id'
+        );
+    }
+
+    public function purchasePaymentExecution():
+        BelongsTo
     {
         return $this->belongsTo(
             PurchasePaymentExecution::class,
@@ -133,7 +159,8 @@ class CashMovement extends Model
         );
     }
 
-    public function postSaleCashRefundExecution(): BelongsTo
+    public function postSaleCashRefundExecution():
+        BelongsTo
     {
         return $this->belongsTo(
             CommercePostSaleCashRefundExecution::class,
@@ -141,7 +168,8 @@ class CashMovement extends Model
         );
     }
 
-    public function postSaleExchangePayment(): BelongsTo
+    public function postSaleExchangePayment():
+        BelongsTo
     {
         return $this->belongsTo(
             CommercePostSaleExchangePayment::class,
@@ -151,6 +179,9 @@ class CashMovement extends Model
 
     public function recordedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'recorded_by_user_id');
+        return $this->belongsTo(
+            User::class,
+            'recorded_by_user_id'
+        );
     }
 }

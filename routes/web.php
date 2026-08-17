@@ -21,6 +21,7 @@ use App\Http\Controllers\FinancialManualExternalMovementController;
 use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerAccountController;
+use App\Http\Controllers\CustomerAdvanceController;
 use App\Http\Controllers\CustomerAgingController;
 use App\Http\Controllers\CustomerCollectionController;
 use App\Http\Controllers\CustomerCreditPolicyController;
@@ -412,6 +413,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )
                         ->whereNumber('customer')
                         ->name('customers.collections.store');
+
+                    Route::post(
+                        'customers/{customer}/advances',
+                        [CustomerAdvanceController::class, 'store']
+                    )
+                        ->whereNumber('customer')
+                        ->name('customers.advances.store');
                 });
 
             Route::middleware(

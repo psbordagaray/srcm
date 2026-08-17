@@ -8,11 +8,13 @@ use App\Enums\CashMovementDirection;
 use App\Enums\CashMovementType;
 use App\Enums\CashRegisterSessionStatus;
 use App\Enums\CommercePaymentMethod;
+use App\Enums\CustomerAdvanceStatus;
 use App\Enums\CustomerCollectionStatus;
 use App\Enums\FinancialAccountType;
 use App\Models\CashMovement;
 use App\Models\CashRegisterSession;
 use App\Models\CommercePayment;
+use App\Models\CustomerAdvance;
 use App\Models\CustomerCollection;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -265,6 +267,138 @@ final class CashLedgerRecorder
                 'direction' => CashMovementDirection::In,
                 'type' => CashMovementType::CustomerCollection,
                 'amount_minor' => $collection->amount_minor,
+                'currency_code' => $session->currency_code,
+            ]
+        );
+
+        return $movement->refresh();
+    }
+
+    public function recordCustomerAdvance(
+        CashRegisterSession $session,
+        CustomerAdvance $advance,
+        User $actor
+    ): CashMovement {
+        $organizationId = $this->currentOrganization->id($actor);
+        $role = $this->currentOrganization->roleFor($actor);
+
+        if (! ($role?->canOperateCashRegister() ?? false)) {
+            throw new DomainException(
+                'No posee permiso para registrar movimientos de caja.'
+            );
+        }
+
+        $session->loadMissing('register.financialAccount');
+        $register = $session->register;
+        $account = $register?->financialAccount;
+
+        if (
+            (int) $session->organization_id !== $organizationId
+            || (int) $session->opened_by_user_id !== (int) $actor->id
+            || $session->status !== CashRegisterSessionStatus::Open
+            || ! $register
+            || ! $register->active
+            || (int) $register->organization_id !== $organizationId
+            || ! $account
+            || ! $account->active
+            || (int) $account->organization_id !== $organizationId
+            || $account->type !== FinancialAccountType::CashBox
+            || (int) $account->id
+                !== (int) $advance->financial_account_id
+            || $account->currency_code !== $session->currency_code
+        ) {
+            throw new DomainException(
+                'El contexto de caja no es válido para registrar el anticipo.'
+            );
+        }
+
+        if (
+            (int) $advance->organization_id !== $organizationId
+            || (int) $advance->received_by_user_id
+                !== (int) $actor->id
+            || $advance->status
+                !== CustomerAdvanceStatus::Confirmed
+            || $advance->method !== CommercePaymentMethod::Cash
+            || (int) $advance->cash_register_session_id
+                !== (int) $session->id
+            || (int) $advance->cash_register_id
+                !== (int) $register->id
+            || $advance->currency_code
+                !== $session->currency_code
+            || $advance->amount_minor <= 0
+        ) {
+            throw new DomainException(
+                'El anticipo no puede incorporarse al libro de efectivo.'
+            );
+        }
+
+        $idempotencyKey =
+            'customer-advance:'.$advance->id;
+
+        $fingerprint = hash('sha256', implode('|', [
+            $organizationId,
+            $session->id,
+            $register->id,
+            $account->id,
+            $advance->id,
+            CashMovementDirection::In->value,
+            CashMovementType::CustomerAdvance->value,
+            $advance->amount_minor,
+            $session->currency_code,
+            $actor->id,
+        ]));
+
+        $existing = CashMovement::query()
+            ->forOrganization($organizationId)
+            ->where(
+                'customer_advance_id',
+                $advance->id
+            )
+            ->first();
+
+        if ($existing) {
+            if (! hash_equals(
+                $existing->fingerprint,
+                $fingerprint
+            )) {
+                throw new DomainException(
+                    'El anticipo en efectivo ya fue registrado con otros datos.'
+                );
+            }
+
+            return $existing;
+        }
+
+        $movement = CashMovement::query()->create([
+            'organization_id' => $organizationId,
+            'cash_register_session_id' => $session->id,
+            'cash_register_id' => $register->id,
+            'financial_account_id' => $account->id,
+            'customer_advance_id' => $advance->id,
+            'direction' => CashMovementDirection::In,
+            'type' => CashMovementType::CustomerAdvance,
+            'amount_minor' => $advance->amount_minor,
+            'currency_code' => $session->currency_code,
+            'idempotency_key' => $idempotencyKey,
+            'fingerprint' => $fingerprint,
+            'recorded_by_user_id' => $actor->id,
+            'occurred_at' => $advance->received_at
+                ?? CarbonImmutable::now(),
+            'created_at' => CarbonImmutable::now(),
+        ]);
+
+        $this->audit->record(
+            $movement,
+            'cash_movement_recorded',
+            null,
+            [
+                'cash_register_session_id' => $session->id,
+                'cash_register_id' => $register->id,
+                'financial_account_id' => $account->id,
+                'customer_advance_id' => $advance->id,
+                'direction' => CashMovementDirection::In,
+                'type' => CashMovementType::CustomerAdvance,
+                'amount_minor' => $advance->amount_minor,
                 'currency_code' => $session->currency_code,
             ]
         );

@@ -25,6 +25,145 @@
                 </ul>
             </div>
         @endif
+
+        <section class="sulu-card p-6" data-customer-credit-balance>
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">Saldo a favor</p>
+                    <h2 class="mt-2 text-lg font-bold text-white">Saldo a favor disponible</h2>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Es una lectura derivada de créditos de posventa, diferencias de cambio y anticipos confirmados, menos sus consumos.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                @foreach($creditBalanceSnapshots as $currency => $balanceMinor)
+                    <article class="rounded-2xl border border-slate-800 bg-slate-950/45 p-4">
+                        <p class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ $currency }}</p>
+                        <p class="mt-2 font-mono text-2xl font-black {{ $balanceMinor > 0 ? 'text-emerald-200' : 'text-slate-500' }}">
+                            {{ number_format($balanceMinor / 100, 2, ',', '.') }}
+                        </p>
+                    </article>
+                @endforeach
+            </div>
+
+            <div class="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4 text-sm text-slate-300">
+                <strong class="text-cyan-200">Anticipo a cuenta:</strong>
+                el dinero recibido queda disponible para una venta futura mediante crédito en cuenta.
+                Este corte <strong>no reserva mercadería</strong>, no crea una venta y no genera una seña/reserva de stock.
+            </div>
+
+            @can('record-customer-collections')
+                <div class="mt-6 border-t border-slate-800 pt-5" data-customer-advance-form>
+                    <h3 class="font-bold text-white">Registrar anticipo a cuenta</h3>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Administrador u Operador pueden registrar dinero efectivamente recibido. La reserva de mercadería permanece separada.
+                    </p>
+
+                    <form method="POST" action="{{ route('customers.advances.store', $customer) }}" class="mt-4 space-y-4">
+                        @csrf
+                        <input type="hidden" name="idempotency_key" value="{{ old('idempotency_key', $advanceIdempotencyKey) }}">
+
+                        <div class="grid gap-4 md:grid-cols-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-400">Moneda</label>
+                                <input name="currency_code" value="{{ old('currency_code', 'ARS') }}" maxlength="3" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 uppercase text-white">
+                            </div>
+
+                            <div>
+                                <label class="text-xs font-bold text-slate-400">Medio</label>
+                                <select name="method" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white">
+                                    @foreach($methods as $method)
+                                        <option value="{{ $method->value }}" @selected(old('method') === $method->value)>{{ $method->label() }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs font-bold text-slate-400">Cuenta destino</label>
+                                <select name="financial_account_id" required class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white">
+                                    <option value="">Seleccionar</option>
+                                    @foreach($financialAccounts as $financialAccount)
+                                        <option value="{{ $financialAccount->id }}" @selected((string) old('financial_account_id') === (string) $financialAccount->id)>
+                                            {{ $financialAccount->currency_code }} · {{ $financialAccount->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-xs font-bold text-slate-400">Importe</label>
+                                <input name="amount" value="{{ old('amount') }}" inputmode="decimal" placeholder="0,00" required class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-white">
+                            </div>
+                        </div>
+
+                        <div class="grid gap-4 md:grid-cols-3">
+                            <div>
+                                <label class="text-xs font-bold text-slate-400">Referencia no efectivo</label>
+                                <input name="reference" value="{{ old('reference') }}" maxlength="255" placeholder="Transferencia / operación" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white">
+                            </div>
+
+                            <div>
+                                <label class="text-xs font-bold text-slate-400">Entregado en efectivo</label>
+                                <input name="tendered_amount" value="{{ old('tendered_amount') }}" inputmode="decimal" placeholder="Opcional" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 font-mono text-white">
+                            </div>
+
+                            <div>
+                                <label class="text-xs font-bold text-slate-400">Notas</label>
+                                <input name="notes" value="{{ old('notes') }}" maxlength="1000" placeholder="Contexto del anticipo" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white">
+                            </div>
+                        </div>
+
+                        @if($currentCashSession)
+                            <p class="text-xs text-slate-500">
+                                Caja abierta: {{ $currentCashSession->currency_code }}. Para efectivo, elegí la cuenta de esa caja.
+                            </p>
+                        @endif
+
+                        <button class="rounded-xl border border-emerald-400/30 px-4 py-2 text-sm font-black text-emerald-200">
+                            Confirmar anticipo
+                        </button>
+                    </form>
+                </div>
+            @endcan
+
+            <div class="mt-6 border-t border-slate-800 pt-5">
+                <h3 class="font-bold text-white">Anticipos confirmados</h3>
+
+                <div class="mt-3 overflow-x-auto">
+                    <table class="min-w-full text-left text-sm">
+                        <thead class="text-xs uppercase tracking-wider text-slate-500">
+                            <tr>
+                                <th class="px-3 py-2">Fecha</th>
+                                <th class="px-3 py-2">Medio / referencia</th>
+                                <th class="px-3 py-2 text-right">Recibido</th>
+                                <th class="px-3 py-2 text-right">Consumido</th>
+                                <th class="px-3 py-2 text-right">Disponible</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            @forelse($advances as $advance)
+                                @php($advanceConsumed = (int) $advance->creditAllocations->sum('amount_minor'))
+                                <tr data-customer-advance-row>
+                                    <td class="px-3 py-3 text-slate-300">{{ $advance->received_at->format('d/m/Y H:i') }}</td>
+                                    <td class="px-3 py-3">
+                                        <p class="font-semibold text-slate-200">{{ $advance->method->label() }}</p>
+                                        <p class="mt-1 text-xs text-slate-500">{{ $advance->reference ?: 'Sin referencia electrónica' }}</p>
+                                    </td>
+                                    <td class="px-3 py-3 text-right font-mono text-emerald-200">{{ $advance->currency_code }} {{ number_format($advance->amount_minor / 100, 2, ',', '.') }}</td>
+                                    <td class="px-3 py-3 text-right font-mono text-slate-400">{{ number_format($advanceConsumed / 100, 2, ',', '.') }}</td>
+                                    <td class="px-3 py-3 text-right font-mono font-black text-emerald-200">{{ number_format(max(0, $advance->amount_minor - $advanceConsumed) / 100, 2, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="5" class="px-3 py-5 text-center text-slate-500">Sin anticipos confirmados.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
         <section class="sulu-card p-6" data-customer-credit-policy>
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>

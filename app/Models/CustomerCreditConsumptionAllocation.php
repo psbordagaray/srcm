@@ -17,6 +17,7 @@ class CustomerCreditConsumptionAllocation extends Model
         'sequence',
         'customer_credit_grant_id',
         'commerce_post_sale_exchange_credit_grant_id',
+        'customer_advance_id',
         'amount_minor',
         'fingerprint',
         'created_at',
@@ -81,6 +82,14 @@ class CustomerCreditConsumptionAllocation extends Model
         return $this->belongsTo(
             CommercePostSaleExchangeCreditGrant::class,
             'commerce_post_sale_exchange_credit_grant_id'
+        );
+    }
+
+    public function customerAdvance(): BelongsTo
+    {
+        return $this->belongsTo(
+            CustomerAdvance::class,
+            'customer_advance_id'
         );
     }
 }

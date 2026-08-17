@@ -2,7 +2,9 @@
 
 namespace App\Domain\Commerce;
 
+use App\Enums\CustomerAdvanceStatus;
 use App\Models\CommercePostSaleExchangeCreditGrant;
+use App\Models\CustomerAdvance;
 use App\Models\CustomerCreditConsumptionAllocation;
 use App\Models\CustomerCreditGrant;
 
@@ -45,6 +47,23 @@ final class CustomerCreditBalanceReader
                 )
                 ->sum('amount_minor');
 
+        $advanceGranted =
+            (int) CustomerAdvance::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'business_party_id',
+                    $businessPartyId
+                )
+                ->where(
+                    'currency_code',
+                    $currencyCode
+                )
+                ->where(
+                    'status',
+                    CustomerAdvanceStatus::Confirmed->value
+                )
+                ->sum('amount_minor');
+
         $consumed =
             (int) CustomerCreditConsumptionAllocation::query()
                 ->where(
@@ -70,6 +89,7 @@ final class CustomerCreditBalanceReader
             0,
             $standardGranted
             + $exchangeGranted
+            + $advanceGranted
             - $consumed
         );
     }
@@ -130,6 +150,28 @@ final class CustomerCreditBalanceReader
                 (int) $grant->business_party_id,
                 (string) $grant->currency_code,
                 (int) $grant->amount_minor
+            );
+        }
+
+        foreach (
+            CustomerAdvance::query()
+                ->forOrganization($organizationId)
+                ->where(
+                    'status',
+                    CustomerAdvanceStatus::Confirmed->value
+                )
+                ->get([
+                    'business_party_id',
+                    'currency_code',
+                    'amount_minor',
+                ])
+            as $advance
+        ) {
+            $push(
+                $matrix,
+                (int) $advance->business_party_id,
+                (string) $advance->currency_code,
+                (int) $advance->amount_minor
             );
         }
 

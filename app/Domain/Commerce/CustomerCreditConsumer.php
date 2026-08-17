@@ -4,7 +4,9 @@ namespace App\Domain\Commerce;
 
 use App\Models\CommercePostSaleExchangeCreditGrant;
 use App\Models\CommercePostSaleExchangeExecution;
+use App\Enums\CustomerAdvanceStatus;
 use App\Models\CommerceSale;
+use App\Models\CustomerAdvance;
 use App\Models\CustomerCreditConsumption;
 use App\Models\CustomerCreditConsumptionAllocation;
 use App\Models\CustomerCreditGrant;
@@ -204,6 +206,28 @@ final class CustomerCreditConsumer
                     ->lockForUpdate()
                     ->get();
 
+            $advances =
+                CustomerAdvance::query()
+                    ->forOrganization(
+                        $organizationId
+                    )
+                    ->where(
+                        'business_party_id',
+                        $partyId
+                    )
+                    ->where(
+                        'currency_code',
+                        $currencyCode
+                    )
+                    ->where(
+                        'status',
+                        CustomerAdvanceStatus::Confirmed->value
+                    )
+                    ->orderBy('received_at')
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
             $sources =
                 collect()
                     ->concat(
@@ -242,6 +266,27 @@ final class CustomerCreditConsumer
                                 'granted_at' =>
                                     $grant
                                         ->granted_at
+                                        ->format(
+                                            'Y-m-d H:i:s.u'
+                                        ),
+                            ]
+                        )
+                    )
+                    ->concat(
+                        $advances->map(
+                            fn (
+                                CustomerAdvance $advance
+                            ): array => [
+                                'kind' =>
+                                    'customer_advance',
+                                'id' =>
+                                    (int) $advance->id,
+                                'amount_minor' =>
+                                    (int) $advance
+                                        ->amount_minor,
+                                'granted_at' =>
+                                    $advance
+                                        ->received_at
                                         ->format(
                                             'Y-m-d H:i:s.u'
                                         ),
@@ -297,23 +342,52 @@ final class CustomerCreditConsumer
                         'commerce_post_sale_exchange_credit_grant_id'
                     );
 
+            $advanceConsumed =
+                CustomerCreditConsumptionAllocation::query()
+                    ->whereIn(
+                        'customer_advance_id',
+                        $advances->pluck('id')
+                    )
+                    ->selectRaw(
+                        'customer_advance_id, SUM(amount_minor) AS allocated_minor'
+                    )
+                    ->groupBy(
+                        'customer_advance_id'
+                    )
+                    ->pluck(
+                        'allocated_minor',
+                        'customer_advance_id'
+                    );
+
             $plan = [];
             $remaining = $amountMinor;
 
             foreach ($sources as $source) {
-                $already =
+                $already = match (
                     $source['kind']
-                        === 'customer_credit'
-                        ? (int) (
+                ) {
+                    'customer_credit' =>
+                        (int) (
                             $standardConsumed[
                                 $source['id']
                             ] ?? 0
-                        )
-                        : (int) (
+                        ),
+                    'exchange_credit' =>
+                        (int) (
                             $exchangeConsumed[
                                 $source['id']
                             ] ?? 0
-                        );
+                        ),
+                    'customer_advance' =>
+                        (int) (
+                            $advanceConsumed[
+                                $source['id']
+                            ] ?? 0
+                        ),
+                    default => throw new DomainException(
+                        'La fuente de saldo a favor no es válida.'
+                    ),
+                };
 
                 $available =
                     max(
@@ -403,6 +477,11 @@ final class CustomerCreditConsumer
                         'commerce_post_sale_exchange_credit_grant_id' =>
                             $item['kind']
                                 === 'exchange_credit'
+                                ? $item['id']
+                                : null,
+                        'customer_advance_id' =>
+                            $item['kind']
+                                === 'customer_advance'
                                 ? $item['id']
                                 : null,
                         'amount_minor' =>
@@ -645,6 +724,28 @@ final class CustomerCreditConsumer
                     ->lockForUpdate()
                     ->get();
 
+            $advances =
+                CustomerAdvance::query()
+                    ->forOrganization(
+                        $organizationId
+                    )
+                    ->where(
+                        'business_party_id',
+                        $partyId
+                    )
+                    ->where(
+                        'currency_code',
+                        $currencyCode
+                    )
+                    ->where(
+                        'status',
+                        CustomerAdvanceStatus::Confirmed->value
+                    )
+                    ->orderBy('received_at')
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
             $sources =
                 collect()
                     ->concat(
@@ -683,6 +784,27 @@ final class CustomerCreditConsumer
                                 'granted_at' =>
                                     $grant
                                         ->granted_at
+                                        ->format(
+                                            'Y-m-d H:i:s.u'
+                                        ),
+                            ]
+                        )
+                    )
+                    ->concat(
+                        $advances->map(
+                            fn (
+                                CustomerAdvance $advance
+                            ): array => [
+                                'kind' =>
+                                    'customer_advance',
+                                'id' =>
+                                    (int) $advance->id,
+                                'amount_minor' =>
+                                    (int) $advance
+                                        ->amount_minor,
+                                'granted_at' =>
+                                    $advance
+                                        ->received_at
                                         ->format(
                                             'Y-m-d H:i:s.u'
                                         ),
@@ -738,23 +860,52 @@ final class CustomerCreditConsumer
                         'commerce_post_sale_exchange_credit_grant_id'
                     );
 
+            $advanceConsumed =
+                CustomerCreditConsumptionAllocation::query()
+                    ->whereIn(
+                        'customer_advance_id',
+                        $advances->pluck('id')
+                    )
+                    ->selectRaw(
+                        'customer_advance_id, SUM(amount_minor) AS allocated_minor'
+                    )
+                    ->groupBy(
+                        'customer_advance_id'
+                    )
+                    ->pluck(
+                        'allocated_minor',
+                        'customer_advance_id'
+                    );
+
             $plan = [];
             $remaining = $amountMinor;
 
             foreach ($sources as $source) {
-                $already =
+                $already = match (
                     $source['kind']
-                        === 'customer_credit'
-                        ? (int) (
+                ) {
+                    'customer_credit' =>
+                        (int) (
                             $standardConsumed[
                                 $source['id']
                             ] ?? 0
-                        )
-                        : (int) (
+                        ),
+                    'exchange_credit' =>
+                        (int) (
                             $exchangeConsumed[
                                 $source['id']
                             ] ?? 0
-                        );
+                        ),
+                    'customer_advance' =>
+                        (int) (
+                            $advanceConsumed[
+                                $source['id']
+                            ] ?? 0
+                        ),
+                    default => throw new DomainException(
+                        'La fuente de saldo a favor no es válida.'
+                    ),
+                };
 
                 $available =
                     max(
@@ -844,6 +995,11 @@ final class CustomerCreditConsumer
                         'commerce_post_sale_exchange_credit_grant_id' =>
                             $item['kind']
                                 === 'exchange_credit'
+                                ? $item['id']
+                                : null,
+                        'customer_advance_id' =>
+                            $item['kind']
+                                === 'customer_advance'
                                 ? $item['id']
                                 : null,
                         'amount_minor' =>
