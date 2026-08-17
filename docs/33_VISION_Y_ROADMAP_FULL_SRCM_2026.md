@@ -1,8 +1,26 @@
 # SRCM — Visión y Roadmap Full 2026
 
 Estado: **North Star / contrato de dirección y continuidad**
-Fecha: **2026-08-13**
+Fecha: **2026-08-17**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
+Puerta de entrada de continuidad: `docs/README.md`
+
+---
+
+## 0. Estado maestro de continuidad
+
+Último checkpoint funcional publicado:
+
+`baa46c70db85f5f54cfe4e824fe4996457841d28`
+— `feat(purchase): add supplier payment disbursement foundation`
+
+Estado: P1–P7 publicados, P8 V1 cerrado y P9 publicado hasta P9.7i. Baseline
+formal: **812 tests / 6669 assertions**. Próximo corte funcional exacto:
+**P9.7j — Supplier Payment Operational Convergence**.
+
+Esta North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
+ejecutivo de `docs/06_ROADMAP.md`; los tres forman una cadena deliberada para
+recuperar contexto sin depender de una conversación.
 
 ---
 
@@ -552,13 +570,15 @@ No es válido “terminar” un bloque y dejar el roadmap afirmando que sigue pe
 Al abrir un chat nuevo o recuperar uno trabado:
 
 1. identificar proyecto SRCM;
-2. leer `docs/06_ROADMAP.md`;
-3. leer este archivo;
-4. si se toca dinero/ventas, leer `docs/32_PLAN_TERMINAL_COBRO_CUENTAS_CONCILIACION_V1.md`;
-5. leer ADR del dominio afectado;
-6. obtener branch + HEAD + status + staging;
-7. leer RESULT del último bloque;
-8. continuar desde el último checkpoint, no desde memoria informal.
+2. obtener branch + HEAD + origin + status + staging y exigir coincidencia/limpieza;
+3. leer `docs/README.md`;
+4. leer `docs/06_ROADMAP.md`;
+5. leer este archivo;
+6. si se toca dinero/ventas, leer `docs/32_PLAN_TERMINAL_COBRO_CUENTAS_CONCILIACION_V1.md`;
+7. leer todos los ADR del dominio afectado;
+8. leer RESULT del último bloque;
+9. reconstruir la frontera de código, migraciones, permisos, rutas, UI y tests;
+10. continuar desde el checkpoint y próximo paso documentados, no desde memoria informal.
 
 ---
 
@@ -606,3 +626,17 @@ La recepción HTTP pública se separa del trabajo financiero: autenticar y
 encolar es una fase; consultar la evidencia canónica e ingerirla es otra. Los
 secretos permanecen fuera del ledger, la base y los jobs. La conexión interna
 se fija por una URL configurada por SRCM y queda protegida por su propio HMAC.
+
+
+## Continuidad P9 — CxC/CxP y desembolso de proveedores
+
+P9.1–P9.6b publicó deuda de clientes, cobranzas e imputaciones, aging, política
+de crédito, cuotas, anticipos y convergencia de excedentes. P9.7a–P9.7i publicó
+documento de proveedor, 3-way match derivado, notas de crédito, aplicaciones,
+anticipos, autorización agrupada y el parent canónico de desembolso.
+
+P9.7j debe exponer esa verdad mediante HTTP/UI individual y agrupada, cash y
+non-cash, sin duplicar reglas de dominio. `PurchasePaymentExecution` se conserva
+como historia append-only; `PurchasePaymentDisbursement` y sus allocations son
+la verdad canónica nueva. Un desembolso cash produce un solo `CashMovement` por
+el total y un desembolso non-cash no fabrica evidencia bancaria externa.

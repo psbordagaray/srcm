@@ -1,15 +1,19 @@
 # SRCM V1 — Terminal de Cobro APB, Cuentas y Conciliación
 
-Estado: **P1–P3.1 + P4A–P4D publicados / P4E en validación / P4F planificado**
+Estado: **P1–P7 publicados / P8 V1 cerrado / continuidad financiera P9 publicada hasta P9.7i**
 
 Fecha de consolidación inicial: **2026-08-10**
-Fecha de actualización: **2026-08-13**
+Fecha de actualización: **2026-08-17**
 
 Checkpoint oficial publicado actual:
-`1b2187bf5e709f583e3ee79db5ad8df528751116`
-— `feat(finance): harden cash operations and attention`
+`baa46c70db85f5f54cfe4e824fe4996457841d28`
+— `feat(purchase): add supplier payment disbursement foundation`
 
-P4E Foundation se valida localmente sobre ese checkpoint y no se considera publicada hasta GRAN PRUEBA + checkpoint.
+Baseline formal en ese checkpoint: **812 tests / 6669 assertions**. P4E y
+P4F están publicados; P5–P7 están publicados; P8 V1 está cerrado y P9 continúa
+desde P9.7i hacia P9.7j sin redefinir las verdades financieras de este plan.
+
+Puerta de entrada de continuidad: `docs/README.md`.
 
 North Star y roadmap maestro:
 `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`
@@ -251,9 +255,12 @@ Cuentas privadas, movimientos externos, reconciliación provider-neutral e inmut
 ### P3.1 — Cuentas operativas en Terminal — IMPLEMENTADO
 Gestión visual de cuentas y `financial_account_id` por pago. Checkpoint publicado: `7753e61fba147395362109d90ce895d61442562a`.
 
-### P4 — Caja operativa, turnos, efectivo y pagos a proveedores — EN IMPLEMENTACIÓN
+### P4 — Caja operativa, turnos, efectivo y pagos a proveedores — FOUNDATIONS PUBLICADAS
 
-P4A–P4D están publicados. P4E Foundation incorpora aplicado/entregado/vuelto y queda pendiente de GRAN PRUEBA/checkpoint. P4F es el siguiente frente y reutiliza caja, cuentas, autoridad y Operational Attention sin fusionar recepción con desembolso.
+P4A–P4D están publicados. P4E conserva aplicado, entregado y vuelto como hechos
+distintos. P4F publicó obligación, solicitud/autorización, ejecución cash y
+control posterior; P9.7i generalizó el desembolso individual/agrupado y
+cash/non-cash sin fusionar recepción con pago ni inventar evidencia externa.
 Amplía el antiguo P4 “Efectivo y vuelto”:
 - cajas múltiples vinculadas a cuentas `cash_box`;
 - apertura/turno/cierre;
@@ -270,18 +277,21 @@ Amplía el antiguo P4 “Efectivo y vuelto”:
 - recepción, obligación, autorización y ejecución del pago como hechos separados;
 - confirmar stock nunca paga automáticamente.
 
-### P5 — Operaciones externas y adaptadores
+### P5 — Operaciones externas y adaptadores — PUBLICADO HASTA P5.8.2
 Contrato común; Mercado Pago como primer adaptador cuando corresponda; API/webhook/polling; idempotencia; IDs y estados externos.
 
 P5.1 Foundation agrega una conexión provider-neutral por cuenta financiera sin secretos, un contrato de adapter, observaciones seguras y un ingestor automático que reutiliza `ExternalFinancialMovementRecorder`. La deduplicación automática considera cuenta + ID externo + estado para que webhook/polling de la misma observación no dupliquen efectos; los cambios de estado permanecen append-only. Ninguna evidencia externa concilia por sí sola.
 
-### P6 — Centro de Conciliación
+### P6 — Centro de Conciliación — PUBLICADO P6.1–P6.3
 Cobros esperados, movimientos/acreditaciones, bruto/neto, comisiones, matching, diferencias, revisión y resolución.
 
-### P7 — Instituciones sin API
+### P7 — Instituciones sin API — PUBLICADO P7.1–P7.5
 Importadores CSV/XLSX, previsualización, normalización, idempotencia y conciliación contra el mismo motor.
 
-El roadmap completo posterior —devoluciones, CxC/CxP, ARCA, producción/offline/hardware, omnicanalidad, GS1, CRM, forecasting, IA y API— se mantiene en `docs/06_ROADMAP.md` y `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
+P8 Posventa V1 quedó cerrado en P8.5.8. P9 publicó CxC hasta P9.6b y CxP
+hasta P9.7i. ARCA, producción/offline/hardware, omnicanalidad, GS1, CRM,
+forecasting, IA y API continúan gobernados por `docs/06_ROADMAP.md` y
+`docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
 
 ---
 
@@ -310,17 +320,18 @@ El criterio global V1.0 —incluyendo fiscalidad, posventa, CxC/CxP, producción
 
 Si se retoma en otra conversación:
 
-1. Leer `docs/06_ROADMAP.md`.
-2. Leer `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
-3. Leer este documento si se toca Venta/Cobro/Cuentas/Conciliación/Caja.
-4. Leer ADR 31 y el ADR específico del dominio afectado.
-5. Confirmar rama, HEAD, working tree y staging.
-6. Leer el RESULT del último bloque ejecutado.
-7. **No reabrir como pendientes decisiones ya implementadas.**
-8. Implementar por bloques pequeños, fail-closed y con RESULT verificable.
-9. No hacer commit/push de trabajo nuevo hasta aprobación visual/manual cuando corresponda.
-10. No corregir silenciosamente decisiones del operador.
-11. Jerarquía de verdad: código/checkpoint → Roadmap/ADRs → RESULT → conversación.
+1. Leer `docs/README.md`.
+2. Leer `docs/06_ROADMAP.md`.
+3. Leer `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
+4. Leer este documento si se toca Venta/Cobro/Cuentas/Conciliación/Caja/CxC/CxP.
+5. Leer ADR 31 y los ADR específicos del dominio afectado.
+6. Confirmar rama, HEAD, origin, working tree y staging.
+7. Leer el RESULT del último bloque ejecutado.
+8. **No reabrir como pendientes decisiones ya implementadas.**
+9. Implementar por bloques pequeños, fail-closed y con RESULT verificable.
+10. No hacer commit/push hasta que focales, regresiones, suite, BD y gates estén GREEN.
+11. No corregir silenciosamente decisiones del operador.
+12. Jerarquía: checkpoint → Roadmap → North Star → ADR/plan → RESULT → conversación. `docs/README` se lee primero como índice, no como verdad adicional.
 
 ### Proveniencia de la evidencia de pago
 
@@ -406,3 +417,27 @@ SRCM carga secret/token fuera de DB, valida HMAC e identidad, encola sólo
 identificadores seguros y responde 200. El job posterior consulta la order
 canónica y usa el ingestor P5 con source Webhook. El body nunca elige tenant,
 cuenta ni importe financiero.
+
+---
+
+## 23. Continuidad financiera vigente hasta P9.7i
+
+La evolución posterior no reemplazó las verdades de este plan:
+
+- P5.1–P5.8.2 incorporó adaptadores, autenticidad, compatibilidad y health gates
+  sobre `FinancialExternalMovement`, sin ledger paralelo;
+- P6.1–P6.3 incorporó Centro de Conciliación, decisión explícita y resolución
+  append-only;
+- P7.1–P7.5 incorporó CSV/XLSX y fallback manual sobre el mismo motor;
+- P8 V1 cerró posventa preservando venta, devolución física y resolución
+  económica como hechos distintos;
+- P9.1–P9.6b publicó deuda, cobranza, aging, crédito, cuotas, anticipos y
+  excedentes de cliente;
+- P9.7a–P9.7i publicó documento de proveedor, match derivado, créditos,
+  anticipos, autorización agrupada y desembolso canónico.
+
+P9.7j es exclusivamente convergencia operacional HTTP/UI y control posterior.
+`PurchasePaymentExecution` permanece como historia legacy append-only;
+`PurchasePaymentDisbursement` es el parent canónico nuevo. Cash crea un único
+movimiento físico por desembolso y non-cash no inventa `CashMovement` ni
+`FinancialExternalMovement`.

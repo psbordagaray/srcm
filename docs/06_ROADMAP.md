@@ -1,12 +1,16 @@
 # SRCM — Roadmap maestro
 
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
-Actualizado: **2026-08-11**
+Actualizado: **2026-08-17**
 Rama de desarrollo: `feature/core-entity`
-Último checkpoint publicado al consolidar este roadmap:
+Último checkpoint funcional publicado al consolidar este roadmap:
 
-`7753e61fba147395362109d90ce895d61442562a`
-`feat(finance): add operational payment destinations`
+`baa46c70db85f5f54cfe4e824fe4996457841d28`
+`feat(purchase): add supplier payment disbursement foundation`
+
+Puerta de entrada obligatoria para recuperación:
+
+`docs/README.md`
 
 Documento detallado complementario:
 
@@ -46,6 +50,32 @@ Si una conversación se cuelga, se pierde o debe continuar en otro chat:
 6. Conversación/memoria, únicamente como apoyo.
 
 Nunca reabrir como pendiente una decisión ya implementada y validada salvo regresión demostrable.
+
+`docs/README.md` se lee primero como índice y puntero de recuperación, pero no
+agrega una verdad de dominio ni reemplaza esta jerarquía.
+
+---
+
+## 1.1. Estado maestro al cierre de P9.7i
+
+El checkpoint `baa46c70db85f5f54cfe4e824fe4996457841d28` deja publicados:
+
+- P1–P3.1: Terminal, evidencia, cuentas financieras y conciliación foundation;
+- P4A–P4F: Caja, turnos, ledger, cierres, hechos monetarios y pagos a proveedores;
+- P5.1–P5.8.2: provider-neutral, Mercado Pago, compatibilidad y health gates;
+- P6.1–P6.3: Centro de Conciliación, decisión explícita y resolución append-only;
+- P7.1–P7.5: preview/commit CSV, mapping, XLSX y fallback manual;
+- P8 V1: posventa cerrada en P8.5.8;
+- P9.1–P9.6b: CxC, cobranza, aging, política, cuotas, anticipos y excedentes;
+- P9.7a–P9.7i: documento proveedor, match, créditos, anticipos, autorización agrupada y desembolso canónico.
+
+Baseline formal: **812 tests / 6669 assertions**, 1122 paths versionados,
+998 archivos PHP válidos y BD real sin cambios durante el Master Project
+Integrity RECON.
+
+Próximo corte funcional exacto: **P9.7j — Supplier Payment Operational
+Convergence**. No debe comenzar desde una reinterpretación de P3/P4: su frontera
+está fijada por ADR 35, 89 y 90 y por `docs/README.md`.
 
 ---
 
@@ -422,6 +452,8 @@ La implementación V1 quedó cerrada por auditoría integral read-only sobre el 
 
 ## 8. P9 — Cuentas por cobrar y cuentas por pagar
 
+**Estado actual: P9.1–P9.7i PUBLICADOS / P9.7j SIGUIENTE CORTE.**
+
 ### CxC
 - cuenta corriente de cliente;
 - ventas a crédito;
@@ -447,6 +479,26 @@ La implementación V1 quedó cerrada por auditoría integral read-only sobre el 
 - 3-way match progresivo:
   **orden ↔ recepción ↔ documento del proveedor**;
 - diferencias explícitas antes de pagar.
+
+### Checkpoints publicados de P9
+
+- P9.1: cuenta por cobrar;
+- P9.2: cobranza e imputaciones;
+- P9.3: aging y exposición derivada;
+- P9.4: política de crédito y override;
+- P9.5: cuotas propias;
+- P9.6a: anticipos de clientes;
+- P9.6b: excedente de cobranza a crédito;
+- P9.7a: documento/factura de proveedor;
+- P9.7b: 3-way match derivado;
+- P9.7c: relevamiento de brechas, sin nueva verdad productiva;
+- P9.7d–P9.7e: nota de crédito y aplicación a obligación;
+- P9.7f–P9.7g: anticipo a proveedor y convergencia de crédito;
+- P9.7h: autorización agrupada;
+- P9.7i: desembolso canónico individual/agrupado, cash/non-cash.
+
+P9.7j debe converger la superficie operacional sobre
+`PurchasePaymentDisbursement` sin borrar ni reescribir la historia legacy.
 
 ---
 
@@ -1214,7 +1266,7 @@ La prioridad siempre será:
 **menos trabajo manual + más verdad + más seguridad + más velocidad + más trazabilidad.**
 
 <!-- P5.2_MERCADO_PAGO_POINT_ADAPTER_V1 -->
-### P5.2 — Mercado Pago Point adapter — FOUNDATION EN VALIDACIÓN
+### P5.2 — Mercado Pago Point adapter — PUBLICADO
 - primer adaptador concreto montado sobre P5.1 provider-neutral;
 - API de Orders vigente para Point;
 - normalización de recurso completo Point Order;
@@ -1226,10 +1278,11 @@ La prioridad siempre será:
 - sin credenciales persistidas, sin webhook público y sin cobro real en esta slice.
 
 Checkpoint base P5.1: `97653c38ca416906004e7fd4230756c6ce281115`.
+Checkpoint P5.2: `afcc9d863c6a291026fdce5cb74ad3fff7702ec6`.
 
 
 <!-- P5.3_MERCADO_PAGO_ORDERS_TEST_V1 -->
-### P5.3 — Mercado Pago Orders / prueba controlada — EN VALIDACIÓN
+### P5.3 — Mercado Pago Orders / prueba controlada — PUBLICADO
 - transporte HTTP mínimo `POST /v1/orders` + `GET /v1/orders/{id}`;
 - `X-Idempotency-Key` UUID v4 obligatorio;
 - minor units internos → decimal string sin float;
@@ -1239,9 +1292,11 @@ Checkpoint base P5.1: `97653c38ca416906004e7fd4230756c6ce281115`.
 - simulación `processed` + GET + normalización por adapter;
 - sin Point físico, sin dinero real y sin escritura en el ledger P3.
 
+Checkpoint P5.3: `67b08f0593d5657f5eb634ec2145af6ade6e457e`.
+
 
 <!-- P5.4_MERCADO_PAGO_WEBHOOK_RESOLUTION_V1 -->
-### P5.4 — Mercado Pago Webhook authenticity/resolution — EN VALIDACIÓN
+### P5.4 — Mercado Pago Webhook authenticity/resolution — PUBLICADO
 - HMAC-SHA256 sobre manifest oficial `data.id + x-request-id + ts`;
 - comparación constante y fail-closed ante firma incompleta o inválida;
 - body nunca selecciona tenant/cuenta;
@@ -1250,9 +1305,11 @@ Checkpoint base P5.1: `97653c38ca416906004e7fd4230756c6ce281115`.
 - secretos siguen fuera de DB/repo y entran sólo de forma transitoria;
 - sin ruta pública ni ingestión al ledger hasta resolver secret store + connection routing + ACK/job.
 
+Checkpoint P5.4: `9d5440f103cca6c940f991bc487760797eafa556`.
+
 
 <!-- P5.5_MERCADO_PAGO_WEBHOOK_HTTP_QUEUE_V1 -->
-### P5.5 — Mercado Pago Webhook HTTP/Queue + secret routing — EN VALIDACIÓN
+### P5.5 — Mercado Pago Webhook HTTP/Queue + secret routing — PUBLICADO
 - endpoint stateless `/api/webhooks/finance/mercado-pago/{connectionPublicId}`;
 - route UUID selecciona conexión interna, nunca el body;
 - secret store fuera de DB/repo mediante contrato reemplazable;
@@ -1262,3 +1319,5 @@ Checkpoint base P5.1: `97653c38ca416906004e7fd4230756c6ce281115`.
 - `HTTP 200` ocurre después de enqueue y antes del GET externo;
 - job obtiene order canónica y la ingiere con source Webhook;
 - sin URL pública real ni prueba externa en esta slice.
+
+Checkpoint P5.5: `8d26d07a60dd7777fc588e6ba71b968bf6e9ccd5`.
