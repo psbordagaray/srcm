@@ -102,6 +102,13 @@ class PurchaseOrder extends Model
             ->orderBy('id');
     }
 
+    public function supplierInvoices(): HasMany
+    {
+        return $this->hasMany(SupplierInvoice::class)
+            ->orderBy('issued_on')
+            ->orderBy('id');
+    }
+
     public function obligations(): HasMany
     {
         return $this->hasMany(PurchaseObligation::class)
