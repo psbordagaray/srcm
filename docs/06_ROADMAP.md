@@ -404,6 +404,9 @@ API primero; importación después; manual sólo cuando no exista alternativa ra
 
 ## 7. P8 — Posventa comercial completa
 
+**Estado V1: CERRADO / GREEN — P8.5.8.**
+La implementación V1 quedó cerrada por auditoría integral read-only sobre el checkpoint P8.5.7: contratos, 17 rutas HTTP, outcomes, ejecución final, crédito convergente y guardas regresaron GREEN; la suite completa quedó en 715 tests / 5948 assertions. Mercado Pago Refund conserva su gate DEGRADED/BLOCKED según ADR 65 y no se considera una brecha de P8 mientras SRCM mantenga el comportamiento fail-closed.
+
 - devoluciones parciales/totales;
 - cambios;
 - reembolsos;
