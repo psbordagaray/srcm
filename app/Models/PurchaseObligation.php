@@ -119,6 +119,15 @@ class PurchaseObligation extends Model
         )->orderBy('id');
     }
 
+    public function supplierCreditApplications(): HasMany
+    {
+        return $this->hasMany(
+            SupplierCreditApplication::class,
+            'purchase_obligation_id'
+        )->orderBy('applied_at')
+            ->orderBy('id');
+    }
+
     private function guardCreation(): void
     {
         $kind = $this->kind instanceof PurchaseObligationKind

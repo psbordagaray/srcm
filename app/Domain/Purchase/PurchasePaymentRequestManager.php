@@ -17,7 +17,8 @@ final class PurchasePaymentRequestManager
 {
     public function __construct(
         private readonly PurchaseActorGuard $actors,
-        private readonly AuditRecorder $audit
+        private readonly AuditRecorder $audit,
+        private readonly PurchaseObligationBalanceReader $balances
     ) {
     }
 
@@ -108,20 +109,9 @@ final class PurchasePaymentRequestManager
                 return $existing;
             }
 
-            $executedMinor = (int) PurchasePaymentExecution::query()
-                ->forOrganization($organizationId)
-                ->where(
-                    'purchase_obligation_id',
-                    $obligation->id
-                )
-                ->lockForUpdate()
-                ->get(['amount_minor'])
-                ->sum('amount_minor');
-            $remainingMinor = max(
-                0,
-                (int) $obligation->amount_minor
-                    - $executedMinor
-            );
+            $remainingMinor = $this->balances
+                ->locked($obligation)
+                ['remaining_minor'];
 
             if (
                 $remainingMinor <= 0

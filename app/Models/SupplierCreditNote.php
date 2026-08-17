@@ -8,6 +8,7 @@ use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class SupplierCreditNote extends Model
@@ -102,6 +103,15 @@ class SupplierCreditNote extends Model
             User::class,
             'recorded_by_user_id'
         );
+    }
+
+    public function applications(): HasMany
+    {
+        return $this->hasMany(
+            SupplierCreditApplication::class,
+            'supplier_credit_note_id'
+        )->orderBy('applied_at')
+            ->orderBy('id');
     }
 
     private function guardCreation(): void
