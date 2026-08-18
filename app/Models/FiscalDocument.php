@@ -9,6 +9,7 @@ use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class FiscalDocument extends Model
@@ -67,4 +68,5 @@ class FiscalDocument extends Model
     public function createdBy(): BelongsTo { return $this->belongsTo(User::class, 'created_by_user_id'); }
     public function lines(): HasMany { return $this->hasMany(FiscalDocumentLine::class)->orderBy('position'); }
     public function authorizationAttempts(): HasMany { return $this->hasMany(FiscalAuthorizationAttempt::class)->orderBy('attempt_number'); }
+    public function numberAssignment(): HasOne { return $this->hasOne(FiscalDocumentNumber::class); }
 }
