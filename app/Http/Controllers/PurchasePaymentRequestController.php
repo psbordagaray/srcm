@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Domain\Purchase\PurchasePaymentExecutionManager;
+use App\Domain\Purchase\PurchasePaymentDisbursementManager;
 use App\Domain\Purchase\PurchasePaymentRequestData;
 use App\Domain\Purchase\PurchasePaymentRequestManager;
 use App\Domain\Tenancy\CurrentOrganization;
+use App\Enums\PurchasePaymentDisbursementChannel;
 use App\Http\Requests\ApprovePurchasePaymentRequest;
 use App\Http\Requests\ExecutePurchasePaymentRequest;
 use App\Http\Requests\RequestPurchasePaymentRequest;
@@ -106,10 +107,10 @@ class PurchasePaymentRequestController extends Controller
     public function execute(
         ExecutePurchasePaymentRequest $request,
         PurchasePaymentRequest $purchasePaymentRequest,
-        PurchasePaymentExecutionManager $manager
+        PurchasePaymentDisbursementManager $manager
     ): RedirectResponse {
         try {
-            $execution = $manager->executeCash(
+            $disbursement = $manager->executeIndividual(
                 $purchasePaymentRequest,
                 $request->validated('execution_reference'),
                 $request->validated('execution_note'),
@@ -123,9 +124,14 @@ class PurchasePaymentRequestController extends Controller
             ]);
         }
 
+        $message = $disbursement->channel
+            === PurchasePaymentDisbursementChannel::Cash
+            ? 'Pago cash ejecutado: Caja fue afectada por un único egreso confirmado.'
+            : 'Pago non-cash ejecutado: quedó pendiente la verificación de evidencia externa.';
+
         return $this->redirectTo(
-            $execution->request,
-            'Pago en efectivo ejecutado y registrado. Caja fue afectada por el egreso confirmado.'
+            $disbursement->individualRequest,
+            $message
         );
     }
     public function reject(

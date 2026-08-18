@@ -9,14 +9,16 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Último checkpoint funcional publicado:
+Base exacta desde la que se publica P9.7j:
 
-`baa46c70db85f5f54cfe4e824fe4996457841d28`
-— `feat(purchase): add supplier payment disbursement foundation`
+`a0da002495ac9b7c8b37903ffc365eb894e9bec7`
+— `docs(roadmap): reconcile SRCM master continuity`
 
-Estado: P1–P7 publicados, P8 V1 cerrado y P9 publicado hasta P9.7i. Baseline
-formal: **812 tests / 6669 assertions**. Próximo corte funcional exacto:
-**P9.7j — Supplier Payment Operational Convergence**.
+Estado: P1–P7 publicados, P8 V1 cerrado y P9 publicado hasta P9.7j. Baseline
+formal pre-P9.7j: **812 tests / 6669 assertions**. Próximo corte exacto:
+**P9.7k — Supplier Payment External Verification RECON**.
+
+El checkpoint canónico es el `HEAD` publicado que contiene ADR 91.
 
 Esta North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
 ejecutivo de `docs/06_ROADMAP.md`; los tres forman una cadena deliberada para
@@ -631,12 +633,16 @@ se fija por una URL configurada por SRCM y queda protegida por su propio HMAC.
 ## Continuidad P9 — CxC/CxP y desembolso de proveedores
 
 P9.1–P9.6b publicó deuda de clientes, cobranzas e imputaciones, aging, política
-de crédito, cuotas, anticipos y convergencia de excedentes. P9.7a–P9.7i publicó
+de crédito, cuotas, anticipos y convergencia de excedentes. P9.7a–P9.7j publicó
 documento de proveedor, 3-way match derivado, notas de crédito, aplicaciones,
-anticipos, autorización agrupada y el parent canónico de desembolso.
+anticipos, autorización agrupada, el parent canónico de desembolso y su
+superficie operacional.
 
-P9.7j debe exponer esa verdad mediante HTTP/UI individual y agrupada, cash y
+P9.7j expone esa verdad mediante HTTP/UI individual y agrupada, cash y
 non-cash, sin duplicar reglas de dominio. `PurchasePaymentExecution` se conserva
 como historia append-only; `PurchasePaymentDisbursement` y sus allocations son
 la verdad canónica nueva. Un desembolso cash produce un solo `CashMovement` por
 el total y un desembolso non-cash no fabrica evidencia bancaria externa.
+
+P9.7k debe relevar en modo read-only la frontera con
+`FinancialExternalMovement` antes de diseñar matching de pagos salientes.

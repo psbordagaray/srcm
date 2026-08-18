@@ -170,6 +170,14 @@
                 || ! request()->user()?->can('view-purchases'),
         ],
         [
+            'label' => 'Pagos proveedores',
+            'route' => 'purchase-payment-operations.index',
+            'active' => 'purchase-payment-*',
+            'icon' => 'receipt',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('view-purchases'),
+        ],
+        [
             'label' => 'Cuentas',
             'route' => 'financial-accounts.index',
             'active' => 'financial-accounts.*',

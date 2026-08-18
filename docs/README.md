@@ -11,19 +11,22 @@ herramienta no pueda alterar dónde quedó SRCM ni hacia dónde continúa.
 
 El checkpoint canónico actual es siempre el `HEAD` publicado de
 `origin/feature/core-entity` cuando local y remoto coinciden y el repositorio
-está limpio. El último checkpoint funcional anterior a esta reconciliación es:
+está limpio. La base funcional exacta de P9.7j es el checkpoint de
+reconciliación:
 
-`baa46c70db85f5f54cfe4e824fe4996457841d28`
-— `feat(purchase): add supplier payment disbursement foundation`
+`a0da002495ac9b7c8b37903ffc365eb894e9bec7`
+— `docs(roadmap): reconcile SRCM master continuity`
 
-Baseline validada allí:
+Su parent funcional P9.7i es
+`baa46c70db85f5f54cfe4e824fe4996457841d28`. Baseline validada antes de
+P9.7j:
 
 - 1122 paths versionados;
 - 92 documentos;
 - 998 archivos PHP con sintaxis válida;
 - 812 tests / 6669 assertions;
 - BD real SQLite verificada en `query_only`, sin cambios;
-- próximo corte funcional: **P9.7j — Supplier Payment Operational Convergence**.
+- próximo corte después de publicar P9.7j: **P9.7k — Supplier Payment External Verification RECON**.
 
 ## Jerarquía de verdad
 
@@ -92,22 +95,29 @@ desde cero.
 | P7.1–P7.5 | CSV/XLSX, mapping, commit y fallback manual publicados |
 | P8 | Posventa V1 cerrada en P8.5.8 |
 | P9.1–P9.6b | CxC, aging, crédito, cuotas, anticipos y excedentes publicados |
-| P9.7a–P9.7i | Factura proveedor, match, créditos, anticipos, grupo y desembolso publicados |
+| P9.7a–P9.7j | Factura proveedor, match, créditos, anticipos, grupo, desembolso y operación HTTP/UI publicados |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
 
+## Estado funcional P9.7j
+
+**P9.7j — Supplier Payment Operational Convergence** converge la ejecución
+HTTP/UI individual y agrupada, cash y non-cash, sobre
+`PurchasePaymentDisbursement`. `PurchasePaymentExecution` permanece como
+historia append-only y ninguna ruta nueva escribe ese ledger.
+
+El control posterior cash usa arqueo/cierre; non-cash queda pendiente de verdad
+externa verificable. Un grupo cash produce un solo `CashMovement` por el total.
+Non-cash no inventa `CashMovement` ni `FinancialExternalMovement`.
+
 ## Próximo paso exacto
 
-**P9.7j — Supplier Payment Operational Convergence.**
+**P9.7k — Supplier Payment External Verification RECON.**
 
-Debe converger HTTP/UI y control posterior individual/agrupado, cash/non-cash,
-sobre `PurchasePaymentDisbursement`. Debe preservar
-`PurchasePaymentExecution` como historia append-only, producir un solo
-`CashMovement` por desembolso cash y no inventar `CashMovement` ni
-`FinancialExternalMovement` para non-cash.
-
-No comenzar P9.7j si branch, checkpoint, documentos rectores, BD o suite no
-coinciden con esta continuidad.
+Debe relevar read-only la convergencia posible entre desembolso saliente y
+`FinancialExternalMovement` antes de diseñar matching, comisiones o
+retenciones. No asumir que una referencia declarada equivale a acreditación o
+débito externo verificado.
 
 ## Registro mínimo de cada relevo
 

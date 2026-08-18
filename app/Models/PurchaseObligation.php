@@ -119,6 +119,14 @@ class PurchaseObligation extends Model
         )->orderBy('id');
     }
 
+    public function paymentExecutions(): HasMany
+    {
+        return $this->hasMany(
+            PurchasePaymentExecution::class,
+            'purchase_obligation_id'
+        )->orderBy('id');
+    }
+
     public function paymentGroupItems(): HasMany
     {
         return $this->hasMany(

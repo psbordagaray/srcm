@@ -6,8 +6,10 @@ use App\Domain\Inventory\InventoryQuantity;
 use App\Domain\Purchase\PurchaseOrderDraftData;
 use App\Domain\Purchase\PurchaseOrderLineData;
 use App\Domain\Purchase\PurchaseOrderManager;
+use App\Domain\Purchase\PurchaseObligationBalanceReader;
 use App\Domain\Purchase\PurchasePaymentControlReader;
 use App\Domain\Tenancy\CurrentOrganization;
+use App\Enums\FinancialAccountType;
 use App\Enums\PurchaseOrderStatus;
 use App\Http\Requests\CancelPurchaseOrderRequest;
 use App\Http\Requests\SavePurchaseOrderRequest;
@@ -157,7 +159,8 @@ class PurchaseOrderController extends Controller
         Request $request,
         string $purchaseOrder,
         CurrentOrganization $currentOrganization,
-        PurchasePaymentControlReader $paymentControl
+        PurchasePaymentControlReader $paymentControl,
+        PurchaseObligationBalanceReader $obligationBalance
     ): View {
         $order = $this->scopedOrder(
             $request,
@@ -184,18 +187,42 @@ class PurchaseOrderController extends Controller
             'receipts.obligations.paymentRequests.resolvedBy:id,name',
             'receipts.obligations.paymentRequests.execution.executedBy:id,name',
             'receipts.obligations.paymentRequests.execution.cashMovement:id,public_id,purchase_payment_execution_id,direction,type,amount_minor,currency_code,occurred_at',
+            'receipts.obligations.paymentRequests.disbursement.executedBy:id,name',
+            'receipts.obligations.paymentRequests.disbursement.originFinancialAccount:id,name,type,currency_code,active',
+            'receipts.obligations.paymentRequests.disbursement.cashMovement',
+            'receipts.obligations.paymentRequests.disbursement.cashRegisterSession.closure',
+            'receipts.obligations.paymentRequests.disbursement.cashRegister',
+            'receipts.obligations.paymentRequests.disbursement.allocations',
+            'receipts.obligations.paymentGroupItems.request:id,public_id,status',
         ]);
 
         $paymentControls = collect();
+        $disbursementControls = collect();
+        $obligationBalances = collect();
 
         foreach ($order->receipts as $receipt) {
             foreach ($receipt->obligations as $obligation) {
+                $obligationBalances->put(
+                    $obligation->id,
+                    $obligationBalance->read($obligation)
+                );
+
                 foreach ($obligation->paymentRequests as $paymentRequest) {
                     if ($paymentRequest->execution) {
                         $paymentControls->put(
                             $paymentRequest->execution->id,
                             $paymentControl->read(
                                 $paymentRequest->execution,
+                                $request->user()
+                            )
+                        );
+                    }
+
+                    if ($paymentRequest->disbursement) {
+                        $disbursementControls->put(
+                            $paymentRequest->disbursement->id,
+                            $paymentControl->readDisbursement(
+                                $paymentRequest->disbursement,
                                 $request->user()
                             )
                         );
@@ -207,6 +234,8 @@ class PurchaseOrderController extends Controller
             'order' => $order,
             'lineBalances' => $this->lineBalances($order),
             'paymentControls' => $paymentControls,
+            'disbursementControls' => $disbursementControls,
+            'obligationBalances' => $obligationBalances,
             'obligationBeneficiaries' =>
                 BusinessParty::query()
                     ->forOrganization((int) $order->organization_id)
@@ -216,6 +245,11 @@ class PurchaseOrderController extends Controller
                 FinancialAccount::query()
                     ->forOrganization((int) $order->organization_id)
                     ->where('active', true)
+                    ->where(
+                        'type',
+                        '!=',
+                        FinancialAccountType::CashReserve->value
+                    )
                     ->orderBy('name')
                     ->get([
                         'id',

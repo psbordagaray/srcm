@@ -7,9 +7,12 @@
                 <p class="mt-2 text-sm text-slate-400">Compromiso comercial, entregas parciales, costos documentados y vínculo atómico con Inventario.</p>
             </div>
 
-            @can('draft-purchase-orders')
-                <a href="{{ route('purchase-orders.create') }}" class="rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-300">Nueva orden</a>
-            @endcan
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('purchase-payment-operations.index') }}" class="rounded-xl border border-cyan-400/30 px-5 py-2.5 text-sm font-semibold text-cyan-200">Pagos a proveedores</a>
+                @can('draft-purchase-orders')
+                    <a href="{{ route('purchase-orders.create') }}" class="rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-300">Nueva orden</a>
+                @endcan
+            </div>
         </div>
 
         @if(session('success'))

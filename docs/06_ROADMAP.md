@@ -3,10 +3,13 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-17**
 Rama de desarrollo: `feature/core-entity`
-Último checkpoint funcional publicado al consolidar este roadmap:
+Base exacta desde la que se publica P9.7j:
 
-`baa46c70db85f5f54cfe4e824fe4996457841d28`
-`feat(purchase): add supplier payment disbursement foundation`
+`a0da002495ac9b7c8b37903ffc365eb894e9bec7`
+`docs(roadmap): reconcile SRCM master continuity`
+
+Una vez publicado el corte, el checkpoint canónico es el `HEAD` de
+`origin/feature/core-entity` que contiene ADR 91 y este roadmap.
 
 Puerta de entrada obligatoria para recuperación:
 
@@ -73,9 +76,9 @@ Baseline formal: **812 tests / 6669 assertions**, 1122 paths versionados,
 998 archivos PHP válidos y BD real sin cambios durante el Master Project
 Integrity RECON.
 
-Próximo corte funcional exacto: **P9.7j — Supplier Payment Operational
-Convergence**. No debe comenzar desde una reinterpretación de P3/P4: su frontera
-está fijada por ADR 35, 89 y 90 y por `docs/README.md`.
+P9.7j converge la operación HTTP/UI según ADR 91 sin reinterpretar P3/P4. El
+próximo corte exacto es **P9.7k — Supplier Payment External Verification
+RECON**, estrictamente read-only antes de diseñar matching saliente.
 
 ---
 
@@ -452,7 +455,7 @@ La implementación V1 quedó cerrada por auditoría integral read-only sobre el 
 
 ## 8. P9 — Cuentas por cobrar y cuentas por pagar
 
-**Estado actual: P9.1–P9.7i PUBLICADOS / P9.7j SIGUIENTE CORTE.**
+**Estado actual: P9.1–P9.7j PUBLICADOS / P9.7k RECON SIGUIENTE CORTE.**
 
 ### CxC
 - cuenta corriente de cliente;
@@ -496,9 +499,11 @@ La implementación V1 quedó cerrada por auditoría integral read-only sobre el 
 - P9.7f–P9.7g: anticipo a proveedor y convergencia de crédito;
 - P9.7h: autorización agrupada;
 - P9.7i: desembolso canónico individual/agrupado, cash/non-cash.
+- P9.7j: convergencia HTTP/UI y control posterior individual/agrupado,
+  cash/non-cash.
 
-P9.7j debe converger la superficie operacional sobre
-`PurchasePaymentDisbursement` sin borrar ni reescribir la historia legacy.
+P9.7k debe relevar la frontera de verificación externa del desembolso saliente
+sin borrar ni reescribir la historia legacy y sin fabricar evidencia bancaria.
 
 ---
 

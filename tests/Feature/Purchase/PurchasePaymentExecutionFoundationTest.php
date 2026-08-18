@@ -331,10 +331,15 @@ class PurchasePaymentExecutionFoundationTest extends TestCase
         $this->get(route('purchase-orders.show', $context['order']))
             ->assertOk()
             ->assertSee('EJECUTADA · PAGO REGISTRADO')
-            ->assertSee('Pago en efectivo ejecutado')
+            ->assertSee('Desembolso canónico Efectivo')
             ->assertSee('REC-HTTP');
 
-        $this->assertDatabaseCount('purchase_payment_executions', 1);
+        $this->assertDatabaseCount('purchase_payment_executions', 0);
+        $this->assertDatabaseCount('purchase_payment_disbursements', 1);
+        $this->assertDatabaseCount(
+            'purchase_payment_disbursement_allocations',
+            1
+        );
         $this->assertDatabaseCount('cash_movements', 1);
     }
 
