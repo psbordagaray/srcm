@@ -18,6 +18,7 @@ use App\Http\Controllers\FinancialAccountController;
 use App\Http\Controllers\FinancialReconciliationController;
 use App\Http\Controllers\FinancialStatementImportController;
 use App\Http\Controllers\FinancialManualExternalMovementController;
+use App\Http\Controllers\FiscalConfigurationController;
 use App\Http\Controllers\BusinessPartyController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerAccountController;
@@ -311,6 +312,37 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         '/organization',
                         [OrganizationController::class, 'update']
                     )->name('organization.update');
+
+                    Route::get(
+                        '/fiscal/configuration',
+                        [FiscalConfigurationController::class, 'index']
+                    )->name('fiscal-configuration.index');
+
+                    Route::put(
+                        '/fiscal/configuration/profile',
+                        [
+                            FiscalConfigurationController::class,
+                            'updateProfile',
+                        ]
+                    )->name('fiscal-configuration.profile.update');
+
+                    Route::post(
+                        '/fiscal/configuration/points-of-sale',
+                        [
+                            FiscalConfigurationController::class,
+                            'storePoint',
+                        ]
+                    )->name('fiscal-configuration.points.store');
+
+                    Route::patch(
+                        '/fiscal/configuration/points-of-sale/{fiscalPointOfSale:public_id}/toggle-active',
+                        [
+                            FiscalConfigurationController::class,
+                            'togglePoint',
+                        ]
+                    )
+                        ->whereUuid('fiscalPointOfSale')
+                        ->name('fiscal-configuration.points.toggle-active');
                 });
             Route::middleware('can:view-organization-members')
                 ->group(function () {

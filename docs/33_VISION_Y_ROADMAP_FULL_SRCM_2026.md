@@ -1,7 +1,7 @@
 # SRCM — Visión y Roadmap Full 2026
 
 Estado: **North Star / contrato de dirección y continuidad**
-Fecha: **2026-08-17**
+Fecha: **2026-08-18**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 Puerta de entrada de continuidad: `docs/README.md`
 
@@ -9,16 +9,17 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base exacta desde la que se publica P9.8:
+Base exacta desde la que se publica P10.1:
 
-`922cd73e62d1c05f82932992689a78c07f68de26`
-— `feat(purchase): resolve supplier payment external differences`
+`312b0520fec643789429b19e83036c235d0fd5c9`
+— `feat(purchase): add supplier payable exposure aging`
 
-Estado: P1–P7 publicados, P8 V1 cerrado y P9 publicado hasta P9.8. Baseline
-formal pre-P9.8: **830 tests / 6851 assertions**. P9.8 agrega 7 tests focales.
-Próximo corte exacto: **P10 — Fiscalidad argentina / ARCA RECON**.
+Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 RECON GREEN.
+Baseline formal pre-P10.1: **837 tests / 6893 assertions**. P10.1 agrega la
+configuración fiscal y 7 tests focales. Próximo corte exacto:
+**P10.2 — Fiscal Document Core RECON**.
 
-El checkpoint canónico será el `HEAD` publicado que contiene ADR 94.
+El checkpoint canónico será el `HEAD` publicado que contiene ADR 95.
 
 Esta North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
 ejecutivo de `docs/06_ROADMAP.md`; los tres forman una cadena deliberada para
@@ -653,4 +654,10 @@ mantiene CxP intacta.
 P9.8 deriva exposición y aging desde obligaciones y sus cuatro streams de
 liquidación. Separa proveedor, beneficiario y moneda; fija vencimiento efectivo
 y publica estado de cuenta sin tabla, snapshot ni saldo paralelo. Con este corte
-P9 CxC/CxP queda cerrado en V1. P10 comienza por RECON fiscal argentino.
+P9 CxC/CxP queda cerrado en V1.
+
+P10 RECON confirma que `CommerceSale` no depende de autorización fiscal y que
+su `sale_number` es interno. P10.1 agrega `FiscalOrganizationProfile` y
+`FiscalPointOfSale` por ambiente, con identidad protegida, sin documento,
+secuencia, WSAA, WSFE, CAE, CAEA ni QR. El siguiente corte es P10.2 — Fiscal
+Document Core RECON.

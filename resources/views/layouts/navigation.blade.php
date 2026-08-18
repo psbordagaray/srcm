@@ -68,7 +68,17 @@
             'active' => 'organization.*',
             'icon' => 'users',
             'disabled' => $currentOrganization === null,
-        ],        [
+        ],
+        [
+            'label' => 'Fiscalidad ARCA',
+            'route' => 'fiscal-configuration.index',
+            'active' => 'fiscal-configuration.*',
+            'icon' => 'receipt',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('manage-organization'),
+            'status' => 'P10.1',
+        ],
+        [
             'label' => 'Usuarios y permisos',
             'route' => 'organization-members.index',
             'active' => 'organization-members.*',

@@ -1,7 +1,7 @@
 # SRCM Full — Puerta de entrada y continuidad maestra
 
 Estado: **vinculante para recuperación de contexto**
-Actualizado: **2026-08-17**
+Actualizado: **2026-08-18**
 Rama canónica de desarrollo: `feature/core-entity`
 
 ## Empezar siempre aquí
@@ -11,21 +11,20 @@ herramienta no pueda alterar dónde quedó SRCM ni hacia dónde continúa.
 
 El checkpoint canónico actual es siempre el `HEAD` publicado de
 `origin/feature/core-entity` cuando local y remoto coinciden y el repositorio
-está limpio. La base funcional exacta desde la que se publica P9.7k es:
+está limpio. La base funcional exacta desde la que se publica P10.1 es:
 
-`c04f3156361cebb6f41b0d128ee4c33b9d5219d6`
-— `feat(purchase): converge supplier payment operations`
+`312b0520fec643789429b19e83036c235d0fd5c9`
+— `feat(purchase): add supplier payable exposure aging`
 
-Su parent funcional es `a0da002495ac9b7c8b37903ffc365eb894e9bec7`.
-Baseline publicada antes de P9.7k:
+Baseline publicada antes de P10.1:
 
-- 1130 paths versionados;
-- 93 documentos;
-- 1005 archivos PHP con sintaxis válida;
-- 816 tests / 6716 assertions;
+- 1153 paths versionados;
+- 96 documentos;
+- 1025 archivos PHP con sintaxis válida;
+- 837 tests / 6893 assertions;
 - BD real SQLite verificada en `query_only`, sin cambios;
-- RECON P9.7k validado con 70 tests / 522 assertions;
-- próximo corte después de publicar P9.7k: **P9.7l — Supplier Payment External Difference Resolution RECON**.
+- P10 ARCA RECON validado con 68 tests focales;
+- próximo corte después de P10.1: **P10.2 — Fiscal Document Core RECON**.
 
 ## Jerarquía de verdad
 
@@ -96,8 +95,25 @@ desde cero.
 | P9.1–P9.6b | CxC, aging, crédito, cuotas, anticipos y excedentes publicados |
 | P9.7a–P9.7l | Factura proveedor, match, créditos, anticipos, grupo, desembolso, verificación y resolución externa publicados |
 | P9.8 | Exposición, aging y estado de cuenta CxP derivados publicados; P9 V1 cerrado |
+| P10.1 | Perfil fiscal argentino y puntos de venta por ambiente; sin autorización remota |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
+
+## Estado funcional P10.1
+
+P10 RECON confirmó el contrato **venta comercial ≠ comprobante fiscal ≠
+autorización fiscal**. `CommerceSale` continúa siendo la verdad comercial y su
+`sale_number` no es una numeración fiscal.
+
+P10.1 agrega `FiscalOrganizationProfile` y `FiscalPointOfSale`: identidad fiscal
+argentina de la organización, CUIT validado, condición IVA referenciada,
+domicilio fiscal y puntos separados entre homologación y producción. Sólo el
+Administrador puede modificar esta configuración. Los puntos conservan
+identidad inmutable, admiten baja lógica y no pueden borrarse físicamente.
+
+Este corte no crea documentos fiscales ni realiza WSAA/WSFE. No asigna números,
+no produce CAE/CAEA/QR y no modifica ventas confirmadas. El siguiente corte
+exacto es **P10.2 — Fiscal Document Core RECON**.
 
 ## Estado funcional P9.7l
 

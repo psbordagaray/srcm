@@ -511,8 +511,11 @@ La implementación V1 quedó cerrada por auditoría integral read-only sobre el 
 - P9.8: exposición y aging CxP derivados, vencimiento efectivo, agregación por
   proveedor/beneficiario/moneda y estado de cuenta sin saldo paralelo.
 
-P9 queda cerrado en V1. El siguiente corte exacto es P10 — Fiscalidad
-argentina / ARCA RECON.
+P9 queda cerrado en V1. P10 RECON confirmó sobre `312b0520` que la venta
+comercial ya es una verdad independiente y que la capa fiscal aún no existe.
+
+P10.1 incorpora la configuración fiscal argentina por organización y puntos de
+venta por ambiente, sin documento, numeración, autorización ni HTTP externo.
 
 ---
 
@@ -554,6 +557,21 @@ Estados fiscales orientativos:
 - separación entre venta confirmada y autorización fiscal;
 - nunca inventar CAE ni numeración;
 - arquitectura preparada para otras jurisdicciones sin rediseñar Comercio.
+
+### P10.1 — Fiscal Configuration Foundation V1
+
+- `FiscalOrganizationProfile` separado de `Organization`;
+- CUIT validado, razón social, condición IVA referenciada, IIBB, inicio de
+  actividades y domicilio fiscal;
+- `FiscalPointOfSale` por organización, ambiente y número;
+- homologación y producción explícitamente separadas;
+- modos `wsfe_v1` y `wsmtxca` representables sin activación remota;
+- identidad del punto inmutable, baja lógica y prohibición de borrado físico;
+- administración exclusiva, tenancy, transacción, locks y auditoría;
+- cero dependencia desde `CommerceSale` hacia la capa fiscal;
+- cero numeración fiscal, WSAA, WSFE, CAE, CAEA o QR en este corte.
+
+Siguiente corte exacto: **P10.2 — Fiscal Document Core RECON**.
 
 ---
 

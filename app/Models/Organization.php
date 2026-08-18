@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 
@@ -130,6 +131,18 @@ class Organization extends Model
     public function businessParties(): HasMany
     {
         return $this->hasMany(BusinessParty::class);
+    }
+
+    public function fiscalProfile(): HasOne
+    {
+        return $this->hasOne(FiscalOrganizationProfile::class);
+    }
+
+    public function fiscalPointsOfSale(): HasMany
+    {
+        return $this->hasMany(FiscalPointOfSale::class)
+            ->orderBy('environment')
+            ->orderBy('point_number');
     }
 
     public function suppliers(): HasMany
