@@ -1,0 +1,4 @@
+<?php
+namespace App\Models;
+use App\Models\Concerns\BelongsToOrganization;use DomainException;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;
+class FiscalDocumentClassification extends Model {use BelongsToOrganization;protected $fillable=['organization_id','fiscal_document_id','voucher_class','voucher_code','classified_at','classified_by_user_id'];protected static function booted():void{static::updating(fn()=>throw new DomainException('La clasificación fiscal del documento es inmutable.'));static::deleting(fn()=>throw new DomainException('La clasificación fiscal del documento no puede eliminarse.'));}protected function casts():array{return ['classified_at'=>'immutable_datetime'];}public function document():BelongsTo{return $this->belongsTo(FiscalDocument::class,'fiscal_document_id');}}
