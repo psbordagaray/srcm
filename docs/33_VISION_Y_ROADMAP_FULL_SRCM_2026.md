@@ -9,19 +9,22 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base exacta desde la que se publica P10.1:
+Base funcional publicada al cierre de P10.7.4:
 
-`312b0520fec643789429b19e83036c235d0fd5c9`
-— `feat(purchase): add supplier payable exposure aging`
+`1783f95514837d2ec5b44933e9306d17316c5a6b`
+— `feat(fiscal): add fiscal concept and service period evidence`
 
-Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 RECON GREEN.
-Baseline formal pre-P10.1: **837 tests / 6893 assertions**. P10.1 agrega la
-configuración fiscal y 7 tests focales. Próximo corte exacto:
-**P10.2 — Fiscal Document Core RECON**.
+Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta
+P10.7.4. La capa fiscal ya separa configuración, documento, hechos de
+autorización, numeración, frontera de integración y evidencia explícita de
+perfil/política tributaria, composición, clasificación y concepto/período.
 
-El checkpoint canónico será el `HEAD` publicado que contiene ADR 95.
+La ejecución externa ARCA permanece deliberadamente bloqueada: P10.6.1 sólo
+publicó readiness de configuración y P10.6.2 confirmó en read-only que no había
+credenciales/endpoints activos. El próximo paso es un RECON de completitud del
+payload fiscal antes de habilitar WSAA/WSFE.
 
-Esta North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
+La North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
 ejecutivo de `docs/06_ROADMAP.md`; los tres forman una cadena deliberada para
 recuperar contexto sin depender de una conversación.
 

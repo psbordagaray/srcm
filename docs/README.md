@@ -11,21 +11,29 @@ herramienta no pueda alterar dónde quedó SRCM ni hacia dónde continúa.
 
 El checkpoint canónico actual es siempre el `HEAD` publicado de
 `origin/feature/core-entity` cuando local y remoto coinciden y el repositorio
-está limpio. La base funcional exacta desde la que se publica P10.1 es:
+está limpio. La base funcional publicada que este checkpoint documental
+sincroniza es:
 
-`312b0520fec643789429b19e83036c235d0fd5c9`
-— `feat(purchase): add supplier payable exposure aging`
+`1783f95514837d2ec5b44933e9306d17316c5a6b`
+— `feat(fiscal): add fiscal concept and service period evidence`
 
-Baseline publicada antes de P10.1:
+Estado verificado al cierre de P10.7.4:
 
-- 1153 paths versionados;
-- 96 documentos;
-- 1025 archivos PHP con sintaxis válida;
-- 837 tests / 6893 assertions;
-- BD real SQLite verificada en `query_only`, sin cambios;
-- P10 ARCA RECON validado con 68 tests focales;
-- próximo corte después de P10.1: **P10.2 — Fiscal Document Core RECON**.
-
+- P10.1–P10.5: configuración, documento fiscal, hechos de autorización,
+  numeración interna fiscal y frontera provider-neutral publicados;
+- P10.6.1: readiness de configuración de homologación publicado, sin ejecutar
+  WSAA/WSFE ni cargar secretos;
+- P10.6.2: preflight de credenciales GREEN confirmó configuración deshabilitada
+  y ausencia de credenciales/endpoints activos;
+- P10.7.1: perfil fiscal de contraparte y política tributaria versionada;
+- P10.7.2: composición tributaria explícita e inmutable por documento;
+- P10.7.3: clasificación fiscal explícita e inmutable;
+- P10.7.4: concepto fiscal explícito y período de servicios cuando corresponde;
+- focales y suite completa GREEN en el checkpoint P10.7.4;
+- BD real SQLite SHA-256
+  `EC6B45D96173C7E0BBC54D03B0F8B0052502A94A0949D4C8B9427CE9E2830DBF`
+  sin cambios;
+- repo limpio y staging vacío al publicar P10.7.4.
 ## Jerarquía de verdad
 
 1. Código, migraciones y tests del checkpoint Git publicado.
@@ -95,26 +103,34 @@ desde cero.
 | P9.1–P9.6b | CxC, aging, crédito, cuotas, anticipos y excedentes publicados |
 | P9.7a–P9.7l | Factura proveedor, match, créditos, anticipos, grupo, desembolso, verificación y resolución externa publicados |
 | P9.8 | Exposición, aging y estado de cuenta CxP derivados publicados; P9 V1 cerrado |
-| P10.1 | Perfil fiscal argentino y puntos de venta por ambiente; sin autorización remota |
+| P10.1–P10.5 | Configuración fiscal, documento, hechos de autorización, numeración y frontera de integración publicados |
+| P10.6.1 | Readiness de homologación publicado; transporte, secretos y ejecución externa siguen bloqueados |
+| P10.7.1–P10.7.4 | Perfil/política fiscal, composición tributaria, clasificación y concepto/período publicados |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
+## Estado funcional P10 al cierre de P10.7.4
 
-## Estado funcional P10.1
+P10 mantiene el contrato **venta comercial ≠ comprobante fiscal ≠ autorización
+fiscal**. `CommerceSale` sigue siendo la verdad comercial y su `sale_number` no
+es autoridad fiscal.
 
-P10 RECON confirmó el contrato **venta comercial ≠ comprobante fiscal ≠
-autorización fiscal**. `CommerceSale` continúa siendo la verdad comercial y su
-`sale_number` no es una numeración fiscal.
+La capa publicada ya contiene configuración fiscal por organización y punto de
+venta, documento fiscal append-only, hechos de autorización, numeración fiscal
+interna separada, contratos provider-neutral, readiness de homologación,
+perfil/política fiscal de contraparte, composición tributaria, clasificación y
+concepto fiscal con período de servicios cuando corresponde.
 
-P10.1 agrega `FiscalOrganizationProfile` y `FiscalPointOfSale`: identidad fiscal
-argentina de la organización, CUIT validado, condición IVA referenciada,
-domicilio fiscal y puntos separados entre homologación y producción. Sólo el
-Administrador puede modificar esta configuración. Los puntos conservan
-identidad inmutable, admiten baja lógica y no pueden borrarse físicamente.
+Las decisiones P10.7 son explícitas: SRCM no infiere desde la venta la clase de
+comprobante, la alícuota, la composición tributaria ni el concepto fiscal. La
+evidencia fiscal se registra de forma separada e inmutable.
 
-Este corte no crea documentos fiscales ni realiza WSAA/WSFE. No asigna números,
-no produce CAE/CAEA/QR y no modifica ventas confirmadas. El siguiente corte
-exacto es **P10.2 — Fiscal Document Core RECON**.
+No existe todavía ejecución real WSAA/WSFE desde SRCM. No se han habilitado
+credenciales productivas ni de homologación, no se inventan CAE/CAEA y no se
+considera listo el transporte externo hasta completar el payload fiscal y sus
+gates de homologación.
 
+Checkpoint funcional publicado de referencia:
+`1783f95514837d2ec5b44933e9306d17316c5a6b`.
 ## Estado funcional P9.7l
 
 **P9.7k — Supplier Payment External Verification V1** vincula explícitamente
@@ -146,11 +162,17 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P10 — Fiscalidad argentina / ARCA RECON.**
+**P10 — Fiscal Payload Completeness RECON**, estrictamente read-only.
 
-Debe relevar la frontera comercial/fiscal argentina sin convertir el
-comprobante ni su autorización en la verdad primaria de la venta.
+Debe comparar el payload fiscal actualmente persistido con la estructura
+necesaria para una futura autorización WSFE, empezando por las brechas que el
+Core todavía no representa explícitamente: moneda/cotización cuando aplique,
+comprobantes o períodos asociados para notas de crédito/débito, fechas fiscales
+condicionales y cualquier otra evidencia requerida por el modo de comprobante.
 
+El RECON no asignará un nuevo subnúmero por simple secuencia: primero debe
+confirmar la frontera real. No habilitará WSAA/WSFE, secretos, homologación ni
+producción y no modificará ventas ni BD real.
 ## Registro mínimo de cada relevo
 
 Todo RESULT debe dejar: proyecto, fase, fecha, rama, HEAD/base/origin, ADR,

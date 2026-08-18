@@ -1,15 +1,16 @@
 # SRCM — Roadmap maestro
 
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
-Actualizado: **2026-08-17**
+Actualizado: **2026-08-18**
 Rama de desarrollo: `feature/core-entity`
-Base exacta desde la que se publica P9.7k:
+Base funcional publicada al cierre de P10.7.4:
 
-`c04f3156361cebb6f41b0d128ee4c33b9d5219d6`
-`feat(purchase): converge supplier payment operations`
+`1783f95514837d2ec5b44933e9306d17316c5a6b`
+`feat(fiscal): add fiscal concept and service period evidence`
 
-Una vez publicado el corte, el checkpoint canónico es el `HEAD` de
-`origin/feature/core-entity` que contiene ADR 92 y este roadmap.
+El checkpoint canónico es siempre el `HEAD` de
+`origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
+limpio. Este documento debe mantenerse sincronizado con `docs/README.md`.
 
 Puerta de entrada obligatoria para recuperación:
 
@@ -59,9 +60,10 @@ agrega una verdad de dominio ni reemplaza esta jerarquía.
 
 ---
 
-## 1.1. Estado maestro al cierre de P9.7k
+## 1.1. Estado maestro al cierre de P10.7.4
 
-El checkpoint `baa46c70db85f5f54cfe4e824fe4996457841d28` deja publicados:
+El checkpoint funcional
+`1783f95514837d2ec5b44933e9306d17316c5a6b` deja publicados:
 
 - P1–P3.1: Terminal, evidencia, cuentas financieras y conciliación foundation;
 - P4A–P4F: Caja, turnos, ledger, cierres, hechos monetarios y pagos a proveedores;
@@ -69,17 +71,26 @@ El checkpoint `baa46c70db85f5f54cfe4e824fe4996457841d28` deja publicados:
 - P6.1–P6.3: Centro de Conciliación, decisión explícita y resolución append-only;
 - P7.1–P7.5: preview/commit CSV, mapping, XLSX y fallback manual;
 - P8 V1: posventa cerrada en P8.5.8;
-- P9.1–P9.6b: CxC, cobranza, aging, política, cuotas, anticipos y excedentes;
-- P9.7a–P9.7j: documento proveedor, match, créditos, anticipos, autorización agrupada, desembolso canónico y operación HTTP/UI.
+- P9 V1: CxC/CxP, cobranzas, aging, políticas, cuotas, anticipos, créditos,
+  desembolsos, verificación externa y resolución;
+- P10.1: configuración fiscal argentina y puntos de venta por ambiente;
+- P10.2: documento fiscal y líneas append-only;
+- P10.3: hechos de autorización separados del documento;
+- P10.4: numeración fiscal interna separada de `sale_number`;
+- P10.5: frontera provider-neutral de autorización;
+- P10.6.1: readiness de configuración de homologación, todavía sin ejecución;
+- P10.7.1: perfil fiscal de contraparte y política tributaria versionada;
+- P10.7.2: composición tributaria explícita e inmutable;
+- P10.7.3: clasificación fiscal explícita e inmutable;
+- P10.7.4: concepto fiscal y período de servicios explícitos e inmutables.
 
-Baseline formal publicada: **816 tests / 6716 assertions**, 1130 paths
-versionados, 1005 archivos PHP válidos y BD real sin cambios durante el RECON
-P9.7k.
+Los checkpoints P10.3, P10.4, P10.5, P10.6.1 y P10.7.1–P10.7.4 cerraron con
+focales y suite completa GREEN y mantuvieron la misma BD real SQLite sin
+cambios. P10.6.2 fue un preflight read-only que confirmó que homologación y
+producción permanecían deshabilitadas y sin credenciales/endpoints activos.
 
-P9.7k incorpora verificación explícita de desembolso non-cash contra un débito
-externo contabilizado según ADR 92, sin reinterpretar P3/P4 ni reutilizar la
-conciliación entrante. El próximo corte exacto es **P9.7l — Supplier Payment
-External Difference Resolution RECON**, estrictamente read-only.
+La siguiente frontera no se deduce por numeración. Debe relevarse el payload
+fiscal que aún falta antes de cualquier ejecución WSAA/WSFE.
 
 ---
 
@@ -578,7 +589,58 @@ Estados fiscales orientativos:
 - el estado es derivado (`pending`) mientras no exista un hecho de autorización;
 - sin numeración, CAE, QR, alícuotas, credenciales, adapter ni comunicación ARCA.
 
-Siguiente corte exacto: **P10.3 — Fiscal authorization facts RECON**.
+### P10.3 — Fiscal Authorization Facts V1
+
+- intentos y respuestas de autorización como hechos separados e inmutables;
+- outcomes explícitos y estado fiscal derivado desde la evidencia;
+- ningún resultado remoto reescribe la venta ni el documento fiscal.
+
+### P10.4 — Fiscal Document Numbering V1
+
+- numeración fiscal interna separada de `CommerceSale.sale_number`;
+- identidad por documento/punto/ambiente y evidencia inmutable;
+- la numeración interna nunca reemplaza CAE ni autoridad ARCA.
+
+### P10.5 — Fiscal Authorization Integration Boundary V1
+
+- contratos provider-neutral para adapter, transporte, credenciales, request y result;
+- separación entre Core fiscal y proveedor externo;
+- todavía sin WSAA, HTTP, secretos ni ejecución remota.
+
+### P10.6 — External Execution / Homologation Readiness
+
+- P10.6 RECON confirmó que transporte HTTP, credential store efectivo y ejecución externa seguían ausentes;
+- P10.6.1 publicó readiness/configuración de homologación sin secretos ni llamadas externas;
+- P10.6.2 preflight read-only confirmó homologación/producción deshabilitadas y ausencia de credenciales/endpoints activos;
+- no se habilita ejecución real mientras el payload fiscal no esté completo.
+
+### P10.7 — Fiscal Classification & Tax Evidence
+
+#### P10.7.1 — Fiscal Recipient & Tax Policy V1
+- perfil fiscal de contraparte separado de la identidad comercial;
+- política tributaria versionada por organización;
+- sin inferir comprobante ni IVA desde la venta.
+
+#### P10.7.2 — Fiscal Tax Composition V1
+- bases, tasas e importes tributarios explícitos por documento;
+- evidencia inmutable;
+- sin recalcular silenciosamente desde precios comerciales.
+
+#### P10.7.3 — Fiscal Voucher Classification V1
+- clase/código fiscal explícito e inmutable por documento;
+- ninguna regla automática selecciona comprobante desde la venta.
+
+#### P10.7.4 — Fiscal Concept & Service Period V1
+- concepto fiscal explícito: productos, servicios o ambos;
+- servicios y mixtos exigen período desde/hasta válido;
+- evidencia inmutable y separada;
+- sin inferencia desde venta y sin activar ARCA.
+
+**Próximo paso exacto:** `P10 — Fiscal Payload Completeness RECON`, read-only.
+Debe relevar moneda/cotización, comprobantes/períodos asociados, fechas fiscales
+condicionales y cualquier otra evidencia necesaria antes de construir una
+solicitud WSFE real. El RECON fijará el siguiente subcorte; no se asigna por
+simple continuidad numérica.
 
 ---
 
