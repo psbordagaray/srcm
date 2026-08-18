@@ -74,4 +74,5 @@ class FiscalDocument extends Model
     public function conceptRecord(): HasOne { return $this->hasOne(FiscalDocumentConcept::class); }
     public function recipientEvidence(): HasOne { return $this->hasOne(FiscalDocumentRecipientEvidence::class); }
     public function issueDateRecord(): HasOne { return $this->hasOne(FiscalDocumentIssueDate::class); }
+    public function monetarySummary(): HasOne { return $this->hasOne(FiscalDocumentMonetarySummary::class); }
 }
