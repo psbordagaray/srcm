@@ -1,0 +1,4 @@
+<?php
+namespace App\Models;
+use App\Models\Concerns\BelongsToOrganization;use DomainException;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;
+class FiscalBusinessPartyProfile extends Model {use BelongsToOrganization;protected $fillable=['organization_id','business_party_id','tax_id','vat_condition_code','created_by_user_id','updated_by_user_id'];protected static function booted():void{static::updating(function(self $model):void{if($model->isDirty(['organization_id','business_party_id','created_by_user_id'])){throw new DomainException('La pertenencia del perfil fiscal del receptor es inmutable.');}});static::deleting(fn()=>throw new DomainException('Un perfil fiscal del receptor no puede eliminarse.'));}public function party():BelongsTo{return $this->belongsTo(BusinessParty::class,'business_party_id');}}
