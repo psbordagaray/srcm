@@ -178,6 +178,14 @@
                 || ! request()->user()?->can('view-purchases'),
         ],
         [
+            'label' => 'CxP / aging',
+            'route' => 'supplier-payables.aging',
+            'active' => 'supplier-payables.*',
+            'icon' => 'receipt',
+            'disabled' => $currentOrganization === null
+                || ! request()->user()?->can('view-purchases'),
+        ],
+        [
             'label' => 'Cuentas',
             'route' => 'financial-accounts.index',
             'active' => 'financial-accounts.*',

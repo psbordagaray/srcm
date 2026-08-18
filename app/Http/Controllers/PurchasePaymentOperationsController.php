@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Domain\Purchase\PurchasePaymentControlReader;
 use App\Domain\Purchase\PurchasePaymentExternalVerificationReader;
+use App\Domain\Purchase\PurchaseObligationBalanceReader;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\FinancialAccountType;
 use App\Models\FinancialAccount;
@@ -20,6 +21,7 @@ class PurchasePaymentOperationsController extends Controller
         Request $request,
         CurrentOrganization $currentOrganization,
         PurchasePaymentControlReader $control,
+        PurchaseObligationBalanceReader $balances,
         PurchasePaymentExternalVerificationReader $externalVerification
     ): View {
         $organizationId = $currentOrganization->id(
@@ -45,7 +47,8 @@ class PurchasePaymentOperationsController extends Controller
 
         $eligibleBuckets = $this->eligibleBuckets(
             $organizationId,
-            $origins
+            $origins,
+            $balances
         );
 
         $groups = PurchasePaymentGroupRequest::query()
@@ -162,7 +165,8 @@ class PurchasePaymentOperationsController extends Controller
      */
     private function eligibleBuckets(
         int $organizationId,
-        Collection $origins
+        Collection $origins,
+        PurchaseObligationBalanceReader $balances
     ): Collection {
         $obligations = PurchaseObligation::query()
             ->forOrganization($organizationId)
@@ -174,38 +178,16 @@ class PurchasePaymentOperationsController extends Controller
                 'paymentGroupItems:id,purchase_obligation_id,purchase_payment_group_request_id',
                 'paymentGroupItems.request:id,status',
             ])
-            ->withSum(
-                'paymentExecutions as legacy_execution_minor',
-                'amount_minor'
-            )
-            ->withSum(
-                'paymentDisbursementAllocations as disbursement_execution_minor',
-                'amount_minor'
-            )
-            ->withSum(
-                'supplierCreditApplications as supplier_credit_minor',
-                'amount_minor'
-            )
-            ->withSum(
-                'supplierAdvanceApplications as supplier_advance_minor',
-                'amount_minor'
-            )
             ->latest('id')
             ->limit(250)
             ->get();
 
         $buckets = collect();
+        $balanceRows = $balances->readMany($obligations);
 
         foreach ($obligations as $obligation) {
-            $settledMinor =
-                (int) $obligation->legacy_execution_minor
-                + (int) $obligation->disbursement_execution_minor
-                + (int) $obligation->supplier_credit_minor
-                + (int) $obligation->supplier_advance_minor;
-            $remainingMinor = max(
-                0,
-                (int) $obligation->amount_minor - $settledMinor
-            );
+            $remainingMinor = (int) $balanceRows
+                ->get($obligation->id)['remaining_minor'];
             $hasActiveIndividual = $obligation
                 ->paymentRequests
                 ->contains(

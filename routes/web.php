@@ -64,6 +64,7 @@ use App\Http\Controllers\ServicePartController;
 use App\Http\Controllers\ServiceWarrantyClaimController;
 use App\Http\Controllers\ServiceWorkController;
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\SupplierPayableController;
 use App\Http\Controllers\SupplierOfferController;
 use App\Http\Controllers\TechnicalModelController;
 use App\Http\Middleware\RequireOrganization;
@@ -859,6 +860,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         'purchases/payment-operations',
                         [PurchasePaymentOperationsController::class, 'index']
                     )->name('purchase-payment-operations.index');
+
+                    Route::get(
+                        'purchases/payables/aging',
+                        [SupplierPayableController::class, 'index']
+                    )->name('supplier-payables.aging');
+
+                    Route::get(
+                        'suppliers/{supplier}/account',
+                        [SupplierPayableController::class, 'show']
+                    )
+                        ->whereNumber('supplier')
+                        ->name('suppliers.account');
 
                     Route::get(
                         'purchases/{purchaseOrder}',

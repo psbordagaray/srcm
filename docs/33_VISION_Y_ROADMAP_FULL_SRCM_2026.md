@@ -9,16 +9,16 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base exacta desde la que se publica P9.7l:
+Base exacta desde la que se publica P9.8:
 
-`83dde8a9e2efa01b57d1d2cb336151f44a248867`
-— `feat(purchase): verify supplier payments externally`
+`922cd73e62d1c05f82932992689a78c07f68de26`
+— `feat(purchase): resolve supplier payment external differences`
 
-Estado: P1–P7 publicados, P8 V1 cerrado y P9 publicado hasta P9.7l. Baseline
-formal pre-P9.7l: **823 tests / 6762 assertions**. Próximo corte exacto:
-**P9.8 — Supplier Payables Exposure & Aging RECON**.
+Estado: P1–P7 publicados, P8 V1 cerrado y P9 publicado hasta P9.8. Baseline
+formal pre-P9.8: **830 tests / 6851 assertions**. P9.8 agrega 7 tests focales.
+Próximo corte exacto: **P10 — Fiscalidad argentina / ARCA RECON**.
 
-El checkpoint canónico será el `HEAD` publicado que contiene ADR 93.
+El checkpoint canónico será el `HEAD` publicado que contiene ADR 94.
 
 Esta North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
 ejecutivo de `docs/06_ROADMAP.md`; los tres forman una cadena deliberada para
@@ -648,4 +648,9 @@ P9.7k vincula explícitamente un desembolso non-cash con un
 `FinancialExternalMovement` `Debit + Posted` mediante evidencia append-only,
 sin ampliar `PaymentReconciliation` ni automatizar la decisión. P9.7l incorpora
 resolución/derivación append-only por observación externa, preserva snapshots y
-mantiene CxP intacta. P9.8 relevará exposición y aging de proveedores.
+mantiene CxP intacta.
+
+P9.8 deriva exposición y aging desde obligaciones y sus cuatro streams de
+liquidación. Separa proveedor, beneficiario y moneda; fija vencimiento efectivo
+y publica estado de cuenta sin tabla, snapshot ni saldo paralelo. Con este corte
+P9 CxC/CxP queda cerrado en V1. P10 comienza por RECON fiscal argentino.

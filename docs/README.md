@@ -95,6 +95,7 @@ desde cero.
 | P8 | Posventa V1 cerrada en P8.5.8 |
 | P9.1–P9.6b | CxC, aging, crédito, cuotas, anticipos y excedentes publicados |
 | P9.7a–P9.7l | Factura proveedor, match, créditos, anticipos, grupo, desembolso, verificación y resolución externa publicados |
+| P9.8 | Exposición, aging y estado de cuenta CxP derivados publicados; P9 V1 cerrado |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
 
@@ -117,13 +118,22 @@ observación externa vigente: excepción de tesorería aceptada o seguimiento co
 entidad, proveedor o evidencia. Conserva estado e importes, no modifica CxP y
 no fabrica un asiento contable.
 
+## Estado funcional P9.8
+
+`SupplierPayableAgingReader` proyecta la exposición abierta por proveedor,
+beneficiario y moneda. `SupplierPayableStatementReader` conserva obligaciones y
+las cuatro clases de imputación en un estado de cuenta cronológico.
+
+P9.8 no agrega migración, tabla, snapshot ni saldo mutable. `due_date` usa
+`due_on`, `on_receipt` usa la fecha de recepción y `other` permanece sin fecha.
+Autorización y evidencia externa no reducen CxP.
+
 ## Próximo paso exacto
 
-**P9.8 — Supplier Payables Exposure & Aging RECON.**
+**P10 — Fiscalidad argentina / ARCA RECON.**
 
-Debe relevar read-only vencimientos, aging, exposición y estado de cuenta de
-proveedores sobre obligaciones, créditos, anticipos y desembolsos ya
-publicados, sin almacenar un saldo paralelo.
+Debe relevar la frontera comercial/fiscal argentina sin convertir el
+comprobante ni su autorización en la verdad primaria de la venta.
 
 ## Registro mínimo de cada relevo
 

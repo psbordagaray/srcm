@@ -453,4 +453,10 @@ comisiones y retenciones permanecen visibles.
 P9.7l agrega una decisión append-only por observación externa. Puede aceptar
 administrativamente una excepción `Posted` o derivarla a seguimiento de
 entidad, proveedor o evidencia; conserva snapshots y nunca modifica CxP ni
-fabrica contabilidad. P9.8 relevará exposición y aging de proveedores.
+fabrica contabilidad.
+
+P9.8 publica exposición y aging derivados sobre
+`PurchaseObligationBalanceReader`, con vencimiento efectivo, agrupación por
+proveedor/beneficiario/moneda y estado de cuenta cronológico. No incorpora
+saldo almacenado, snapshot ni migración. P9 CxC/CxP queda cerrado en V1 y el
+siguiente corte exacto es P10 — Fiscalidad argentina / ARCA RECON.

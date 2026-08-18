@@ -8,6 +8,7 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
+                <a href="{{ route('supplier-payables.aging') }}" class="rounded-xl border border-amber-400/30 px-5 py-2.5 text-sm font-semibold text-amber-200">CxP / aging</a>
                 <a href="{{ route('purchase-payment-operations.index') }}" class="rounded-xl border border-cyan-400/30 px-5 py-2.5 text-sm font-semibold text-cyan-200">Pagos a proveedores</a>
                 @can('draft-purchase-orders')
                     <a href="{{ route('purchase-orders.create') }}" class="rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-950 transition hover:bg-amber-300">Nueva orden</a>
