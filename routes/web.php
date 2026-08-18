@@ -28,6 +28,7 @@ use App\Http\Controllers\CustomerCreditPolicyController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\PurchaseObligationController;
+use App\Http\Controllers\PurchasePaymentExternalVerificationController;
 use App\Http\Controllers\PurchasePaymentGroupRequestController;
 use App\Http\Controllers\PurchasePaymentOperationsController;
 use App\Http\Controllers\PurchasePaymentRequestController;
@@ -999,6 +1000,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereUuid('purchasePaymentGroupRequest')
                         ->name('purchase-payment-groups.execute');
                 });
+
+            Route::middleware('can:review-financial-reconciliation')
+                ->group(function () {
+                    Route::post(
+                        'purchases/payment-disbursements/{purchasePaymentDisbursement:public_id}/external-movements/{financialExternalMovement}/verify',
+                        [PurchasePaymentExternalVerificationController::class, 'store']
+                    )
+                        ->whereUuid('purchasePaymentDisbursement')
+                        ->whereUuid('financialExternalMovement')
+                        ->name(
+                            'purchase-payment-disbursements.external-verifications.store'
+                        );
+                });
+
             Route::middleware('can:approve-purchase-payments')
                 ->group(function () {
                     Route::post(

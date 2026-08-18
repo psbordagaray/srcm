@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Domain\Purchase\PurchasePaymentControlReader;
+use App\Domain\Purchase\PurchasePaymentExternalVerificationReader;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\FinancialAccountType;
 use App\Models\FinancialAccount;
@@ -18,7 +19,8 @@ class PurchasePaymentOperationsController extends Controller
     public function index(
         Request $request,
         CurrentOrganization $currentOrganization,
-        PurchasePaymentControlReader $control
+        PurchasePaymentControlReader $control,
+        PurchasePaymentExternalVerificationReader $externalVerification
     ): View {
         $organizationId = $currentOrganization->id(
             $request->user()
@@ -78,12 +80,18 @@ class PurchasePaymentOperationsController extends Controller
                 'cashMovement',
                 'cashRegisterSession.closure',
                 'cashRegister',
+                'externalVerification.financialMovement.account',
+                'externalVerification.verifiedBy:id,name',
             ])
             ->latest('id')
             ->limit(50)
             ->get();
 
         $controls = collect();
+        $externalCandidates = collect();
+        $canVerifyExternal = $request->user()->can(
+            'review-financial-reconciliation'
+        );
 
         foreach ($disbursements as $disbursement) {
             $controls->put(
@@ -93,6 +101,24 @@ class PurchasePaymentOperationsController extends Controller
                     $request->user()
                 )
             );
+
+            if (
+                $canVerifyExternal
+                && $disbursement->channel->value
+                    === 'noncash'
+                && $disbursement
+                    ->externalVerification === null
+            ) {
+                $externalCandidates->put(
+                    $disbursement->id,
+                    collect(
+                        $externalVerification->candidates(
+                            $disbursement,
+                            $request->user()
+                        )
+                    )
+                );
+            }
         }
 
         return view('purchases.payment-operations', [
@@ -100,6 +126,10 @@ class PurchasePaymentOperationsController extends Controller
             'groups' => $groups,
             'disbursements' => $disbursements,
             'controls' => $controls,
+            'externalCandidates' =>
+                $externalCandidates,
+            'canVerifyExternal' =>
+                $canVerifyExternal,
             'summary' => [
                 'eligible_obligations' =>
                     $eligibleBuckets->sum(

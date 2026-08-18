@@ -6,7 +6,10 @@ use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\CashMovementDirection;
 use App\Enums\CashMovementType;
 use App\Enums\FinancialAccountType;
+use App\Enums\FinancialMovementDirection;
+use App\Enums\FinancialMovementStatus;
 use App\Enums\PurchasePaymentDisbursementChannel;
+use App\Models\FinancialExternalMovement;
 use App\Models\PurchasePaymentDisbursement;
 use App\Models\PurchasePaymentExecution;
 use App\Models\User;
@@ -228,6 +231,8 @@ final class PurchasePaymentControlReader
                 'cashRegisterSession.closure',
                 'cashRegister',
                 'executedBy:id,name',
+                'externalVerification.financialMovement.account',
+                'externalVerification.verifiedBy:id,name',
             ])
             ->first();
 
@@ -278,22 +283,9 @@ final class PurchasePaymentControlReader
                 );
             }
 
-            return [
-                'state' => 'external_verification_pending',
-                'severity' => 'warning',
-                'title' =>
-                    'Débito externo pendiente de verificación',
-                'detail' =>
-                    'SRCM registró el desembolso y sus imputaciones con '.
-                    'referencia '.$disbursement->execution_reference.'. ' .
-                    'La entidad financiera todavía debe aportar un ' .
-                    'movimiento externo verificado antes de conciliar.',
-                'reconciliation_mode' =>
-                    'external_financial_movement',
-                'external_verification_applicable' => true,
-                'difference_minor' => null,
-                'occurred_at' => $disbursement->executed_at,
-            ];
+            return $this->readExternalVerification(
+                $disbursement
+            );
         }
 
         if (
@@ -408,6 +400,245 @@ final class PurchasePaymentControlReader
             'difference_minor' =>
                 (int) $closure->difference_minor,
             'occurred_at' => $closure->closed_at,
+        ];
+    }
+
+    /**
+     * @return array{
+     *   state: string,
+     *   severity: string,
+     *   title: string,
+     *   detail: string,
+     *   reconciliation_mode: string,
+     *   external_verification_applicable: bool,
+     *   difference_minor: int|null,
+     *   occurred_at: mixed
+     * }
+     */
+    private function readExternalVerification(
+        PurchasePaymentDisbursement $disbursement
+    ): array {
+        $verification =
+            $disbursement->externalVerification;
+
+        if (! $verification) {
+            return [
+                'state' => 'external_verification_pending',
+                'severity' => 'warning',
+                'title' =>
+                    'Débito externo pendiente de verificación',
+                'detail' =>
+                    'SRCM registró el desembolso y sus imputaciones con '.
+                    'referencia '.$disbursement->execution_reference.'. '.
+                    'La entidad financiera todavía debe aportar un '.
+                    'movimiento externo contabilizado y atribuible.',
+                'reconciliation_mode' =>
+                    'purchase_payment_external_verification',
+                'external_verification_applicable' => true,
+                'difference_minor' => null,
+                'occurred_at' =>
+                    $disbursement->executed_at,
+            ];
+        }
+
+        $movement = $verification->financialMovement;
+
+        if (
+            ! $movement
+            || (int) $verification->organization_id
+                !== (int) $disbursement->organization_id
+            || (int) $verification
+                ->purchase_payment_disbursement_id
+                !== (int) $disbursement->id
+            || (int) $movement->organization_id
+                !== (int) $disbursement->organization_id
+            || (int) $movement->financial_account_id
+                !== (int) $disbursement
+                    ->origin_financial_account_id
+            || $movement->currency_code
+                !== $disbursement->currency_code
+            || $movement->direction
+                !== FinancialMovementDirection::Debit
+            || $movement->status
+                !== FinancialMovementStatus::Posted
+            || (int) $verification
+                ->amount_difference_minor
+                !== (int) $movement->gross_amount_minor
+                    - (int) $disbursement->amount_minor
+        ) {
+            return $this->anomaly(
+                $disbursement,
+                'La verificación externa no conserva desembolso, cuenta, moneda, dirección e importe compatibles.'
+            );
+        }
+
+        $latest = $movement;
+
+        if (filled($movement->external_operation_id)) {
+            $latest = FinancialExternalMovement::query()
+                ->forOrganization(
+                    (int) $disbursement->organization_id
+                )
+                ->where(
+                    'financial_account_id',
+                    $movement->financial_account_id
+                )
+                ->where(
+                    'external_operation_id',
+                    $movement->external_operation_id
+                )
+                ->where(
+                    'direction',
+                    FinancialMovementDirection::Debit->value
+                )
+                ->where(
+                    'currency_code',
+                    $movement->currency_code
+                )
+                ->orderByDesc('occurred_at')
+                ->orderByDesc('id')
+                ->first()
+                ?? $movement;
+        }
+
+        if (
+            $latest->status
+                === FinancialMovementStatus::Reversed
+        ) {
+            return [
+                'state' => 'external_debit_reversed',
+                'severity' => 'danger',
+                'title' =>
+                    'Débito externo revertido · requiere revisión',
+                'detail' =>
+                    'La evidencia contabilizada permanece inmutable, pero '.
+                    'la operación externa posee una observación posterior '.
+                    'revertida. SRCM no vuelve a pagar ni corrige la deuda '.
+                    'silenciosamente.',
+                'reconciliation_mode' =>
+                    'purchase_payment_external_verification',
+                'external_verification_applicable' => true,
+                'difference_minor' =>
+                    (int) $verification
+                        ->amount_difference_minor,
+                'occurred_at' => $latest->occurred_at,
+            ];
+        }
+
+        if (
+            $latest->status
+                === FinancialMovementStatus::Failed
+        ) {
+            return [
+                'state' => 'external_debit_failed',
+                'severity' => 'danger',
+                'title' =>
+                    'Débito externo fallido · requiere revisión',
+                'detail' =>
+                    'La operación externa vinculada posee una observación '.
+                    'posterior fallida. El desembolso no se reescribe y la '.
+                    'diferencia debe resolverse explícitamente.',
+                'reconciliation_mode' =>
+                    'purchase_payment_external_verification',
+                'external_verification_applicable' => true,
+                'difference_minor' =>
+                    (int) $verification
+                        ->amount_difference_minor,
+                'occurred_at' => $latest->occurred_at,
+            ];
+        }
+
+        if (
+            $latest->status
+                === FinancialMovementStatus::Pending
+        ) {
+            return [
+                'state' => 'external_debit_pending',
+                'severity' => 'warning',
+                'title' =>
+                    'Débito externo nuevamente pendiente',
+                'detail' =>
+                    'La evidencia contabilizada permanece registrada, pero '.
+                    'la operación externa posee una observación posterior '.
+                    'pendiente. SRCM conserva ambas verdades y exige revisión.',
+                'reconciliation_mode' =>
+                    'purchase_payment_external_verification',
+                'external_verification_applicable' => true,
+                'difference_minor' =>
+                    (int) $verification
+                        ->amount_difference_minor,
+                'occurred_at' => $latest->occurred_at,
+            ];
+        }
+
+        $difference =
+            (int) $verification
+                ->amount_difference_minor;
+        $fee = (int) $movement->fee_amount_minor;
+        $withholding =
+            (int) $movement->withholding_amount_minor;
+
+        if (
+            $difference !== 0
+            || $fee !== 0
+            || $withholding !== 0
+        ) {
+            return [
+                'state' =>
+                    'external_verification_difference',
+                'severity' => 'warning',
+                'title' =>
+                    'Débito externo verificado · diferencia explícita',
+                'detail' =>
+                    'Se vinculó evidencia externa por bruto '.
+                    $this->money(
+                        (int) $movement->gross_amount_minor,
+                        $movement->currency_code
+                    ).', neto '.
+                    $this->money(
+                        (int) $movement->net_amount_minor,
+                        $movement->currency_code
+                    ).', comisión '.
+                    $this->money(
+                        $fee,
+                        $movement->currency_code
+                    ).' y retención '.
+                    $this->money(
+                        $withholding,
+                        $movement->currency_code
+                    ).'. Diferencia contra desembolso: '.
+                    $this->signedMoney(
+                        $difference,
+                        $movement->currency_code
+                    ).'. No fue compensada ni resuelta automáticamente.',
+                'reconciliation_mode' =>
+                    'purchase_payment_external_verification',
+                'external_verification_applicable' => true,
+                'difference_minor' => $difference,
+                'occurred_at' =>
+                    $verification->verified_at,
+            ];
+        }
+
+        return [
+            'state' => 'external_debit_verified',
+            'severity' => 'success',
+            'title' =>
+                'Débito externo verificado · importe exacto',
+            'detail' =>
+                'El movimiento externo contabilizado coincide en cuenta, '.
+                'moneda e importe con el desembolso. Base de referencia: '.
+                str_replace(
+                    '_',
+                    ' ',
+                    $verification->reference_match_kind
+                ).'.',
+            'reconciliation_mode' =>
+                'purchase_payment_external_verification',
+            'external_verification_applicable' => true,
+            'difference_minor' => 0,
+            'occurred_at' =>
+                $verification->verified_at,
         ];
     }
 

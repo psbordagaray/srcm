@@ -3,13 +3,13 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-17**
 Rama de desarrollo: `feature/core-entity`
-Base exacta desde la que se publica P9.7j:
+Base exacta desde la que se publica P9.7k:
 
-`a0da002495ac9b7c8b37903ffc365eb894e9bec7`
-`docs(roadmap): reconcile SRCM master continuity`
+`c04f3156361cebb6f41b0d128ee4c33b9d5219d6`
+`feat(purchase): converge supplier payment operations`
 
 Una vez publicado el corte, el checkpoint canónico es el `HEAD` de
-`origin/feature/core-entity` que contiene ADR 91 y este roadmap.
+`origin/feature/core-entity` que contiene ADR 92 y este roadmap.
 
 Puerta de entrada obligatoria para recuperación:
 
@@ -59,7 +59,7 @@ agrega una verdad de dominio ni reemplaza esta jerarquía.
 
 ---
 
-## 1.1. Estado maestro al cierre de P9.7i
+## 1.1. Estado maestro al cierre de P9.7k
 
 El checkpoint `baa46c70db85f5f54cfe4e824fe4996457841d28` deja publicados:
 
@@ -70,15 +70,16 @@ El checkpoint `baa46c70db85f5f54cfe4e824fe4996457841d28` deja publicados:
 - P7.1–P7.5: preview/commit CSV, mapping, XLSX y fallback manual;
 - P8 V1: posventa cerrada en P8.5.8;
 - P9.1–P9.6b: CxC, cobranza, aging, política, cuotas, anticipos y excedentes;
-- P9.7a–P9.7i: documento proveedor, match, créditos, anticipos, autorización agrupada y desembolso canónico.
+- P9.7a–P9.7j: documento proveedor, match, créditos, anticipos, autorización agrupada, desembolso canónico y operación HTTP/UI.
 
-Baseline formal: **812 tests / 6669 assertions**, 1122 paths versionados,
-998 archivos PHP válidos y BD real sin cambios durante el Master Project
-Integrity RECON.
+Baseline formal publicada: **816 tests / 6716 assertions**, 1130 paths
+versionados, 1005 archivos PHP válidos y BD real sin cambios durante el RECON
+P9.7k.
 
-P9.7j converge la operación HTTP/UI según ADR 91 sin reinterpretar P3/P4. El
-próximo corte exacto es **P9.7k — Supplier Payment External Verification
-RECON**, estrictamente read-only antes de diseñar matching saliente.
+P9.7k incorpora verificación explícita de desembolso non-cash contra un débito
+externo contabilizado según ADR 92, sin reinterpretar P3/P4 ni reutilizar la
+conciliación entrante. El próximo corte exacto es **P9.7l — Supplier Payment
+External Difference Resolution RECON**, estrictamente read-only.
 
 ---
 
@@ -455,7 +456,7 @@ La implementación V1 quedó cerrada por auditoría integral read-only sobre el 
 
 ## 8. P9 — Cuentas por cobrar y cuentas por pagar
 
-**Estado actual: P9.1–P9.7j PUBLICADOS / P9.7k RECON SIGUIENTE CORTE.**
+**Estado actual: P9.1–P9.7k PUBLICADOS / P9.7l RECON SIGUIENTE CORTE.**
 
 ### CxC
 - cuenta corriente de cliente;
@@ -501,9 +502,13 @@ La implementación V1 quedó cerrada por auditoría integral read-only sobre el 
 - P9.7i: desembolso canónico individual/agrupado, cash/non-cash.
 - P9.7j: convergencia HTTP/UI y control posterior individual/agrupado,
   cash/non-cash.
+- P9.7k: verificación append-only de desembolso non-cash contra
+  `FinancialExternalMovement` `Debit + Posted`, con selección Admin,
+  exclusividad de evidencia y diferencias explícitas.
 
-P9.7k debe relevar la frontera de verificación externa del desembolso saliente
-sin borrar ni reescribir la historia legacy y sin fabricar evidencia bancaria.
+P9.7l debe relevar la resolución de comisiones, retenciones, reversas y
+diferencias sin borrar ni reescribir desembolso, obligación, evidencia externa
+o historia legacy.
 
 ---
 

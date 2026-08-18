@@ -181,8 +181,10 @@
                 @forelse($disbursements as $disbursement)
                     @php
                         $paymentControl = $controls->get($disbursement->id);
+                        $paymentExternalVerification = $disbursement->externalVerification;
+                        $paymentExternalCandidates = $externalCandidates->get($disbursement->id, collect());
                     @endphp
-                    <article class="p-5">
+                    <article id="disbursement-{{ $disbursement->public_id }}" class="p-5">
                         <div class="flex flex-wrap items-start justify-between gap-4">
                             <div>
                                 <p class="text-xs font-bold uppercase tracking-wider text-emerald-300">{{ $disbursement->channel->label() }} · {{ $disbursement->purchase_payment_group_request_id ? 'AGRUPADO' : 'INDIVIDUAL' }}</p>
@@ -196,6 +198,64 @@
                             <div class="mt-3 rounded-xl border border-cyan-400/15 bg-cyan-400/5 p-3">
                                 <p class="text-xs font-semibold {{ $paymentControl['severity'] === 'danger' ? 'text-red-300' : ($paymentControl['severity'] === 'warning' ? 'text-amber-300' : 'text-emerald-300') }}">{{ $paymentControl['title'] }}</p>
                                 <p class="mt-1 text-[11px] text-slate-400">{{ $paymentControl['detail'] }}</p>
+                            </div>
+                        @endif
+
+                        @if($paymentExternalVerification)
+                            <div class="mt-3 rounded-xl border border-emerald-400/20 bg-emerald-400/5 p-3 text-xs">
+                                <p class="font-bold uppercase tracking-wider text-emerald-300">Evidencia financiera externa append-only</p>
+                                <p class="mt-2 text-slate-300">
+                                    {{ $paymentExternalVerification->financialMovement->source->value }} ·
+                                    {{ $paymentExternalVerification->financialMovement->external_operation_id ?: $paymentExternalVerification->financialMovement->source_key }} ·
+                                    verificó {{ $paymentExternalVerification->verifiedBy->name }}
+                                </p>
+                                <p class="mt-1 text-slate-400">
+                                    Bruto {{ $paymentExternalVerification->financialMovement->currency_code }} {{ number_format($paymentExternalVerification->financialMovement->gross_amount_minor / 100, 2, ',', '.') }} ·
+                                    Neto {{ number_format($paymentExternalVerification->financialMovement->net_amount_minor / 100, 2, ',', '.') }} ·
+                                    Comisión {{ number_format($paymentExternalVerification->financialMovement->fee_amount_minor / 100, 2, ',', '.') }} ·
+                                    Retención {{ number_format($paymentExternalVerification->financialMovement->withholding_amount_minor / 100, 2, ',', '.') }}
+                                </p>
+                                @if($paymentExternalVerification->note)
+                                    <p class="mt-1 text-slate-400">Nota: {{ $paymentExternalVerification->note }}</p>
+                                @endif
+                            </div>
+                        @elseif($canVerifyExternal && $disbursement->channel === \App\Enums\PurchasePaymentDisbursementChannel::NonCash)
+                            <div class="mt-4 rounded-xl border border-indigo-400/20 bg-indigo-400/5 p-4">
+                                <p class="text-xs font-bold uppercase tracking-wider text-indigo-200">P9.7k · Candidatos de débito externo</p>
+                                <p class="mt-1 text-[11px] text-slate-400">Sólo movimientos Debit + Posted de la misma cuenta y moneda. Elegir un candidato crea evidencia inmutable; no modifica el desembolso ni resuelve diferencias.</p>
+
+                                @forelse($paymentExternalCandidates as $candidate)
+                                    <form method="POST" action="{{ route('purchase-payment-disbursements.external-verifications.store', [$disbursement, $candidate['movement_public_id']]) }}" class="mt-3 rounded-lg border border-slate-700 bg-slate-950/70 p-3" onsubmit="return window.confirm('Vincular este débito externo al desembolso. La evidencia será inmutable.');">
+                                        @csrf
+                                        <input type="hidden" name="idempotency_key" value="purchase-ui:payment-external-verify:{{ \Illuminate\Support\Str::uuid() }}">
+                                        <div class="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <p class="text-xs font-semibold text-white">
+                                                    {{ strtoupper($candidate['source']) }} ·
+                                                    {{ $candidate['external_operation_id'] ?: $candidate['source_key'] }}
+                                                </p>
+                                                <p class="mt-1 text-[11px] text-slate-400">
+                                                    {{ $candidate['occurred_at']->timezone(config('app.display_timezone', 'America/Argentina/Buenos_Aires'))->format('d/m/Y H:i') }} ·
+                                                    evidencia {{ $candidate['evidence_level'] }} ·
+                                                    referencia {{ str_replace('_', ' ', $candidate['reference_match_kind']) }}
+                                                </p>
+                                            </div>
+                                            <div class="text-right font-mono text-xs">
+                                                <p class="font-bold text-indigo-200">Bruto {{ $disbursement->currency_code }} {{ number_format($candidate['gross_amount_minor'] / 100, 2, ',', '.') }}</p>
+                                                <p class="mt-1 text-slate-400">Neto {{ number_format($candidate['net_amount_minor'] / 100, 2, ',', '.') }} · Comisión {{ number_format($candidate['fee_amount_minor'] / 100, 2, ',', '.') }} · Retención {{ number_format($candidate['withholding_amount_minor'] / 100, 2, ',', '.') }}</p>
+                                                <p class="mt-1 {{ $candidate['amount_difference_minor'] === 0 ? 'text-emerald-300' : 'text-amber-300' }}">Diferencia {{ $candidate['amount_difference_minor'] > 0 ? '+' : '' }}{{ number_format($candidate['amount_difference_minor'] / 100, 2, ',', '.') }}</p>
+                                            </div>
+                                        </div>
+                                        <textarea name="note" maxlength="2000" {{ $candidate['note_required'] ? 'required' : '' }} placeholder="{{ $candidate['note_required'] ? 'Motivo obligatorio (mínimo 10 caracteres) por diferencia, cargos o referencia no exacta' : 'Nota opcional de verificación' }}" class="mt-3 w-full rounded-lg border-slate-700 bg-slate-900 text-xs text-slate-100"></textarea>
+                                        <label class="mt-3 flex items-start gap-2 text-xs text-indigo-100">
+                                            <input type="checkbox" name="confirm_verify" value="1" required class="mt-0.5 rounded border-slate-600 bg-slate-950">
+                                            <span>Confirmo que este movimiento externo corresponde al desembolso y que cualquier diferencia queda explícita, no resuelta.</span>
+                                        </label>
+                                        <button class="mt-3 rounded-lg bg-indigo-300 px-4 py-2 text-xs font-bold text-slate-950">Vincular evidencia externa</button>
+                                    </form>
+                                @empty
+                                    <p class="mt-3 text-xs text-slate-500">No hay débitos Posted candidatos en la misma cuenta, moneda y ventana de siete días. Puede importarse o registrarse la evidencia desde Conciliación financiera.</p>
+                                @endforelse
                             </div>
                         @endif
                     </article>

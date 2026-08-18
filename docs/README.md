@@ -11,22 +11,21 @@ herramienta no pueda alterar dónde quedó SRCM ni hacia dónde continúa.
 
 El checkpoint canónico actual es siempre el `HEAD` publicado de
 `origin/feature/core-entity` cuando local y remoto coinciden y el repositorio
-está limpio. La base funcional exacta de P9.7j es el checkpoint de
-reconciliación:
+está limpio. La base funcional exacta desde la que se publica P9.7k es:
 
-`a0da002495ac9b7c8b37903ffc365eb894e9bec7`
-— `docs(roadmap): reconcile SRCM master continuity`
+`c04f3156361cebb6f41b0d128ee4c33b9d5219d6`
+— `feat(purchase): converge supplier payment operations`
 
-Su parent funcional P9.7i es
-`baa46c70db85f5f54cfe4e824fe4996457841d28`. Baseline validada antes de
-P9.7j:
+Su parent funcional es `a0da002495ac9b7c8b37903ffc365eb894e9bec7`.
+Baseline publicada antes de P9.7k:
 
-- 1122 paths versionados;
-- 92 documentos;
-- 998 archivos PHP con sintaxis válida;
-- 812 tests / 6669 assertions;
+- 1130 paths versionados;
+- 93 documentos;
+- 1005 archivos PHP con sintaxis válida;
+- 816 tests / 6716 assertions;
 - BD real SQLite verificada en `query_only`, sin cambios;
-- próximo corte después de publicar P9.7j: **P9.7k — Supplier Payment External Verification RECON**.
+- RECON P9.7k validado con 70 tests / 522 assertions;
+- próximo corte después de publicar P9.7k: **P9.7l — Supplier Payment External Difference Resolution RECON**.
 
 ## Jerarquía de verdad
 
@@ -95,29 +94,31 @@ desde cero.
 | P7.1–P7.5 | CSV/XLSX, mapping, commit y fallback manual publicados |
 | P8 | Posventa V1 cerrada en P8.5.8 |
 | P9.1–P9.6b | CxC, aging, crédito, cuotas, anticipos y excedentes publicados |
-| P9.7a–P9.7j | Factura proveedor, match, créditos, anticipos, grupo, desembolso y operación HTTP/UI publicados |
+| P9.7a–P9.7k | Factura proveedor, match, créditos, anticipos, grupo, desembolso, operación y verificación externa publicados |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
 
-## Estado funcional P9.7j
+## Estado funcional P9.7k
 
-**P9.7j — Supplier Payment Operational Convergence** converge la ejecución
-HTTP/UI individual y agrupada, cash y non-cash, sobre
-`PurchasePaymentDisbursement`. `PurchasePaymentExecution` permanece como
-historia append-only y ninguna ruta nueva escribe ese ledger.
+**P9.7k — Supplier Payment External Verification V1** vincula explícitamente
+un desembolso non-cash con un `FinancialExternalMovement` `Debit + Posted` de
+la misma organización, cuenta y moneda mediante
+`PurchasePaymentExternalVerification` append-only.
 
-El control posterior cash usa arqueo/cierre; non-cash queda pendiente de verdad
-externa verificable. Un grupo cash produce un solo `CashMovement` por el total.
-Non-cash no inventa `CashMovement` ni `FinancialExternalMovement`.
+El ranking de candidatos sólo asiste al Administrador; no decide ni concilia
+automáticamente. La evidencia saliente permanece independiente de
+`PaymentReconciliation`, que conserva su semántica entrante
+`CommercePayment + Credit`. Un mismo movimiento externo no puede respaldar a
+la vez cobro, reembolso y desembolso. Diferencias, comisiones y retenciones se
+proyectan de forma explícita y no se compensan silenciosamente.
 
 ## Próximo paso exacto
 
-**P9.7k — Supplier Payment External Verification RECON.**
+**P9.7l — Supplier Payment External Difference Resolution RECON.**
 
-Debe relevar read-only la convergencia posible entre desembolso saliente y
-`FinancialExternalMovement` antes de diseñar matching, comisiones o
-retenciones. No asumir que una referencia declarada equivale a acreditación o
-débito externo verificado.
+Debe relevar read-only cómo comisiones, retenciones, reversas y diferencias
+deben afectar tesorería y CxP sin reescribir desembolso, obligación ni
+evidencia externa.
 
 ## Registro mínimo de cada relevo
 

@@ -9,16 +9,16 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base exacta desde la que se publica P9.7j:
+Base exacta desde la que se publica P9.7k:
 
-`a0da002495ac9b7c8b37903ffc365eb894e9bec7`
-— `docs(roadmap): reconcile SRCM master continuity`
+`c04f3156361cebb6f41b0d128ee4c33b9d5219d6`
+— `feat(purchase): converge supplier payment operations`
 
-Estado: P1–P7 publicados, P8 V1 cerrado y P9 publicado hasta P9.7j. Baseline
-formal pre-P9.7j: **812 tests / 6669 assertions**. Próximo corte exacto:
-**P9.7k — Supplier Payment External Verification RECON**.
+Estado: P1–P7 publicados, P8 V1 cerrado y P9 publicado hasta P9.7k. Baseline
+formal pre-P9.7k: **816 tests / 6716 assertions**. Próximo corte exacto:
+**P9.7l — Supplier Payment External Difference Resolution RECON**.
 
-El checkpoint canónico es el `HEAD` publicado que contiene ADR 91.
+El checkpoint canónico es el `HEAD` publicado que contiene ADR 92.
 
 Esta North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
 ejecutivo de `docs/06_ROADMAP.md`; los tres forman una cadena deliberada para
@@ -633,10 +633,10 @@ se fija por una URL configurada por SRCM y queda protegida por su propio HMAC.
 ## Continuidad P9 — CxC/CxP y desembolso de proveedores
 
 P9.1–P9.6b publicó deuda de clientes, cobranzas e imputaciones, aging, política
-de crédito, cuotas, anticipos y convergencia de excedentes. P9.7a–P9.7j publicó
+de crédito, cuotas, anticipos y convergencia de excedentes. P9.7a–P9.7k publicó
 documento de proveedor, 3-way match derivado, notas de crédito, aplicaciones,
 anticipos, autorización agrupada, el parent canónico de desembolso y su
-superficie operacional.
+superficie operacional con evidencia externa saliente.
 
 P9.7j expone esa verdad mediante HTTP/UI individual y agrupada, cash y
 non-cash, sin duplicar reglas de dominio. `PurchasePaymentExecution` se conserva
@@ -644,5 +644,8 @@ como historia append-only; `PurchasePaymentDisbursement` y sus allocations son
 la verdad canónica nueva. Un desembolso cash produce un solo `CashMovement` por
 el total y un desembolso non-cash no fabrica evidencia bancaria externa.
 
-P9.7k debe relevar en modo read-only la frontera con
-`FinancialExternalMovement` antes de diseñar matching de pagos salientes.
+P9.7k vincula explícitamente un desembolso non-cash con un
+`FinancialExternalMovement` `Debit + Posted` mediante evidencia append-only,
+sin ampliar `PaymentReconciliation` ni automatizar la decisión. P9.7l debe
+relevar en modo read-only la resolución de comisiones, retenciones, reversas y
+diferencias antes de crear nuevos hechos financieros.

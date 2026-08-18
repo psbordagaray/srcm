@@ -1,18 +1,18 @@
 # SRCM V1 — Terminal de Cobro APB, Cuentas y Conciliación
 
-Estado: **P1–P7 publicados / P8 V1 cerrado / continuidad financiera P9 publicada hasta P9.7j**
+Estado: **P1–P7 publicados / P8 V1 cerrado / continuidad financiera P9 publicada hasta P9.7k**
 
 Fecha de consolidación inicial: **2026-08-10**
 Fecha de actualización: **2026-08-17**
 
-Base exacta desde la que se publica P9.7j:
-`a0da002495ac9b7c8b37903ffc365eb894e9bec7`
-— `docs(roadmap): reconcile SRCM master continuity`
+Base exacta desde la que se publica P9.7k:
+`c04f3156361cebb6f41b0d128ee4c33b9d5219d6`
+— `feat(purchase): converge supplier payment operations`
 
-Baseline formal pre-P9.7j: **812 tests / 6669 assertions**. P4E y
+Baseline formal pre-P9.7k: **816 tests / 6716 assertions**. P4E y
 P4F están publicados; P5–P7 están publicados; P8 V1 está cerrado y P9 continúa
-desde P9.7j hacia el RECON P9.7k sin redefinir las verdades financieras de este
-plan. El checkpoint canónico es el `HEAD` publicado que contiene ADR 91.
+desde P9.7k hacia el RECON P9.7l sin redefinir las verdades financieras de este
+plan. El checkpoint canónico es el `HEAD` publicado que contiene ADR 92.
 
 Puerta de entrada de continuidad: `docs/README.md`.
 
@@ -261,8 +261,8 @@ Gestión visual de cuentas y `financial_account_id` por pago. Checkpoint publica
 P4A–P4D están publicados. P4E conserva aplicado, entregado y vuelto como hechos
 distintos. P4F publicó obligación, solicitud/autorización, ejecución cash y
 control posterior; P9.7i generalizó el desembolso individual/agrupado y
-cash/non-cash, y P9.7j convergió su operación HTTP/UI sin fusionar recepción
-con pago ni inventar evidencia externa.
+cash/non-cash, P9.7j convergió su operación HTTP/UI y P9.7k vinculó la verdad
+externa saliente sin fusionar recepción con pago ni inventar evidencia.
 Amplía el antiguo P4 “Efectivo y vuelto”:
 - cajas múltiples vinculadas a cuentas `cash_box`;
 - apertura/turno/cierre;
@@ -291,7 +291,7 @@ Cobros esperados, movimientos/acreditaciones, bruto/neto, comisiones, matching, 
 Importadores CSV/XLSX, previsualización, normalización, idempotencia y conciliación contra el mismo motor.
 
 P8 Posventa V1 quedó cerrado en P8.5.8. P9 publicó CxC hasta P9.6b y CxP
-hasta P9.7j. ARCA, producción/offline/hardware, omnicanalidad, GS1, CRM,
+hasta P9.7k. ARCA, producción/offline/hardware, omnicanalidad, GS1, CRM,
 forecasting, IA y API continúan gobernados por `docs/06_ROADMAP.md` y
 `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
 
@@ -422,7 +422,7 @@ cuenta ni importe financiero.
 
 ---
 
-## 23. Continuidad financiera vigente hasta P9.7j
+## 23. Continuidad financiera vigente hasta P9.7k
 
 La evolución posterior no reemplazó las verdades de este plan:
 
@@ -435,9 +435,9 @@ La evolución posterior no reemplazó las verdades de este plan:
   económica como hechos distintos;
 - P9.1–P9.6b publicó deuda, cobranza, aging, crédito, cuotas, anticipos y
   excedentes de cliente;
-- P9.7a–P9.7j publicó documento de proveedor, match derivado, créditos,
-  anticipos, autorización agrupada, desembolso canónico y su superficie
-  operacional.
+- P9.7a–P9.7k publicó documento de proveedor, match derivado, créditos,
+  anticipos, autorización agrupada, desembolso canónico, su superficie
+  operacional y su evidencia externa saliente.
 
 P9.7j es exclusivamente convergencia operacional HTTP/UI y control posterior.
 `PurchasePaymentExecution` permanece como historia legacy append-only;
@@ -445,5 +445,10 @@ P9.7j es exclusivamente convergencia operacional HTTP/UI y control posterior.
 movimiento físico por desembolso y non-cash no inventa `CashMovement` ni
 `FinancialExternalMovement`.
 
-P9.7k debe relevar read-only el matching de pagos salientes contra verdad
-externa antes de diseñar conciliación, comisiones o retenciones.
+P9.7k mantiene `PaymentReconciliation` para cobros entrantes y crea
+`PurchasePaymentExternalVerification` para vincular explícitamente un
+desembolso non-cash con un débito externo contabilizado. Diferencias,
+comisiones y retenciones permanecen visibles y no resueltas.
+
+P9.7l debe relevar read-only la resolución económica y contable de esas
+diferencias antes de materializar nuevos hechos.

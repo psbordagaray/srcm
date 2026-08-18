@@ -156,6 +156,14 @@ class PurchasePaymentDisbursement extends Model
         );
     }
 
+    public function externalVerification(): HasOne
+    {
+        return $this->hasOne(
+            PurchasePaymentExternalVerification::class,
+            'purchase_payment_disbursement_id'
+        );
+    }
+
     private function guardCreation(): void
     {
         $individualId =

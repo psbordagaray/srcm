@@ -9,6 +9,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class FinancialExternalMovement extends Model
@@ -87,5 +88,13 @@ class FinancialExternalMovement extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function purchasePaymentVerification(): HasOne
+    {
+        return $this->hasOne(
+            PurchasePaymentExternalVerification::class,
+            'financial_external_movement_id'
+        );
     }
 }
