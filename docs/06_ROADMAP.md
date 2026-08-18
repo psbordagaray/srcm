@@ -571,7 +571,14 @@ Estados fiscales orientativos:
 - cero dependencia desde `CommerceSale` hacia la capa fiscal;
 - cero numeración fiscal, WSAA, WSFE, CAE, CAEA o QR en este corte.
 
-Siguiente corte exacto: **P10.2 — Fiscal Document Core RECON**.
+### P10.2 — Fiscal Document Core V1
+
+- `FiscalDocument` y sus líneas son evidencia fiscal append-only, separada de la venta comercial;
+- snapshots inmutables de emisor, receptor, moneda, importes y líneas;
+- el estado es derivado (`pending`) mientras no exista un hecho de autorización;
+- sin numeración, CAE, QR, alícuotas, credenciales, adapter ni comunicación ARCA.
+
+Siguiente corte exacto: **P10.3 — Fiscal authorization facts RECON**.
 
 ---
 

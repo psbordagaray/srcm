@@ -8,6 +8,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class FiscalPointOfSale extends Model
@@ -88,5 +89,10 @@ class FiscalPointOfSale extends Model
     public function updatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by_user_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(FiscalDocument::class);
     }
 }

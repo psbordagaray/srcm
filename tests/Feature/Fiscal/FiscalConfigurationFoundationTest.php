@@ -265,7 +265,7 @@ class FiscalConfigurationFoundationTest extends TestCase
             'commerce_sales',
             'fiscal_status'
         ));
-        $this->assertFalse(Schema::hasTable('fiscal_documents'));
+        $this->assertTrue(Schema::hasTable('fiscal_documents'));
         $this->assertFalse(Schema::hasTable('fiscal_authorizations'));
         $this->assertFalse(Route::has('fiscal-documents.authorize'));
         $this->assertFalse(Route::has('fiscal-configuration.destroy'));

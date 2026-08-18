@@ -156,4 +156,10 @@ class CommerceSale extends Model
             CommercePostSaleRequest::class
         )->latest('requested_at')->latest('id');
     }
+
+    public function fiscalDocuments(): HasMany
+    {
+        return $this->hasMany(FiscalDocument::class)
+            ->latest('documented_at')->latest('id');
+    }
 }
