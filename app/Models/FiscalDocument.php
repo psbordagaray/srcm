@@ -75,4 +75,5 @@ class FiscalDocument extends Model
     public function recipientEvidence(): HasOne { return $this->hasOne(FiscalDocumentRecipientEvidence::class); }
     public function issueDateRecord(): HasOne { return $this->hasOne(FiscalDocumentIssueDate::class); }
     public function monetarySummary(): HasOne { return $this->hasOne(FiscalDocumentMonetarySummary::class); }
+    public function currencyEvidence(): HasOne { return $this->hasOne(FiscalDocumentCurrencyEvidence::class); }
 }

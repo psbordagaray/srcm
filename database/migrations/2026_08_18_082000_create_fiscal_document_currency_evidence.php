@@ -1,0 +1,52 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::create('fiscal_document_currency_evidence', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('organization_id')->constrained()->restrictOnDelete();
+            $table->foreignId('fiscal_document_id')->constrained()->restrictOnDelete();
+            $table->string('source_currency_code', 3);
+            $table->string('arca_currency_code', 3);
+            $table->unsignedBigInteger('quotation_micros');
+            $table->boolean('same_currency_settlement');
+            $table->timestamp('recorded_at');
+            $table->foreignId('recorded_by_user_id')->constrained('users')->restrictOnDelete();
+            $table->timestamps();
+
+            $table->unique('fiscal_document_id');
+            $table->unique(
+                ['organization_id', 'fiscal_document_id'],
+                'fiscal_document_currency_evidence_org_document_unique'
+            );
+        });
+
+        if (DB::getDriverName() === 'sqlite') {
+            DB::unprepared("CREATE TRIGGER fiscal_document_currency_evidence_tenant_insert BEFORE INSERT ON fiscal_document_currency_evidence WHEN NOT EXISTS (SELECT 1 FROM fiscal_documents WHERE fiscal_documents.id = NEW.fiscal_document_id AND fiscal_documents.organization_id = NEW.organization_id) BEGIN SELECT RAISE(ABORT, 'Fiscal currency evidence tenant mismatch'); END");
+
+            DB::unprepared("CREATE TRIGGER fiscal_document_currency_evidence_terms_insert BEFORE INSERT ON fiscal_document_currency_evidence WHEN NEW.quotation_micros <= 0 OR NEW.quotation_micros > 9999999999 OR (NEW.arca_currency_code = 'PES' AND NEW.quotation_micros <> 1000000) OR (NEW.arca_currency_code = 'PES' AND NEW.same_currency_settlement <> 0) BEGIN SELECT RAISE(ABORT, 'Fiscal currency evidence invalid terms'); END");
+
+            DB::unprepared("CREATE TRIGGER fiscal_document_currency_evidence_immutable_update BEFORE UPDATE ON fiscal_document_currency_evidence BEGIN SELECT RAISE(ABORT, 'Fiscal currency evidence is immutable'); END");
+
+            DB::unprepared("CREATE TRIGGER fiscal_document_currency_evidence_immutable_delete BEFORE DELETE ON fiscal_document_currency_evidence BEGIN SELECT RAISE(ABORT, 'Fiscal currency evidence cannot be deleted'); END");
+        }
+    }
+
+    public function down(): void
+    {
+        if (DB::getDriverName() === 'sqlite') {
+            DB::unprepared('DROP TRIGGER IF EXISTS fiscal_document_currency_evidence_tenant_insert');
+            DB::unprepared('DROP TRIGGER IF EXISTS fiscal_document_currency_evidence_terms_insert');
+            DB::unprepared('DROP TRIGGER IF EXISTS fiscal_document_currency_evidence_immutable_update');
+            DB::unprepared('DROP TRIGGER IF EXISTS fiscal_document_currency_evidence_immutable_delete');
+        }
+
+        Schema::dropIfExists('fiscal_document_currency_evidence');
+    }
+};
