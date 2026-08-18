@@ -49,10 +49,22 @@ class FiscalDocument extends Model
     }
 
     public function getRouteKeyName(): string { return 'public_id'; }
-    public function state(): FiscalDocumentState { return FiscalDocumentState::Pending; }
+    public function state(): FiscalDocumentState
+    {
+        $response = $this->relationLoaded('authorizationAttempts')
+            ? $this->authorizationAttempts->sortByDesc('attempt_number')->first()?->response
+            : FiscalAuthorizationResponse::query()->whereHas('attempt', fn ($query) => $query->where('fiscal_document_id', $this->id))->latest('id')->first();
+        return match ($response?->outcome) {
+            \App\Enums\FiscalAuthorizationOutcome::Authorized => FiscalDocumentState::Authorized,
+            \App\Enums\FiscalAuthorizationOutcome::Rejected => FiscalDocumentState::Rejected,
+            \App\Enums\FiscalAuthorizationOutcome::Unknown => FiscalDocumentState::Contingency,
+            default => FiscalDocumentState::Pending,
+        };
+    }
     public function profile(): BelongsTo { return $this->belongsTo(FiscalOrganizationProfile::class, 'fiscal_organization_profile_id'); }
     public function pointOfSale(): BelongsTo { return $this->belongsTo(FiscalPointOfSale::class, 'fiscal_point_of_sale_id'); }
     public function sale(): BelongsTo { return $this->belongsTo(CommerceSale::class, 'commerce_sale_id'); }
     public function createdBy(): BelongsTo { return $this->belongsTo(User::class, 'created_by_user_id'); }
     public function lines(): HasMany { return $this->hasMany(FiscalDocumentLine::class)->orderBy('position'); }
+    public function authorizationAttempts(): HasMany { return $this->hasMany(FiscalAuthorizationAttempt::class)->orderBy('attempt_number'); }
 }

@@ -8,4 +8,7 @@ namespace App\Enums;
 enum FiscalDocumentState: string
 {
     case Pending = 'pending';
+    case Authorized = 'authorized';
+    case Rejected = 'rejected';
+    case Contingency = 'contingency';
 }
