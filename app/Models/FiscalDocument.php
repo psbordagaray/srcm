@@ -71,4 +71,5 @@ class FiscalDocument extends Model
     public function numberAssignment(): HasOne { return $this->hasOne(FiscalDocumentNumber::class); }
     public function taxComponents(): HasMany { return $this->hasMany(FiscalDocumentTax::class)->orderBy('position'); }
     public function classification(): HasOne { return $this->hasOne(FiscalDocumentClassification::class); }
+    public function conceptRecord(): HasOne { return $this->hasOne(FiscalDocumentConcept::class); }
 }
