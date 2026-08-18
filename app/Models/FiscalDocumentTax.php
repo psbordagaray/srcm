@@ -1,0 +1,4 @@
+<?php
+namespace App\Models;
+use App\Models\Concerns\BelongsToOrganization;use DomainException;use Illuminate\Database\Eloquent\Model;use Illuminate\Database\Eloquent\Relations\BelongsTo;
+class FiscalDocumentTax extends Model {use BelongsToOrganization;public $timestamps=false;protected $fillable=['organization_id','fiscal_document_id','position','tax_code','taxable_base_minor','rate_basis_points','tax_amount_minor','created_at'];protected static function booted():void{static::updating(fn()=>throw new DomainException('Un componente tributario fiscal es inmutable.'));static::deleting(fn()=>throw new DomainException('Un componente tributario fiscal no puede eliminarse.'));}protected function casts():array{return ['position'=>'integer','taxable_base_minor'=>'integer','rate_basis_points'=>'integer','tax_amount_minor'=>'integer','created_at'=>'immutable_datetime'];}public function document():BelongsTo{return $this->belongsTo(FiscalDocument::class,'fiscal_document_id');}}
