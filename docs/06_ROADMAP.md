@@ -456,7 +456,7 @@ La implementación V1 quedó cerrada por auditoría integral read-only sobre el 
 
 ## 8. P9 — Cuentas por cobrar y cuentas por pagar
 
-**Estado actual: P9.1–P9.7k PUBLICADOS / P9.7l RECON SIGUIENTE CORTE.**
+**Estado actual: P9.1–P9.7l PUBLICADOS / P9.8 RECON SIGUIENTE CORTE.**
 
 ### CxC
 - cuenta corriente de cliente;
@@ -505,10 +505,12 @@ La implementación V1 quedó cerrada por auditoría integral read-only sobre el 
 - P9.7k: verificación append-only de desembolso non-cash contra
   `FinancialExternalMovement` `Debit + Posted`, con selección Admin,
   exclusividad de evidencia y diferencias explícitas.
+- P9.7l: resolución/derivación append-only por observación externa, con
+  snapshots de diferencia, comisión y retención, sin modificar CxP ni fingir
+  contabilidad inexistente.
 
-P9.7l debe relevar la resolución de comisiones, retenciones, reversas y
-diferencias sin borrar ni reescribir desembolso, obligación, evidencia externa
-o historia legacy.
+P9.8 debe relevar vencimientos, aging, exposición y estado de cuenta de
+proveedores sobre las verdades CxP existentes, sin saldos almacenados paralelos.
 
 ---
 

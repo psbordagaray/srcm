@@ -82,6 +82,8 @@ class PurchasePaymentOperationsController extends Controller
                 'cashRegister',
                 'externalVerification.financialMovement.account',
                 'externalVerification.verifiedBy:id,name',
+                'externalVerification.resolutions.reviewedMovement',
+                'externalVerification.resolutions.resolvedBy:id,name',
             ])
             ->latest('id')
             ->limit(50)
@@ -129,6 +131,8 @@ class PurchasePaymentOperationsController extends Controller
             'externalCandidates' =>
                 $externalCandidates,
             'canVerifyExternal' =>
+                $canVerifyExternal,
+            'canResolveExternal' =>
                 $canVerifyExternal,
             'summary' => [
                 'eligible_obligations' =>

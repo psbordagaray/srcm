@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
+use App\Enums\FinancialMovementStatus;
+use App\Enums\PurchasePaymentExternalResolutionOutcome;
 use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
-class PurchasePaymentExternalVerification extends Model
+class PurchasePaymentExternalResolution extends Model
 {
     use BelongsToOrganization;
 
@@ -18,38 +19,41 @@ class PurchasePaymentExternalVerification extends Model
     protected $fillable = [
         'organization_id',
         'public_id',
-        'purchase_payment_disbursement_id',
-        'financial_external_movement_id',
+        'purchase_payment_external_verification_id',
+        'reviewed_financial_external_movement_id',
         'idempotency_key',
         'fingerprint',
-        'reference_match_kind',
+        'outcome',
+        'observed_status',
         'amount_difference_minor',
+        'fee_amount_minor',
+        'withholding_amount_minor',
         'note',
-        'verified_by_user_id',
-        'verified_at',
+        'resolved_by_user_id',
+        'resolved_at',
         'created_at',
     ];
 
     protected static function booted(): void
     {
         static::creating(function (
-            PurchasePaymentExternalVerification $verification
+            PurchasePaymentExternalResolution $resolution
         ): void {
-            if (blank($verification->public_id)) {
-                $verification->public_id =
+            if (blank($resolution->public_id)) {
+                $resolution->public_id =
                     (string) Str::uuid();
             }
         });
 
         static::updating(
             fn () => throw new DomainException(
-                'Una verificación externa de desembolso es inmutable.'
+                'Una resolución externa de pago es inmutable.'
             )
         );
 
         static::deleting(
             fn () => throw new DomainException(
-                'Una verificación externa de desembolso no puede eliminarse.'
+                'Una resolución externa de pago no puede eliminarse.'
             )
         );
     }
@@ -57,8 +61,13 @@ class PurchasePaymentExternalVerification extends Model
     protected function casts(): array
     {
         return [
+            'outcome' =>
+                PurchasePaymentExternalResolutionOutcome::class,
+            'observed_status' => FinancialMovementStatus::class,
             'amount_difference_minor' => 'integer',
-            'verified_at' => 'immutable_datetime',
+            'fee_amount_minor' => 'integer',
+            'withholding_amount_minor' => 'integer',
+            'resolved_at' => 'immutable_datetime',
             'created_at' => 'immutable_datetime',
         ];
     }
@@ -68,35 +77,27 @@ class PurchasePaymentExternalVerification extends Model
         return 'public_id';
     }
 
-    public function disbursement(): BelongsTo
+    public function verification(): BelongsTo
     {
         return $this->belongsTo(
-            PurchasePaymentDisbursement::class,
-            'purchase_payment_disbursement_id'
+            PurchasePaymentExternalVerification::class,
+            'purchase_payment_external_verification_id'
         );
     }
 
-    public function financialMovement(): BelongsTo
+    public function reviewedMovement(): BelongsTo
     {
         return $this->belongsTo(
             FinancialExternalMovement::class,
-            'financial_external_movement_id'
+            'reviewed_financial_external_movement_id'
         );
     }
 
-    public function verifiedBy(): BelongsTo
+    public function resolvedBy(): BelongsTo
     {
         return $this->belongsTo(
             User::class,
-            'verified_by_user_id'
+            'resolved_by_user_id'
         );
-    }
-
-    public function resolutions(): HasMany
-    {
-        return $this->hasMany(
-            PurchasePaymentExternalResolution::class,
-            'purchase_payment_external_verification_id'
-        )->orderBy('id');
     }
 }

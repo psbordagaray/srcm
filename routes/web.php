@@ -29,6 +29,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\PurchaseObligationController;
 use App\Http\Controllers\PurchasePaymentExternalVerificationController;
+use App\Http\Controllers\PurchasePaymentExternalResolutionController;
 use App\Http\Controllers\PurchasePaymentGroupRequestController;
 use App\Http\Controllers\PurchasePaymentOperationsController;
 use App\Http\Controllers\PurchasePaymentRequestController;
@@ -1011,6 +1012,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->whereUuid('financialExternalMovement')
                         ->name(
                             'purchase-payment-disbursements.external-verifications.store'
+                        );
+
+                    Route::post(
+                        'purchases/payment-external-verifications/{paymentVerification}/resolve',
+                        [PurchasePaymentExternalResolutionController::class, 'store']
+                    )
+                        ->whereUuid(
+                            'paymentVerification'
+                        )
+                        ->name(
+                            'purchase-payment-external-verifications.resolutions.store'
                         );
                 });
 

@@ -94,11 +94,11 @@ desde cero.
 | P7.1–P7.5 | CSV/XLSX, mapping, commit y fallback manual publicados |
 | P8 | Posventa V1 cerrada en P8.5.8 |
 | P9.1–P9.6b | CxC, aging, crédito, cuotas, anticipos y excedentes publicados |
-| P9.7a–P9.7k | Factura proveedor, match, créditos, anticipos, grupo, desembolso, operación y verificación externa publicados |
+| P9.7a–P9.7l | Factura proveedor, match, créditos, anticipos, grupo, desembolso, verificación y resolución externa publicados |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
 
-## Estado funcional P9.7k
+## Estado funcional P9.7l
 
 **P9.7k — Supplier Payment External Verification V1** vincula explícitamente
 un desembolso non-cash con un `FinancialExternalMovement` `Debit + Posted` de
@@ -112,13 +112,18 @@ automáticamente. La evidencia saliente permanece independiente de
 la vez cobro, reembolso y desembolso. Diferencias, comisiones y retenciones se
 proyectan de forma explícita y no se compensan silenciosamente.
 
+`PurchasePaymentExternalResolution` registra una decisión append-only sobre la
+observación externa vigente: excepción de tesorería aceptada o seguimiento con
+entidad, proveedor o evidencia. Conserva estado e importes, no modifica CxP y
+no fabrica un asiento contable.
+
 ## Próximo paso exacto
 
-**P9.7l — Supplier Payment External Difference Resolution RECON.**
+**P9.8 — Supplier Payables Exposure & Aging RECON.**
 
-Debe relevar read-only cómo comisiones, retenciones, reversas y diferencias
-deben afectar tesorería y CxP sin reescribir desembolso, obligación ni
-evidencia externa.
+Debe relevar read-only vencimientos, aging, exposición y estado de cuenta de
+proveedores sobre obligaciones, créditos, anticipos y desembolsos ya
+publicados, sin almacenar un saldo paralelo.
 
 ## Registro mínimo de cada relevo
 

@@ -183,6 +183,7 @@
                         $paymentControl = $controls->get($disbursement->id);
                         $paymentExternalVerification = $disbursement->externalVerification;
                         $paymentExternalCandidates = $externalCandidates->get($disbursement->id, collect());
+                        $paymentExternalResolutions = $paymentExternalVerification?->resolutions ?? collect();
                     @endphp
                     <article id="disbursement-{{ $disbursement->public_id }}" class="p-5">
                         <div class="flex flex-wrap items-start justify-between gap-4">
@@ -219,6 +220,45 @@
                                     <p class="mt-1 text-slate-400">Nota: {{ $paymentExternalVerification->note }}</p>
                                 @endif
                             </div>
+
+                            @if($paymentExternalResolutions->isNotEmpty())
+                                <div class="mt-3 space-y-2">
+                                    @foreach($paymentExternalResolutions as $externalResolution)
+                                        <div class="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-3 text-xs">
+                                            <p class="font-bold uppercase tracking-wider text-cyan-200">Resolución externa append-only · {{ $externalResolution->outcome->label() }}</p>
+                                            <p class="mt-1 text-slate-400">
+                                                Estado {{ $externalResolution->observed_status->value }} ·
+                                                diferencia {{ $externalResolution->amount_difference_minor > 0 ? '+' : '' }}{{ number_format($externalResolution->amount_difference_minor / 100, 2, ',', '.') }} ·
+                                                resolvió {{ $externalResolution->resolvedBy->name }}
+                                            </p>
+                                            <p class="mt-1 text-slate-400">{{ $externalResolution->note }}</p>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            @if($canResolveExternal && data_get($paymentControl, 'external_resolution_applicable', false) && ! data_get($paymentControl, 'external_resolution_current', false))
+                                <form method="POST" action="{{ route('purchase-payment-external-verifications.resolutions.store', $paymentExternalVerification) }}" class="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/5 p-4" onsubmit="return window.confirm('Registrar esta decisión append-only. No modificará CxP ni creará asientos contables.');">
+                                    @csrf
+                                    <input type="hidden" name="idempotency_key" value="purchase-ui:payment-external-resolve:{{ \Illuminate\Support\Str::uuid() }}">
+                                    <p class="text-xs font-bold uppercase tracking-wider text-amber-200">P9.7l · Resolver o derivar diferencia externa</p>
+                                    <p class="mt-1 text-[11px] text-slate-400">La decisión conserva diferencia, comisión, retención y estado observado. No reabre la obligación, no altera imputaciones y no finge contabilidad inexistente.</p>
+                                    <select name="outcome" required class="mt-3 w-full rounded-lg border-slate-700 bg-slate-950 text-xs text-slate-100">
+                                        <option value="">Seleccionar decisión explícita</option>
+                                        @foreach(\App\Enums\PurchasePaymentExternalResolutionOutcome::cases() as $outcome)
+                                            @if($outcome !== \App\Enums\PurchasePaymentExternalResolutionOutcome::TreasuryExceptionAccepted || data_get($paymentControl, 'state') === 'external_verification_difference')
+                                                <option value="{{ $outcome->value }}">{{ $outcome->label() }}</option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                    <textarea name="note" required minlength="10" maxlength="2000" placeholder="Fundamento obligatorio (10 a 2000 caracteres)" class="mt-2 w-full rounded-lg border-slate-700 bg-slate-950 text-xs text-slate-100"></textarea>
+                                    <label class="mt-3 flex items-start gap-2 text-xs text-amber-100">
+                                        <input type="checkbox" name="confirm_resolve" value="1" required class="mt-0.5 rounded border-slate-600 bg-slate-950">
+                                        <span>Confirmo que la decisión documenta el control externo y no cambia silenciosamente la deuda ni la tesorería.</span>
+                                    </label>
+                                    <button class="mt-3 rounded-lg bg-amber-300 px-4 py-2 text-xs font-bold text-slate-950">Registrar decisión externa</button>
+                                </form>
+                            @endif
                         @elseif($canVerifyExternal && $disbursement->channel === \App\Enums\PurchasePaymentDisbursementChannel::NonCash)
                             <div class="mt-4 rounded-xl border border-indigo-400/20 bg-indigo-400/5 p-4">
                                 <p class="text-xs font-bold uppercase tracking-wider text-indigo-200">P9.7k · Candidatos de débito externo</p>

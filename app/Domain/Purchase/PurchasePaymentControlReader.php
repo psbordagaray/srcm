@@ -9,9 +9,11 @@ use App\Enums\FinancialAccountType;
 use App\Enums\FinancialMovementDirection;
 use App\Enums\FinancialMovementStatus;
 use App\Enums\PurchasePaymentDisbursementChannel;
+use App\Enums\PurchasePaymentExternalResolutionOutcome;
 use App\Models\FinancialExternalMovement;
 use App\Models\PurchasePaymentDisbursement;
 use App\Models\PurchasePaymentExecution;
+use App\Models\PurchasePaymentExternalResolution;
 use App\Models\User;
 use DomainException;
 
@@ -233,6 +235,8 @@ final class PurchasePaymentControlReader
                 'executedBy:id,name',
                 'externalVerification.financialMovement.account',
                 'externalVerification.verifiedBy:id,name',
+                'externalVerification.resolutions.reviewedMovement',
+                'externalVerification.resolutions.resolvedBy:id,name',
             ])
             ->first();
 
@@ -501,6 +505,43 @@ final class PurchasePaymentControlReader
                 ?? $movement;
         }
 
+        $resolution = $verification->resolutions
+            ->first(
+                fn (PurchasePaymentExternalResolution $candidate): bool =>
+                    (int) $candidate
+                        ->reviewed_financial_external_movement_id
+                        === (int) $latest->id
+            );
+
+        if ($resolution) {
+            if (
+                (int) $resolution->organization_id
+                    !== (int) $disbursement->organization_id
+                || $resolution->observed_status
+                    !== $latest->status
+                || (int) $resolution->amount_difference_minor
+                    !== (int) $latest->gross_amount_minor
+                        - (int) $disbursement->amount_minor
+                || (int) $resolution->fee_amount_minor
+                    !== (int) $latest->fee_amount_minor
+                || (int) $resolution
+                    ->withholding_amount_minor
+                    !== (int) $latest
+                        ->withholding_amount_minor
+            ) {
+                return $this->anomaly(
+                    $disbursement,
+                    'La resolución externa no conserva el estado y los importes de la evidencia revisada.'
+                );
+            }
+
+            return $this->externalResolutionState(
+                $disbursement,
+                $latest,
+                $resolution
+            );
+        }
+
         if (
             $latest->status
                 === FinancialMovementStatus::Reversed
@@ -518,6 +559,8 @@ final class PurchasePaymentControlReader
                 'reconciliation_mode' =>
                     'purchase_payment_external_verification',
                 'external_verification_applicable' => true,
+                'external_resolution_applicable' => true,
+                'external_resolution_current' => false,
                 'difference_minor' =>
                     (int) $verification
                         ->amount_difference_minor,
@@ -541,6 +584,8 @@ final class PurchasePaymentControlReader
                 'reconciliation_mode' =>
                     'purchase_payment_external_verification',
                 'external_verification_applicable' => true,
+                'external_resolution_applicable' => true,
+                'external_resolution_current' => false,
                 'difference_minor' =>
                     (int) $verification
                         ->amount_difference_minor,
@@ -564,6 +609,8 @@ final class PurchasePaymentControlReader
                 'reconciliation_mode' =>
                     'purchase_payment_external_verification',
                 'external_verification_applicable' => true,
+                'external_resolution_applicable' => true,
+                'external_resolution_current' => false,
                 'difference_minor' =>
                     (int) $verification
                         ->amount_difference_minor,
@@ -614,6 +661,8 @@ final class PurchasePaymentControlReader
                 'reconciliation_mode' =>
                     'purchase_payment_external_verification',
                 'external_verification_applicable' => true,
+                'external_resolution_applicable' => true,
+                'external_resolution_current' => false,
                 'difference_minor' => $difference,
                 'occurred_at' =>
                     $verification->verified_at,
@@ -636,9 +685,72 @@ final class PurchasePaymentControlReader
             'reconciliation_mode' =>
                 'purchase_payment_external_verification',
             'external_verification_applicable' => true,
+            'external_resolution_applicable' => false,
+            'external_resolution_current' => false,
             'difference_minor' => 0,
             'occurred_at' =>
                 $verification->verified_at,
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function externalResolutionState(
+        PurchasePaymentDisbursement $disbursement,
+        FinancialExternalMovement $reviewedMovement,
+        PurchasePaymentExternalResolution $resolution
+    ): array {
+        $closed = $resolution->outcome
+            === PurchasePaymentExternalResolutionOutcome::TreasuryExceptionAccepted;
+        $danger = in_array(
+            $reviewedMovement->status,
+            [
+                FinancialMovementStatus::Failed,
+                FinancialMovementStatus::Reversed,
+            ],
+            true
+        );
+
+        return [
+            'state' => $closed
+                ? 'external_difference_resolved_treasury_only'
+                : 'external_difference_follow_up_recorded',
+            'severity' => $closed
+                ? 'success'
+                : ($danger ? 'danger' : 'warning'),
+            'title' => $closed
+                ? 'Diferencia externa documentada · CxP intacta'
+                : 'Seguimiento externo documentado · pendiente',
+            'detail' => $closed
+                ? 'La excepción fue aceptada como diferencia de tesorería por '.
+                    $resolution->resolvedBy->name.'. Conserva diferencia '.
+                    $this->signedMoney(
+                        (int) $resolution->amount_difference_minor,
+                        $disbursement->currency_code
+                    ).', comisión '.
+                    $this->money(
+                        (int) $resolution->fee_amount_minor,
+                        $disbursement->currency_code
+                    ).' y retención '.
+                    $this->money(
+                        (int) $resolution->withholding_amount_minor,
+                        $disbursement->currency_code
+                    ).'. No modifica CxP ni fabrica un asiento contable.'
+                : $resolution->outcome->label().' registrado por '.
+                    $resolution->resolvedBy->name.'. Estado externo observado: '.
+                    $reviewedMovement->status->value.'. El desembolso y la obligación permanecen inmutables.',
+            'reconciliation_mode' =>
+                'purchase_payment_external_resolution',
+            'external_verification_applicable' => true,
+            'external_resolution_applicable' => true,
+            'external_resolution_current' => true,
+            'resolution_outcome' =>
+                $resolution->outcome->value,
+            'resolution_label' =>
+                $resolution->outcome->label(),
+            'resolution_note' => $resolution->note,
+            'difference_minor' =>
+                (int) $resolution->amount_difference_minor,
+            'occurred_at' => $resolution->resolved_at,
         ];
     }
 

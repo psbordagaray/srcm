@@ -435,7 +435,7 @@ La evolución posterior no reemplazó las verdades de este plan:
   económica como hechos distintos;
 - P9.1–P9.6b publicó deuda, cobranza, aging, crédito, cuotas, anticipos y
   excedentes de cliente;
-- P9.7a–P9.7k publicó documento de proveedor, match derivado, créditos,
+- P9.7a–P9.7l publicó documento de proveedor, match derivado, créditos,
   anticipos, autorización agrupada, desembolso canónico, su superficie
   operacional y su evidencia externa saliente.
 
@@ -448,7 +448,9 @@ movimiento físico por desembolso y non-cash no inventa `CashMovement` ni
 P9.7k mantiene `PaymentReconciliation` para cobros entrantes y crea
 `PurchasePaymentExternalVerification` para vincular explícitamente un
 desembolso non-cash con un débito externo contabilizado. Diferencias,
-comisiones y retenciones permanecen visibles y no resueltas.
+comisiones y retenciones permanecen visibles.
 
-P9.7l debe relevar read-only la resolución económica y contable de esas
-diferencias antes de materializar nuevos hechos.
+P9.7l agrega una decisión append-only por observación externa. Puede aceptar
+administrativamente una excepción `Posted` o derivarla a seguimiento de
+entidad, proveedor o evidencia; conserva snapshots y nunca modifica CxP ni
+fabrica contabilidad. P9.8 relevará exposición y aging de proveedores.

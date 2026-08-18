@@ -9,16 +9,16 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base exacta desde la que se publica P9.7k:
+Base exacta desde la que se publica P9.7l:
 
-`c04f3156361cebb6f41b0d128ee4c33b9d5219d6`
-— `feat(purchase): converge supplier payment operations`
+`83dde8a9e2efa01b57d1d2cb336151f44a248867`
+— `feat(purchase): verify supplier payments externally`
 
-Estado: P1–P7 publicados, P8 V1 cerrado y P9 publicado hasta P9.7k. Baseline
-formal pre-P9.7k: **816 tests / 6716 assertions**. Próximo corte exacto:
-**P9.7l — Supplier Payment External Difference Resolution RECON**.
+Estado: P1–P7 publicados, P8 V1 cerrado y P9 publicado hasta P9.7l. Baseline
+formal pre-P9.7l: **823 tests / 6762 assertions**. Próximo corte exacto:
+**P9.8 — Supplier Payables Exposure & Aging RECON**.
 
-El checkpoint canónico es el `HEAD` publicado que contiene ADR 92.
+El checkpoint canónico será el `HEAD` publicado que contiene ADR 93.
 
 Esta North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
 ejecutivo de `docs/06_ROADMAP.md`; los tres forman una cadena deliberada para
@@ -633,7 +633,7 @@ se fija por una URL configurada por SRCM y queda protegida por su propio HMAC.
 ## Continuidad P9 — CxC/CxP y desembolso de proveedores
 
 P9.1–P9.6b publicó deuda de clientes, cobranzas e imputaciones, aging, política
-de crédito, cuotas, anticipos y convergencia de excedentes. P9.7a–P9.7k publicó
+de crédito, cuotas, anticipos y convergencia de excedentes. P9.7a–P9.7l publicó
 documento de proveedor, 3-way match derivado, notas de crédito, aplicaciones,
 anticipos, autorización agrupada, el parent canónico de desembolso y su
 superficie operacional con evidencia externa saliente.
@@ -646,6 +646,6 @@ el total y un desembolso non-cash no fabrica evidencia bancaria externa.
 
 P9.7k vincula explícitamente un desembolso non-cash con un
 `FinancialExternalMovement` `Debit + Posted` mediante evidencia append-only,
-sin ampliar `PaymentReconciliation` ni automatizar la decisión. P9.7l debe
-relevar en modo read-only la resolución de comisiones, retenciones, reversas y
-diferencias antes de crear nuevos hechos financieros.
+sin ampliar `PaymentReconciliation` ni automatizar la decisión. P9.7l incorpora
+resolución/derivación append-only por observación externa, preserva snapshots y
+mantiene CxP intacta. P9.8 relevará exposición y aging de proveedores.
