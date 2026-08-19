@@ -197,15 +197,14 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P10 — ARCA WSAA Credential Material Readiness RECON V1**.
+**P10 — ARCA WSAA TRA/CMS Signing RECON V1**.
 
-Debe relevar, estrictamente read-only y sin imprimir secretos, la superficie
-real de configuración/almacenamiento de certificado y clave privada, soporte
-OpenSSL/CMS, credential store y provider WSAA antes de materializar
-credenciales o ejecutar `LoginCms`.
+Debe fijar, estrictamente read-only y con evidencia oficial, la estructura del
+TRA y la frontera exacta de firma CMS/PKCS#7 compatible con el runtime local,
+sin dereferenciar credenciales reales ni ejecutar `LoginCms`.
 
-No cargará secretos reales, no firmará TRA/CMS, no abrirá HTTP, no habilitará
-producción y no declarará integración ARCA validada.
+No firmará material real, no abrirá HTTP WSAA/WSFE, no habilitará producción y
+no declarará integración ARCA validada.
 ## Registro mínimo de cada relevo
 
 Todo RESULT debe dejar: proyecto, fase, fecha, rama, HEAD/base/origin, ADR,
