@@ -3,10 +3,10 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-19**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de WSFE SOAP Serialization Boundary V1:
+Base funcional publicada al cierre de WSFE Provider Response Normalization V1:
 
-`f138ee16b7834b0befebf60e8b497508e4ebb4a9`
-`feat(fiscal): add WSFE SOAP serialization boundary`
+`94e7412680561a3d9b25e664b2ba20a3d5a7fa7c`
+`feat(fiscal): add WSFE provider response normalization`
 
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
@@ -68,10 +68,10 @@ Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
 
 ---
 
-## 1.1. Estado maestro al cierre de WSFE SOAP Serialization Boundary V1
+## 1.1. Estado maestro al cierre de WSFE Provider Response Normalization V1
 
 El checkpoint funcional
-`f138ee16b7834b0befebf60e8b497508e4ebb4a9` deja publicados P1–P9 V1 y,
+`94e7412680561a3d9b25e664b2ba20a3d5a7fa7c` deja publicados P1–P9 V1 y,
 dentro de P10, toda la progresión previa más las siguientes fronteras de
 completitud y conexión:
 
@@ -91,10 +91,16 @@ completitud y conexión:
 - frontera SOAP 1.1 `FECAESolicitar` con
   `Auth(Token,Sign,Cuit) + FeCAEReq`;
 - preservación previa del resultado provider con `FeCabResp`, `FeDetResp`,
-  CAE, `CAEFchVto`, observaciones, Events, Errors y campos desconocidos.
+  CAE, `CAEFchVto`, observaciones, Events, Errors y campos desconocidos;
+- normalización provider-specific fail-closed del resultado:
+  `A/A + CAE + CAEFchVto válido → Authorized`,
+  `R/R + sin CAE → Rejected`, y todo estado parcial, contradictorio,
+  incompleto o nuevo → `Unknown`;
+- preservación de observaciones, Events, Errors y campos desconocidos sin
+  reinterpretar códigos del proveedor.
 
-El último cambio funcional cerró **8/47 focal**, **25/126 regresión fiscal** y
-**966/7347 suite completa**. La BD real conserva 88 tablas de negocio,
+El último cambio funcional cerró **10/46 focal**, **33/173 regresión fiscal** y
+**976/7393 suite completa**. La BD real conserva 88 tablas de negocio,
 fingerprint
 `9EC82FF55039B520624D4B189F4FAFA9972480EAB411375893790E5BD7B4BDA0`,
 schema
@@ -109,7 +115,7 @@ hay WSDL/HTTP WSAA/WSFE ni CAE real y producción permanece bloqueada.
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próxima frontera funcional, sólo después de cerrar este sync documental:
-`WSFE_PROVIDER_RESPONSE_NORMALIZATION_V1`.
+`WSFE_PROVIDER_RESULT_CONVERGENCE_V1`.
 
 ---
 
@@ -675,7 +681,7 @@ Resultado: el `FeCAEReq` estándar se compone desde evidencia fiscal explícita,
 usa candidato de secuencia remota y llega al transport sin secretos ni
 dependencia de `FiscalDocumentNumber` local.
 
-### P10 — WSAA / Endpoint / SOAP Readiness — PUBLICADO
+### P10 — WSAA / Endpoint / SOAP / Response Readiness — PUBLICADO
 
 - WSAA Access Ticket Boundary: scope explícito
   organización/ambiente/servicio/CUIT y `Token`/`Sign` efímeros, privados,
@@ -683,18 +689,21 @@ dependencia de `FiscalDocumentNumber` local.
 - ARCA Environment Endpoint Map: endpoints oficiales WSAA/WSFE separados por
   `FiscalEnvironment`, con producción conocida pero no habilitada;
 - WSFE SOAP Serialization Boundary: contrato SOAP 1.1 de `FECAESolicitar`,
-  `Auth(Token,Sign,Cuit) + FeCAEReq` y preservación del resultado provider
-  antes de normalizar outcome.
+  `Auth(Token,Sign,Cuit) + FeCAEReq` y preservación del resultado provider;
+- WSFE Provider Response Normalization: normalización fail-closed a
+  `Authorized`, `Rejected` o `Unknown`, preservando CAE, `CAEFchVto`,
+  observaciones, Events, Errors y campos provider desconocidos, sin interpretar
+  códigos `Obs/Evt/Err`.
 
-No se genera XML manual, no se instancia `SoapClient`, no se carga WSDL y no se
-abre HTTP ARCA.
+`FiscalAuthorizationTransportResult` sigue sin enriquecerse. No se genera XML
+manual, no se instancia `SoapClient`, no se carga WSDL y no se abre HTTP ARCA.
 
-**Próximo paso exacto:** `WSFE_PROVIDER_RESPONSE_NORMALIZATION_V1`.
+**Próximo paso exacto:** `WSFE_PROVIDER_RESULT_CONVERGENCE_V1`.
 
-Debe normalizar el `WsfeFecaeSoapResultData` de forma fail-closed sin perder
-CAE, `CAEFchVto`, observaciones, Events, Errors ni campos provider preservables.
-No debe inventar significado de códigos ARCA no demostrado, persistir CAE
-todavía ni habilitar red/producción.
+Debe definir cómo `WsfeFecaeNormalizedResponseData` converge con el resultado
+provider-neutral y con los hechos de autorización sin perder CAE, vencimiento
+ni evidencia. No debe inventar significado de códigos ARCA, habilitar
+red/producción ni declarar integración real validada.
 
 ---
 

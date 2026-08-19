@@ -9,19 +9,25 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **WSFE SOAP Serialization Boundary V1**:
+Base funcional publicada al cierre de **WSFE Provider Response Normalization V1**:
 
-`f138ee16b7834b0befebf60e8b497508e4ebb4a9`
-— `feat(fiscal): add WSFE SOAP serialization boundary`
+`94e7412680561a3d9b25e664b2ba20a3d5a7fa7c`
+— `feat(fiscal): add WSFE provider response normalization`
 
 Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta una
-frontera local completa de request/readiness WSFE. La capa fiscal separa
-configuración, documento, hechos de autorización, numeración local, autoridad
-de secuencia remota, evidencia tributaria, `FeCAEReq`, transport sin secretos,
-Ticket WSAA efímero, endpoints por ambiente y contrato SOAP 1.1
-`FECAESolicitar`.
+frontera local completa de request/readiness y normalización de respuesta WSFE.
+La capa fiscal separa configuración, documento, hechos de autorización,
+numeración local, autoridad de secuencia remota, evidencia tributaria,
+`FeCAEReq`, transport sin secretos, Ticket WSAA efímero, endpoints por ambiente,
+contrato SOAP 1.1 `FECAESolicitar` y normalización provider-specific fail-closed.
 
-La última suite funcional cerró **966 tests / 7347 assertions GREEN**. La BD
+La normalización publicada reconoce `Authorized` sólo con `A/A + CAE numérico +
+CAEFchVto válido`, `Rejected` sólo con `R/R + ausencia de CAE` y conserva como
+`Unknown` cualquier estado parcial, contradictorio, incompleto o nuevo.
+Observaciones, Events, Errors y campos provider desconocidos se preservan sin
+reinterpretar sus códigos.
+
+La última suite funcional cerró **976 tests / 7393 assertions GREEN**. La BD
 real conserva fingerprint lógico, schema y migration ledger sin cambios de
 dominio.
 
@@ -34,8 +40,9 @@ Principio vinculante de esta frontera:
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próximo paso funcional exacto:
-`WSFE_PROVIDER_RESPONSE_NORMALIZATION_V1`, para normalizar el resultado provider
-preservado antes de converger con el resultado fiscal interno.
+`WSFE_PROVIDER_RESULT_CONVERGENCE_V1`, para decidir cómo la normalización
+provider-specific converge con el resultado provider-neutral y con los hechos
+de autorización sin perder CAE, vencimiento ni evidencia.
 
 ### Disciplina irrefutable de recuperación
 

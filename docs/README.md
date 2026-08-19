@@ -14,10 +14,10 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`f138ee16b7834b0befebf60e8b497508e4ebb4a9`
-— `feat(fiscal): add WSFE SOAP serialization boundary`
+`94e7412680561a3d9b25e664b2ba20a3d5a7fa7c`
+— `feat(fiscal): add WSFE provider response normalization`
 
-Estado verificado al cierre de **WSFE SOAP Serialization Boundary V1**:
+Estado verificado al cierre de **WSFE Provider Response Normalization V1**:
 
 - P10.1–P10.7.4 permanecen publicados y vigentes;
 - evidencia WSFE explícita publicada: receptor fiscal, fecha de comprobante,
@@ -37,9 +37,15 @@ Estado verificado al cierre de **WSFE SOAP Serialization Boundary V1**:
   `Auth(Token,Sign,Cuit) + FeCAEReq` y preservación previa del resultado
   provider (`FeCabResp`, `FeDetResp`, CAE, `CAEFchVto`, observaciones,
   Events, Errors y campos desconocidos);
-- `FiscalAuthorizationTransportResult` continúa deliberadamente grueso y la
-  normalización del resultado provider es la siguiente frontera;
-- suite del último cambio funcional: **966 tests / 7347 assertions GREEN**;
+- normalización provider-specific fail-closed publicada:
+  `A/A + CAE + CAEFchVto válido → Authorized`,
+  `R/R + sin CAE → Rejected`, y cualquier estado parcial, contradictorio,
+  incompleto o nuevo → `Unknown`;
+- observaciones, Events, Errors y campos provider desconocidos se conservan
+  íntegros; no se interpreta el significado de códigos `Obs/Evt/Err`;
+- `FiscalAuthorizationTransportResult` continúa deliberadamente grueso; la
+  convergencia provider-specific → provider-neutral es la siguiente frontera;
+- suite del último cambio funcional: **976 tests / 7393 assertions GREEN**;
 - BD real: **88 tablas de negocio**, fingerprint
   `9EC82FF55039B520624D4B189F4FAFA9972480EAB411375893790E5BD7B4BDA0`,
   schema
@@ -121,10 +127,10 @@ desde cero.
 | P9.8 | Exposición, aging y estado de cuenta CxP derivados publicados; P9 V1 cerrado |
 | P10.1–P10.7.4 | Configuración fiscal, documento, autorización, numeración, integración, perfil/política, composición, clasificación y concepto/período publicados |
 | P10 — Payload WSFE | Receptor, fecha, resumen monetario, moneda/cotización, vencimiento, ajustes, asociaciones, secuencia remota y clasificación tributaria publicados |
-| P10 — ARCA readiness | `FeCAEReq`, bridge al transport, Ticket WSAA, endpoint map y SOAP 1.1 call/result boundary publicados; red real aún bloqueada |
+| P10 — ARCA readiness | `FeCAEReq`, bridge al transport, Ticket WSAA, endpoint map, SOAP 1.1 call/result boundary y provider response normalization publicados; red real aún bloqueada |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
-## Estado funcional P10 al cierre de WSFE SOAP Serialization Boundary V1
+## Estado funcional P10 al cierre de WSFE Provider Response Normalization V1
 
 P10 mantiene el contrato **venta comercial ≠ comprobante fiscal ≠ autorización
 fiscal**. `CommerceSale` sigue siendo la verdad comercial y su `sale_number` no
@@ -151,12 +157,22 @@ guardan en el transport request, no se serializan y se redactan en debug.
 normalizar outcome: `FeCabResp`, `FeDetResp`, CAE, `CAEFchVto`, observaciones,
 Events, Errors y campos futuros desconocidos.
 
+`WsfeFecaeProviderResponseNormalizer` convierte esa evidencia de forma
+provider-specific y fail-closed: sólo `A/A + CAE numérico + CAEFchVto válido`
+es `Authorized`; sólo `R/R + ausencia de CAE` es `Rejected`; `P`, faltantes,
+contradicciones o códigos nuevos quedan `Unknown`. Las observaciones, Events,
+Errors y campos desconocidos se preservan y sus códigos no se reinterpretan.
+
+`FiscalAuthorizationTransportResult` permanece sin modificar. La siguiente
+frontera debe decidir la convergencia hacia el resultado provider-neutral y los
+hechos de autorización sin perder CAE, vencimiento ni evidencia.
+
 **Preparado para conectar no significa integración ARCA validada.** Todavía no
 existen `LoginCms` real, certificado/clave privada/CMS, `SoapClient` habilitado,
 WSDL cargado, HTTP WSAA/WSFE ni CAE real. Producción permanece bloqueada.
 
 Checkpoint funcional publicado de referencia:
-`f138ee16b7834b0befebf60e8b497508e4ebb4a9`.
+`94e7412680561a3d9b25e664b2ba20a3d5a7fa7c`.
 ## Estado funcional P9.7l
 
 **P9.7k — Supplier Payment External Verification V1** vincula explícitamente
@@ -188,17 +204,16 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P10 — WSFE Provider Response Normalization V1**.
+**P10 — WSFE Provider Result Convergence V1**.
 
-Debe partir del `WsfeFecaeSoapResultData` ya publicado y normalizar de forma
-fail-closed el resultado provider sin perder evidencia: resultado de cabecera y
-detalle, CAE, `CAEFchVto`, observaciones, Events, Errors y campos desconocidos
-preservables.
+Debe partir de `WsfeFecaeNormalizedResponseData` y fijar cómo la verdad
+provider-specific converge con `FiscalAuthorizationTransportResult` y con los
+hechos de autorización sin perder CAE, `CAEFchVto`, observaciones, Events,
+Errors ni el resultado provider preservado.
 
-El corte no debe inventar significado de códigos ARCA no demostrado, no debe
-abrir HTTP, no debe persistir CAE todavía y no debe habilitar producción. El
-resultado provider normalizado debe quedar preparado para una posterior
-convergencia con `FiscalAuthorizationTransportResult` y hechos de autorización.
+El corte debe conservar semántica fail-closed (`Authorized`, `Rejected`,
+`Unknown`), no interpretar códigos ARCA no demostrados, no abrir HTTP y no
+declarar integración ARCA validada.
 
 Después de esa frontera siguen, como cortes separados: material de credenciales
 + CMS/WSAA concreto, habilitación controlada de PHP SOAP, transport SOAP real y
