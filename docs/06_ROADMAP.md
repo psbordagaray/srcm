@@ -3,11 +3,10 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-19**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de WSFE Provider Result Convergence V1:
+Base funcional publicada al cierre de ARCA WSAA Credential Material Boundary V1:
 
-`014ed95a59a6f2b00817cdea3879f7d4ab81abb1`
-`feat(fiscal): converge WSFE provider result evidence`
-
+`ae48776464acc3f0581b27bf14cdcbe955b3a13f`
+`feat(fiscal): add ARCA WSAA credential material boundary`
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
 limpio. Este documento debe mantenerse sincronizado con `docs/README.md`.
@@ -68,63 +67,42 @@ Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
 
 ---
 
-## 1.1. Estado maestro al cierre de WSFE Provider Result Convergence V1
+## 1.1. Estado maestro al cierre de ARCA WSAA Credential Material Boundary V1
 
 El checkpoint funcional
-`014ed95a59a6f2b00817cdea3879f7d4ab81abb1` deja publicados P1–P9 V1 y,
-dentro de P10, toda la progresión previa más las siguientes fronteras de
-completitud y conexión:
+`ae48776464acc3f0581b27bf14cdcbe955b3a13f` mantiene publicados P1–P9 V1 y, dentro de P10, toda la
+progresión previa hasta WSFE Provider Result Convergence más la frontera de
+material de credenciales WSAA:
 
-- receptor fiscal WSFE explícito;
-- fecha fiscal del comprobante;
-- resumen monetario WSFE;
-- moneda y cotización;
-- vencimiento de pago cuando corresponde;
-- foundation de notas de crédito/débito;
-- comprobantes o período asociados;
-- autoridad de secuencia remota separada de numeración local;
-- clasificación de detalle tributario WSFE;
-- composición canónica `FeCAEReq`;
-- bridge `FeCAEReq → FiscalAuthorizationTransportRequest`;
-- contrato efímero de Ticket WSAA por organización/ambiente/servicio/CUIT;
-- mapa oficial de endpoints WSAA/WSFE por `FiscalEnvironment`;
-- frontera SOAP 1.1 `FECAESolicitar` con
-  `Auth(Token,Sign,Cuit) + FeCAEReq`;
-- preservación previa del resultado provider con `FeCabResp`, `FeDetResp`,
-  CAE, `CAEFchVto`, observaciones, Events, Errors y campos desconocidos;
-- normalización provider-specific fail-closed del resultado:
-  `A/A + CAE + CAEFchVto válido → Authorized`,
-  `R/R + sin CAE → Rejected`, y todo estado parcial, contradictorio,
-  incompleto o nuevo → `Unknown`;
-- preservación de observaciones, Events, Errors y campos desconocidos sin
-  reinterpretar códigos del proveedor;
-- convergencia a `FiscalAuthorizationTransportResult` provider-neutral con
-  código de autorización, vencimiento ISO y evidencia provider opaca;
-- puente `FiscalAuthorizationFactData::fromTransportResult()` y persistencia
-  append-only en `FiscalAuthorizationResponse`;
-- idempotencia ampliada con hash canonicalizado de evidencia.
+- referencias explícitas por organización/ambiente/servicio/CUIT;
+- certificado, clave privada y passphrase representados sólo mediante
+  referencias opacas en configuración;
+- material PEM sensible separado en `WsaaCredentialMaterial`, efímero,
+  redactado y no serializable;
+- store de referencias de homologación tenant-scoped y fail-closed;
+- eliminación de la referencia global legacy de certificado;
+- `WsaaCredentialMaterialProvider` todavía abstracto y sin binding;
+- `FiscalAuthorizationCredentialStore` todavía sin binding para no colapsar
+  scopes que su firma actual no expresa;
+- producción, CMS, LoginCms, SoapClient y HTTP ARCA permanecen bloqueados.
 
-El cambio funcional cerró **7/32 focal**, **36/188 regresión fiscal** y
-**983/7425 suite completa**. Luego se alineó la BD real mediante simulación
-aislada y aplicación exacta de **17 migraciones fiscales**, sin `migrate-all`.
-Quedaron **29 migraciones no fiscales deliberadamente pendientes**.
+Validación: **10/48 focal, 37/183 regresión fiscal y 993 tests / 7473 assertions GREEN**.
 
-Baseline real autoritativa: 107 tablas de negocio, fingerprint
+Baseline real autoritativa sin cambios: 107 tablas de negocio, fingerprint
 `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
 schema
 `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
 y 93 migraciones con hash lógico
 `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
+Las 29 migraciones no fiscales continúan deliberadamente pendientes.
 
-No existe ejecución real ARCA: `SoapClient` continúa no disponible en el PHP
-local, no se implementaron certificado/clave privada/CMS/LoginCms reales, no
-hay WSDL/HTTP WSAA/WSFE ni CAE real y producción permanece bloqueada.
+No se dereferenciaron credenciales, no se ejecutó firma CMS/PKCS#7, no hubo
+`LoginCms`, WSAA/WSFE HTTP ni CAE real. `SoapClient` sigue deshabilitado.
 
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próxima frontera exacta:
-`ARCA_WSAA_CREDENTIAL_MATERIAL_READINESS_RECON_V1`.
-
+`ARCA_WSAA_TRA_CMS_SIGNING_RECON_V1`.
 ---
 
 # V1.0 — Operación comercial completa / lista para producción

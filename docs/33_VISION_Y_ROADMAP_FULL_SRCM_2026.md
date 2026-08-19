@@ -9,49 +9,45 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **WSFE Provider Result Convergence V1**:
+Base funcional publicada al cierre de **ARCA WSAA Credential Material Boundary V1**:
 
-`014ed95a59a6f2b00817cdea3879f7d4ab81abb1`
-— `feat(fiscal): converge WSFE provider result evidence`
+`ae48776464acc3f0581b27bf14cdcbe955b3a13f`
+— `feat(fiscal): add ARCA WSAA credential material boundary`
 
-Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta una
-frontera local completa de request/readiness, normalización de respuesta y
-convergencia provider-neutral WSFE.
+Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta
+request/readiness WSFE, normalización/convergencia provider-neutral y frontera
+explícita de material de credenciales WSAA.
 
-La respuesta `FECAESolicitar` preservada se normaliza fail-closed y luego
-converge a `FiscalAuthorizationTransportResult` con código de autorización,
-vencimiento ISO y evidencia provider opaca. `FiscalAuthorizationFactData` lleva
-esa evidencia a hechos append-only y `FiscalAuthorizationResponse` la persiste
-sin reinterpretar códigos del proveedor. La idempotencia incorpora el hash
-canonicalizado de la evidencia.
+El material WSAA queda separado en dos capas: referencias tenant-scoped por
+organización/ambiente/servicio/CUIT y material PEM sensible efímero.
+Las referencias se resuelven sólo como identificadores opacos; el material
+sensible es privado, redactado y no serializable.
 
-La validación funcional cerró **7/32 focal**, **36/188 regresión fiscal** y
-**983 tests / 7425 assertions GREEN**.
+Todavía no existe un `WsaaCredentialMaterialProvider` concreto, no se
+dereferencian certificados/claves y el viejo `FiscalAuthorizationCredentialStore`
+permanece sin binding para no confundir scopes que su firma no expresa.
 
-La BD real fue alineada de manera controlada: primero se aplicaron exactamente
-17 migraciones fiscales sobre una copia aislada y sólo después, con simulación
-GREEN y backup, sobre la BD real. No se ejecutó `migrate-all`. Quedaron 29
-migraciones no fiscales deliberadamente pendientes.
+Validación funcional: **10/48 focal, 37/183 regresión fiscal y 993 tests / 7473 assertions GREEN**.
 
-Baseline real autoritativa: **107 tablas de negocio**, fingerprint
+Baseline real autoritativa sin cambios: **107 tablas de negocio**, fingerprint
 `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
 schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
 y **93 migraciones** con hash lógico
 `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
+Las 29 migraciones no fiscales siguen pendientes de forma intencional.
 
-La ejecución externa ARCA permanece deliberadamente bloqueada. No existe
-certificado/clave privada/CMS/LoginCms real, `SoapClient` sigue deshabilitado en
-el PHP local, no se carga WSDL, no se abre HTTP WSAA/WSFE y no existe CAE real
-obtenido desde ARCA.
+La ejecución externa ARCA permanece bloqueada: no se firmó TRA/CMS, no se
+ejecutó `LoginCms`, `SoapClient` sigue deshabilitado, no hubo HTTP WSAA/WSFE y
+no existe CAE real.
 
 Principio vinculante:
 
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próximo paso exacto:
-`ARCA_WSAA_CREDENTIAL_MATERIAL_READINESS_RECON_V1`, read-only y sin secretos,
-para fijar almacenamiento/configuración de certificado y clave privada,
-OpenSSL/CMS y la frontera concreta de provider WSAA antes de `LoginCms`.
+`ARCA_WSAA_TRA_CMS_SIGNING_RECON_V1`, read-only, para fijar con evidencia la
+estructura del TRA y la firma CMS compatible con el runtime local antes de
+materializar signing o `LoginCms`.
 
 ### Disciplina irrefutable de recuperación
 
@@ -63,13 +59,17 @@ Los tres documentos maestros forman una cadena obligatoria:
 
 Cada paso que cambie el estado real de SRCM debe actualizar, validar y publicar
 los tres antes de abrir la frontera siguiente. Cuando corresponda, el mismo
-runner puede ejecutar el commit funcional y un segundo commit documental, pero
-ambos permanecen separados y verificados remotamente.
+runner ejecuta el commit funcional y un segundo commit documental; ambos se
+mantienen separados.
+
+Los gates locales de los tres maestros son estructurales: paths exactos,
+`diff --check`, commit/push exactos y repo limpio. La verificación semántica se
+realiza una sola vez sobre GitHub después de publicar, evitando validadores
+frágiles por wrapping, Unicode o saltos de línea.
 
 La North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
 ejecutivo de `docs/06_ROADMAP.md`; los tres recuperan contexto sin depender de
 una conversación.
-
 ---
 
 ## 1. North Star

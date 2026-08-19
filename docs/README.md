@@ -14,58 +14,52 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`014ed95a59a6f2b00817cdea3879f7d4ab81abb1`
-— `feat(fiscal): converge WSFE provider result evidence`
+`ae48776464acc3f0581b27bf14cdcbe955b3a13f`
+— `feat(fiscal): add ARCA WSAA credential material boundary`
 
-Estado verificado al cierre de **WSFE Provider Result Convergence V1**:
+Estado verificado al cierre de **ARCA WSAA Credential Material Boundary V1**:
 
-- P10.1–P10.7.4 permanecen publicados y vigentes;
-- evidencia WSFE explícita publicada: receptor fiscal, fecha de comprobante,
-  resumen monetario, moneda/cotización, vencimiento de pago,
-  notas de crédito/débito y comprobantes/períodos asociados;
-- autoridad de secuencia remota separada de la numeración fiscal local;
-- clasificación de detalle tributario WSFE y composición canónica
-  `FeCAEReq` publicadas;
-- `FiscalAuthorizationTransportRequest` transporta el `FeCAEReq` canónico y
-  permanece libre de secretos;
-- contrato efímero de Ticket WSAA publicado: scope explícito por organización,
-  ambiente, servicio y CUIT; `Token`/`Sign` privados, redactados y no
-  serializables;
-- mapa oficial WSAA/WSFE por `FiscalEnvironment` publicado sin habilitar
-  producción;
-- frontera SOAP 1.1 publicada para `FECAESolicitar` con
-  `Auth(Token,Sign,Cuit) + FeCAEReq` y preservación previa del resultado
-  provider (`FeCabResp`, `FeDetResp`, CAE, `CAEFchVto`, observaciones,
-  Events, Errors y campos desconocidos);
-- normalización provider-specific fail-closed publicada:
-  `A/A + CAE + CAEFchVto válido → Authorized`,
-  `R/R + sin CAE → Rejected`, y cualquier estado parcial, contradictorio,
-  incompleto o nuevo → `Unknown`;
-- observaciones, Events, Errors y campos provider desconocidos se conservan
-  íntegros; no se interpreta el significado de códigos `Obs/Evt/Err`;
-- convergencia provider-specific → provider-neutral publicada:
-  `FiscalAuthorizationTransportResult` conserva outcome/resultCode y agrega
-  código de autorización, vencimiento ISO y evidencia provider opaca;
-- `FiscalAuthorizationFactData::fromTransportResult()` lleva esa evidencia a
-  hechos append-only; `FiscalAuthorizationResponse` persiste código,
-  vencimiento y evidencia completa sin reinterpretar códigos ARCA;
-- idempotencia incorpora SHA-256 de evidencia canonicalizada y la auditoría
-  registra el hash, no duplica el payload provider;
-- validación funcional: **7/32 focal**, **36/188 regresión fiscal** y
-  **983 tests / 7425 assertions GREEN**;
-- alineamiento real controlado: simulación previa + aplicación exacta de
-  **17 migraciones fiscales**, sin `migrate-all`; quedaron **29 migraciones no
-  fiscales deliberadamente pendientes**;
-- BD real autoritativa: **107 tablas de negocio**, fingerprint
+- toda la progresión fiscal previa hasta WSFE Provider Result Convergence V1
+  permanece publicada y vigente;
+- `WsaaCredentialMaterialReference` liga de forma explícita organización,
+  ambiente, servicio y CUIT con referencias opacas de certificado, clave
+  privada y passphrase opcional;
+- `EnvironmentWsaaCredentialMaterialReferenceStore` resuelve únicamente
+  referencias tenant-scoped de homologación desde
+  `SRCM_ARCA_WSAA_CREDENTIAL_REFERENCES_JSON`, con coincidencia fail-closed de
+  organización/ambiente/servicio/CUIT;
+- las referencias no admiten PEM inline, no se serializan y aparecen redactadas
+  en debug;
+- `WsaaCredentialMaterial` representa certificado PEM, clave privada PEM y
+  passphrase opcional sólo como material efímero, privado, redactado y no
+  serializable;
+- `WsaaCredentialMaterialProvider` queda como contrato abstracto: todavía no
+  existe resolución concreta de referencias ni lectura de archivos/secret store;
+- `FiscalAuthorizationCredentialStore` y `ArcaFiscalAuthorizationAdapter`
+  permanecen sin cambios y sin binding; no se aprueba silenciosamente una
+  configuración sólo por organización cuando faltan ambiente/servicio/CUIT;
+- `ArcaHomologationReadiness` exige ahora referencias tenant-scoped válidas,
+  además de endpoints y service name;
+- la referencia global legacy `ARCA_HOMOLOGATION_CERTIFICATE_REFERENCE` fue
+  retirada; `.env.example` sólo documenta nombres y forma del mapa, sin
+  credenciales reales;
+- producción permanece bloqueada;
+- validación funcional: **10/48 focal, 37/183 regresión fiscal y 993 tests / 7473 assertions GREEN**;
+- BD real autoritativa permanece sin cambios: **107 tablas de negocio**,
+  fingerprint
   `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
   schema
   `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
   y ledger **93 migraciones** /
   `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`;
-- no se ejecutó WSAA/WSFE/ARCA real, no existe CAE real y producción sigue
-  bloqueada;
-- PHP local sigue sin extensión `soap`; esto no invalida las fronteras puras
-  ya publicadas, pero bloquea el cliente SOAP real posterior.
+- siguen deliberadamente pendientes 29 migraciones no fiscales;
+- no se dereferenció material de credencial, no se firmó CMS/PKCS#7, no se
+  ejecutó `LoginCms`, no hubo HTTP WSAA/WSFE/ARCA y no existe CAE real;
+- PHP/OpenSSL puede soportar la futura frontera CMS, pero `SoapClient` continúa
+  deshabilitado y no se habilita en este corte.
+
+Próximo paso exacto:
+`ARCA_WSAA_TRA_CMS_SIGNING_RECON_V1`.
 ## Jerarquía de verdad
 
 1. Código, migraciones y tests del checkpoint Git publicado.
@@ -140,55 +134,38 @@ desde cero.
 | P10 — ARCA readiness | `FeCAEReq`, transport, Ticket WSAA, endpoint map, SOAP 1.1, response normalization y provider-result convergence/persistencia neutral publicados; red real aún bloqueada |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
-## Estado funcional P10 al cierre de WSFE Provider Result Convergence V1
+## Estado funcional P10 al cierre de ARCA WSAA Credential Material Boundary V1
 
 P10 mantiene el contrato **venta comercial ≠ comprobante fiscal ≠ autorización
-fiscal**. `CommerceSale` sigue siendo la verdad comercial y su `sale_number` no
-es autoridad fiscal.
+fiscal** y toda la cadena ya publicada hasta normalización/convergencia de
+respuesta WSFE.
 
-La evidencia necesaria para una solicitud WSFE estándar quedó modelada de forma
-explícita e inmutable. SRCM no deriva silenciosamente desde la venta identidad
-fiscal del receptor, fecha fiscal, concepto, composición tributaria, moneda,
-cotización, vencimiento, asociaciones ni clasificación tributaria.
+La nueva frontera agrega una separación explícita entre **referencia de
+credencial** y **material sensible resuelto**.
 
-La numeración fiscal local permanece separada de la autoridad de secuencia
-remota. El adapter obtiene el candidato remoto y recién entonces compone el
-`FeCAEReq` canónico que atraviesa `FiscalAuthorizationTransportRequest`.
+`WsaaCredentialMaterialReference` conserva el scope
+organización/ambiente/servicio/CUIT junto con referencias opacas de certificado,
+clave privada y passphrase opcional. El reference store por entorno sólo acepta
+homologación y exige coincidencia exacta del scope solicitado.
 
-La frontera de proveedor ya distingue:
+`WsaaCredentialMaterial` representa material PEM ya resuelto, pero este corte no
+implementa ningún resolver concreto. Certificado, clave y passphrase permanecen
+privados, redactados y no serializables.
 
-`evidencia fiscal → FeCAEReq → transport request sin secretos → Ticket WSAA
-efímero + CUIT → llamada FECAESolicitar SOAP 1.1`
+`WsaaCredentialMaterialProvider` sigue siendo interfaz y no está enlazado en el
+container. El viejo `FiscalAuthorizationCredentialStore` también permanece sin
+binding porque su firma sólo conoce `organizationId`; adaptar esa frontera sin
+ambiente/servicio/CUIT sería ambiguo.
 
-`Token` y `Sign` sólo se materializan en el borde explícito de proveedor. No se
-guardan en el transport request, no se serializan y se redactan en debug.
-
-`WsfeFecaeSoapResultData` preserva el resultado provider completo antes de
-normalizar outcome: `FeCabResp`, `FeDetResp`, CAE, `CAEFchVto`, observaciones,
-Events, Errors y campos futuros desconocidos.
-
-`WsfeFecaeProviderResponseNormalizer` convierte esa evidencia de forma
-provider-specific y fail-closed: sólo `A/A + CAE numérico + CAEFchVto válido`
-es `Authorized`; sólo `R/R + ausencia de CAE` es `Rejected`; `P`, faltantes,
-contradicciones o códigos nuevos quedan `Unknown`. Las observaciones, Events,
-Errors y campos desconocidos se preservan y sus códigos no se reinterpretan.
-
-`WsfeFecaeProviderResultConvergence` lleva esa verdad normalizada al contrato
-provider-neutral sin perder evidencia. `FiscalAuthorizationTransportResult`
-conserva compatibilidad y agrega código de autorización, vencimiento ISO y
-evidencia provider opaca.
-
-`FiscalAuthorizationFactData::fromTransportResult()` enlaza ese resultado con
-los hechos append-only. La respuesta fiscal persiste código, vencimiento y
-evidencia provider completa; la idempotencia incorpora su hash canonicalizado y
-la auditoría no replica el payload crudo.
-
-**Preparado para conectar no significa integración ARCA validada.** Todavía no
-existen `LoginCms` real, certificado/clave privada/CMS, `SoapClient` habilitado,
-WSDL cargado, HTTP WSAA/WSFE ni CAE real. Producción permanece bloqueada.
+La aplicación no leyó archivos de credencial, no ejecutó OpenSSL/CMS, no generó
+TRA, no ejecutó `LoginCms`, no abrió HTTP y no habilitó producción.
 
 Checkpoint funcional publicado de referencia:
-`014ed95a59a6f2b00817cdea3879f7d4ab81abb1`.
+`ae48776464acc3f0581b27bf14cdcbe955b3a13f`.
+
+Próximo paso exacto:
+`ARCA_WSAA_TRA_CMS_SIGNING_RECON_V1`, estrictamente read-only, para fijar la forma
+exacta del TRA y de la firma CMS antes de implementar signing o LoginCms.
 ## Estado funcional P9.7l
 
 **P9.7k — Supplier Payment External Verification V1** vincula explícitamente
