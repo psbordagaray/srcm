@@ -3,10 +3,10 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-19**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de ARCA WSAA LoginCms Transport Boundary V1:
+Base funcional publicada al cierre de ARCA WSAA Access Ticket Provider Boundary V1:
 
-`d4818bee1f535190a8f385e63215794419a91503`
-`feat(fiscal): add WSAA LoginCms transport boundary`
+`b80068970bf261e93362f9adadb8fe609c4e37a0`
+`feat(fiscal): add WSAA access ticket provider`
 
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
@@ -68,24 +68,22 @@ Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
 
 ---
 
-## 1.1. Estado maestro al cierre de ARCA WSAA LoginCms Transport Boundary V1
+## 1.1. Estado maestro al cierre de ARCA WSAA Access Ticket Provider Boundary V1
 
-El checkpoint funcional `d4818bee1f535190a8f385e63215794419a91503` mantiene publicados P1–P9 V1 y la progresión P10 hasta transporte concreto `LoginCms`:
+El checkpoint funcional `b80068970bf261e93362f9adadb8fe609c4e37a0` mantiene publicados P1–P9 V1 y la progresión P10 hasta orquestación automática WSAA para homologación:
 
-- SOAP 1.1 document/literal exacto, `loginCms/in0` y `loginCmsReturn`;
-- `SOAPAction: ""` y `Content-Type: text/xml; charset=utf-8`;
-- transport Guzzle concreto y parser DOM + `LIBXML_NONET`;
-- redirects deshabilitados, TLS verify activo, status HTTP manual y timeouts explícitos;
-- response SOAP limitada y TA interno acotado;
-- SOAP Fault sanitizado/clasificado; no hay retry automático;
-- producción fail-closed antes del cliente HTTP;
-- `WsaaAccessTicketProvider` y digest policy siguen sin binding;
-- ADR 125 aceptado;
-- no hubo credencial, CMS, `LoginCms` ni HTTP ARCA real.
+- provider concreto con cache cifrado y lock distribuido por scope;
+- reutilización obligatoria de TA hasta expiración real;
+- TRA con reloj UTC, uniqueId criptográfico y ventana -60/+600 s;
+- digest SHA-1 explícito sólo en homologación; sin fallback SHA-256;
+- material → signer → transporte `LoginCms` compuestos sólo ante cache miss real;
+- corrupción/decrypt/cache-write failure y lock timeout fallan cerrado;
+- producción bloqueada; no hubo credencial, CMS, `LoginCms` ni HTTP ARCA real;
+- ADR 126 aceptado.
 
-Validación: **18/100 focal, 62/442 regresión fiscal y 1026 tests / 7764 assertions GREEN**.
+Validación: **36/305 focal, 70/480 regresión fiscal y 1034 tests / 7802 assertions GREEN**.
 
-Baseline real autoritativa sin cambios: 107 tablas de negocio, fingerprint
+Baseline real autoritativa preservada: 107 tablas de negocio, fingerprint
 `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema
 `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones con hash lógico
 `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
@@ -94,7 +92,7 @@ Las 29 migraciones no fiscales continúan deliberadamente pendientes.
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próxima frontera exacta:
-`ARCA_WSAA_ACCESS_TICKET_PROVIDER_RECON_V1`.
+`ARCA_WSAA_HOMOLOGATION_LOGIN_CMS_RECON_V1`.
 
 ---
 
@@ -662,30 +660,21 @@ dependencia de `FiscalDocumentNumber` local.
 
 ### P10 — WSAA / Endpoint / SOAP / Response / Convergence Readiness — PUBLICADO
 
-- WSAA Access Ticket Boundary: scope explícito
-  organización/ambiente/servicio/CUIT y `Token`/`Sign` efímeros, privados,
-  redactados y no serializables;
-- ARCA Environment Endpoint Map: endpoints oficiales WSAA/WSFE separados por
-  `FiscalEnvironment`, con producción conocida pero no habilitada;
-- WSFE SOAP Serialization Boundary: contrato SOAP 1.1 de `FECAESolicitar`,
-  `Auth(Token,Sign,Cuit) + FeCAEReq` y preservación del resultado provider;
-- WSFE Provider Response Normalization: normalización fail-closed a
-  `Authorized`, `Rejected` o `Unknown`, preservando evidencia sin interpretar
-  códigos `Obs/Evt/Err`;
-- WSFE Provider Result Convergence: código de autorización, vencimiento ISO y
-  evidencia provider opaca atraviesan el contrato neutral y quedan persistidos
-  en hechos fiscales append-only con idempotencia ampliada.
+- WSAA Access Ticket Boundary: scope explícito organización/ambiente/servicio/CUIT y secretos efímeros/redactados;
+- ARCA Environment Endpoint Map y SOAP 1.1 `LoginCms`/`FECAESolicitar`;
+- material X.509 fuera del repo, resolución y validación OpenSSL;
+- signer CMS OpenSSL CLI con digest explícito;
+- transporte `LoginCms` Guzzle + parser DOM fail-closed;
+- `WsaaAccessTicketProvider` concreto con cache database cifrado, lock por scope y reuso hasta expiración;
+- reloj UTC, uniqueId criptográfico y TRA -60/+600 s;
+- digest SHA-1 sólo para homologación; producción y aceptación provider-real siguen bloqueadas;
+- provider-response normalization y convergencia/persistencia neutral permanecen publicados.
 
-La BD real fue alineada a toda la cadena fiscal publicada mediante simulación
-previa y 17 rutas exactas; 29 migrations no fiscales permanecen pendientes de
-forma intencional. No se genera XML manual, no se instancia `SoapClient`, no se
-carga WSDL y no se abre HTTP ARCA.
+La sonda runtime de cache/lock/cifrado usa exclusivamente material sintético y vuelve las tablas `cache`/`cache_locks` a su conteo previo. No se ejecuta HTTP ARCA.
 
-**Próximo paso exacto:** `ARCA_WSAA_CREDENTIAL_MATERIAL_READINESS_RECON_V1`.
+**Próximo paso exacto:** `ARCA_WSAA_HOMOLOGATION_LOGIN_CMS_RECON_V1`.
 
-Debe relevar almacenamiento/configuración de certificado y clave privada,
-OpenSSL/CMS, credential store y provider WSAA, sin imprimir secretos ni ejecutar
-`LoginCms`, HTTP o producción.
+Debe preparar una única prueba real de homologación sin dereferenciar secretos ni ejecutar `LoginCms` durante el RECON.
 
 ---
 
