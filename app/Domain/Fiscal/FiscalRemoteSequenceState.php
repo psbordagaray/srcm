@@ -4,14 +4,13 @@ namespace App\Domain\Fiscal;
 
 use App\Enums\FiscalEnvironment;
 
-final readonly class FiscalAuthorizationTransportRequest
+final readonly class FiscalRemoteSequenceState
 {
     public function __construct(
-        public int $fiscalDocumentId,
         public FiscalEnvironment $environment,
         public int $pointOfSaleNumber,
         public int $voucherTypeCode,
-        public int $voucherNumber,
+        public int $lastAuthorizedNumber,
     ) {
     }
 }
