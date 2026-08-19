@@ -245,7 +245,7 @@ class WsaaTraCmsSigningBoundaryTest extends TestCase
                 WsaaCmsDigestPolicy::class
             )
         );
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 WsaaCmsSigner::class
             )
@@ -351,7 +351,7 @@ class WsaaTraCmsSigningBoundaryTest extends TestCase
                 WsaaCmsDigestPolicy::class
             )
         );
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 WsaaCmsSigner::class
             )

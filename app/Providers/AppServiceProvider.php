@@ -5,10 +5,14 @@ namespace App\Providers;
 use App\Adapters\Finance\MercadoPago\EnvironmentMercadoPagoConnectionSecretStore;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialProvider;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialReferenceStore;
+use App\Adapters\Fiscal\Arca\NativeWsaaCmsProcessRunner;
+use App\Adapters\Fiscal\Arca\OpenSslCliWsaaCmsSigner;
 use App\Adapters\Fiscal\Arca\OpenSslWsaaCredentialMaterialValidator;
+use App\Adapters\Fiscal\Arca\WsaaCmsProcessRunner;
 use App\Adapters\Finance\MercadoPago\MercadoPagoPointRefundAdapter;
 use App\Contracts\Finance\MercadoPagoConnectionSecretStore;
 use App\Domain\Finance\FinancialProviderRefundAdapterRegistry;
+use App\Domain\Fiscal\WsaaCmsSigner;
 use App\Domain\Fiscal\WsaaCredentialMaterialProvider;
 use App\Domain\Fiscal\WsaaCredentialMaterialReferenceStore;
 use App\Domain\Fiscal\WsaaCredentialMaterialValidator;
@@ -52,6 +56,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(
             WsaaCredentialMaterialProvider::class,
             EnvironmentWsaaCredentialMaterialProvider::class
+        );
+        $this->app->singleton(
+            WsaaCmsProcessRunner::class,
+            NativeWsaaCmsProcessRunner::class
+        );
+        $this->app->singleton(
+            WsaaCmsSigner::class,
+            OpenSslCliWsaaCmsSigner::class
         );
         $this->app->singleton(
             MercadoPagoConnectionSecretStore::class,
