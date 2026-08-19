@@ -17,7 +17,7 @@ use Tests\TestCase;
 
 class WsaaCmsSignerExecutionBoundaryTest extends TestCase
 {
-    public function test_container_binds_concrete_signer_but_not_digest_policy(): void
+    public function test_container_binds_concrete_signer_and_provider_digest_policy(): void
     {
         $this->assertInstanceOf(
             OpenSslCliWsaaCmsSigner::class,
@@ -27,7 +27,7 @@ class WsaaCmsSignerExecutionBoundaryTest extends TestCase
             NativeWsaaCmsProcessRunner::class,
             app(WsaaCmsProcessRunner::class)
         );
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 WsaaCmsDigestPolicy::class
             )

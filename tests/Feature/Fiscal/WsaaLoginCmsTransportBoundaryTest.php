@@ -30,7 +30,7 @@ use Tests\TestCase;
 
 class WsaaLoginCmsTransportBoundaryTest extends TestCase
 {
-    public function test_container_binds_transport_and_parser_only(): void
+    public function test_container_binds_transport_parser_and_provider_orchestration(): void
     {
         $this->assertInstanceOf(
             DomWsaaLoginCmsResponseParser::class,
@@ -46,11 +46,11 @@ class WsaaLoginCmsTransportBoundaryTest extends TestCase
             app()->bound(WsaaCmsSigner::class)
         );
 
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(WsaaAccessTicketProvider::class)
         );
 
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(WsaaCmsDigestPolicy::class)
         );
     }

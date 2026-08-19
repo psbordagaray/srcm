@@ -4,22 +4,33 @@ namespace App\Providers;
 
 use App\Adapters\Finance\MercadoPago\EnvironmentMercadoPagoConnectionSecretStore;
 use App\Adapters\Fiscal\Arca\DomWsaaLoginCmsResponseParser;
+use App\Adapters\Fiscal\Arca\EncryptedCacheWsaaAccessTicketProvider;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialProvider;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialReferenceStore;
 use App\Adapters\Fiscal\Arca\GuzzleWsaaLoginCmsTransport;
 use App\Adapters\Fiscal\Arca\NativeWsaaCmsProcessRunner;
+use App\Adapters\Fiscal\Arca\OfficialWsaaCmsDigestPolicy;
 use App\Adapters\Fiscal\Arca\OpenSslCliWsaaCmsSigner;
 use App\Adapters\Fiscal\Arca\OpenSslWsaaCredentialMaterialValidator;
+use App\Adapters\Fiscal\Arca\RandomWsaaTraUniqueIdProvider;
+use App\Adapters\Fiscal\Arca\SystemWsaaTraClock;
 use App\Adapters\Fiscal\Arca\WsaaCmsProcessRunner;
 use App\Adapters\Finance\MercadoPago\MercadoPagoPointRefundAdapter;
 use App\Contracts\Finance\MercadoPagoConnectionSecretStore;
 use App\Domain\Finance\FinancialProviderRefundAdapterRegistry;
+use App\Domain\Fiscal\WsaaAccessTicketProvider;
+use App\Domain\Fiscal\WsaaCmsDigestPolicy;
 use App\Domain\Fiscal\WsaaCmsSigner;
 use App\Domain\Fiscal\WsaaCredentialMaterialProvider;
 use App\Domain\Fiscal\WsaaCredentialMaterialReferenceStore;
 use App\Domain\Fiscal\WsaaCredentialMaterialValidator;
 use App\Domain\Fiscal\WsaaLoginCmsResponseParser;
 use App\Domain\Fiscal\WsaaLoginCmsTransport;
+use App\Domain\Fiscal\WsaaLoginTicketRequestBuilder;
+use App\Domain\Fiscal\WsaaTraBuilder;
+use App\Domain\Fiscal\WsaaTraClock;
+use App\Domain\Fiscal\WsaaTraUniqueIdProvider;
+use App\Domain\Fiscal\WsaaTraWindowPolicy;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Models\Brand;
 use App\Models\BusinessParty;
@@ -81,6 +92,46 @@ class AppServiceProvider extends ServiceProvider
                         WsaaLoginCmsResponseParser::class
                     )
                 )
+        );
+        $this->app->singleton(
+            WsaaTraClock::class,
+            SystemWsaaTraClock::class
+        );
+        $this->app->singleton(
+            WsaaTraUniqueIdProvider::class,
+            RandomWsaaTraUniqueIdProvider::class
+        );
+        $this->app->singleton(
+            WsaaTraWindowPolicy::class,
+            fn () => new WsaaTraWindowPolicy(
+                generationBackSeconds: 60,
+                expirationForwardSeconds: 600,
+            )
+        );
+        $this->app->singleton(
+            WsaaTraBuilder::class,
+            fn ($app) => new WsaaLoginTicketRequestBuilder(
+                $app->make(WsaaTraClock::class),
+                $app->make(WsaaTraUniqueIdProvider::class),
+                $app->make(WsaaTraWindowPolicy::class),
+            )
+        );
+        $this->app->singleton(
+            WsaaCmsDigestPolicy::class,
+            OfficialWsaaCmsDigestPolicy::class
+        );
+        $this->app->singleton(
+            WsaaAccessTicketProvider::class,
+            fn ($app) => new EncryptedCacheWsaaAccessTicketProvider(
+                $app['cache']->store('database'),
+                $app['encrypter'],
+                $app->make(WsaaTraClock::class),
+                $app->make(WsaaTraBuilder::class),
+                $app->make(WsaaCredentialMaterialProvider::class),
+                $app->make(WsaaCmsDigestPolicy::class),
+                $app->make(WsaaCmsSigner::class),
+                $app->make(WsaaLoginCmsTransport::class),
+            )
         );
         $this->app->singleton(
             MercadoPagoConnectionSecretStore::class,

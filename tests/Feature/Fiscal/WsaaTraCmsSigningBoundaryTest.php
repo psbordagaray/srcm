@@ -240,7 +240,7 @@ class WsaaTraCmsSigningBoundaryTest extends TestCase
             )->isInterface()
         );
 
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 WsaaCmsDigestPolicy::class
             )
@@ -324,19 +324,19 @@ class WsaaTraCmsSigningBoundaryTest extends TestCase
         }
     }
 
-    public function test_signing_execution_boundaries_remain_unbound_after_material_resolution(): void
+    public function test_provider_orchestration_boundaries_are_bound_after_provider_cut(): void
     {
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 WsaaTraBuilder::class
             )
         );
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 WsaaTraClock::class
             )
         );
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 WsaaTraUniqueIdProvider::class
             )
@@ -346,7 +346,7 @@ class WsaaTraCmsSigningBoundaryTest extends TestCase
                 WsaaCredentialMaterialProvider::class
             )
         );
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 WsaaCmsDigestPolicy::class
             )
