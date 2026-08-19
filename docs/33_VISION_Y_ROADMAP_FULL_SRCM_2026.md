@@ -9,22 +9,22 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **ARCA WSAA Access Ticket Provider Boundary V1**:
+Base funcional publicada al cierre de **ARCA WSFE FECAE Transport Boundary V1**:
 
-`b80068970bf261e93362f9adadb8fe609c4e37a0`
-— `feat(fiscal): add WSAA access ticket provider`
+`2afe2ad74521629ab7e5ee979c29eff8fea78c05`
+— `feat(fiscal): add WSFE FECAE transport boundary`
 
-Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta orquestación WSAA automática para homologación.
+Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta transporte SOAP 1.1 concreto de `FECAESolicitar` para homologación.
 
-`WsaaAccessTicketProvider` está enlazado a cache database cifrado y lock distribuido por scope. Reutiliza TA vigente hasta expiración real y sólo ante miss compone TRA → material → SHA-1 explícito → CMS → `LoginCms` → TA → cache.
+La cadena WSAA sigue publicada y la nueva capa WSFE wire agrega serializer DOM, parser DOM seguro y transporte Guzzle homologación-only. El contrato `WsfeFecaeSoap11Call` conserva Auth/FeCAEReq efímero y redacted, y el resultado converge sin perder evidencia provider.
 
-Reloj UTC, uniqueId criptográfico unsigned de 32 bits y ventana TRA -60/+600 s quedan enlazados. Corrupción de cache, fallo de decrypt, timeout de lock o cache-write posterior a TA nuevo fallan cerrado.
+`FiscalAuthorizationTransport` y `FiscalRemoteSequenceAuthority` siguen sin binding; por eso el flujo runtime completo de autorización aún no puede abrir red desde el adapter fiscal.
 
-Producción permanece bloqueada y la aceptación provider-real del digest continúa no validada. No se usó material ARCA real ni se ejecutó CMS/`LoginCms`/HTTP ARCA.
+Producción permanece bloqueada. WSASS, identidad fiscal real y homologación externa están diferidos; no se usó material ARCA real ni se ejecutó CMS/`LoginCms`/`FECAESolicitar` real ni HTTP ARCA.
 
-ADR relacionado: `docs/126_ADR_ARCA_WSAA_ACCESS_TICKET_PROVIDER_BOUNDARY_V1.md`.
+ADR relacionado: `docs/127_ADR_ARCA_WSFE_FECAE_TRANSPORT_BOUNDARY_V1.md`.
 
-Validación funcional: **36/305 focal, 70/480 regresión fiscal y 1034 tests / 7802 assertions GREEN**.
+Validación funcional: **32/171 focal, 68/349 regresión fiscal y 1041 tests / 7848 assertions GREEN**.
 
 Baseline autoritativa preservada: **107 tablas de negocio**, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y **93 migraciones** con hash lógico `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
 
@@ -33,7 +33,7 @@ Principio vinculante:
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próximo paso exacto:
-`ARCA_WSAA_HOMOLOGATION_LOGIN_CMS_RECON_V1`.
+`ARCA_WSFE_REMOTE_SEQUENCE_BOUNDARY_V1`.
 
 ### Disciplina irrefutable de recuperación
 
