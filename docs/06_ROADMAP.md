@@ -3,11 +3,10 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-19**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de ARCA WSAA Credential Material Boundary V1:
+Base funcional publicada al cierre de ARCA WSAA TRA/CMS Signing Boundary V1:
 
-`ae48776464acc3f0581b27bf14cdcbe955b3a13f`
-`feat(fiscal): add ARCA WSAA credential material boundary`
-El checkpoint canónico es siempre el `HEAD` de
+`3875fc270d00a42b241a33002268168a747b985a`
+`feat(fiscal): add WSAA TRA CMS signing boundary`El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
 limpio. Este documento debe mantenerse sincronizado con `docs/README.md`.
 
@@ -67,26 +66,25 @@ Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
 
 ---
 
-## 1.1. Estado maestro al cierre de ARCA WSAA Credential Material Boundary V1
+## 1.1. Estado maestro al cierre de ARCA WSAA TRA/CMS Signing Boundary V1
 
-El checkpoint funcional
-`ae48776464acc3f0581b27bf14cdcbe955b3a13f` mantiene publicados P1–P9 V1 y, dentro de P10, toda la
-progresión previa hasta WSFE Provider Result Convergence más la frontera de
-material de credenciales WSAA:
+El checkpoint funcional `3875fc270d00a42b241a33002268168a747b985a` mantiene publicados P1–P9 V1 y
+la progresión P10 hasta la frontera local TRA/CMS:
 
-- referencias explícitas por organización/ambiente/servicio/CUIT;
-- certificado, clave privada y passphrase representados sólo mediante
-  referencias opacas en configuración;
-- material PEM sensible separado en `WsaaCredentialMaterial`, efímero,
-  redactado y no serializable;
-- store de referencias de homologación tenant-scoped y fail-closed;
-- eliminación de la referencia global legacy de certificado;
-- `WsaaCredentialMaterialProvider` todavía abstracto y sin binding;
-- `FiscalAuthorizationCredentialStore` todavía sin binding para no colapsar
-  scopes que su firma actual no expresa;
-- producción, CMS, LoginCms, SoapClient y HTTP ARCA permanecen bloqueados.
+- `service` endurecido al XSD oficial;
+- TRA `loginTicketRequest` v1.0 con `uniqueId`, `generationTime`,
+  `expirationTime` y `service`;
+- `source`/`destination` omitidos e `issuerCuit` fuera del XML TRA;
+- clock, uniqueId provider, builder y window policy separados;
+- ventana limitada a la tolerancia máxima documentada de 86400 segundos;
+- SHA-1 y SHA-256 expresados como capacidades técnicas explícitas;
+- política de digest sin implementación ni binding porque la aceptación real de
+  ARCA aún no está validada;
+- signer CMS todavía abstracto/sin binding;
+- salida CMS definida como Base64 puro, redactado y no serializable;
+- producción, material real, `LoginCms`, SOAP y HTTP ARCA siguen bloqueados.
 
-Validación: **10/48 focal, 37/183 regresión fiscal y 993 tests / 7473 assertions GREEN**.
+Validación: **32/229 focal, 56/332 regresión fiscal y 1002 tests / 7574 assertions GREEN**.
 
 Baseline real autoritativa sin cambios: 107 tablas de negocio, fingerprint
 `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
@@ -96,13 +94,10 @@ y 93 migraciones con hash lógico
 `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
 Las 29 migraciones no fiscales continúan deliberadamente pendientes.
 
-No se dereferenciaron credenciales, no se ejecutó firma CMS/PKCS#7, no hubo
-`LoginCms`, WSAA/WSFE HTTP ni CAE real. `SoapClient` sigue deshabilitado.
-
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próxima frontera exacta:
-`ARCA_WSAA_TRA_CMS_SIGNING_RECON_V1`.
+`ARCA_WSAA_CREDENTIAL_MATERIAL_RESOLUTION_RECON_V1`.
 ---
 
 # V1.0 — Operación comercial completa / lista para producción

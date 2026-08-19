@@ -9,45 +9,45 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **ARCA WSAA Credential Material Boundary V1**:
+Base funcional publicada al cierre de **ARCA WSAA TRA/CMS Signing Boundary V1**:
 
-`ae48776464acc3f0581b27bf14cdcbe955b3a13f`
-— `feat(fiscal): add ARCA WSAA credential material boundary`
+`3875fc270d00a42b241a33002268168a747b985a`
+— `feat(fiscal): add WSAA TRA CMS signing boundary`
 
 Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta
-request/readiness WSFE, normalización/convergencia provider-neutral y frontera
-explícita de material de credenciales WSAA.
+request/readiness WSFE, convergencia provider-neutral, material de credenciales
+y frontera local TRA/CMS.
 
-El material WSAA queda separado en dos capas: referencias tenant-scoped por
-organización/ambiente/servicio/CUIT y material PEM sensible efímero.
-Las referencias se resuelven sólo como identificadores opacos; el material
-sensible es privado, redactado y no serializable.
+`service` queda alineado con el XSD WSAA. El TRA se representa como
+`loginTicketRequest` v1.0 con identidad/tiempos/servicio explícitos y sin
+inventar CUIT, source o destination dentro del XML.
 
-Todavía no existe un `WsaaCredentialMaterialProvider` concreto, no se
-dereferencian certificados/claves y el viejo `FiscalAuthorizationCredentialStore`
-permanece sin binding para no confundir scopes que su firma no expresa.
+Clock, uniqueId y ventana quedan desacoplados. La política temporal no puede
+superar la tolerancia máxima documentada de 24 horas por lado.
 
-Validación funcional: **10/48 focal, 37/183 regresión fiscal y 993 tests / 7473 assertions GREEN**.
+La política de digest permanece deliberadamente sin implementación: el runtime
+local puede producir SHA-1 y SHA-256, pero la aceptación real de ARCA no está
+validada. `WsaaCmsSigner` sigue abstracto y `WsaaSignedCms` fija sólo la forma
+Base64/redactada que una futura llamada `LoginCms` consumirá.
+
+Validación funcional: **32/229 focal, 56/332 regresión fiscal y 1002 tests / 7574 assertions GREEN**.
 
 Baseline real autoritativa sin cambios: **107 tablas de negocio**, fingerprint
 `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
 schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
 y **93 migraciones** con hash lógico
 `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
-Las 29 migraciones no fiscales siguen pendientes de forma intencional.
+Las 29 migraciones no fiscales siguen pendientes intencionalmente.
 
-La ejecución externa ARCA permanece bloqueada: no se firmó TRA/CMS, no se
-ejecutó `LoginCms`, `SoapClient` sigue deshabilitado, no hubo HTTP WSAA/WSFE y
-no existe CAE real.
+No se resolvieron credenciales reales, no se ejecutó signing productivo,
+`LoginCms`, SOAP ni HTTP ARCA. Producción continúa bloqueada.
 
 Principio vinculante:
 
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próximo paso exacto:
-`ARCA_WSAA_TRA_CMS_SIGNING_RECON_V1`, read-only, para fijar con evidencia la
-estructura del TRA y la firma CMS compatible con el runtime local antes de
-materializar signing o `LoginCms`.
+`ARCA_WSAA_CREDENTIAL_MATERIAL_RESOLUTION_RECON_V1`.
 
 ### Disciplina irrefutable de recuperación
 
