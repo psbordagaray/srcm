@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Fiscal;
 
+use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialProvider;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialReferenceStore;
 use App\Domain\Fiscal\ArcaHomologationReadiness;
 use App\Domain\Fiscal\FiscalAuthorizationCredentialStore;
@@ -364,7 +365,7 @@ class WsaaCredentialMaterialBoundaryTest extends TestCase
         )->assertReady();
     }
 
-    public function test_material_provider_and_old_credential_store_are_not_bound(): void
+    public function test_material_provider_is_bound_but_old_credential_store_remains_unbound(): void
     {
         $this->assertTrue(
             (
@@ -373,10 +374,14 @@ class WsaaCredentialMaterialBoundaryTest extends TestCase
                 )
             )->isInterface()
         );
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 WsaaCredentialMaterialProvider::class
             )
+        );
+        $this->assertInstanceOf(
+            EnvironmentWsaaCredentialMaterialProvider::class,
+            app(WsaaCredentialMaterialProvider::class)
         );
         $this->assertFalse(
             app()->bound(

@@ -324,7 +324,7 @@ class WsaaTraCmsSigningBoundaryTest extends TestCase
         }
     }
 
-    public function test_runtime_execution_boundaries_remain_unbound(): void
+    public function test_signing_execution_boundaries_remain_unbound_after_material_resolution(): void
     {
         $this->assertFalse(
             app()->bound(
@@ -341,7 +341,7 @@ class WsaaTraCmsSigningBoundaryTest extends TestCase
                 WsaaTraUniqueIdProvider::class
             )
         );
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 WsaaCredentialMaterialProvider::class
             )

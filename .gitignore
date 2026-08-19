@@ -3,6 +3,12 @@
 .env
 .env.backup
 .env.production
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
 .phpactor.json
 .phpunit.result.cache
 /.codex
