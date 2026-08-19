@@ -65,7 +65,7 @@ class FiscalCreditDebitAdjustmentFoundationTest extends TestCase
             'fiscal_document_payment_due_dates_tenant_insert',
             'fiscal_documents_origin_guard_insert',
             'fiscal_document_lines_origin_guard_insert',
-            'fiscal_adjustment_authorization_block_insert',
+            'fiscal_adjustment_authorization_association_gate_insert',
         ] as $triggerName) {
             $this->assertContains($triggerName, $triggerNames);
         }

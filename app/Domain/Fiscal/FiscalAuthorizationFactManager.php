@@ -16,7 +16,11 @@ use Illuminate\Support\Facades\DB;
 
 final class FiscalAuthorizationFactManager
 {
-    public function __construct(private readonly CurrentOrganization $currentOrganization, private readonly AuditRecorder $audit) {}
+    public function __construct(
+        private readonly CurrentOrganization $currentOrganization,
+        private readonly AuditRecorder $audit,
+        private readonly FiscalDocumentAssociationManager $associations,
+    ) {}
 
     public function record(FiscalAuthorizationFactData $data, User $actor): FiscalAuthorizationAttempt
     {
@@ -43,8 +47,9 @@ final class FiscalAuthorizationFactManager
                 [FiscalDocumentType::CreditNote, FiscalDocumentType::DebitNote],
                 true
             )) {
-                throw new DomainException(
-                    'Las notas de crédito/débito permanecen bloqueadas para autorización hasta registrar evidencia fiscal de asociación.'
+                $this->associations->assertCompleteForAuthorization(
+                    $document,
+                    $organizationId
                 );
             }
 
