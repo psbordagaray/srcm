@@ -1,7 +1,7 @@
 # SRCM — Visión y Roadmap Full 2026
 
 Estado: **North Star / contrato de dirección y continuidad**
-Fecha: **2026-08-18**
+Fecha: **2026-08-19**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 Puerta de entrada de continuidad: `docs/README.md`
 
@@ -9,24 +9,50 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de P10.7.4:
+Base funcional publicada al cierre de **WSFE SOAP Serialization Boundary V1**:
 
-`1783f95514837d2ec5b44933e9306d17316c5a6b`
-— `feat(fiscal): add fiscal concept and service period evidence`
+`f138ee16b7834b0befebf60e8b497508e4ebb4a9`
+— `feat(fiscal): add WSFE SOAP serialization boundary`
 
-Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta
-P10.7.4. La capa fiscal ya separa configuración, documento, hechos de
-autorización, numeración, frontera de integración y evidencia explícita de
-perfil/política tributaria, composición, clasificación y concepto/período.
+Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta una
+frontera local completa de request/readiness WSFE. La capa fiscal separa
+configuración, documento, hechos de autorización, numeración local, autoridad
+de secuencia remota, evidencia tributaria, `FeCAEReq`, transport sin secretos,
+Ticket WSAA efímero, endpoints por ambiente y contrato SOAP 1.1
+`FECAESolicitar`.
 
-La ejecución externa ARCA permanece deliberadamente bloqueada: P10.6.1 sólo
-publicó readiness de configuración y P10.6.2 confirmó en read-only que no había
-credenciales/endpoints activos. El próximo paso es un RECON de completitud del
-payload fiscal antes de habilitar WSAA/WSFE.
+La última suite funcional cerró **966 tests / 7347 assertions GREEN**. La BD
+real conserva fingerprint lógico, schema y migration ledger sin cambios de
+dominio.
+
+La ejecución externa ARCA permanece deliberadamente bloqueada. No existe
+certificado/clave privada/CMS/LoginCms real, `SoapClient` sigue deshabilitado en
+el PHP local, no se carga WSDL, no se abre HTTP WSAA/WSFE y no existe CAE real.
+
+Principio vinculante de esta frontera:
+
+**Preparado para conectar ARCA ≠ integración ARCA validada.**
+
+Próximo paso funcional exacto:
+`WSFE_PROVIDER_RESPONSE_NORMALIZATION_V1`, para normalizar el resultado provider
+preservado antes de converger con el resultado fiscal interno.
+
+### Disciplina irrefutable de recuperación
+
+Los tres documentos maestros forman una cadena obligatoria:
+
+1. `docs/README.md`;
+2. `docs/06_ROADMAP.md`;
+3. `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
+
+Cada paso que cambie el estado real de SRCM debe actualizar, validar y publicar
+los tres antes de abrir la frontera funcional siguiente. Esta obligación es
+excluyente incluso cuando la North Star conceptual no cambie: su sección
+dinámica de continuidad siempre debe quedar alineada.
 
 La North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
-ejecutivo de `docs/06_ROADMAP.md`; los tres forman una cadena deliberada para
-recuperar contexto sin depender de una conversación.
+ejecutivo de `docs/06_ROADMAP.md`; los tres recuperan contexto sin depender de
+una conversación.
 
 ---
 

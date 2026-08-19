@@ -1,12 +1,12 @@
 # SRCM — Roadmap maestro
 
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
-Actualizado: **2026-08-18**
+Actualizado: **2026-08-19**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de P10.7.4:
+Base funcional publicada al cierre de WSFE SOAP Serialization Boundary V1:
 
-`1783f95514837d2ec5b44933e9306d17316c5a6b`
-`feat(fiscal): add fiscal concept and service period evidence`
+`f138ee16b7834b0befebf60e8b497508e4ebb4a9`
+`feat(fiscal): add WSFE SOAP serialization boundary`
 
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
@@ -58,39 +58,58 @@ Nunca reabrir como pendiente una decisión ya implementada y validada salvo regr
 `docs/README.md` se lee primero como índice y puntero de recuperación, pero no
 agrega una verdad de dominio ni reemplaza esta jerarquía.
 
+### Gate irrefutable de continuidad documental
+
+Cada paso que cambie el estado real del proyecto debe sincronizar y publicar,
+sin excepción, `docs/README.md`, `docs/06_ROADMAP.md` y
+`docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
+
+Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
+
 ---
 
-## 1.1. Estado maestro al cierre de P10.7.4
+## 1.1. Estado maestro al cierre de WSFE SOAP Serialization Boundary V1
 
 El checkpoint funcional
-`1783f95514837d2ec5b44933e9306d17316c5a6b` deja publicados:
+`f138ee16b7834b0befebf60e8b497508e4ebb4a9` deja publicados P1–P9 V1 y,
+dentro de P10, toda la progresión previa más las siguientes fronteras de
+completitud y conexión:
 
-- P1–P3.1: Terminal, evidencia, cuentas financieras y conciliación foundation;
-- P4A–P4F: Caja, turnos, ledger, cierres, hechos monetarios y pagos a proveedores;
-- P5.1–P5.8.2: provider-neutral, Mercado Pago, compatibilidad y health gates;
-- P6.1–P6.3: Centro de Conciliación, decisión explícita y resolución append-only;
-- P7.1–P7.5: preview/commit CSV, mapping, XLSX y fallback manual;
-- P8 V1: posventa cerrada en P8.5.8;
-- P9 V1: CxC/CxP, cobranzas, aging, políticas, cuotas, anticipos, créditos,
-  desembolsos, verificación externa y resolución;
-- P10.1: configuración fiscal argentina y puntos de venta por ambiente;
-- P10.2: documento fiscal y líneas append-only;
-- P10.3: hechos de autorización separados del documento;
-- P10.4: numeración fiscal interna separada de `sale_number`;
-- P10.5: frontera provider-neutral de autorización;
-- P10.6.1: readiness de configuración de homologación, todavía sin ejecución;
-- P10.7.1: perfil fiscal de contraparte y política tributaria versionada;
-- P10.7.2: composición tributaria explícita e inmutable;
-- P10.7.3: clasificación fiscal explícita e inmutable;
-- P10.7.4: concepto fiscal y período de servicios explícitos e inmutables.
+- receptor fiscal WSFE explícito;
+- fecha fiscal del comprobante;
+- resumen monetario WSFE;
+- moneda y cotización;
+- vencimiento de pago cuando corresponde;
+- foundation de notas de crédito/débito;
+- comprobantes o período asociados;
+- autoridad de secuencia remota separada de numeración local;
+- clasificación de detalle tributario WSFE;
+- composición canónica `FeCAEReq`;
+- bridge `FeCAEReq → FiscalAuthorizationTransportRequest`;
+- contrato efímero de Ticket WSAA por organización/ambiente/servicio/CUIT;
+- mapa oficial de endpoints WSAA/WSFE por `FiscalEnvironment`;
+- frontera SOAP 1.1 `FECAESolicitar` con
+  `Auth(Token,Sign,Cuit) + FeCAEReq`;
+- preservación previa del resultado provider con `FeCabResp`, `FeDetResp`,
+  CAE, `CAEFchVto`, observaciones, Events, Errors y campos desconocidos.
 
-Los checkpoints P10.3, P10.4, P10.5, P10.6.1 y P10.7.1–P10.7.4 cerraron con
-focales y suite completa GREEN y mantuvieron la misma BD real SQLite sin
-cambios. P10.6.2 fue un preflight read-only que confirmó que homologación y
-producción permanecían deshabilitadas y sin credenciales/endpoints activos.
+El último cambio funcional cerró **8/47 focal**, **25/126 regresión fiscal** y
+**966/7347 suite completa**. La BD real conserva 88 tablas de negocio,
+fingerprint
+`9EC82FF55039B520624D4B189F4FAFA9972480EAB411375893790E5BD7B4BDA0`,
+schema
+`418B3761625FE33CAD8B9E13E3F566001EE68228B947EA9ABBBD449E2B1B6B96`
+y 76 migraciones con hash lógico
+`6A10916F7A5514FA4BA8061AC8CCF0F704AB9F4F8D3A2B23954FF113B9A3EB78`.
 
-La siguiente frontera no se deduce por numeración. Debe relevarse el payload
-fiscal que aún falta antes de cualquier ejecución WSAA/WSFE.
+No existe ejecución real ARCA: `SoapClient` continúa no disponible en el PHP
+local, no se implementaron certificado/clave privada/CMS/LoginCms reales, no
+hay WSDL/HTTP WSAA/WSFE ni CAE real y producción permanece bloqueada.
+
+**Preparado para conectar ARCA ≠ integración ARCA validada.**
+
+Próxima frontera funcional, sólo después de cerrar este sync documental:
+`WSFE_PROVIDER_RESPONSE_NORMALIZATION_V1`.
 
 ---
 
@@ -611,8 +630,8 @@ Estados fiscales orientativos:
 
 - P10.6 RECON confirmó que transporte HTTP, credential store efectivo y ejecución externa seguían ausentes;
 - P10.6.1 publicó readiness/configuración de homologación sin secretos ni llamadas externas;
-- P10.6.2 preflight read-only confirmó homologación/producción deshabilitadas y ausencia de credenciales/endpoints activos;
-- no se habilita ejecución real mientras el payload fiscal no esté completo.
+- P10.6.2 preflight read-only confirmó homologación/producción deshabilitadas;
+- ejecución real sigue bloqueada hasta completar credenciales, runtime y homologación controlada.
 
 ### P10.7 — Fiscal Classification & Tax Evidence
 
@@ -636,11 +655,46 @@ Estados fiscales orientativos:
 - evidencia inmutable y separada;
 - sin inferencia desde venta y sin activar ARCA.
 
-**Próximo paso exacto:** `P10 — Fiscal Payload Completeness RECON`, read-only.
-Debe relevar moneda/cotización, comprobantes/períodos asociados, fechas fiscales
-condicionales y cualquier otra evidencia necesaria antes de construir una
-solicitud WSFE real. El RECON fijará el siguiente subcorte; no se asigna por
-simple continuidad numérica.
+### P10 — Fiscal Payload Completeness & WSFE Request Readiness — PUBLICADO
+
+Sin inventar subnumeración adicional, quedaron publicados por nombre:
+
+- WSFE Recipient Fiscal Evidence;
+- WSFE Fiscal Voucher Date Evidence;
+- WSFE Monetary Summary Evidence;
+- WSFE Currency & Quotation Evidence;
+- WSFE Payment Due Date Evidence;
+- Fiscal Credit/Debit Adjustment Foundation;
+- WSFE Associated Voucher / Period Evidence;
+- WSFE Remote Sequence Authority Boundary;
+- WSFE Tax Detail Classification Evidence;
+- WSFE FECAE Request Composition;
+- WSFE FECAE Transport Input Boundary.
+
+Resultado: el `FeCAEReq` estándar se compone desde evidencia fiscal explícita,
+usa candidato de secuencia remota y llega al transport sin secretos ni
+dependencia de `FiscalDocumentNumber` local.
+
+### P10 — WSAA / Endpoint / SOAP Readiness — PUBLICADO
+
+- WSAA Access Ticket Boundary: scope explícito
+  organización/ambiente/servicio/CUIT y `Token`/`Sign` efímeros, privados,
+  redactados y no serializables;
+- ARCA Environment Endpoint Map: endpoints oficiales WSAA/WSFE separados por
+  `FiscalEnvironment`, con producción conocida pero no habilitada;
+- WSFE SOAP Serialization Boundary: contrato SOAP 1.1 de `FECAESolicitar`,
+  `Auth(Token,Sign,Cuit) + FeCAEReq` y preservación del resultado provider
+  antes de normalizar outcome.
+
+No se genera XML manual, no se instancia `SoapClient`, no se carga WSDL y no se
+abre HTTP ARCA.
+
+**Próximo paso exacto:** `WSFE_PROVIDER_RESPONSE_NORMALIZATION_V1`.
+
+Debe normalizar el `WsfeFecaeSoapResultData` de forma fail-closed sin perder
+CAE, `CAEFchVto`, observaciones, Events, Errors ni campos provider preservables.
+No debe inventar significado de códigos ARCA no demostrado, persistir CAE
+todavía ni habilitar red/producción.
 
 ---
 

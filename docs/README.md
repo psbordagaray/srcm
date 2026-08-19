@@ -1,7 +1,7 @@
 # SRCM Full — Puerta de entrada y continuidad maestra
 
 Estado: **vinculante para recuperación de contexto**
-Actualizado: **2026-08-18**
+Actualizado: **2026-08-19**
 Rama canónica de desarrollo: `feature/core-entity`
 
 ## Empezar siempre aquí
@@ -14,26 +14,42 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`1783f95514837d2ec5b44933e9306d17316c5a6b`
-— `feat(fiscal): add fiscal concept and service period evidence`
+`f138ee16b7834b0befebf60e8b497508e4ebb4a9`
+— `feat(fiscal): add WSFE SOAP serialization boundary`
 
-Estado verificado al cierre de P10.7.4:
+Estado verificado al cierre de **WSFE SOAP Serialization Boundary V1**:
 
-- P10.1–P10.5: configuración, documento fiscal, hechos de autorización,
-  numeración interna fiscal y frontera provider-neutral publicados;
-- P10.6.1: readiness de configuración de homologación publicado, sin ejecutar
-  WSAA/WSFE ni cargar secretos;
-- P10.6.2: preflight de credenciales GREEN confirmó configuración deshabilitada
-  y ausencia de credenciales/endpoints activos;
-- P10.7.1: perfil fiscal de contraparte y política tributaria versionada;
-- P10.7.2: composición tributaria explícita e inmutable por documento;
-- P10.7.3: clasificación fiscal explícita e inmutable;
-- P10.7.4: concepto fiscal explícito y período de servicios cuando corresponde;
-- focales y suite completa GREEN en el checkpoint P10.7.4;
-- BD real SQLite SHA-256
-  `EC6B45D96173C7E0BBC54D03B0F8B0052502A94A0949D4C8B9427CE9E2830DBF`
-  sin cambios;
-- repo limpio y staging vacío al publicar P10.7.4.
+- P10.1–P10.7.4 permanecen publicados y vigentes;
+- evidencia WSFE explícita publicada: receptor fiscal, fecha de comprobante,
+  resumen monetario, moneda/cotización, vencimiento de pago,
+  notas de crédito/débito y comprobantes/períodos asociados;
+- autoridad de secuencia remota separada de la numeración fiscal local;
+- clasificación de detalle tributario WSFE y composición canónica
+  `FeCAEReq` publicadas;
+- `FiscalAuthorizationTransportRequest` transporta el `FeCAEReq` canónico y
+  permanece libre de secretos;
+- contrato efímero de Ticket WSAA publicado: scope explícito por organización,
+  ambiente, servicio y CUIT; `Token`/`Sign` privados, redactados y no
+  serializables;
+- mapa oficial WSAA/WSFE por `FiscalEnvironment` publicado sin habilitar
+  producción;
+- frontera SOAP 1.1 publicada para `FECAESolicitar` con
+  `Auth(Token,Sign,Cuit) + FeCAEReq` y preservación previa del resultado
+  provider (`FeCabResp`, `FeDetResp`, CAE, `CAEFchVto`, observaciones,
+  Events, Errors y campos desconocidos);
+- `FiscalAuthorizationTransportResult` continúa deliberadamente grueso y la
+  normalización del resultado provider es la siguiente frontera;
+- suite del último cambio funcional: **966 tests / 7347 assertions GREEN**;
+- BD real: **88 tablas de negocio**, fingerprint
+  `9EC82FF55039B520624D4B189F4FAFA9972480EAB411375893790E5BD7B4BDA0`,
+  schema
+  `418B3761625FE33CAD8B9E13E3F566001EE68228B947EA9ABBBD449E2B1B6B96`
+  y ledger **76 migraciones** /
+  `6A10916F7A5514FA4BA8061AC8CCF0F704AB9F4F8D3A2B23954FF113B9A3EB78`;
+- no se ejecutó WSAA/WSFE/ARCA real, no existe CAE real y producción sigue
+  bloqueada;
+- PHP local sigue sin extensión `soap`; esto no invalida las fronteras puras
+  ya publicadas, pero bloquea el cliente SOAP real posterior.
 ## Jerarquía de verdad
 
 1. Código, migraciones y tests del checkpoint Git publicado.
@@ -103,34 +119,44 @@ desde cero.
 | P9.1–P9.6b | CxC, aging, crédito, cuotas, anticipos y excedentes publicados |
 | P9.7a–P9.7l | Factura proveedor, match, créditos, anticipos, grupo, desembolso, verificación y resolución externa publicados |
 | P9.8 | Exposición, aging y estado de cuenta CxP derivados publicados; P9 V1 cerrado |
-| P10.1–P10.5 | Configuración fiscal, documento, hechos de autorización, numeración y frontera de integración publicados |
-| P10.6.1 | Readiness de homologación publicado; transporte, secretos y ejecución externa siguen bloqueados |
-| P10.7.1–P10.7.4 | Perfil/política fiscal, composición tributaria, clasificación y concepto/período publicados |
+| P10.1–P10.7.4 | Configuración fiscal, documento, autorización, numeración, integración, perfil/política, composición, clasificación y concepto/período publicados |
+| P10 — Payload WSFE | Receptor, fecha, resumen monetario, moneda/cotización, vencimiento, ajustes, asociaciones, secuencia remota y clasificación tributaria publicados |
+| P10 — ARCA readiness | `FeCAEReq`, bridge al transport, Ticket WSAA, endpoint map y SOAP 1.1 call/result boundary publicados; red real aún bloqueada |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
-## Estado funcional P10 al cierre de P10.7.4
+## Estado funcional P10 al cierre de WSFE SOAP Serialization Boundary V1
 
 P10 mantiene el contrato **venta comercial ≠ comprobante fiscal ≠ autorización
 fiscal**. `CommerceSale` sigue siendo la verdad comercial y su `sale_number` no
 es autoridad fiscal.
 
-La capa publicada ya contiene configuración fiscal por organización y punto de
-venta, documento fiscal append-only, hechos de autorización, numeración fiscal
-interna separada, contratos provider-neutral, readiness de homologación,
-perfil/política fiscal de contraparte, composición tributaria, clasificación y
-concepto fiscal con período de servicios cuando corresponde.
+La evidencia necesaria para una solicitud WSFE estándar quedó modelada de forma
+explícita e inmutable. SRCM no deriva silenciosamente desde la venta identidad
+fiscal del receptor, fecha fiscal, concepto, composición tributaria, moneda,
+cotización, vencimiento, asociaciones ni clasificación tributaria.
 
-Las decisiones P10.7 son explícitas: SRCM no infiere desde la venta la clase de
-comprobante, la alícuota, la composición tributaria ni el concepto fiscal. La
-evidencia fiscal se registra de forma separada e inmutable.
+La numeración fiscal local permanece separada de la autoridad de secuencia
+remota. El adapter obtiene el candidato remoto y recién entonces compone el
+`FeCAEReq` canónico que atraviesa `FiscalAuthorizationTransportRequest`.
 
-No existe todavía ejecución real WSAA/WSFE desde SRCM. No se han habilitado
-credenciales productivas ni de homologación, no se inventan CAE/CAEA y no se
-considera listo el transporte externo hasta completar el payload fiscal y sus
-gates de homologación.
+La frontera de proveedor ya distingue:
+
+`evidencia fiscal → FeCAEReq → transport request sin secretos → Ticket WSAA
+efímero + CUIT → llamada FECAESolicitar SOAP 1.1`
+
+`Token` y `Sign` sólo se materializan en el borde explícito de proveedor. No se
+guardan en el transport request, no se serializan y se redactan en debug.
+
+`WsfeFecaeSoapResultData` preserva el resultado provider completo antes de
+normalizar outcome: `FeCabResp`, `FeDetResp`, CAE, `CAEFchVto`, observaciones,
+Events, Errors y campos futuros desconocidos.
+
+**Preparado para conectar no significa integración ARCA validada.** Todavía no
+existen `LoginCms` real, certificado/clave privada/CMS, `SoapClient` habilitado,
+WSDL cargado, HTTP WSAA/WSFE ni CAE real. Producción permanece bloqueada.
 
 Checkpoint funcional publicado de referencia:
-`1783f95514837d2ec5b44933e9306d17316c5a6b`.
+`f138ee16b7834b0befebf60e8b497508e4ebb4a9`.
 ## Estado funcional P9.7l
 
 **P9.7k — Supplier Payment External Verification V1** vincula explícitamente
@@ -162,23 +188,46 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P10 — Fiscal Payload Completeness RECON**, estrictamente read-only.
+**P10 — WSFE Provider Response Normalization V1**.
 
-Debe comparar el payload fiscal actualmente persistido con la estructura
-necesaria para una futura autorización WSFE, empezando por las brechas que el
-Core todavía no representa explícitamente: moneda/cotización cuando aplique,
-comprobantes o períodos asociados para notas de crédito/débito, fechas fiscales
-condicionales y cualquier otra evidencia requerida por el modo de comprobante.
+Debe partir del `WsfeFecaeSoapResultData` ya publicado y normalizar de forma
+fail-closed el resultado provider sin perder evidencia: resultado de cabecera y
+detalle, CAE, `CAEFchVto`, observaciones, Events, Errors y campos desconocidos
+preservables.
 
-El RECON no asignará un nuevo subnúmero por simple secuencia: primero debe
-confirmar la frontera real. No habilitará WSAA/WSFE, secretos, homologación ni
-producción y no modificará ventas ni BD real.
+El corte no debe inventar significado de códigos ARCA no demostrado, no debe
+abrir HTTP, no debe persistir CAE todavía y no debe habilitar producción. El
+resultado provider normalizado debe quedar preparado para una posterior
+convergencia con `FiscalAuthorizationTransportResult` y hechos de autorización.
+
+Después de esa frontera siguen, como cortes separados: material de credenciales
++ CMS/WSAA concreto, habilitación controlada de PHP SOAP, transport SOAP real y
+homologación con credenciales válidas.
 ## Registro mínimo de cada relevo
 
 Todo RESULT debe dejar: proyecto, fase, fecha, rama, HEAD/base/origin, ADR,
 decisiones vinculantes, paths exactos, migraciones, focales, suite, BD pre/post,
 HTTP externo, commit/push, estado final y próximo paso exacto.
 
-Cada checkpoint futuro debe actualizar este archivo y `docs/06_ROADMAP.md` si
-cambia el estado de avance. `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md` sólo
-se modifica cuando cambia o necesita continuidad explícita la North Star.
+## Gate irrefutable de continuidad documental
+
+**Cada paso que cambie el estado real de SRCM debe actualizar, validar y
+publicar los tres documentos maestros de recuperación:**
+
+1. `docs/README.md`;
+2. `docs/06_ROADMAP.md`;
+3. `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
+
+Este gate es obligatorio, irrefutable y excluyente. Si cualquiera de los tres
+queda atrasado respecto del checkpoint funcional recién cerrado, el avance no
+está documentalmente cerrado y **no se abre la siguiente frontera funcional**.
+
+Secuencia obligatoria:
+
+`implementación → validación GREEN → checkpoint/push → verificación remota →
+sincronización de los tres maestros → publicación/verificación documental →
+siguiente frontera`.
+
+La North Star no se reescribe innecesariamente, pero su sección dinámica de
+continuidad se actualiza en cada paso para conservar checkpoint, estado,
+invariantes, bloqueos y próximo paso exacto.
