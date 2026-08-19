@@ -14,6 +14,7 @@ final class ArcaFiscalAuthorizationAdapter
         private readonly FiscalAuthorizationTransport $transport,
         private readonly FiscalAuthorizationCredentialStore $credentials,
         private readonly FiscalRemoteSequenceAuthority $remoteSequence,
+        private readonly WsfeFecaeRequestComposerContract $fecaeComposer,
     ) {
     }
 
@@ -66,9 +67,11 @@ final class ArcaFiscalAuthorizationAdapter
             );
         }
 
+        $organizationId = (int) $document->organization_id;
+
         if (
             ! $this->credentials->configuredFor(
-                (int) $document->organization_id
+                $organizationId
             )
         ) {
             throw new DomainException(
@@ -77,7 +80,7 @@ final class ArcaFiscalAuthorizationAdapter
         }
 
         $query = new FiscalRemoteSequenceQuery(
-            organizationId: (int) $document->organization_id,
+            organizationId: $organizationId,
             environment: $environment,
             pointOfSaleNumber: $pointNumber,
             voucherTypeCode: $voucherTypeCode,
@@ -105,13 +108,27 @@ final class ArcaFiscalAuthorizationAdapter
         $nextVoucherNumber =
             $state->lastAuthorizedNumber + 1;
 
+        $fecaeRequest = $this->fecaeComposer->compose(
+            $document,
+            $nextVoucherNumber
+        );
+
+        $this->assertMatchingFecaeRequest(
+            $fecaeRequest,
+            $pointNumber,
+            $voucherTypeCode,
+            $nextVoucherNumber
+        );
+
         return $this->transport->authorize(
             new FiscalAuthorizationTransportRequest(
+                organizationId: $organizationId,
                 fiscalDocumentId: (int) $document->id,
                 environment: $environment,
                 pointOfSaleNumber: $pointNumber,
                 voucherTypeCode: $voucherTypeCode,
                 voucherNumber: $nextVoucherNumber,
+                fecaeRequest: $fecaeRequest,
             )
         );
     }
@@ -129,6 +146,29 @@ final class ArcaFiscalAuthorizationAdapter
         ) {
             throw new DomainException(
                 'La autoridad remota respondió para otra identidad WSFE de secuencia.'
+            );
+        }
+    }
+
+    private function assertMatchingFecaeRequest(
+        WsfeFecaeRequestData $request,
+        int $pointOfSaleNumber,
+        int $voucherTypeCode,
+        int $voucherNumber
+    ): void {
+        if (
+            $request->header->recordCount !== 1
+            || $request->header->pointOfSaleNumber
+                !== $pointOfSaleNumber
+            || $request->header->voucherTypeCode
+                !== $voucherTypeCode
+            || $request->detail->voucherFrom
+                !== $voucherNumber
+            || $request->detail->voucherTo
+                !== $voucherNumber
+        ) {
+            throw new DomainException(
+                'El FeCAEReq compuesto no coincide con la identidad WSFE y la secuencia remota que autorizó el adapter.'
             );
         }
     }

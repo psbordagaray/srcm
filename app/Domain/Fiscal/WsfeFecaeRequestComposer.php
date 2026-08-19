@@ -11,7 +11,7 @@ use App\Models\FiscalDocumentAssociationEvidence;
 use Carbon\CarbonInterface;
 use DomainException;
 
-final class WsfeFecaeRequestComposer
+final class WsfeFecaeRequestComposer implements WsfeFecaeRequestComposerContract
 {
     private const UNSUPPORTED_FCE_CODES = [
         201, 202, 203,
