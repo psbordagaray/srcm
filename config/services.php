@@ -41,7 +41,6 @@ return [
             'wsaa_endpoint' => env('ARCA_HOMOLOGATION_WSAA_ENDPOINT'),
             'business_endpoint' => env('ARCA_HOMOLOGATION_BUSINESS_ENDPOINT'),
             'service_name' => env('ARCA_HOMOLOGATION_SERVICE_NAME'),
-            'certificate_reference' => env('ARCA_HOMOLOGATION_CERTIFICATE_REFERENCE'),
         ],
         'production' => ['enabled' => false],
     ],

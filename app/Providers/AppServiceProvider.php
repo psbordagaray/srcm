@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Adapters\Finance\MercadoPago\EnvironmentMercadoPagoConnectionSecretStore;
+use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialReferenceStore;
 use App\Adapters\Finance\MercadoPago\MercadoPagoPointRefundAdapter;
 use App\Contracts\Finance\MercadoPagoConnectionSecretStore;
 use App\Domain\Finance\FinancialProviderRefundAdapterRegistry;
+use App\Domain\Fiscal\WsaaCredentialMaterialReferenceStore;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Models\Brand;
 use App\Models\BusinessParty;
@@ -34,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(
             CurrentOrganization::class,
             fn () => new CurrentOrganization
+        );
+        $this->app->singleton(
+            WsaaCredentialMaterialReferenceStore::class,
+            EnvironmentWsaaCredentialMaterialReferenceStore::class
         );
         $this->app->singleton(
             MercadoPagoConnectionSecretStore::class,
