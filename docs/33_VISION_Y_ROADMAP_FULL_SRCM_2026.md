@@ -9,20 +9,22 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **ARCA WSAA CMS Signer Execution Boundary V1**:
+Base funcional publicada al cierre de **ARCA WSAA LoginCms Transport Boundary V1**:
 
-`6779e99832de163b4fcfc2e9e11970487a44a198`
-— `feat(fiscal): add WSAA CMS signer execution`
+`d4818bee1f535190a8f385e63215794419a91503`
+— `feat(fiscal): add WSAA LoginCms transport boundary`
 
-Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta ejecución local segura del CMS WSAA.
+Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta transporte SOAP 1.1 concreto de `LoginCms`.
 
-`WsaaCmsSigner` ya tiene implementación OpenSSL CLI con CMS attached DER y digest siempre explícito. La passphrase viaja únicamente por environment efímero del hijo; el workspace sensible vive fuera del repo, se endurece por ACL/permisos y debe desaparecer antes de devolver el CMS Base64.
+`WsaaLoginCmsTransport` está enlazado a Guzzle y `WsaaLoginCmsResponseParser` a DOM fail-closed. La llamada canónica fija `loginCms/in0`, `SOAPAction: ""`, TLS verify activo, redirects bloqueados, timeouts explícitos y límites de respuesta.
 
-`WsaaCmsDigestPolicy` permanece deliberadamente sin binding. SHA-1 y SHA-256 fueron probados sólo con material sintético; su aceptación real por ARCA sigue no validada.
+`WsaaAccessTicketProvider` permanece sin binding y `WsaaCmsDigestPolicy` también. No hubo homologación real y la aceptación provider-real del digest continúa no validada.
 
-No se usó material ARCA real. No existe todavía `LoginCms`, SOAP/HTTP WSAA real ni producción habilitada.
+Producción falla antes de tocar el cliente HTTP. No se usó material ARCA real y no se ejecutó `LoginCms` ni HTTP ARCA.
 
-Validación funcional: **35/292 focal, 72/475 regresión fiscal y 1018 tests / 7717 assertions GREEN**.
+ADR relacionado: `docs/125_ADR_ARCA_WSAA_LOGIN_CMS_TRANSPORT_BOUNDARY_V1.md`.
+
+Validación funcional: **18/100 focal, 62/442 regresión fiscal y 1026 tests / 7764 assertions GREEN**.
 
 Baseline real autoritativa sin cambios: **107 tablas de negocio**, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y **93 migraciones** con hash lógico `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`. Las 29 migraciones no fiscales siguen pendientes intencionalmente.
 
@@ -31,7 +33,7 @@ Principio vinculante:
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próximo paso exacto:
-`ARCA_WSAA_LOGIN_CMS_TRANSPORT_RECON_V1`.
+`ARCA_WSAA_ACCESS_TICKET_PROVIDER_RECON_V1`.
 
 ### Disciplina irrefutable de recuperación
 

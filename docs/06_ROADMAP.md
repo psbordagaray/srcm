@@ -3,10 +3,10 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-19**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de ARCA WSAA CMS Signer Execution Boundary V1:
+Base funcional publicada al cierre de ARCA WSAA LoginCms Transport Boundary V1:
 
-`6779e99832de163b4fcfc2e9e11970487a44a198`
-`feat(fiscal): add WSAA CMS signer execution`
+`d4818bee1f535190a8f385e63215794419a91503`
+`feat(fiscal): add WSAA LoginCms transport boundary`
 
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
@@ -68,22 +68,22 @@ Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
 
 ---
 
-## 1.1. Estado maestro al cierre de ARCA WSAA CMS Signer Execution Boundary V1
+## 1.1. Estado maestro al cierre de ARCA WSAA LoginCms Transport Boundary V1
 
-El checkpoint funcional `6779e99832de163b4fcfc2e9e11970487a44a198` mantiene publicados P1–P9 V1 y la progresión P10 hasta ejecución local concreta de CMS WSAA:
+El checkpoint funcional `d4818bee1f535190a8f385e63215794419a91503` mantiene publicados P1–P9 V1 y la progresión P10 hasta transporte concreto `LoginCms`:
 
-- signer OpenSSL CLI concreto y enlazado;
-- `-nodetach`, `-binary`, DER y `-md` explícito;
-- passphrase por environment efímero, no command line;
-- temp root fuera del repo y workspace aleatorio;
-- ACL Windows / permisos POSIX endurecidos;
-- proceso sin shell/anonymous pipes y con timeout;
-- cleanup completo antes de devolver Base64 CMS;
-- SHA-1 y SHA-256 probados sólo con material sintético;
-- digest policy sigue sin binding y aceptación ARCA no validada;
-- `LoginCms`, SOAP/HTTP y producción continúan bloqueados.
+- SOAP 1.1 document/literal exacto, `loginCms/in0` y `loginCmsReturn`;
+- `SOAPAction: ""` y `Content-Type: text/xml; charset=utf-8`;
+- transport Guzzle concreto y parser DOM + `LIBXML_NONET`;
+- redirects deshabilitados, TLS verify activo, status HTTP manual y timeouts explícitos;
+- response SOAP limitada y TA interno acotado;
+- SOAP Fault sanitizado/clasificado; no hay retry automático;
+- producción fail-closed antes del cliente HTTP;
+- `WsaaAccessTicketProvider` y digest policy siguen sin binding;
+- ADR 125 aceptado;
+- no hubo credencial, CMS, `LoginCms` ni HTTP ARCA real.
 
-Validación: **35/292 focal, 72/475 regresión fiscal y 1018 tests / 7717 assertions GREEN**.
+Validación: **18/100 focal, 62/442 regresión fiscal y 1026 tests / 7764 assertions GREEN**.
 
 Baseline real autoritativa sin cambios: 107 tablas de negocio, fingerprint
 `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema
@@ -94,7 +94,7 @@ Las 29 migraciones no fiscales continúan deliberadamente pendientes.
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próxima frontera exacta:
-`ARCA_WSAA_LOGIN_CMS_TRANSPORT_RECON_V1`.
+`ARCA_WSAA_ACCESS_TICKET_PROVIDER_RECON_V1`.
 
 ---
 

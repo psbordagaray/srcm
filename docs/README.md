@@ -14,33 +14,31 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`6779e99832de163b4fcfc2e9e11970487a44a198`
-— `feat(fiscal): add WSAA CMS signer execution`
+`d4818bee1f535190a8f385e63215794419a91503`
+— `feat(fiscal): add WSAA LoginCms transport boundary`
 
-Estado verificado al cierre de **ARCA WSAA CMS Signer Execution Boundary V1**:
+Estado verificado al cierre de **ARCA WSAA LoginCms Transport Boundary V1**:
 
-- `WsaaCmsSigner` enlazado a ejecución OpenSSL CLI concreta;
-- CMS attached, `-binary`, DER y `-md` siempre explícito;
-- el digest sigue llegando como argumento y no existe default en el signer;
-- `WsaaCmsDigestPolicy` permanece sin implementación/binding;
-- passphrase sólo por variable de entorno efímera, nunca en command line;
-- workspace aleatorio bajo temp del sistema, disjunto del repositorio;
-- ACL Windows / permisos POSIX endurecidos antes de operar material sensible;
-- runner nativo sin shell ni anonymous pipes, con timeout;
-- cleanup obligatorio antes de devolver `WsaaSignedCms`;
-- probe criptográfico sintético GREEN con SHA-1 y SHA-256 explícitos;
-- aceptación provider-real de digest sigue **NO VALIDADA**;
-- `LoginCms`, SOAP/HTTP ARCA y producción siguen bloqueados;
-- validación funcional: **35/292 focal, 72/475 regresión fiscal y 1018 tests / 7717 assertions GREEN**;
+- `WsaaLoginCmsSoap11Call` fija SOAP 1.1 document/literal, `loginCms/in0`, `Content-Type: text/xml; charset=utf-8` y `SOAPAction: ""`;
+- `WsaaLoginCmsResponseParser` → `DomWsaaLoginCmsResponseParser`, con `LIBXML_NONET`, rechazo de DOCTYPE y límites estrictos;
+- `WsaaLoginCmsTransport` → `GuzzleWsaaLoginCmsTransport`;
+- POST, TLS verify activo, redirects bloqueados, `http_errors=false`, timeouts explícitos y lectura streaming acotada;
+- SOAP Fault se reduce a código ARCA sanitizado + disposición; `wsaa.*`/`wsn.unavailable` exigen al menos 60 s antes de una nueva solicitud;
+- no hay retry automático;
+- producción falla antes de invocar el cliente HTTP;
+- `WsaaAccessTicketProvider` permanece sin binding;
+- `WsaaCmsDigestPolicy` permanece sin binding; la aceptación provider-real del digest sigue **NO VALIDADA**;
+- ADR relacionado: `docs/125_ADR_ARCA_WSAA_LOGIN_CMS_TRANSPORT_BOUNDARY_V1.md`;
+- no se usó material ARCA real y no se ejecutó `LoginCms` real ni HTTP ARCA;
+- validación funcional: **18/100 focal, 62/442 regresión fiscal y 1026 tests / 7764 assertions GREEN**;
 - BD real autoritativa sigue sin cambios: **107 tablas de negocio**, fingerprint
-  `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
-  schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
+  `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema
+  `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
   y **93 migraciones** / `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`;
-- las 29 migraciones no fiscales siguen deliberadamente pendientes;
-- no se usó material ARCA real y no se ejecutó `LoginCms`.
+- las 29 migraciones no fiscales siguen deliberadamente pendientes.
 
 Próximo paso exacto:
-`ARCA_WSAA_LOGIN_CMS_TRANSPORT_RECON_V1`.
+`ARCA_WSAA_ACCESS_TICKET_PROVIDER_RECON_V1`.
 
 ## Jerarquía de verdad
 
@@ -116,23 +114,21 @@ desde cero.
 | P10 — ARCA readiness | `FeCAEReq`, transport, Ticket WSAA, endpoint map, SOAP 1.1, response normalization y provider-result convergence/persistencia neutral publicados; red real aún bloqueada |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
-## Estado funcional P10 al cierre de ARCA WSAA CMS Signer Execution Boundary V1
+## Estado funcional P10 al cierre de ARCA WSAA LoginCms Transport Boundary V1
 
 P10 mantiene el contrato **venta comercial ≠ comprobante fiscal ≠ autorización fiscal**.
 
-La frontera WSAA ya puede transformar un `WsaaTra` y `WsaaCredentialMaterial`
-de homologación en `WsaaSignedCms` mediante OpenSSL CLI, con digest explícito,
-CMS attached DER, passphrase por entorno efímero, ACL/permisos restrictivos y
-cleanup fail-closed.
+La frontera WSAA ya dispone de transporte SOAP 1.1 concreto de `LoginCms` sobre Guzzle y parser DOM fail-closed. Un response válido se transforma en `WsaaAccessTicket`; los SOAP Fault sólo conservan código ARCA sanitizado y disposición operativa.
 
-`WsaaCmsDigestPolicy` continúa sin binding: el signer no decide qué digest
-aceptará ARCA. `LoginCms` y todo HTTP/SOAP real siguen fuera de esta frontera.
+`WsaaAccessTicketProvider` y `WsaaCmsDigestPolicy` continúan sin binding. Aún no existe orquestación automática TRA → material → digest → CMS → LoginCms; producción y llamada ARCA real siguen bloqueadas.
 
 Checkpoint funcional publicado de referencia:
-`6779e99832de163b4fcfc2e9e11970487a44a198`.
+`d4818bee1f535190a8f385e63215794419a91503`.
+
+ADR relacionado: `docs/125_ADR_ARCA_WSAA_LOGIN_CMS_TRANSPORT_BOUNDARY_V1.md`.
 
 Próximo paso exacto:
-`ARCA_WSAA_LOGIN_CMS_TRANSPORT_RECON_V1`.
+`ARCA_WSAA_ACCESS_TICKET_PROVIDER_RECON_V1`.
 
 ## Estado funcional P9.7l
 
@@ -165,11 +161,9 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P10 — ARCA WSAA LoginCms Transport RECON V1**.
+**P10 — ARCA WSAA Access Ticket Provider RECON V1**.
 
-Debe reconstruir el wire exacto de `LoginCms`, decidir el transporte concreto
-con el runtime disponible y mantener `WsaaSignedCms` como input sensible, sin
-realizar todavía una llamada ARCA ni fingir aceptación de digest.
+Debe reconstruir la orquestación completa de `WsaaAccessTicketProvider`: digest policy sustentada en evidencia oficial, reutilización/cache de TA por scope, concurrencia, clock, composición TRA → material → signer → transporte y tratamiento de faults, sin realizar todavía una llamada real a ARCA ni habilitar producción.
 
 ## Registro mínimo de cada relevo
 
