@@ -81,6 +81,12 @@ final class WsfeFecaeSoap11Call
             $accessTicket;
     }
 
+    public function environment(): \App\Enums\FiscalEnvironment
+    {
+        return $this->transportRequest
+            ->environment;
+    }
+
     /**
      * Canonical SOAP 1.1 operation parameter object.
      *

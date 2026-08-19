@@ -4,10 +4,13 @@ namespace App\Providers;
 
 use App\Adapters\Finance\MercadoPago\EnvironmentMercadoPagoConnectionSecretStore;
 use App\Adapters\Fiscal\Arca\DomWsaaLoginCmsResponseParser;
+use App\Adapters\Fiscal\Arca\DomWsfeFecaeSoapResponseParser;
+use App\Adapters\Fiscal\Arca\DomWsfeFecaeSoapSerializer;
 use App\Adapters\Fiscal\Arca\EncryptedCacheWsaaAccessTicketProvider;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialProvider;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialReferenceStore;
 use App\Adapters\Fiscal\Arca\GuzzleWsaaLoginCmsTransport;
+use App\Adapters\Fiscal\Arca\GuzzleWsfeFecaeSoapTransport;
 use App\Adapters\Fiscal\Arca\NativeWsaaCmsProcessRunner;
 use App\Adapters\Fiscal\Arca\OfficialWsaaCmsDigestPolicy;
 use App\Adapters\Fiscal\Arca\OpenSslCliWsaaCmsSigner;
@@ -31,6 +34,9 @@ use App\Domain\Fiscal\WsaaTraBuilder;
 use App\Domain\Fiscal\WsaaTraClock;
 use App\Domain\Fiscal\WsaaTraUniqueIdProvider;
 use App\Domain\Fiscal\WsaaTraWindowPolicy;
+use App\Domain\Fiscal\WsfeFecaeSoapResponseParser;
+use App\Domain\Fiscal\WsfeFecaeSoapSerializer;
+use App\Domain\Fiscal\WsfeFecaeSoapTransport;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Models\Brand;
 use App\Models\BusinessParty;
@@ -131,6 +137,21 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(WsaaCmsDigestPolicy::class),
                 $app->make(WsaaCmsSigner::class),
                 $app->make(WsaaLoginCmsTransport::class),
+            )
+        );
+        $this->app->singleton(
+            WsfeFecaeSoapSerializer::class,
+            DomWsfeFecaeSoapSerializer::class
+        );
+        $this->app->singleton(
+            WsfeFecaeSoapResponseParser::class,
+            DomWsfeFecaeSoapResponseParser::class
+        );
+        $this->app->singleton(
+            WsfeFecaeSoapTransport::class,
+            fn ($app) => new GuzzleWsfeFecaeSoapTransport(
+                $app->make(WsfeFecaeSoapSerializer::class),
+                $app->make(WsfeFecaeSoapResponseParser::class),
             )
         );
         $this->app->singleton(
