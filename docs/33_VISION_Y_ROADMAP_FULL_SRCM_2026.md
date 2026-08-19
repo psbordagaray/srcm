@@ -9,45 +9,29 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **ARCA WSAA TRA/CMS Signing Boundary V1**:
+Base funcional publicada al cierre de **ARCA WSAA Credential Material Resolution Boundary V1**:
 
-`3875fc270d00a42b241a33002268168a747b985a`
-— `feat(fiscal): add WSAA TRA CMS signing boundary`
+`e589897279eede780562aa3c7ce3e842ba5b75e8`
+— `feat(fiscal): add WSAA credential material resolution`
 
-Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta
-request/readiness WSFE, convergencia provider-neutral, material de credenciales
-y frontera local TRA/CMS.
+Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta resolución segura local del material WSAA.
 
-`service` queda alineado con el XSD WSAA. El TRA se representa como
-`loginTicketRequest` v1.0 con identidad/tiempos/servicio explícitos y sin
-inventar CUIT, source o destination dentro del XML.
+Las referencias `file:` son relativas a una raíz externa disjunta del repo; la passphrase opcional se resuelve sólo mediante `env:`. `realpath` y containment bloquean traversal y escapes, y OpenSSL exige certificado/clave parseables y mismo par criptográfico.
 
-Clock, uniqueId y ventana quedan desacoplados. La política temporal no puede
-superar la tolerancia máxima documentada de 24 horas por lado.
+El material sigue siendo efímero, privado, redactado y no serializable. No se incorporó ni leyó material ARCA real.
 
-La política de digest permanece deliberadamente sin implementación: el runtime
-local puede producir SHA-1 y SHA-256, pero la aceptación real de ARCA no está
-validada. `WsaaCmsSigner` sigue abstracto y `WsaaSignedCms` fija sólo la forma
-Base64/redactada que una futura llamada `LoginCms` consumirá.
+La política de digest sigue sin implementación y el signer CMS continúa abstracto; por lo tanto no hay `LoginCms`, SOAP ni HTTP ARCA y producción permanece bloqueada.
 
-Validación funcional: **32/229 focal, 56/332 regresión fiscal y 1002 tests / 7574 assertions GREEN**.
+Validación funcional: **29/206 focal, 66/389 regresión fiscal y 1012 tests / 7631 assertions GREEN**.
 
-Baseline real autoritativa sin cambios: **107 tablas de negocio**, fingerprint
-`D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
-schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
-y **93 migraciones** con hash lógico
-`03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
-Las 29 migraciones no fiscales siguen pendientes intencionalmente.
-
-No se resolvieron credenciales reales, no se ejecutó signing productivo,
-`LoginCms`, SOAP ni HTTP ARCA. Producción continúa bloqueada.
+Baseline real autoritativa sin cambios: **107 tablas de negocio**, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y **93 migraciones** con hash lógico `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`. Las 29 migraciones no fiscales siguen pendientes intencionalmente.
 
 Principio vinculante:
 
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próximo paso exacto:
-`ARCA_WSAA_CREDENTIAL_MATERIAL_RESOLUTION_RECON_V1`.
+`ARCA_WSAA_CMS_SIGNER_EXECUTION_RECON_V1`.
 
 ### Disciplina irrefutable de recuperación
 
@@ -57,19 +41,10 @@ Los tres documentos maestros forman una cadena obligatoria:
 2. `docs/06_ROADMAP.md`;
 3. `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
 
-Cada paso que cambie el estado real de SRCM debe actualizar, validar y publicar
-los tres antes de abrir la frontera siguiente. Cuando corresponda, el mismo
-runner ejecuta el commit funcional y un segundo commit documental; ambos se
-mantienen separados.
+Cada paso que cambie el estado real de SRCM debe actualizar, validar y publicar los tres antes de abrir la frontera siguiente. Cuando corresponda, el mismo runner ejecuta el commit funcional y un segundo commit documental; ambos se mantienen separados.
 
-Los gates locales de los tres maestros son estructurales: paths exactos,
-`diff --check`, commit/push exactos y repo limpio. La verificación semántica se
-realiza una sola vez sobre GitHub después de publicar, evitando validadores
-frágiles por wrapping, Unicode o saltos de línea.
+Los gates locales de los tres maestros son estructurales: paths exactos, `diff --check`, commit/push exactos y repo limpio. La verificación semántica se realiza una sola vez sobre GitHub después de publicar.
 
-La North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
-ejecutivo de `docs/06_ROADMAP.md`; los tres recuperan contexto sin depender de
-una conversación.
 ---
 
 ## 1. North Star

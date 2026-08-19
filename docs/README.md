@@ -14,45 +14,33 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`3875fc270d00a42b241a33002268168a747b985a`
-— `feat(fiscal): add WSAA TRA CMS signing boundary`
+`e589897279eede780562aa3c7ce3e842ba5b75e8`
+— `feat(fiscal): add WSAA credential material resolution`
 
-Estado verificado al cierre de **ARCA WSAA TRA/CMS Signing Boundary V1**:
+Estado verificado al cierre de **ARCA WSAA Credential Material Resolution Boundary V1**:
 
-- toda la progresión fiscal previa hasta WSAA Credential Material Boundary V1
-  permanece publicada;
-- `WsaaServiceName` endurece `service` al XSD oficial: 3..32 caracteres,
-  primera letra y luego sólo letras, dígitos o `_`;
-- el hardening se aplica a request WSAA, referencias de credencial, material
-  sensible y readiness de homologación;
-- `WsaaTra` representa `loginTicketRequest` v1.0 con sólo `uniqueId`,
-  `generationTime`, `expirationTime` y `service`;
-- `source`/`destination` permanecen omitidos y `issuerCuit` sigue siendo
-  metadata de scope SRCM, no un campo TRA;
-- `WsaaTraClock`, `WsaaTraUniqueIdProvider`, `WsaaTraBuilder` y
-  `WsaaTraWindowPolicy` separan tiempo, identidad y ventana de forma testeable;
-- la tolerancia local de ventana nunca puede exceder 86400 segundos por lado;
-- `WsaaCmsDigestAlgorithm` hace explícitas las capacidades técnicas SHA-1 y
-  SHA-256, pero `WsaaCmsDigestPolicy` queda sin implementación/binding;
-- `WsaaCmsSigner` permanece como contrato sin implementación concreta;
-- `WsaaSignedCms` exige Base64 puro, conserva digest explícito, redacta contenido
-  y rechaza serialización;
-- la aceptación real de SHA-1/SHA-256 por ARCA **no está validada**;
-- no existe digest por defecto en el dominio;
-- validación funcional: **32/229 focal, 56/332 regresión fiscal y 1002 tests / 7574 assertions GREEN**;
-- BD real autoritativa sigue sin cambios: **107 tablas de negocio**,
-  fingerprint
+- referencias `file:` relativas bajo raíz externa dedicada;
+- passphrase opcional únicamente por referencia `env:`;
+- paths absolutos, traversal y escapes fuera de raíz rechazados;
+- raíz de credenciales disjunta del repositorio;
+- lectura efímera con límite de 1 MiB por archivo;
+- certificado y clave parseados por OpenSSL y par criptográfico verificado;
+- errores OpenSSL no se exponen;
+- provider y validator concretos enlazados al container;
+- `.gitignore` protege extensiones comunes de credenciales;
+- probe criptográfico sintético GREEN para par correcto y mismatch rechazado;
+- `WsaaCmsSigner`, digest policy, `LoginCms`, SOAP y HTTP ARCA siguen bloqueados;
+- validación funcional: **29/206 focal, 66/389 regresión fiscal y 1012 tests / 7631 assertions GREEN**;
+- BD real autoritativa sigue sin cambios: **107 tablas de negocio**, fingerprint
   `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
-  schema
-  `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
-  y ledger **93 migraciones** /
-  `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`;
+  schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
+  y **93 migraciones** / `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`;
 - las 29 migraciones no fiscales siguen deliberadamente pendientes;
-- no se dereferenció material real, no se ejecutó signing productivo, no hubo
-  `LoginCms`, SOAP ni HTTP ARCA; producción sigue bloqueada.
+- no se incorporó ni leyó material ARCA real y producción permanece bloqueada.
 
 Próximo paso exacto:
-`ARCA_WSAA_CREDENTIAL_MATERIAL_RESOLUTION_RECON_V1`.
+`ARCA_WSAA_CMS_SIGNER_EXECUTION_RECON_V1`.
+
 ## Jerarquía de verdad
 
 1. Código, migraciones y tests del checkpoint Git publicado.
@@ -127,32 +115,25 @@ desde cero.
 | P10 — ARCA readiness | `FeCAEReq`, transport, Ticket WSAA, endpoint map, SOAP 1.1, response normalization y provider-result convergence/persistencia neutral publicados; red real aún bloqueada |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
-## Estado funcional P10 al cierre de ARCA WSAA TRA/CMS Signing Boundary V1
+## Estado funcional P10 al cierre de ARCA WSAA Credential Material Resolution Boundary V1
 
-P10 mantiene el contrato **venta comercial ≠ comprobante fiscal ≠ autorización
-fiscal** y toda la cadena publicada hasta material de credenciales WSAA.
+P10 mantiene el contrato **venta comercial ≠ comprobante fiscal ≠ autorización fiscal**.
 
-Este corte agrega la frontera TRA/CMS sin cruzar todavía a ejecución externa.
+La frontera de credenciales ya puede resolver de forma controlada referencias `file:`
+relativas dentro de una raíz externa y una passphrase opcional mediante `env:`.
+El material se valida con OpenSSL, se verifica que certificado y clave formen el
+mismo par y se entrega como `WsaaCredentialMaterial` efímero/redactado.
 
-`service` queda alineado con el XSD WSAA. `WsaaTra` materializa localmente el
-`loginTicketRequest` v1.0 sólo con `uniqueId`, tiempos y servicio. La generación
-queda desacoplada mediante clock, uniqueId provider y política de ventana.
-
-El signing permanece fail-closed: `WsaaCmsSigner` y `WsaaCmsDigestPolicy` son
-contratos sin binding. SHA-1 y SHA-256 existen como capacidades técnicas
-explícitas, no como afirmación de aceptación ARCA.
-
-`WsaaSignedCms` define la forma que consumirá una futura llamada `LoginCms`:
-Base64 puro de CMS attached, sin wrappers PEM/MIME, redactado y no
-serializable.
+Eso todavía no firma TRA ni abre WSAA: `WsaaCmsSigner` y `WsaaCmsDigestPolicy`
+permanecen sin implementación/binding y la aceptación de digest por ARCA continúa
+no validada.
 
 Checkpoint funcional publicado de referencia:
-`3875fc270d00a42b241a33002268168a747b985a`.
+`e589897279eede780562aa3c7ce3e842ba5b75e8`.
 
 Próximo paso exacto:
-`ARCA_WSAA_CREDENTIAL_MATERIAL_RESOLUTION_RECON_V1`, read-only, para decidir
-cómo resolver referencias opacas a PEM real sin imprimir/copiar secretos y cómo
-entregar ese material a un signer concreto sin romper aislamiento ni rotación.
+`ARCA_WSAA_CMS_SIGNER_EXECUTION_RECON_V1`.
+
 ## Estado funcional P9.7l
 
 **P9.7k — Supplier Payment External Verification V1** vincula explícitamente
@@ -184,14 +165,12 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P10 — ARCA WSAA Credential Material Resolution RECON V1**.
+**P10 — ARCA WSAA CMS Signer Execution RECON V1**.
 
-Debe relevar, estrictamente read-only y sin imprimir secretos, qué mecanismos
-locales/operativos pueden resolver las referencias opacas de certificado, clave
-privada y passphrase hacia `WsaaCredentialMaterial` para homologación.
+Debe fijar el mecanismo concreto de CMS attached con digest explícito, manejo de
+temporales y limpieza garantizada, sin material ARCA real, sin `LoginCms` y sin
+confundir capacidad local con aceptación del provider.
 
-No firmará material real, no ejecutará `LoginCms`, no abrirá HTTP WSAA/WSFE, no
-habilitará producción y no declarará integración ARCA validada.
 ## Registro mínimo de cada relevo
 
 Todo RESULT debe dejar: proyecto, fase, fecha, rama, HEAD/base/origin, ADR,
