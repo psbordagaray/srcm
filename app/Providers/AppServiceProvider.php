@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use App\Adapters\Finance\MercadoPago\EnvironmentMercadoPagoConnectionSecretStore;
+use App\Adapters\Fiscal\Arca\DomWsaaLoginCmsResponseParser;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialProvider;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialReferenceStore;
+use App\Adapters\Fiscal\Arca\GuzzleWsaaLoginCmsTransport;
 use App\Adapters\Fiscal\Arca\NativeWsaaCmsProcessRunner;
 use App\Adapters\Fiscal\Arca\OpenSslCliWsaaCmsSigner;
 use App\Adapters\Fiscal\Arca\OpenSslWsaaCredentialMaterialValidator;
@@ -16,6 +18,8 @@ use App\Domain\Fiscal\WsaaCmsSigner;
 use App\Domain\Fiscal\WsaaCredentialMaterialProvider;
 use App\Domain\Fiscal\WsaaCredentialMaterialReferenceStore;
 use App\Domain\Fiscal\WsaaCredentialMaterialValidator;
+use App\Domain\Fiscal\WsaaLoginCmsResponseParser;
+use App\Domain\Fiscal\WsaaLoginCmsTransport;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Models\Brand;
 use App\Models\BusinessParty;
@@ -64,6 +68,19 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(
             WsaaCmsSigner::class,
             OpenSslCliWsaaCmsSigner::class
+        );
+        $this->app->singleton(
+            WsaaLoginCmsResponseParser::class,
+            DomWsaaLoginCmsResponseParser::class
+        );
+        $this->app->singleton(
+            WsaaLoginCmsTransport::class,
+            fn ($app) =>
+                new GuzzleWsaaLoginCmsTransport(
+                    $app->make(
+                        WsaaLoginCmsResponseParser::class
+                    )
+                )
         );
         $this->app->singleton(
             MercadoPagoConnectionSecretStore::class,
