@@ -22,19 +22,9 @@ final readonly class WsaaCredentialMaterialReference
             );
         }
 
-        if (
-            $this->service === ''
-            || $this->service !== trim($this->service)
-            || strlen($this->service) > 128
-            || preg_match(
-                '/^[A-Za-z0-9._:-]+$/D',
-                $this->service
-            ) !== 1
-        ) {
-            throw new DomainException(
-                'El servicio ligado al material WSAA no es válido.'
-            );
-        }
+        WsaaServiceName::assertValid(
+            $this->service
+        );
 
         if (
             preg_match(

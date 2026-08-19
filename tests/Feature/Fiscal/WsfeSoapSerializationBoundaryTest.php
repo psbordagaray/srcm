@@ -84,7 +84,7 @@ class WsfeSoapSerializationBoundaryTest extends TestCase
             new WsaaAccessTicketRequest(
                 92,
                 FiscalEnvironment::Homologation,
-                'wsfe-explicit',
+                'wsfe_explicit',
                 '20123456786'
             ),
             $this->ticket(),
@@ -378,7 +378,7 @@ class WsfeSoapSerializationBoundaryTest extends TestCase
         return new WsaaAccessTicketRequest(
             91,
             FiscalEnvironment::Homologation,
-            'wsfe-explicit',
+            'wsfe_explicit',
             '20123456786'
         );
     }
@@ -388,7 +388,7 @@ class WsfeSoapSerializationBoundaryTest extends TestCase
         return new WsaaAccessTicket(
             91,
             FiscalEnvironment::Homologation,
-            'wsfe-explicit',
+            'wsfe_explicit',
             '20123456786',
             'secret-token',
             'secret-sign',

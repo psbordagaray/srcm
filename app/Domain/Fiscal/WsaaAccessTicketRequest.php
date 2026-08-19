@@ -19,19 +19,9 @@ final readonly class WsaaAccessTicketRequest
             );
         }
 
-        if (
-            $this->service === ''
-            || $this->service !== trim($this->service)
-            || strlen($this->service) > 128
-            || preg_match(
-                '/^[A-Za-z0-9._:-]+$/D',
-                $this->service
-            ) !== 1
-        ) {
-            throw new DomainException(
-                'El servicio WSAA debe ser una identidad explícita, no vacía y sin espacios.'
-            );
-        }
+        WsaaServiceName::assertValid(
+            $this->service
+        );
 
         if (
             preg_match(

@@ -19,7 +19,7 @@ class WsaaAccessTicketBoundaryTest extends TestCase
         $request = new WsaaAccessTicketRequest(
             91,
             FiscalEnvironment::Homologation,
-            'wsfe-explicit',
+            'wsfe_explicit',
             '20123456786'
         );
 
@@ -32,7 +32,7 @@ class WsaaAccessTicketBoundaryTest extends TestCase
             $request->environment
         );
         $this->assertSame(
-            'wsfe-explicit',
+            'wsfe_explicit',
             $request->service
         );
         $this->assertSame(
@@ -42,7 +42,7 @@ class WsaaAccessTicketBoundaryTest extends TestCase
 
         foreach (
             [
-                [0, 'wsfe-explicit', '20123456786'],
+                [0, 'wsfe_explicit', '20123456786'],
                 [91, '', '20123456786'],
                 [91, ' wsfe', '20123456786'],
                 [91, 'wsfe', '20-12345678-6'],
@@ -71,7 +71,7 @@ class WsaaAccessTicketBoundaryTest extends TestCase
         $request = new WsaaAccessTicketRequest(
             91,
             FiscalEnvironment::Homologation,
-            'wsfe-explicit',
+            'wsfe_explicit',
             '20123456786'
         );
 
@@ -98,25 +98,25 @@ class WsaaAccessTicketBoundaryTest extends TestCase
                 new WsaaAccessTicketRequest(
                     92,
                     FiscalEnvironment::Homologation,
-                    'wsfe-explicit',
+                    'wsfe_explicit',
                     '20123456786'
                 ),
                 new WsaaAccessTicketRequest(
                     91,
                     FiscalEnvironment::Production,
-                    'wsfe-explicit',
+                    'wsfe_explicit',
                     '20123456786'
                 ),
                 new WsaaAccessTicketRequest(
                     91,
                     FiscalEnvironment::Homologation,
-                    'other-service',
+                    'other_service',
                     '20123456786'
                 ),
                 new WsaaAccessTicketRequest(
                     91,
                     FiscalEnvironment::Homologation,
-                    'wsfe-explicit',
+                    'wsfe_explicit',
                     '27111111111'
                 ),
             ]
@@ -246,7 +246,7 @@ class WsaaAccessTicketBoundaryTest extends TestCase
         $request = new WsaaAccessTicketRequest(
             91,
             FiscalEnvironment::Homologation,
-            'wsfe-explicit',
+            'wsfe_explicit',
             '20123456786'
         );
 
@@ -297,7 +297,7 @@ class WsaaAccessTicketBoundaryTest extends TestCase
         return new WsaaAccessTicket(
             91,
             FiscalEnvironment::Homologation,
-            'wsfe-explicit',
+            'wsfe_explicit',
             '20123456786',
             'secret-token',
             'secret-sign',

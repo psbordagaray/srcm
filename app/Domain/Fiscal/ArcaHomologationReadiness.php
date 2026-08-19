@@ -49,6 +49,20 @@ final class ArcaHomologationReadiness
             }
         }
 
+        $service = config(
+            'services.arca.homologation.service_name'
+        );
+
+        if (! is_string($service)) {
+            throw new DomainException(
+                'El servicio WSAA de homologación debe ser texto.'
+            );
+        }
+
+        WsaaServiceName::assertValid(
+            $service
+        );
+
         if (
             ! $this->credentialReferences->hasAny(
                 FiscalEnvironment::Homologation
