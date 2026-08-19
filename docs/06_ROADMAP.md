@@ -3,10 +3,10 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-19**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de WSFE Provider Response Normalization V1:
+Base funcional publicada al cierre de WSFE Provider Result Convergence V1:
 
-`94e7412680561a3d9b25e664b2ba20a3d5a7fa7c`
-`feat(fiscal): add WSFE provider response normalization`
+`014ed95a59a6f2b00817cdea3879f7d4ab81abb1`
+`feat(fiscal): converge WSFE provider result evidence`
 
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
@@ -68,10 +68,10 @@ Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
 
 ---
 
-## 1.1. Estado maestro al cierre de WSFE Provider Response Normalization V1
+## 1.1. Estado maestro al cierre de WSFE Provider Result Convergence V1
 
 El checkpoint funcional
-`94e7412680561a3d9b25e664b2ba20a3d5a7fa7c` deja publicados P1–P9 V1 y,
+`014ed95a59a6f2b00817cdea3879f7d4ab81abb1` deja publicados P1–P9 V1 y,
 dentro de P10, toda la progresión previa más las siguientes fronteras de
 completitud y conexión:
 
@@ -97,16 +97,24 @@ completitud y conexión:
   `R/R + sin CAE → Rejected`, y todo estado parcial, contradictorio,
   incompleto o nuevo → `Unknown`;
 - preservación de observaciones, Events, Errors y campos desconocidos sin
-  reinterpretar códigos del proveedor.
+  reinterpretar códigos del proveedor;
+- convergencia a `FiscalAuthorizationTransportResult` provider-neutral con
+  código de autorización, vencimiento ISO y evidencia provider opaca;
+- puente `FiscalAuthorizationFactData::fromTransportResult()` y persistencia
+  append-only en `FiscalAuthorizationResponse`;
+- idempotencia ampliada con hash canonicalizado de evidencia.
 
-El último cambio funcional cerró **10/46 focal**, **33/173 regresión fiscal** y
-**976/7393 suite completa**. La BD real conserva 88 tablas de negocio,
-fingerprint
-`9EC82FF55039B520624D4B189F4FAFA9972480EAB411375893790E5BD7B4BDA0`,
+El cambio funcional cerró **7/32 focal**, **36/188 regresión fiscal** y
+**983/7425 suite completa**. Luego se alineó la BD real mediante simulación
+aislada y aplicación exacta de **17 migraciones fiscales**, sin `migrate-all`.
+Quedaron **29 migraciones no fiscales deliberadamente pendientes**.
+
+Baseline real autoritativa: 107 tablas de negocio, fingerprint
+`D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
 schema
-`418B3761625FE33CAD8B9E13E3F566001EE68228B947EA9ABBBD449E2B1B6B96`
-y 76 migraciones con hash lógico
-`6A10916F7A5514FA4BA8061AC8CCF0F704AB9F4F8D3A2B23954FF113B9A3EB78`.
+`F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
+y 93 migraciones con hash lógico
+`03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
 
 No existe ejecución real ARCA: `SoapClient` continúa no disponible en el PHP
 local, no se implementaron certificado/clave privada/CMS/LoginCms reales, no
@@ -114,8 +122,8 @@ hay WSDL/HTTP WSAA/WSFE ni CAE real y producción permanece bloqueada.
 
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
-Próxima frontera funcional, sólo después de cerrar este sync documental:
-`WSFE_PROVIDER_RESULT_CONVERGENCE_V1`.
+Próxima frontera exacta:
+`ARCA_WSAA_CREDENTIAL_MATERIAL_READINESS_RECON_V1`.
 
 ---
 
@@ -681,7 +689,7 @@ Resultado: el `FeCAEReq` estándar se compone desde evidencia fiscal explícita,
 usa candidato de secuencia remota y llega al transport sin secretos ni
 dependencia de `FiscalDocumentNumber` local.
 
-### P10 — WSAA / Endpoint / SOAP / Response Readiness — PUBLICADO
+### P10 — WSAA / Endpoint / SOAP / Response / Convergence Readiness — PUBLICADO
 
 - WSAA Access Ticket Boundary: scope explícito
   organización/ambiente/servicio/CUIT y `Token`/`Sign` efímeros, privados,
@@ -691,19 +699,22 @@ dependencia de `FiscalDocumentNumber` local.
 - WSFE SOAP Serialization Boundary: contrato SOAP 1.1 de `FECAESolicitar`,
   `Auth(Token,Sign,Cuit) + FeCAEReq` y preservación del resultado provider;
 - WSFE Provider Response Normalization: normalización fail-closed a
-  `Authorized`, `Rejected` o `Unknown`, preservando CAE, `CAEFchVto`,
-  observaciones, Events, Errors y campos provider desconocidos, sin interpretar
-  códigos `Obs/Evt/Err`.
+  `Authorized`, `Rejected` o `Unknown`, preservando evidencia sin interpretar
+  códigos `Obs/Evt/Err`;
+- WSFE Provider Result Convergence: código de autorización, vencimiento ISO y
+  evidencia provider opaca atraviesan el contrato neutral y quedan persistidos
+  en hechos fiscales append-only con idempotencia ampliada.
 
-`FiscalAuthorizationTransportResult` sigue sin enriquecerse. No se genera XML
-manual, no se instancia `SoapClient`, no se carga WSDL y no se abre HTTP ARCA.
+La BD real fue alineada a toda la cadena fiscal publicada mediante simulación
+previa y 17 rutas exactas; 29 migrations no fiscales permanecen pendientes de
+forma intencional. No se genera XML manual, no se instancia `SoapClient`, no se
+carga WSDL y no se abre HTTP ARCA.
 
-**Próximo paso exacto:** `WSFE_PROVIDER_RESULT_CONVERGENCE_V1`.
+**Próximo paso exacto:** `ARCA_WSAA_CREDENTIAL_MATERIAL_READINESS_RECON_V1`.
 
-Debe definir cómo `WsfeFecaeNormalizedResponseData` converge con el resultado
-provider-neutral y con los hechos de autorización sin perder CAE, vencimiento
-ni evidencia. No debe inventar significado de códigos ARCA, habilitar
-red/producción ni declarar integración real validada.
+Debe relevar almacenamiento/configuración de certificado y clave privada,
+OpenSSL/CMS, credential store y provider WSAA, sin imprimir secretos ni ejecutar
+`LoginCms`, HTTP o producción.
 
 ---
 

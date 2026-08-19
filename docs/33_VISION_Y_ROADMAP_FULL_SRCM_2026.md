@@ -9,40 +9,49 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **WSFE Provider Response Normalization V1**:
+Base funcional publicada al cierre de **WSFE Provider Result Convergence V1**:
 
-`94e7412680561a3d9b25e664b2ba20a3d5a7fa7c`
-— `feat(fiscal): add WSFE provider response normalization`
+`014ed95a59a6f2b00817cdea3879f7d4ab81abb1`
+— `feat(fiscal): converge WSFE provider result evidence`
 
 Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta una
-frontera local completa de request/readiness y normalización de respuesta WSFE.
-La capa fiscal separa configuración, documento, hechos de autorización,
-numeración local, autoridad de secuencia remota, evidencia tributaria,
-`FeCAEReq`, transport sin secretos, Ticket WSAA efímero, endpoints por ambiente,
-contrato SOAP 1.1 `FECAESolicitar` y normalización provider-specific fail-closed.
+frontera local completa de request/readiness, normalización de respuesta y
+convergencia provider-neutral WSFE.
 
-La normalización publicada reconoce `Authorized` sólo con `A/A + CAE numérico +
-CAEFchVto válido`, `Rejected` sólo con `R/R + ausencia de CAE` y conserva como
-`Unknown` cualquier estado parcial, contradictorio, incompleto o nuevo.
-Observaciones, Events, Errors y campos provider desconocidos se preservan sin
-reinterpretar sus códigos.
+La respuesta `FECAESolicitar` preservada se normaliza fail-closed y luego
+converge a `FiscalAuthorizationTransportResult` con código de autorización,
+vencimiento ISO y evidencia provider opaca. `FiscalAuthorizationFactData` lleva
+esa evidencia a hechos append-only y `FiscalAuthorizationResponse` la persiste
+sin reinterpretar códigos del proveedor. La idempotencia incorpora el hash
+canonicalizado de la evidencia.
 
-La última suite funcional cerró **976 tests / 7393 assertions GREEN**. La BD
-real conserva fingerprint lógico, schema y migration ledger sin cambios de
-dominio.
+La validación funcional cerró **7/32 focal**, **36/188 regresión fiscal** y
+**983 tests / 7425 assertions GREEN**.
+
+La BD real fue alineada de manera controlada: primero se aplicaron exactamente
+17 migraciones fiscales sobre una copia aislada y sólo después, con simulación
+GREEN y backup, sobre la BD real. No se ejecutó `migrate-all`. Quedaron 29
+migraciones no fiscales deliberadamente pendientes.
+
+Baseline real autoritativa: **107 tablas de negocio**, fingerprint
+`D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
+schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
+y **93 migraciones** con hash lógico
+`03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
 
 La ejecución externa ARCA permanece deliberadamente bloqueada. No existe
 certificado/clave privada/CMS/LoginCms real, `SoapClient` sigue deshabilitado en
-el PHP local, no se carga WSDL, no se abre HTTP WSAA/WSFE y no existe CAE real.
+el PHP local, no se carga WSDL, no se abre HTTP WSAA/WSFE y no existe CAE real
+obtenido desde ARCA.
 
-Principio vinculante de esta frontera:
+Principio vinculante:
 
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
-Próximo paso funcional exacto:
-`WSFE_PROVIDER_RESULT_CONVERGENCE_V1`, para decidir cómo la normalización
-provider-specific converge con el resultado provider-neutral y con los hechos
-de autorización sin perder CAE, vencimiento ni evidencia.
+Próximo paso exacto:
+`ARCA_WSAA_CREDENTIAL_MATERIAL_READINESS_RECON_V1`, read-only y sin secretos,
+para fijar almacenamiento/configuración de certificado y clave privada,
+OpenSSL/CMS y la frontera concreta de provider WSAA antes de `LoginCms`.
 
 ### Disciplina irrefutable de recuperación
 
@@ -53,9 +62,9 @@ Los tres documentos maestros forman una cadena obligatoria:
 3. `docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`.
 
 Cada paso que cambie el estado real de SRCM debe actualizar, validar y publicar
-los tres antes de abrir la frontera funcional siguiente. Esta obligación es
-excluyente incluso cuando la North Star conceptual no cambie: su sección
-dinámica de continuidad siempre debe quedar alineada.
+los tres antes de abrir la frontera siguiente. Cuando corresponda, el mismo
+runner puede ejecutar el commit funcional y un segundo commit documental, pero
+ambos permanecen separados y verificados remotamente.
 
 La North Star no sustituye el estado dinámico de `docs/README.md` ni el mapa
 ejecutivo de `docs/06_ROADMAP.md`; los tres recuperan contexto sin depender de
