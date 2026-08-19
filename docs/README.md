@@ -14,32 +14,33 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`e589897279eede780562aa3c7ce3e842ba5b75e8`
-— `feat(fiscal): add WSAA credential material resolution`
+`6779e99832de163b4fcfc2e9e11970487a44a198`
+— `feat(fiscal): add WSAA CMS signer execution`
 
-Estado verificado al cierre de **ARCA WSAA Credential Material Resolution Boundary V1**:
+Estado verificado al cierre de **ARCA WSAA CMS Signer Execution Boundary V1**:
 
-- referencias `file:` relativas bajo raíz externa dedicada;
-- passphrase opcional únicamente por referencia `env:`;
-- paths absolutos, traversal y escapes fuera de raíz rechazados;
-- raíz de credenciales disjunta del repositorio;
-- lectura efímera con límite de 1 MiB por archivo;
-- certificado y clave parseados por OpenSSL y par criptográfico verificado;
-- errores OpenSSL no se exponen;
-- provider y validator concretos enlazados al container;
-- `.gitignore` protege extensiones comunes de credenciales;
-- probe criptográfico sintético GREEN para par correcto y mismatch rechazado;
-- `WsaaCmsSigner`, digest policy, `LoginCms`, SOAP y HTTP ARCA siguen bloqueados;
-- validación funcional: **29/206 focal, 66/389 regresión fiscal y 1012 tests / 7631 assertions GREEN**;
+- `WsaaCmsSigner` enlazado a ejecución OpenSSL CLI concreta;
+- CMS attached, `-binary`, DER y `-md` siempre explícito;
+- el digest sigue llegando como argumento y no existe default en el signer;
+- `WsaaCmsDigestPolicy` permanece sin implementación/binding;
+- passphrase sólo por variable de entorno efímera, nunca en command line;
+- workspace aleatorio bajo temp del sistema, disjunto del repositorio;
+- ACL Windows / permisos POSIX endurecidos antes de operar material sensible;
+- runner nativo sin shell ni anonymous pipes, con timeout;
+- cleanup obligatorio antes de devolver `WsaaSignedCms`;
+- probe criptográfico sintético GREEN con SHA-1 y SHA-256 explícitos;
+- aceptación provider-real de digest sigue **NO VALIDADA**;
+- `LoginCms`, SOAP/HTTP ARCA y producción siguen bloqueados;
+- validación funcional: **35/292 focal, 72/475 regresión fiscal y 1018 tests / 7717 assertions GREEN**;
 - BD real autoritativa sigue sin cambios: **107 tablas de negocio**, fingerprint
   `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`,
   schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
   y **93 migraciones** / `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`;
 - las 29 migraciones no fiscales siguen deliberadamente pendientes;
-- no se incorporó ni leyó material ARCA real y producción permanece bloqueada.
+- no se usó material ARCA real y no se ejecutó `LoginCms`.
 
 Próximo paso exacto:
-`ARCA_WSAA_CMS_SIGNER_EXECUTION_RECON_V1`.
+`ARCA_WSAA_LOGIN_CMS_TRANSPORT_RECON_V1`.
 
 ## Jerarquía de verdad
 
@@ -115,24 +116,23 @@ desde cero.
 | P10 — ARCA readiness | `FeCAEReq`, transport, Ticket WSAA, endpoint map, SOAP 1.1, response normalization y provider-result convergence/persistencia neutral publicados; red real aún bloqueada |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
-## Estado funcional P10 al cierre de ARCA WSAA Credential Material Resolution Boundary V1
+## Estado funcional P10 al cierre de ARCA WSAA CMS Signer Execution Boundary V1
 
 P10 mantiene el contrato **venta comercial ≠ comprobante fiscal ≠ autorización fiscal**.
 
-La frontera de credenciales ya puede resolver de forma controlada referencias `file:`
-relativas dentro de una raíz externa y una passphrase opcional mediante `env:`.
-El material se valida con OpenSSL, se verifica que certificado y clave formen el
-mismo par y se entrega como `WsaaCredentialMaterial` efímero/redactado.
+La frontera WSAA ya puede transformar un `WsaaTra` y `WsaaCredentialMaterial`
+de homologación en `WsaaSignedCms` mediante OpenSSL CLI, con digest explícito,
+CMS attached DER, passphrase por entorno efímero, ACL/permisos restrictivos y
+cleanup fail-closed.
 
-Eso todavía no firma TRA ni abre WSAA: `WsaaCmsSigner` y `WsaaCmsDigestPolicy`
-permanecen sin implementación/binding y la aceptación de digest por ARCA continúa
-no validada.
+`WsaaCmsDigestPolicy` continúa sin binding: el signer no decide qué digest
+aceptará ARCA. `LoginCms` y todo HTTP/SOAP real siguen fuera de esta frontera.
 
 Checkpoint funcional publicado de referencia:
-`e589897279eede780562aa3c7ce3e842ba5b75e8`.
+`6779e99832de163b4fcfc2e9e11970487a44a198`.
 
 Próximo paso exacto:
-`ARCA_WSAA_CMS_SIGNER_EXECUTION_RECON_V1`.
+`ARCA_WSAA_LOGIN_CMS_TRANSPORT_RECON_V1`.
 
 ## Estado funcional P9.7l
 
@@ -165,11 +165,11 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P10 — ARCA WSAA CMS Signer Execution RECON V1**.
+**P10 — ARCA WSAA LoginCms Transport RECON V1**.
 
-Debe fijar el mecanismo concreto de CMS attached con digest explícito, manejo de
-temporales y limpieza garantizada, sin material ARCA real, sin `LoginCms` y sin
-confundir capacidad local con aceptación del provider.
+Debe reconstruir el wire exacto de `LoginCms`, decidir el transporte concreto
+con el runtime disponible y mantener `WsaaSignedCms` como input sensible, sin
+realizar todavía una llamada ARCA ni fingir aceptación de digest.
 
 ## Registro mínimo de cada relevo
 

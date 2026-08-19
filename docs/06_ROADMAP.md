@@ -3,10 +3,10 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-19**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de ARCA WSAA Credential Material Resolution Boundary V1:
+Base funcional publicada al cierre de ARCA WSAA CMS Signer Execution Boundary V1:
 
-`e589897279eede780562aa3c7ce3e842ba5b75e8`
-`feat(fiscal): add WSAA credential material resolution`
+`6779e99832de163b4fcfc2e9e11970487a44a198`
+`feat(fiscal): add WSAA CMS signer execution`
 
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
@@ -68,22 +68,22 @@ Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
 
 ---
 
-## 1.1. Estado maestro al cierre de ARCA WSAA Credential Material Resolution Boundary V1
+## 1.1. Estado maestro al cierre de ARCA WSAA CMS Signer Execution Boundary V1
 
-El checkpoint funcional `e589897279eede780562aa3c7ce3e842ba5b75e8` mantiene publicados P1–P9 V1 y la progresión P10 hasta resolución local de material WSAA:
+El checkpoint funcional `6779e99832de163b4fcfc2e9e11970487a44a198` mantiene publicados P1–P9 V1 y la progresión P10 hasta ejecución local concreta de CMS WSAA:
 
-- `file:` relativo bajo raíz externa dedicada para certificado/clave;
-- `env:` para passphrase opcional;
-- containment por `realpath`, sin paths absolutos ni traversal;
-- raíz disjunta del repositorio;
-- límite de 1 MiB y lectura efímera;
-- parse OpenSSL de certificado/clave y check de par criptográfico;
-- provider/validator concretos enlazados;
-- `.gitignore` endurecido para extensiones de credencial;
-- probe sintético de par/mismatch GREEN;
-- signer CMS, digest policy, `LoginCms`, SOAP y HTTP ARCA aún bloqueados.
+- signer OpenSSL CLI concreto y enlazado;
+- `-nodetach`, `-binary`, DER y `-md` explícito;
+- passphrase por environment efímero, no command line;
+- temp root fuera del repo y workspace aleatorio;
+- ACL Windows / permisos POSIX endurecidos;
+- proceso sin shell/anonymous pipes y con timeout;
+- cleanup completo antes de devolver Base64 CMS;
+- SHA-1 y SHA-256 probados sólo con material sintético;
+- digest policy sigue sin binding y aceptación ARCA no validada;
+- `LoginCms`, SOAP/HTTP y producción continúan bloqueados.
 
-Validación: **29/206 focal, 66/389 regresión fiscal y 1012 tests / 7631 assertions GREEN**.
+Validación: **35/292 focal, 72/475 regresión fiscal y 1018 tests / 7717 assertions GREEN**.
 
 Baseline real autoritativa sin cambios: 107 tablas de negocio, fingerprint
 `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema
@@ -94,7 +94,7 @@ Las 29 migraciones no fiscales continúan deliberadamente pendientes.
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próxima frontera exacta:
-`ARCA_WSAA_CMS_SIGNER_EXECUTION_RECON_V1`.
+`ARCA_WSAA_LOGIN_CMS_TRANSPORT_RECON_V1`.
 
 ---
 
