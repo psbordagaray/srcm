@@ -14,8 +14,8 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`a17b8aec8ee583dbb121931fd58fc54663de46c7`
-— `feat(observability): add production observability baseline`
+`95b9ae392a7c3a038f6c4db55774f238681ff00d`
+— `feat(resilience): add production backup restore baseline`
 
 Estado verificado al cierre de **ARCA WSFE Authorization Runtime Binding V1**:
 
@@ -39,14 +39,16 @@ Cierre local P10 verificado en checkpoint documental `7922c51f7f52995c7137094ec7
 
 La única deuda P10 remanente es `REAL_ARCA_HOMOLOGATION`; no bloquea P11. WSASS continúa diferido y producción bloqueada.
 
-P11 ya tiene publicados **Production Security Baseline V1** en `b712081c550d2fba36704ec75678eba1f5b73ff9` y **Production Observability Baseline V1** en `a17b8aec8ee583dbb121931fd58fc54663de46c7`. Observabilidad agrega request/correlation IDs globales, contexto de excepciones, logging JSON `stderr_json` para producción, señales seguras de queue/jobs/integraciones y readiness `GET /api/health/ready`; ADR: `docs/131_ADR_PRODUCTION_OBSERVABILITY_BASELINE_V1.md`.
+P11 ya tiene publicados **Production Security Baseline V1** en `b712081c550d2fba36704ec75678eba1f5b73ff9`, **Production Observability Baseline V1** en `a17b8aec8ee583dbb121931fd58fc54663de46c7` y **Production Resilience Baseline V1** en `95b9ae392a7c3a038f6c4db55774f238681ff00d`. Resiliencia agrega snapshot SQLite consistente, retención, verificación de restaurabilidad aislada, objetivos RPO/RTO y freshness gate de backup en readiness; ADR: `docs/132_ADR_PRODUCTION_RESILIENCE_BASELINE_V1.md`.
 
-Validación del corte de observabilidad: **10/53 focal, 18/111 regresión Observability+Security+Integration y 1071 tests / 8023 assertions GREEN**. La BD real permaneció exacta en el baseline canónico. OpenTelemetry, métricas externas, tracing distribuido, alert provider, Horizon/Telescope, backup automation y outbox siguen diferidos; producción permanece bloqueada hasta completar los release gates P11.
+Validación del corte de resiliencia: **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN**. La BD real permaneció exacta en el baseline canónico y las pruebas de backup/restore usaron SQLite sintética temporal: no hubo backup ni restore sobre `database/database.sqlite`. RPO objetivo: **60 min**; RTO objetivo: **240 min**; retención baseline: **168 snapshots**; freshness gate: **90 min**.
+
+Off-host encrypted backup, proveedor remoto/KMS, CI/CD pipeline, deploy automation, outbox y OpenTelemetry siguen como release gates/deuda diferida; producción permanece bloqueada hasta completarlos.
 
 La deuda P10 `REAL_ARCA_HOMOLOGATION` y WSASS siguen diferidos y no bloquean P11.
 
 Próximo paso exacto:
-`P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`.
+`P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`.
 
 ## Jerarquía de verdad
 
@@ -120,7 +122,7 @@ desde cero.
 | P10.1–P10.7.4 | Configuración fiscal, documento, autorización, numeración, integración, perfil/política, composición, clasificación y concepto/período publicados |
 | P10 — Payload WSFE | Receptor, fecha, resumen monetario, moneda/cotización, vencimiento, ajustes, asociaciones, secuencia remota y clasificación tributaria publicados |
 | P10 — ARCA readiness | `FeCAEReq`, transport, Ticket WSAA, endpoint map, SOAP 1.1, response normalization y provider-result convergence/persistencia neutral publicados; red real aún bloqueada |
-| P11 — Security + Observability Baselines | Security `b712081c550d2fba36704ec75678eba1f5b73ff9`; Observability `a17b8aec8ee583dbb121931fd58fc54663de46c7`: correlación global, JSON logging, queue/integration signals y readiness publicados; `P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1` siguiente |
+| P11 — Security + Observability + Resilience Baselines | Security `b712081c550d2fba36704ec75678eba1f5b73ff9`; Observability `a17b8aec8ee583dbb121931fd58fc54663de46c7`; Resilience `95b9ae392a7c3a038f6c4db55774f238681ff00d`: backup/retención/restore verification + RPO/RTO publicados; `P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1` siguiente |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
 
@@ -130,21 +132,27 @@ Security checkpoint: `b712081c550d2fba36704ec75678eba1f5b73ff9` — `feat(securi
 
 Observability checkpoint: `a17b8aec8ee583dbb121931fd58fc54663de46c7` — `feat(observability): add production observability baseline`.
 
+Resilience checkpoint: `95b9ae392a7c3a038f6c4db55774f238681ff00d` — `feat(resilience): add production backup restore baseline`.
+
 Security conserva headers HTTP globales conservadores, producción fail-closed por configuración insegura, step-up por contraseña reciente en mutaciones de alto impacto y guard de secret/config hygiene.
 
-Observability publica:
-- `request_id` UUID propio y `correlation_id` global para web/API/health, aceptando `X-Correlation-ID` sólo si es UUID válido;
-- propagación del contexto a excepciones y al job de webhook Mercado Pago sin reutilizar el `x-request-id` provider-specific;
-- canal Monolog `stderr_json` para producción, sin paquete externo;
-- señales seguras `queue.job_exception`, `queue.job_failed` y eventos de integración sin payloads/secretos;
-- limpieza de contexto en workers largos para impedir contaminación entre jobs;
-- readiness `GET /api/health/ready` limitado a estados `ok/fail` de DB, queue, failed_jobs y structured logging.
+Observability conserva `request_id`/`correlation_id` globales, contexto de excepciones, canal `stderr_json`, señales seguras de queue/jobs/integraciones, limpieza de contexto en workers largos y readiness `GET /api/health/ready`.
 
-Validación observability: **10/53 focal, 18/111 regresión Observability+Security+Integration y 1071 tests / 8023 assertions GREEN**. BD canónica intacta, sin migrate y sin ARCA real.
+Resilience publica:
+- `SqliteBackupManager` con snapshot consistente mediante `VACUUM INTO`, sin copiar el archivo SQLite vivo;
+- comando `srcm:backup-database` y scheduler horario `withoutOverlapping`;
+- SHA-256 + manifiesto por snapshot y retención por defecto de **168** snapshots;
+- comando `srcm:verify-database-backup` que verifica checksum e integridad sobre una copia temporal aislada, sin exponer restore real;
+- política de producción que exige directorio de backup fuera del árbol del repo;
+- readiness de backup verificado fresco con ventana **90 min**;
+- objetivos **RPO 60 min** y **RTO 240 min**;
+- ADR 132 aceptado.
 
-Fuera del corte y todavía diferido: OpenTelemetry, métricas externas, tracing distribuido, proveedor externo de alertas, Horizon/Telescope, backup automation, outbox, MFA/passkeys, PIN supervisor dedicado, CSP/Permissions-Policy y homologación ARCA real.
+Validación resilience: **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN**. BD canónica intacta, sin migrate/rollback, sin backup/restore sobre la BD real y sin ARCA real.
 
-Próximo paso exacto: `P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`. Debe relevar backups, cifrado/retención, restore drills, RPO/RTO, plan de desastre, migraciones/rollback y CI/CD antes de implementar resiliencia adicional.
+Release gates todavía abiertos: copia off-host cifrada, proveedor remoto/KMS, CI/CD y deploy gates reales, además de outbox/OpenTelemetry y los hardenings avanzados de seguridad ya diferidos. La existencia de documentación o scripts locales no cuenta como CI/CD implementado.
+
+Próximo paso exacto: `P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`. Debe relevar workflows reales, gates de tests/build, migraciones/deploy, rollback/release, artefactos, secretos de CI y el gate off-host/encrypted backup antes de implementar automatización adicional.
 
 ## Estado funcional P10 al cierre de ARCA WSFE Authorization Runtime Binding V1
 
@@ -192,9 +200,9 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P11 — Production Resilience Baseline RECON V1** (`P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`).
+**P11 — Production CI/CD & Release Gates RECON V1** (`P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`).
 
-Debe ser read-only y focal: inventariar backups actuales, cifrado y retención, posibilidad real de restore, RPO/RTO, disaster recovery, migraciones/rollback, CI/CD y automatización de la suite. No crear backup automation ni pipeline nuevo antes de verificar qué existe realmente.
+Debe ser estrictamente read-only y focal: verificar workflows/pipelines reales, gates automáticos de tests y build, estrategia de migraciones/deploy/rollback, artefactos y secretos de CI, y el release gate de backup off-host cifrado. No crear workflow, deploy automation ni proveedor remoto antes del relevamiento.
 
 ## Registro mínimo de cada relevo
 

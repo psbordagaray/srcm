@@ -3,10 +3,10 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-20**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de P11 Production Observability Baseline V1:
+Base funcional publicada al cierre de P11 Production Resilience Baseline V1:
 
-`a17b8aec8ee583dbb121931fd58fc54663de46c7`
-`feat(observability): add production observability baseline`
+`95b9ae392a7c3a038f6c4db55774f238681ff00d`
+`feat(resilience): add production backup restore baseline`
 
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
@@ -68,28 +68,33 @@ Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
 
 ---
 
-## 1.1. Estado maestro tras P11 Production Observability Baseline V1
+## 1.1. Estado maestro tras P11 Production Resilience Baseline V1
 
-El checkpoint funcional `a17b8aec8ee583dbb121931fd58fc54663de46c7` mantiene P1–P10 publicados/cerrados en su alcance local y consolida P11 con Security + Observability baselines nativos y testeados.
+El checkpoint funcional `95b9ae392a7c3a038f6c4db55774f238681ff00d` mantiene P1–P10 publicados/cerrados en su alcance local y consolida P11 con Security + Observability + Resilience baselines nativos y testeados.
 
 P10 permanece **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; `REAL_ARCA_HOMOLOGATION`, WSASS e identidad fiscal real siguen diferidos y no bloquean P11.
 
 Security Baseline V1 en `b712081c550d2fba36704ec75678eba1f5b73ff9` conserva headers globales, producción fail-closed, step-up de alto impacto y secret/config hygiene.
 
-Observability Baseline V1 publica:
-- `request_id`/`correlation_id` globales y contexto de excepción;
-- JSON logging de producción por `stderr_json`;
-- señales de queue/job/integración sin payloads ni secretos;
-- propagación segura de correlación al webhook job y limpieza de contexto entre jobs;
-- readiness `/api/health/ready` sobre DB, queue, failed_jobs y logging estructurado;
-- ADR 131 aceptado.
+Observability Baseline V1 en `a17b8aec8ee583dbb121931fd58fc54663de46c7` conserva correlación global, JSON logging, señales seguras de queue/jobs/integraciones y readiness operacional.
 
-Validación: **10/53 focal, 18/111 regresión Observability+Security+Integration y 1071 tests / 8023 assertions GREEN**. Baseline real autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones con hash lógico `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
+Resilience Baseline V1 publica:
+- snapshot SQLite consistente por `VACUUM INTO`;
+- comandos explícitos de backup y restore verification, sin restore real sobre la BD viva;
+- scheduler horario y `withoutOverlapping`;
+- retención baseline de 168 snapshots;
+- SHA-256 + manifiesto + verificación aislada de integridad;
+- directorio de producción fuera del árbol del repo;
+- freshness gate de 90 minutos en readiness;
+- RPO objetivo 60 minutos y RTO objetivo 240 minutos;
+- ADR 132 aceptado.
 
-OpenTelemetry, métricas externas, tracing distribuido, alert provider, Horizon/Telescope, backup automation y outbox siguen diferidos. Producción continúa bloqueada hasta completar los release gates de P11.
+Validación: **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN**. Baseline real autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones con hash lógico `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
+
+Durante la validación no se respaldó ni restauró la BD real; se usó SQLite sintética temporal. Off-host encrypted backup, proveedor remoto/KMS, CI/CD pipeline y deploy automation siguen abiertos como release gates. Producción continúa bloqueada.
 
 Próxima frontera exacta:
-`P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`.
+`P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`.
 
 ---
 
@@ -677,32 +682,34 @@ Validación del corte: **62/329 focal, 89/461 regresión fiscal y 1052 tests / 7
 
 Antes de depender de SRCM como sistema único:
 
-**Estado actual:** Security Baseline V1 `b712081c550d2fba36704ec75678eba1f5b73ff9` y Observability Baseline V1 `a17b8aec8ee583dbb121931fd58fc54663de46c7` publicados. El último corte validó **10/53 focal, 18/111 regresión Observability+Security+Integration y 1071 tests / 8023 assertions GREEN** con BD canónica intacta. La próxima frontera es `P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`.
+**Estado actual:** Security Baseline V1 `b712081c550d2fba36704ec75678eba1f5b73ff9`, Observability Baseline V1 `a17b8aec8ee583dbb121931fd58fc54663de46c7` y Resilience Baseline V1 `95b9ae392a7c3a038f6c4db55774f238681ff00d` publicados. El último corte validó **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN** con BD canónica intacta. La próxima frontera es `P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`.
 
 ### Seguridad
 - **PUBLICADO baseline V1:** headers globales conservadores; configuración de producción fail-closed; step-up por contraseña reciente en operaciones de alto impacto; guard de secret/config hygiene; ADR 130;
 - MFA/passkeys, PIN supervisor dedicado y gestión avanzada de dispositivos — diferidos;
-- CSP/Permissions-Policy — diferidos hasta inventario específico de scripts/assets/hardware;
-- rotación de credenciales y revisión continua de mínimo privilegio — pendientes de cortes posteriores.
+- CSP/Permissions-Policy — diferidos hasta inventario específico de scripts/assets/hardware.
 
 ### Observabilidad
 - **PUBLICADO baseline V1:** request/correlation IDs globales; contexto de excepción; JSON `stderr_json`; señales de queue/job/integración; readiness `/api/health/ready`; ADR 131;
-- workers largos limpian contexto antes/después para no contaminar jobs;
-- webhook Mercado Pago transporta sólo `correlation_id` UUID opcional, sin secretos/payloads;
 - OpenTelemetry, métricas externas, tracing distribuido, alert provider y Horizon/Telescope — diferidos.
 
 ### Resiliencia
-**SIGUIENTE RECON:** `P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`. Debe inventariar implementación real y brechas de:
-- backups automáticos y su cifrado;
-- retención;
-- restore drills verificables;
-- RPO/RTO;
-- plan de desastre;
-- migraciones verificadas;
-- rollback técnico controlado sin borrar hechos comerciales;
-- CI/CD y suite automática.
+- **PUBLICADO baseline V1:** `VACUUM INTO` para snapshots SQLite consistentes, comando de backup, scheduler horario, SHA/manifiesto, retención 168, restore verification aislada, freshness gate 90 min, RPO 60 min y RTO 240 min; ADR 132;
+- el baseline no expone restore automático sobre la BD viva y las pruebas no tocaron la BD real;
+- producción exige directorio de backup fuera del árbol SRCM;
+- backup off-host cifrado y KMS/proveedor remoto siguen como release gate.
 
-No se implementa backup automation ni pipeline por presunción antes del RECON.
+### CI/CD y release engineering
+**SIGUIENTE RECON:** `P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`. Debe verificar, sin mutar:
+- workflows/pipelines realmente versionados;
+- gate automático de suite, lint/build y dependencias;
+- estrategia de migraciones en deploy y rollback técnico;
+- artefactos/versionado/promoción entre ambientes;
+- secretos y permisos de CI;
+- release gate de backup off-host cifrado y restore drill operativo;
+- criterios concretos que faltan para desbloquear producción.
+
+No se implementa pipeline, deploy automation ni proveedor remoto por presunción antes del RECON.
 
 ### Integraciones robustas
 - outbox/eventos internos;
@@ -712,7 +719,7 @@ No se implementa backup automation ni pipeline por presunción antes del RECON.
 - webhooks firmados;
 - versionado de contratos.
 
-Outbox permanece diferido hasta después de la frontera de resiliencia.
+Outbox permanece diferido hasta después de los release gates de P11.
 
 ---
 

@@ -9,23 +9,23 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **P11 Production Observability Baseline V1**:
+Base funcional publicada al cierre de **P11 Production Resilience Baseline V1**:
 
-`a17b8aec8ee583dbb121931fd58fc54663de46c7`
-— `feat(observability): add production observability baseline`
+`95b9ae392a7c3a038f6c4db55774f238681ff00d`
+— `feat(resilience): add production backup restore baseline`
 
-Estado: P1–P9 publicados/cerrados según sus checkpoints; P10 **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; P11 tiene publicados Production Security Baseline V1 y Production Observability Baseline V1.
+Estado: P1–P9 publicados/cerrados según sus checkpoints; P10 **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; P11 tiene publicados Production Security, Observability y Resilience Baselines V1.
 
 P10 conserva su verdad: runtime local WSAA/WSFE estructuralmente completo, producción fiscal bloqueada y `REAL_ARCA_HOMOLOGATION` / WSASS diferidos. Preparado para conectar ARCA no equivale a integración ARCA validada.
 
-Security Baseline V1 `b712081c550d2fba36704ec75678eba1f5b73ff9` aporta headers globales, producción fail-closed, step-up de alto impacto y guard de secret/config hygiene. Observability Baseline V1 `a17b8aec8ee583dbb121931fd58fc54663de46c7` agrega correlación global, logging JSON de producción, señales seguras de queue/jobs/integraciones y readiness operacional. ADR relacionado: `docs/131_ADR_PRODUCTION_OBSERVABILITY_BASELINE_V1.md`.
+Security Baseline V1 `b712081c550d2fba36704ec75678eba1f5b73ff9` aporta headers globales, producción fail-closed, step-up de alto impacto y guard de secret/config hygiene. Observability Baseline V1 `a17b8aec8ee583dbb121931fd58fc54663de46c7` aporta correlación global, logging JSON, señales seguras de queue/jobs/integraciones y readiness. Resilience Baseline V1 `95b9ae392a7c3a038f6c4db55774f238681ff00d` aporta snapshots SQLite consistentes, retención, restore verification aislada, freshness gate, RPO 60 min y RTO 240 min; ADR relacionado: `docs/132_ADR_PRODUCTION_RESILIENCE_BASELINE_V1.md`.
 
-Validación observability publicada: **10/53 focal, 18/111 regresión Observability+Security+Integration y 1071 tests / 8023 assertions GREEN**. BD autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones / `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
+Validación resilience publicada: **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN**. BD autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones / `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`. Las pruebas de resiliencia no hicieron backup/restore de la BD real.
 
-Producción general sigue bloqueada hasta completar los release gates P11. OpenTelemetry, métricas externas, tracing distribuido, alert provider, Horizon/Telescope, backup automation, outbox, MFA/passkeys, PIN supervisor dedicado y CSP/Permissions-Policy continúan diferidos.
+Producción general sigue bloqueada hasta completar los release gates P11. Backup off-host cifrado/KMS, CI/CD y deploy gates, además de OpenTelemetry, outbox y hardenings avanzados ya diferidos, continúan pendientes.
 
 Próximo paso exacto:
-`P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`. Debe realizar un inventario focal de resiliencia/recuperación real antes de implementar backup automation, RPO/RTO o CI/CD adicional.
+`P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`. Debe relevar CI/CD y release gates reales —incluido backup off-host cifrado— antes de implementar automatización o desbloquear producción.
 
 ### Disciplina irrefutable de recuperación
 
