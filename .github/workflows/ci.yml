@@ -79,13 +79,17 @@ jobs:
         shell: bash
         run: php artisan srcm:release-preflight --ci
 
-      - name: Full test suite
-        shell: bash
-        run: composer test
-
       - name: Production asset build
         shell: bash
         run: npm run build
+
+      - name: Verify Vite manifest
+        shell: bash
+        run: test -f public/build/manifest.json
+
+      - name: Full test suite
+        shell: bash
+        run: composer test
 
       - name: Tracked tree must remain unchanged
         shell: bash

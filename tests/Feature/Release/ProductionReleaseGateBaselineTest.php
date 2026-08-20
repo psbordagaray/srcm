@@ -32,6 +32,14 @@ final class ProductionReleaseGateBaselineTest extends TestCase
         $this->assertStringContainsString('git diff --check', $workflow);
         $this->assertStringContainsString('composer test', $workflow);
         $this->assertStringContainsString('npm run build', $workflow);
+        $this->assertStringContainsString('test -f public/build/manifest.json', $workflow);
+
+        $assetBuildPosition = strpos($workflow, 'npm run build');
+        $fullSuitePosition = strpos($workflow, 'composer test');
+        $this->assertIsInt($assetBuildPosition);
+        $this->assertIsInt($fullSuitePosition);
+        $this->assertLessThan($fullSuitePosition, $assetBuildPosition);
+
         $this->assertStringContainsString('srcm:release-preflight --ci', $workflow);
         $this->assertStringNotContainsString('artisan migrate --force', $workflow);
         $this->assertStringNotContainsString('artisan migrate:rollback', $workflow);

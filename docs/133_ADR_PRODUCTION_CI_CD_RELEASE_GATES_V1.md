@@ -18,7 +18,11 @@ externos abiertos.
 
 Se incorpora un workflow GitHub Actions con permisos mínimos `contents: read`,
 checkout fijado por SHA, instalación desde lockfiles, `git diff --check`,
-preflight, suite completa y build de assets.
+preflight, build de assets y suite completa. En un runner limpio el build debe
+preceder a cualquier prueba HTTP que renderice layouts con `@vite`, porque
+`public/build` está deliberadamente fuera de Git y el manifest sólo existe
+después de `npm run build`. El workflow verifica explícitamente
+`public/build/manifest.json` antes de ejecutar `composer test`.
 
 Se incorpora `srcm:release-preflight`, respaldado por
 `ReleasePreflightInspector`, que:
