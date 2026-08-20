@@ -9,10 +9,10 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **P11 Production Resilience Baseline V1**:
+Base funcional publicada al cierre de **P11 Production CI/CD Release Gates V1**:
 
-`95b9ae392a7c3a038f6c4db55774f238681ff00d`
-— `feat(resilience): add production backup restore baseline`
+`ceb521fd9d65c24937e0632f128538586678008c`
+— `feat(release): add production CI CD release gates baseline`
 
 Estado: P1–P9 publicados/cerrados según sus checkpoints; P10 **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; P11 tiene publicados Production Security, Observability y Resilience Baselines V1.
 
@@ -25,7 +25,9 @@ Validación resilience publicada: **6/36 focal, 19/112 regresión Resilience+Obs
 Producción general sigue bloqueada hasta completar los release gates P11. Backup off-host cifrado/KMS, CI/CD y deploy gates, además de OpenTelemetry, outbox y hardenings avanzados ya diferidos, continúan pendientes.
 
 Próximo paso exacto:
-`P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`. Debe relevar CI/CD y release gates reales —incluido backup off-host cifrado— antes de implementar automatización o desbloquear producción.
+`P11_PRODUCTION_OFF_HOST_ENCRYPTED_BACKUP_RESTORE_DRILL_RECON_V1`. Debe relevar CI/CD y release gates reales —incluido backup off-host cifrado— antes de implementar automatización o desbloquear producción.
+
+CI/CD Release Gates V1 publica workflow versionado con checkout fijado por SHA, permisos mínimos, instalaciones desde lockfiles, `git diff --check`, full suite, build y `srcm:release-preflight --ci`. El preflight inventaría migraciones sin ejecutar migrate/rollback, exige `down()` no vacío y valida `GET /api/health/ready`. Producción continúa fail-closed: backup off-host cifrado, restore drill operativo y secretos/aprobaciones de producción siguen abiertos. ADR: `docs/133_ADR_PRODUCTION_CI_CD_RELEASE_GATES_V1.md`. Validación: **6/32 focal, 31/180 regresión Release+Resilience+Observability+Security, 1083/8091 full + asset build GREEN**.
 
 ### Disciplina irrefutable de recuperación
 

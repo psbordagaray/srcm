@@ -14,8 +14,8 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`95b9ae392a7c3a038f6c4db55774f238681ff00d`
-— `feat(resilience): add production backup restore baseline`
+`ceb521fd9d65c24937e0632f128538586678008c`
+— `feat(release): add production CI CD release gates baseline`
 
 Estado verificado al cierre de **ARCA WSFE Authorization Runtime Binding V1**:
 
@@ -48,7 +48,9 @@ Off-host encrypted backup, proveedor remoto/KMS, CI/CD pipeline, deploy automati
 La deuda P10 `REAL_ARCA_HOMOLOGATION` y WSASS siguen diferidos y no bloquean P11.
 
 Próximo paso exacto:
-`P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`.
+`P11_PRODUCTION_OFF_HOST_ENCRYPTED_BACKUP_RESTORE_DRILL_RECON_V1`.
+
+CI/CD Release Gates V1 publica workflow versionado con checkout fijado por SHA, permisos mínimos, instalaciones desde lockfiles, `git diff --check`, full suite, build y `srcm:release-preflight --ci`. El preflight inventaría migraciones sin ejecutar migrate/rollback, exige `down()` no vacío y valida `GET /api/health/ready`. Producción continúa fail-closed: backup off-host cifrado, restore drill operativo y secretos/aprobaciones de producción siguen abiertos. ADR: `docs/133_ADR_PRODUCTION_CI_CD_RELEASE_GATES_V1.md`. Validación: **6/32 focal, 31/180 regresión Release+Resilience+Observability+Security, 1083/8091 full + asset build GREEN**.
 
 ## Jerarquía de verdad
 
@@ -122,7 +124,7 @@ desde cero.
 | P10.1–P10.7.4 | Configuración fiscal, documento, autorización, numeración, integración, perfil/política, composición, clasificación y concepto/período publicados |
 | P10 — Payload WSFE | Receptor, fecha, resumen monetario, moneda/cotización, vencimiento, ajustes, asociaciones, secuencia remota y clasificación tributaria publicados |
 | P10 — ARCA readiness | `FeCAEReq`, transport, Ticket WSAA, endpoint map, SOAP 1.1, response normalization y provider-result convergence/persistencia neutral publicados; red real aún bloqueada |
-| P11 — Security + Observability + Resilience Baselines | Security `b712081c550d2fba36704ec75678eba1f5b73ff9`; Observability `a17b8aec8ee583dbb121931fd58fc54663de46c7`; Resilience `95b9ae392a7c3a038f6c4db55774f238681ff00d`: backup/retención/restore verification + RPO/RTO publicados; `P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1` siguiente |
+| P11 — Security + Observability + Resilience Baselines | Security `b712081c550d2fba36704ec75678eba1f5b73ff9`; Observability `a17b8aec8ee583dbb121931fd58fc54663de46c7`; Resilience `95b9ae392a7c3a038f6c4db55774f238681ff00d`: backup/retención/restore verification + RPO/RTO publicados; `P11_PRODUCTION_OFF_HOST_ENCRYPTED_BACKUP_RESTORE_DRILL_RECON_V1` siguiente |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
 
@@ -152,7 +154,7 @@ Validación resilience: **6/36 focal, 19/112 regresión Resilience+Observability
 
 Release gates todavía abiertos: copia off-host cifrada, proveedor remoto/KMS, CI/CD y deploy gates reales, además de outbox/OpenTelemetry y los hardenings avanzados de seguridad ya diferidos. La existencia de documentación o scripts locales no cuenta como CI/CD implementado.
 
-Próximo paso exacto: `P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`. Debe relevar workflows reales, gates de tests/build, migraciones/deploy, rollback/release, artefactos, secretos de CI y el gate off-host/encrypted backup antes de implementar automatización adicional.
+Próximo paso exacto: `P11_PRODUCTION_OFF_HOST_ENCRYPTED_BACKUP_RESTORE_DRILL_RECON_V1`. Debe relevar workflows reales, gates de tests/build, migraciones/deploy, rollback/release, artefactos, secretos de CI y el gate off-host/encrypted backup antes de implementar automatización adicional.
 
 ## Estado funcional P10 al cierre de ARCA WSFE Authorization Runtime Binding V1
 
@@ -200,7 +202,7 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P11 — Production CI/CD & Release Gates RECON V1** (`P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`).
+**P11 — Production CI/CD & Release Gates RECON V1** (`P11_PRODUCTION_OFF_HOST_ENCRYPTED_BACKUP_RESTORE_DRILL_RECON_V1`).
 
 Debe ser estrictamente read-only y focal: verificar workflows/pipelines reales, gates automáticos de tests y build, estrategia de migraciones/deploy/rollback, artefactos y secretos de CI, y el release gate de backup off-host cifrado. No crear workflow, deploy automation ni proveedor remoto antes del relevamiento.
 

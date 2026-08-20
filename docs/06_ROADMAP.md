@@ -3,10 +3,10 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-20**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de P11 Production Resilience Baseline V1:
+Base funcional publicada al cierre de P11 Production CI/CD Release Gates V1:
 
-`95b9ae392a7c3a038f6c4db55774f238681ff00d`
-`feat(resilience): add production backup restore baseline`
+`ceb521fd9d65c24937e0632f128538586678008c`
+`feat(release): add production CI CD release gates baseline`
 
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
@@ -94,7 +94,9 @@ Validación: **6/36 focal, 19/112 regresión Resilience+Observability+Security y
 Durante la validación no se respaldó ni restauró la BD real; se usó SQLite sintética temporal. Off-host encrypted backup, proveedor remoto/KMS, CI/CD pipeline y deploy automation siguen abiertos como release gates. Producción continúa bloqueada.
 
 Próxima frontera exacta:
-`P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`.
+`P11_PRODUCTION_OFF_HOST_ENCRYPTED_BACKUP_RESTORE_DRILL_RECON_V1`.
+
+CI/CD Release Gates V1 publica workflow versionado con checkout fijado por SHA, permisos mínimos, instalaciones desde lockfiles, `git diff --check`, full suite, build y `srcm:release-preflight --ci`. El preflight inventaría migraciones sin ejecutar migrate/rollback, exige `down()` no vacío y valida `GET /api/health/ready`. Producción continúa fail-closed: backup off-host cifrado, restore drill operativo y secretos/aprobaciones de producción siguen abiertos. ADR: `docs/133_ADR_PRODUCTION_CI_CD_RELEASE_GATES_V1.md`. Validación: **6/32 focal, 31/180 regresión Release+Resilience+Observability+Security, 1083/8091 full + asset build GREEN**.
 
 ---
 
@@ -682,7 +684,7 @@ Validación del corte: **62/329 focal, 89/461 regresión fiscal y 1052 tests / 7
 
 Antes de depender de SRCM como sistema único:
 
-**Estado actual:** Security Baseline V1 `b712081c550d2fba36704ec75678eba1f5b73ff9`, Observability Baseline V1 `a17b8aec8ee583dbb121931fd58fc54663de46c7` y Resilience Baseline V1 `95b9ae392a7c3a038f6c4db55774f238681ff00d` publicados. El último corte validó **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN** con BD canónica intacta. La próxima frontera es `P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`.
+**Estado actual:** Security Baseline V1 `b712081c550d2fba36704ec75678eba1f5b73ff9`, Observability Baseline V1 `a17b8aec8ee583dbb121931fd58fc54663de46c7` y Resilience Baseline V1 `95b9ae392a7c3a038f6c4db55774f238681ff00d` publicados. El último corte validó **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN** con BD canónica intacta. La próxima frontera es `P11_PRODUCTION_OFF_HOST_ENCRYPTED_BACKUP_RESTORE_DRILL_RECON_V1`.
 
 ### Seguridad
 - **PUBLICADO baseline V1:** headers globales conservadores; configuración de producción fail-closed; step-up por contraseña reciente en operaciones de alto impacto; guard de secret/config hygiene; ADR 130;
@@ -700,7 +702,7 @@ Antes de depender de SRCM como sistema único:
 - backup off-host cifrado y KMS/proveedor remoto siguen como release gate.
 
 ### CI/CD y release engineering
-**SIGUIENTE RECON:** `P11_PRODUCTION_CI_CD_RELEASE_GATES_RECON_V1`. Debe verificar, sin mutar:
+**SIGUIENTE RECON:** `P11_PRODUCTION_OFF_HOST_ENCRYPTED_BACKUP_RESTORE_DRILL_RECON_V1`. Debe verificar, sin mutar:
 - workflows/pipelines realmente versionados;
 - gate automático de suite, lint/build y dependencias;
 - estrategia de migraciones en deploy y rollback técnico;
