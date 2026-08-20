@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Resilience\SqliteBackupManager;
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -10,13 +11,16 @@ use Throwable;
 
 final class ProductionReadinessController extends Controller
 {
-    public function __invoke(QueueFactory $queues): JsonResponse
-    {
+    public function __invoke(
+        QueueFactory $queues,
+        SqliteBackupManager $backups
+    ): JsonResponse {
         $checks = [
             'database' => $this->databaseReady(),
             'queue' => $this->queueReady($queues),
             'failed_jobs' => $this->failedJobsReady(),
             'structured_logging' => $this->structuredLoggingReady(),
+            'verified_backup' => $this->backupReady($backups),
         ];
 
         $ready = ! in_array(false, $checks, true);
@@ -100,5 +104,14 @@ final class ProductionReadinessController extends Controller
 
         return is_array($channels)
             && in_array('stderr_json', $channels, true);
+    }
+
+    private function backupReady(SqliteBackupManager $backups): bool
+    {
+        if (! app()->environment('production')) {
+            return true;
+        }
+
+        return $backups->isFreshVerifiedBackupAvailable();
     }
 }
