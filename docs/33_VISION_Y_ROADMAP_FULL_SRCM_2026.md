@@ -9,35 +9,23 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **ARCA WSFE Authorization Runtime Binding V1**:
+Base funcional publicada al cierre de **P11 Production Security Baseline V1**:
 
-`b8a97ddb84ee64e2858a559798e5a83ad953202a`
-— `feat(fiscal): bind WSFE authorization runtime`
+`b712081c550d2fba36704ec75678eba1f5b73ff9`
+— `feat(security): add production security baseline`
 
-Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 localmente ensamblado hasta runtime WSAA/WSFE completo, con homologación real deliberadamente diferida.
+Estado: P1–P9 publicados/cerrados según sus checkpoints; P10 **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; P11 iniciado con Production Security Baseline V1 publicado.
 
-El container ya enlaza scope/credential gate, autoridad remota de secuencia, composer FECAE, authorization transport, normalizer y convergence. Los dos wire boundaries WSFE reutilizan `WsaaAccessTicketProvider` y permanecen homologación-only.
+P10 conserva su verdad: runtime local WSAA/WSFE estructuralmente completo, producción fiscal bloqueada y `REAL_ARCA_HOMOLOGATION` / WSASS diferidos. Preparado para conectar ARCA no equivale a integración ARCA validada.
 
-La identidad fiscal runtime no se infiere desde venta ni perfil: `service + issuer_cuit` provienen explícitamente del mapa tenant-scoped WSAA. Homologación deshabilitada falla antes de TA/wire.
+P11 Production Security Baseline V1 agrega headers globales conservadores, fail-closed de configuración insegura en producción, step-up por confirmación reciente de contraseña en operaciones de alto impacto sin replay automático, y guard testeado para secret/config hygiene. ADR relacionado: `docs/130_ADR_PRODUCTION_SECURITY_BASELINE_V1.md`.
 
-Producción permanece bloqueada. WSASS, identidad fiscal real y homologación externa están diferidos; no se usó material ARCA real ni se ejecutó dereferencia de credenciales, CMS/`LoginCms`/`FECompUltimoAutorizado`/`FECAESolicitar` real ni HTTP ARCA.
+Validación publicada: **9/59 focal, 72/573 Auth+Security y 1061 tests / 7970 assertions GREEN**. BD autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones / `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
 
-ADR relacionado: `docs/129_ADR_ARCA_WSFE_AUTHORIZATION_RUNTIME_BINDING_V1.md`.
-
-Validación funcional: **62/329 focal, 89/461 regresión fiscal y 1052 tests / 7911 assertions GREEN**.
-
-Baseline autoritativa preservada: **107 tablas de negocio**, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y **93 migraciones** con hash lógico `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
-
-Principio vinculante:
-
-**Preparado para conectar ARCA ≠ integración ARCA validada.**
-
-Cierre local P10: **GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`. La deuda externa `REAL_ARCA_HOMOLOGATION` continúa diferida, WSASS diferido y producción bloqueada; no impide comenzar P11.
-
-Post-P10 Roadmap RECON V1: P11 es el siguiente bloque mayor y la primera frontera recomendada es **Production Security Baseline**. Antes de programar debe aislarse la superficie exacta de auth/session/rate-limit/step-up/security-headers/secrets-audit; MFA/passkeys, OpenTelemetry, backup automation y outbox permanecen fuera del primer corte.
+Producción general sigue bloqueada hasta completar los release gates P11. MFA/passkeys, PIN supervisor dedicado, CSP/Permissions-Policy, OpenTelemetry, backup automation y outbox continúan diferidos.
 
 Próximo paso exacto:
-`P11_PRODUCTION_SECURITY_BASELINE_RECON_V1`.
+`P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`. Debe realizar un inventario focal de observabilidad real antes de elegir instrumentation adicional.
 
 ### Disciplina irrefutable de recuperación
 

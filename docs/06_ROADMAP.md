@@ -3,10 +3,10 @@
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-08-19**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de ARCA WSFE Authorization Runtime Binding V1:
+Base funcional publicada al cierre de P11 Production Security Baseline V1:
 
-`b8a97ddb84ee64e2858a559798e5a83ad953202a`
-`feat(fiscal): bind WSFE authorization runtime`
+`b712081c550d2fba36704ec75678eba1f5b73ff9`
+`feat(security): add production security baseline`
 
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
@@ -68,36 +68,25 @@ Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
 
 ---
 
-## 1.1. Estado maestro al cierre de ARCA WSFE Authorization Runtime Binding V1
+## 1.1. Estado maestro tras P11 Production Security Baseline V1
 
-El checkpoint funcional `b8a97ddb84ee64e2858a559798e5a83ad953202a` mantiene publicados P1–P9 V1 y completa la arquitectura runtime local de P10 para WSAA + WSFE sin habilitar tráfico provider-real:
+El checkpoint funcional `b712081c550d2fba36704ec75678eba1f5b73ff9` mantiene P1–P10 publicados/cerrados en su alcance local e inicia P11 con un baseline de seguridad de producción explícito.
 
-- scope runtime tenant-scoped explícito desde el mapa WSAA, sin inferencia de identidad fiscal;
-- credential gate neutral satisfecho por `FiscalAuthorizationRuntimeScopeStore`;
-- `FiscalRemoteSequenceAuthority` enlazado sobre TA + `FECompUltimoAutorizado`;
-- `FiscalAuthorizationTransport` enlazado sobre TA + `FECAESolicitar` + normalizer + convergence;
-- composer FECAE y convergencia provider quedan disponibles desde container;
-- wire boundaries SOAP DOM/Guzzle siguen separados, homologación-only y sin retry automático;
-- readiness deshabilitada corta antes de TA/wire; producción permanece bloqueada;
-- WSASS/homologación externa real continúan diferidos; no hubo identidad real, credencial dereferenciada ni HTTP ARCA;
-- ADR 129 aceptado.
+P10 permanece **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; `REAL_ARCA_HOMOLOGATION`, WSASS e identidad fiscal real siguen diferidos y no bloquean P11. Preparado para conectar ARCA sigue sin equivaler a integración ARCA validada.
 
-Validación: **62/329 focal, 89/461 regresión fiscal y 1052 tests / 7911 assertions GREEN**.
+Production Security Baseline V1 publica:
+- headers globales `X-Content-Type-Options`, `X-Frame-Options` y `Referrer-Policy`, con HSTS sólo en producción HTTPS;
+- gate global fail-closed de `APP_DEBUG=false`, `APP_KEY`, HTTPS, sesión Secure/HttpOnly/encrypted/JSON, SameSite seguro y timeout de step-up acotado;
+- confirmación reciente de contraseña, sólo en producción, sobre administración/membresías y operaciones financieras de alto impacto, sin replay automático de mutaciones;
+- allowlist testeado de secret boundaries existentes y rechazo de material sensible versionado;
+- ADR 130 aceptado.
 
-Baseline real autoritativa preservada: 107 tablas de negocio, fingerprint
-`D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema
-`F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones con hash lógico
-`03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
-Las 29 migraciones no fiscales continúan deliberadamente pendientes.
+Validación: **9/59 focal, 72/573 Auth+Security y 1061 tests / 7970 assertions GREEN**. Baseline real autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones con hash lógico `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
 
-**Preparado para conectar ARCA ≠ integración ARCA validada.**
-
-Cierre local P10: **GREEN** en checkpoint documental `7922c51f7f52995c7137094ec7e8be9cbdd32192`; la deuda externa `REAL_ARCA_HOMOLOGATION` permanece diferida y no bloquea P11.
-
-Post-P10 Roadmap RECON V1: P11 es el siguiente bloque mayor. Primera frontera recomendada: **Production Security Baseline**; quedan fuera del primer corte MFA/passkeys, OpenTelemetry, backup automation y outbox.
+MFA/passkeys, PIN supervisor dedicado, CSP/Permissions-Policy, OpenTelemetry, backup automation y outbox siguen diferidos. Producción continúa bloqueada hasta completar los release gates de P11.
 
 Próxima frontera exacta:
-`P11_PRODUCTION_SECURITY_BASELINE_RECON_V1`.
+`P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`.
 
 ---
 
@@ -677,11 +666,7 @@ dependencia de `FiscalDocumentNumber` local.
 
 Validación del corte: **62/329 focal, 89/461 regresión fiscal y 1052 tests / 7911 assertions GREEN**. BD real lógica y canary binario permanecieron intactos.
 
-**Cierre local P10:** GREEN. La arquitectura local fiscal queda completa y testeada; homologación ARCA real permanece como deuda externa diferida.
-
-**Próximo paso exacto:** `P11_PRODUCTION_SECURITY_BASELINE_RECON_V1`.
-
-Debe inventariar de forma focal la superficie real de seguridad de producción —auth/session/rate-limit/step-up/security-headers/secrets-audit— antes de definir el primer patch funcional P11. MFA/passkeys, OpenTelemetry, backup automation y outbox quedan fuera de ese primer corte.
+**Cierre local P10:** GREEN en `7922c51f7f52995c7137094ec7e8be9cbdd32192`. La arquitectura local fiscal queda completa y testeada; homologación ARCA real y WSASS permanecen como deuda externa diferida. P11 ya fue abierto y su Production Security Baseline V1 está publicado en `b712081c550d2fba36704ec75678eba1f5b73ff9`.
 
 ---
 
@@ -689,30 +674,34 @@ Debe inventariar de forma focal la superficie real de seguridad de producción �
 
 Antes de depender de SRCM como sistema único:
 
-**Estado de entrada a P11 tras Post-P10 Roadmap RECON V1:** la observabilidad y resiliencia poseen bases parciales; la seguridad de producción requiere un baseline focal antes de implementar. Primera frontera: `P11_PRODUCTION_SECURITY_BASELINE_RECON_V1`. ARCA real no bloquea este avance.
+**Estado actual:** Production Security Baseline V1 publicado en `b712081c550d2fba36704ec75678eba1f5b73ff9`, con **9/59 focal, 72/573 Auth+Security y 1061 tests / 7970 assertions GREEN** y BD canónica intacta. La próxima frontera es `P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`.
 
 ### Seguridad
-- MFA/step-up para acciones peligrosas;
-- PIN/supervisor en POS cuando corresponda;
-- passkeys/WebAuthn progresivamente;
-- sesiones y dispositivos;
-- principio de mínimo privilegio;
-- secretos fuera del repo;
-- rotación de credenciales;
-- rate limiting;
+- **PUBLICADO baseline V1:** headers globales conservadores; configuración de producción fail-closed; step-up por contraseña reciente en operaciones de alto impacto; guard de secret/config hygiene; ADR 130;
+- MFA/step-up fuerte para acciones peligrosas: confirmación de contraseña ya cubierta como baseline; MFA/passkeys quedan para corte posterior;
+- PIN/supervisor en POS cuando corresponda — diferido;
+- passkeys/WebAuthn progresivamente — diferido;
+- sesiones y dispositivos — baseline de cookie/sesión endurecido; gestión de dispositivos pendiente;
+- principio de mínimo privilegio — permisos existentes conservados; revisión continua;
+- secretos fuera del repo — guard testeado; rotación de credenciales pendiente;
+- rate limiting — login existente y verificado; ampliaciones futuras según superficie;
 - protección CSRF/XSS/SQLi desde framework + revisión específica;
 - auditoría de actos sensibles.
 
+CSP y Permissions-Policy no se imponen todavía: requieren inventario de scripts/assets, cámara/scanner y proveedores para no romper POS/hardware.
+
 ### Observabilidad
+**SIGUIENTE RECON:** `P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`. Antes de incorporar OpenTelemetry debe inventariar implementación real y brechas de:
 - logs estructurados;
 - correlation/request IDs;
 - métricas;
 - traces;
-- OpenTelemetry como estándar preferido;
 - health checks;
 - alertas;
 - colas/jobs visibles;
 - errores de integración accionables.
+
+OpenTelemetry sigue siendo estándar preferido, no una dependencia asumida antes del RECON.
 
 ### Resiliencia
 - backups automáticos;

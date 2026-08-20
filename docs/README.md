@@ -14,8 +14,8 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`b8a97ddb84ee64e2858a559798e5a83ad953202a`
-— `feat(fiscal): bind WSFE authorization runtime`
+`b712081c550d2fba36704ec75678eba1f5b73ff9`
+— `feat(security): add production security baseline`
 
 Estado verificado al cierre de **ARCA WSFE Authorization Runtime Binding V1**:
 
@@ -39,10 +39,14 @@ Cierre local P10 verificado en checkpoint documental `7922c51f7f52995c7137094ec7
 
 La única deuda P10 remanente es `REAL_ARCA_HOMOLOGATION`; no bloquea P11. WSASS continúa diferido y producción bloqueada.
 
-El Post-P10 Roadmap RECON V1 clasificó P11 como siguiente bloque mayor y recomendó abrir primero **Production Security Baseline**. El primer corte no implementará todavía MFA/passkeys, OpenTelemetry, backup automation ni outbox; antes debe realizarse un RECON focal sobre auth/session/rate-limit/step-up/security-headers/secrets-audit.
+P11 — **Production Security Baseline V1** quedó publicado en `b712081c550d2fba36704ec75678eba1f5b73ff9`: headers globales conservadores, gate de configuración de producción fail-closed, step-up por confirmación reciente de contraseña en operaciones de alto impacto y guard de higiene de secretos/configuración. ADR: `docs/130_ADR_PRODUCTION_SECURITY_BASELINE_V1.md`.
+
+Validación publicada: **9/59 focal, 72/573 Auth+Security y 1061 tests / 7970 assertions GREEN**. La BD real permaneció exacta en el baseline canónico. MFA/passkeys, PIN supervisor dedicado, CSP/Permissions-Policy, OpenTelemetry, backup automation y outbox continúan diferidos dentro de P11; producción permanece bloqueada hasta completar los release gates.
+
+La deuda P10 `REAL_ARCA_HOMOLOGATION` y WSASS siguen diferidos y no bloquean P11.
 
 Próximo paso exacto:
-`P11_PRODUCTION_SECURITY_BASELINE_RECON_V1`.
+`P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`.
 
 ## Jerarquía de verdad
 
@@ -116,8 +120,22 @@ desde cero.
 | P10.1–P10.7.4 | Configuración fiscal, documento, autorización, numeración, integración, perfil/política, composición, clasificación y concepto/período publicados |
 | P10 — Payload WSFE | Receptor, fecha, resumen monetario, moneda/cotización, vencimiento, ajustes, asociaciones, secuencia remota y clasificación tributaria publicados |
 | P10 — ARCA readiness | `FeCAEReq`, transport, Ticket WSAA, endpoint map, SOAP 1.1, response normalization y provider-result convergence/persistencia neutral publicados; red real aún bloqueada |
+| P11 — Production Security Baseline | Publicado en `b712081c550d2fba36704ec75678eba1f5b73ff9`: headers globales, producción fail-closed, step-up de alto impacto y guard de secret/config hygiene; `P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1` siguiente |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
+
+## Estado funcional P11 — Production Security Baseline V1
+
+Checkpoint funcional publicado: `b712081c550d2fba36704ec75678eba1f5b73ff9` — `feat(security): add production security baseline`.
+
+El baseline agrega headers HTTP globales conservadores; bloquea producción ante `APP_DEBUG`, `APP_KEY`, HTTPS o sesión insegura; reutiliza confirmación de contraseña para mutaciones de alto impacto sin replay automático; y congela por test los secret boundaries explícitos existentes sin materializar secretos en config cache.
+
+Validación: **9/59 focal, 72/573 Auth+Security y 1061 tests / 7970 assertions GREEN**. BD canónica intacta, sin migrate y sin ARCA real.
+
+Fuera del corte y todavía diferido: MFA/passkeys, PIN supervisor dedicado, CSP/Permissions-Policy, OpenTelemetry, backup automation, outbox y homologación ARCA real.
+
+Próximo paso exacto: `P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`. Debe inventariar primero logs estructurados, request/correlation IDs, health checks, colas/jobs y errores de integración; OpenTelemetry no se incorpora antes de ese RECON.
+
 ## Estado funcional P10 al cierre de ARCA WSFE Authorization Runtime Binding V1
 
 P10 mantiene el contrato **venta comercial ≠ comprobante fiscal ≠ autorización fiscal**.
@@ -131,8 +149,7 @@ Checkpoint funcional publicado de referencia:
 
 ADR relacionado: `docs/129_ADR_ARCA_WSFE_AUTHORIZATION_RUNTIME_BINDING_V1.md`.
 
-Próximo paso exacto:
-`ARCA_WSFE_P10_LOCAL_CLOSURE_REVIEW_V1`. Debe auditar cierre local, deuda externa deliberada y criterio de reapertura de homologación real, sin tráfico ARCA.
+Cierre posterior: P10 quedó **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; `REAL_ARCA_HOMOLOGATION` y WSASS permanecen como deuda externa diferida, sin reactivar tráfico ARCA.
 
 ## Estado funcional P9.7l
 
@@ -165,9 +182,9 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P10 — ARCA WSFE P10 Local Closure Review V1**.
+**P11 — Production Observability Baseline RECON V1** (`P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`).
 
-Debe ser read-only: confirmar que el runtime local WSAA/WSFE está estructuralmente completo, que los bloqueos de homologación/producción siguen efectivos, que no queda frontera local crítica sin implementar y que la única deuda deliberada es la validación externa con identidad/certificado/WSASS real cuando se decida reabrirla.
+Debe ser read-only y focal: separar implementación real de menciones documentales para logs estructurados, request/correlation IDs, health checks, visibilidad de colas/jobs, errores de integración y cualquier métrica/tracing ya existente. OpenTelemetry se decide sólo después de este inventario; no se implementa por presunción.
 
 ## Registro mínimo de cada relevo
 
