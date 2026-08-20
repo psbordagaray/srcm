@@ -9,22 +9,22 @@ Puerta de entrada de continuidad: `docs/README.md`
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **ARCA WSFE Remote Sequence Boundary V1**:
+Base funcional publicada al cierre de **ARCA WSFE Authorization Runtime Binding V1**:
 
-`6d757a7fa2815ec4669f98c009067357cdc38bb9`
-— `feat(fiscal): add WSFE remote sequence boundary`
+`b8a97ddb84ee64e2858a559798e5a83ad953202a`
+— `feat(fiscal): bind WSFE authorization runtime`
 
-Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 avanzado hasta las fronteras wire concretas de `FECAESolicitar` y `FECompUltimoAutorizado` para homologación.
+Estado: P1–P7 publicados, P8 V1 cerrado, P9 V1 cerrado y P10 localmente ensamblado hasta runtime WSAA/WSFE completo, con homologación real deliberadamente diferida.
 
-La cadena WSAA sigue publicada. WSFE ya puede serializar/parsear/transportar sintéticamente tanto la autorización FECAE como la consulta de última secuencia remota, con secretos efímeros y producción fail-closed.
+El container ya enlaza scope/credential gate, autoridad remota de secuencia, composer FECAE, authorization transport, normalizer y convergence. Los dos wire boundaries WSFE reutilizan `WsaaAccessTicketProvider` y permanecen homologación-only.
 
-`FiscalRemoteSequenceAuthority` y `FiscalAuthorizationTransport` siguen sin binding; el siguiente corte debe componerlos sobre `WsaaAccessTicketProvider` y configuración explícita de service/CUIT.
+La identidad fiscal runtime no se infiere desde venta ni perfil: `service + issuer_cuit` provienen explícitamente del mapa tenant-scoped WSAA. Homologación deshabilitada falla antes de TA/wire.
 
-Producción permanece bloqueada. WSASS, identidad fiscal real y homologación externa están diferidos; no se usó material ARCA real ni se ejecutó CMS/`LoginCms`/`FECompUltimoAutorizado`/`FECAESolicitar` real ni HTTP ARCA.
+Producción permanece bloqueada. WSASS, identidad fiscal real y homologación externa están diferidos; no se usó material ARCA real ni se ejecutó dereferencia de credenciales, CMS/`LoginCms`/`FECompUltimoAutorizado`/`FECAESolicitar` real ni HTTP ARCA.
 
-ADR relacionado: `docs/128_ADR_ARCA_WSFE_REMOTE_SEQUENCE_TRANSPORT_BOUNDARY_V1.md`.
+ADR relacionado: `docs/129_ADR_ARCA_WSFE_AUTHORIZATION_RUNTIME_BINDING_V1.md`.
 
-Validación funcional: **30/179 focal, 57/311 regresión fiscal y 1047 tests / 7888 assertions GREEN**.
+Validación funcional: **62/329 focal, 89/461 regresión fiscal y 1052 tests / 7911 assertions GREEN**.
 
 Baseline autoritativa preservada: **107 tablas de negocio**, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y **93 migraciones** con hash lógico `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
 
@@ -33,7 +33,7 @@ Principio vinculante:
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
 Próximo paso exacto:
-`ARCA_WSFE_AUTHORIZATION_RUNTIME_BINDING_V1`.
+`ARCA_WSFE_P10_LOCAL_CLOSURE_REVIEW_V1`. Review local/read-only; la homologación real no se reactiva automáticamente.
 
 ### Disciplina irrefutable de recuperación
 
