@@ -35,7 +35,7 @@ jobs:
       - name: Setup deterministic PHP runtime
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
-          php-version: '8.3.30'
+          php-version: '8.3'
           coverage: none
           tools: composer:2.10.2
 
@@ -47,7 +47,7 @@ jobs:
           composer --version
           node --version
           npm --version
-          php -r 'if (PHP_VERSION !== "8.3.30") { fwrite(STDERR, "Unexpected PHP version: ".PHP_VERSION.PHP_EOL); exit(1); }'
+          php -r 'if (PHP_MAJOR_VERSION !== 8 || PHP_MINOR_VERSION !== 3) { fwrite(STDERR, "Unexpected PHP family: ".PHP_VERSION.PHP_EOL); exit(1); }'
           php -r 'if (extension_loaded("xdebug")) { fwrite(STDERR, "Xdebug must not be loaded in CI".PHP_EOL); exit(1); }'
           node - <<'NODE'
           const [major, minor] = process.versions.node.split('.').map(Number);

@@ -25,13 +25,16 @@ después de `npm run build`. El workflow verifica explícitamente
 `public/build/manifest.json` antes de ejecutar `composer test`.
 
 El runtime PHP de CI no se hereda del software preinstalado por la imagen de
-Ubuntu. El workflow fija `setup-php` por SHA, PHP `8.3.30`, Composer `2.10.2` y
-`coverage: none`, y falla si Xdebug queda cargado. Esta decisión elimina del
-camino de calidad el Xdebug 3.2.0 provisto por Ubuntu 24.04, que no soporta PHP
-8.3 y convirtió excepciones de parsing que Laravel captura internamente en
+Ubuntu. El workflow fija `setup-php` por SHA, la línea estable PHP `8.3`,
+Composer `2.10.2` y `coverage: none`, y falla si Xdebug queda cargado o si el
+intérprete sale de la familia 8.3.x. No se exige un patch exacto: `setup-php`
+resuelve el patch estable disponible de la minor solicitada, por lo que afirmar
+`8.3.30` produjo un falso gate cuando instaló `8.3.33`. Esta decisión elimina
+del camino de calidad el Xdebug 3.2.0 provisto por Ubuntu 24.04, que no soporta
+PHP 8.3 y convirtió excepciones de parsing que Laravel captura internamente en
 errores `Cannot create dynamic property DateMalformedStringException::$xdebug_message`.
 Las reglas de validación dependientes entre campos permanecen sin cambios: el
-fallo era del runtime de CI, no del contrato de dominio.
+fallo original era del runtime de CI, no del contrato de dominio.
 
 Se incorpora `srcm:release-preflight`, respaldado por
 `ReleasePreflightInspector`, que:

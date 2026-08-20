@@ -29,10 +29,11 @@ final class ProductionReleaseGateBaselineTest extends TestCase
             'shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240',
             $workflow
         );
-        $this->assertStringContainsString("php-version: '8.3.30'", $workflow);
+        $this->assertStringContainsString("php-version: '8.3'", $workflow);
+        $this->assertStringNotContainsString("php-version: '8.3.30'", $workflow);
         $this->assertStringContainsString('coverage: none', $workflow);
         $this->assertStringContainsString('tools: composer:2.10.2', $workflow);
-        $this->assertStringContainsString('PHP_VERSION !== "8.3.30"', $workflow);
+        $this->assertStringContainsString('PHP_MAJOR_VERSION !== 8 || PHP_MINOR_VERSION !== 3', $workflow);
         $this->assertStringContainsString('extension_loaded("xdebug")', $workflow);
         $this->assertStringContainsString('permissions:', $workflow);
         $this->assertStringContainsString('contents: read', $workflow);
