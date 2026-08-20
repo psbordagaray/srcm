@@ -365,7 +365,7 @@ class WsaaCredentialMaterialBoundaryTest extends TestCase
         )->assertReady();
     }
 
-    public function test_material_provider_is_bound_but_old_credential_store_remains_unbound(): void
+    public function test_material_provider_and_final_authorization_credential_store_are_bound(): void
     {
         $this->assertTrue(
             (
@@ -383,7 +383,7 @@ class WsaaCredentialMaterialBoundaryTest extends TestCase
             EnvironmentWsaaCredentialMaterialProvider::class,
             app(WsaaCredentialMaterialProvider::class)
         );
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 FiscalAuthorizationCredentialStore::class
             )

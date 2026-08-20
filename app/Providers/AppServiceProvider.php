@@ -9,6 +9,7 @@ use App\Adapters\Fiscal\Arca\DomWsfeCompUltimoAutorizadoSoapSerializer;
 use App\Adapters\Fiscal\Arca\DomWsfeFecaeSoapResponseParser;
 use App\Adapters\Fiscal\Arca\DomWsfeFecaeSoapSerializer;
 use App\Adapters\Fiscal\Arca\EncryptedCacheWsaaAccessTicketProvider;
+use App\Adapters\Fiscal\Arca\EnvironmentFiscalAuthorizationRuntimeScopeStore;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialProvider;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialReferenceStore;
 use App\Adapters\Fiscal\Arca\GuzzleWsaaLoginCmsTransport;
@@ -20,10 +21,17 @@ use App\Adapters\Fiscal\Arca\OpenSslCliWsaaCmsSigner;
 use App\Adapters\Fiscal\Arca\OpenSslWsaaCredentialMaterialValidator;
 use App\Adapters\Fiscal\Arca\RandomWsaaTraUniqueIdProvider;
 use App\Adapters\Fiscal\Arca\SystemWsaaTraClock;
+use App\Adapters\Fiscal\Arca\WsaaBackedFiscalAuthorizationTransport;
+use App\Adapters\Fiscal\Arca\WsaaBackedFiscalRemoteSequenceAuthority;
 use App\Adapters\Fiscal\Arca\WsaaCmsProcessRunner;
 use App\Adapters\Finance\MercadoPago\MercadoPagoPointRefundAdapter;
 use App\Contracts\Finance\MercadoPagoConnectionSecretStore;
 use App\Domain\Finance\FinancialProviderRefundAdapterRegistry;
+use App\Domain\Fiscal\ArcaHomologationReadiness;
+use App\Domain\Fiscal\FiscalAuthorizationCredentialStore;
+use App\Domain\Fiscal\FiscalAuthorizationRuntimeScopeStore;
+use App\Domain\Fiscal\FiscalAuthorizationTransport;
+use App\Domain\Fiscal\FiscalRemoteSequenceAuthority;
 use App\Domain\Fiscal\WsaaAccessTicketProvider;
 use App\Domain\Fiscal\WsaaCmsDigestPolicy;
 use App\Domain\Fiscal\WsaaCmsSigner;
@@ -40,6 +48,12 @@ use App\Domain\Fiscal\WsaaTraWindowPolicy;
 use App\Domain\Fiscal\WsfeCompUltimoAutorizadoSoapResponseParser;
 use App\Domain\Fiscal\WsfeCompUltimoAutorizadoSoapSerializer;
 use App\Domain\Fiscal\WsfeCompUltimoAutorizadoSoapTransport;
+use App\Domain\Fiscal\WsfeFecaeProviderResponseNormalizer;
+use App\Domain\Fiscal\WsfeFecaeProviderResponseNormalizerContract;
+use App\Domain\Fiscal\WsfeFecaeProviderResultConvergence;
+use App\Domain\Fiscal\WsfeFecaeProviderResultConvergenceContract;
+use App\Domain\Fiscal\WsfeFecaeRequestComposer;
+use App\Domain\Fiscal\WsfeFecaeRequestComposerContract;
 use App\Domain\Fiscal\WsfeFecaeSoapResponseParser;
 use App\Domain\Fiscal\WsfeFecaeSoapSerializer;
 use App\Domain\Fiscal\WsfeFecaeSoapTransport;
@@ -173,6 +187,52 @@ class AppServiceProvider extends ServiceProvider
             fn ($app) => new GuzzleWsfeFecaeSoapTransport(
                 $app->make(WsfeFecaeSoapSerializer::class),
                 $app->make(WsfeFecaeSoapResponseParser::class),
+            )
+        );
+        $this->app->singleton(
+            EnvironmentFiscalAuthorizationRuntimeScopeStore::class,
+            fn () => new EnvironmentFiscalAuthorizationRuntimeScopeStore
+        );
+        $this->app->singleton(
+            FiscalAuthorizationRuntimeScopeStore::class,
+            fn ($app) => $app->make(EnvironmentFiscalAuthorizationRuntimeScopeStore::class)
+        );
+        $this->app->singleton(
+            FiscalAuthorizationCredentialStore::class,
+            fn ($app) => $app->make(EnvironmentFiscalAuthorizationRuntimeScopeStore::class)
+        );
+        $this->app->singleton(
+            WsfeFecaeRequestComposerContract::class,
+            WsfeFecaeRequestComposer::class
+        );
+        $this->app->singleton(
+            WsfeFecaeProviderResponseNormalizerContract::class,
+            WsfeFecaeProviderResponseNormalizer::class
+        );
+        $this->app->singleton(
+            WsfeFecaeProviderResultConvergenceContract::class,
+            WsfeFecaeProviderResultConvergence::class
+        );
+        $this->app->singleton(
+            FiscalRemoteSequenceAuthority::class,
+            fn ($app) => new WsaaBackedFiscalRemoteSequenceAuthority(
+                $app->make(ArcaHomologationReadiness::class),
+                $app->make(FiscalAuthorizationRuntimeScopeStore::class),
+                $app->make(WsaaAccessTicketProvider::class),
+                $app->make(WsfeCompUltimoAutorizadoSoapTransport::class),
+                $app->make(WsaaTraClock::class),
+            )
+        );
+        $this->app->singleton(
+            FiscalAuthorizationTransport::class,
+            fn ($app) => new WsaaBackedFiscalAuthorizationTransport(
+                $app->make(ArcaHomologationReadiness::class),
+                $app->make(FiscalAuthorizationRuntimeScopeStore::class),
+                $app->make(WsaaAccessTicketProvider::class),
+                $app->make(WsfeFecaeSoapTransport::class),
+                $app->make(WsfeFecaeProviderResponseNormalizerContract::class),
+                $app->make(WsfeFecaeProviderResultConvergenceContract::class),
+                $app->make(WsaaTraClock::class),
             )
         );
         $this->app->singleton(

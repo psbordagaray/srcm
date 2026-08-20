@@ -26,7 +26,7 @@ use Tests\TestCase;
 
 class WsfeRemoteSequenceTransportBoundaryTest extends TestCase
 {
-    public function test_container_binds_only_remote_sequence_wire_boundary(): void
+    public function test_container_keeps_remote_sequence_wire_boundary_with_runtime_binding(): void
     {
         $this->assertInstanceOf(
             DomWsfeCompUltimoAutorizadoSoapSerializer::class,
@@ -40,8 +40,8 @@ class WsfeRemoteSequenceTransportBoundaryTest extends TestCase
             GuzzleWsfeCompUltimoAutorizadoSoapTransport::class,
             app(WsfeCompUltimoAutorizadoSoapTransport::class)
         );
-        $this->assertFalse(app()->bound(FiscalRemoteSequenceAuthority::class));
-        $this->assertFalse(app()->bound(FiscalAuthorizationTransport::class));
+        $this->assertTrue(app()->bound(FiscalRemoteSequenceAuthority::class));
+        $this->assertTrue(app()->bound(FiscalAuthorizationTransport::class));
     }
 
     public function test_call_and_serializer_build_exact_auth_point_and_voucher_type(): void

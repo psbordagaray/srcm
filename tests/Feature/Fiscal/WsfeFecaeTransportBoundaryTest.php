@@ -32,7 +32,7 @@ use Tests\TestCase;
 
 class WsfeFecaeTransportBoundaryTest extends TestCase
 {
-    public function test_container_binds_only_the_fecae_wire_boundary(): void
+    public function test_container_keeps_fecae_wire_boundary_with_runtime_binding(): void
     {
         $this->assertInstanceOf(
             DomWsfeFecaeSoapSerializer::class,
@@ -49,13 +49,13 @@ class WsfeFecaeTransportBoundaryTest extends TestCase
             app(WsfeFecaeSoapTransport::class)
         );
 
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 FiscalAuthorizationTransport::class
             )
         );
 
-        $this->assertFalse(
+        $this->assertTrue(
             app()->bound(
                 FiscalRemoteSequenceAuthority::class
             )
