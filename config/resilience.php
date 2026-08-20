@@ -15,7 +15,7 @@ return [
 
     'off_host' => [
         'enabled' => (bool) env('SRCM_BACKUP_OFF_HOST_ENABLED', false),
-        'remote_disk' => env('SRCM_BACKUP_REMOTE_DISK'),
+        'remote_disk' => env('SRCM_BACKUP_REMOTE_DISK', 'srcm_backup_s3'),
         'remote_prefix' => env(
             'SRCM_BACKUP_REMOTE_PREFIX',
             'srcm/backups/database'

@@ -20,9 +20,9 @@ return [
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
-    | Below you may configure as many filesystem disks as necessary, and you
-    | may even configure multiple disks for the same driver. Examples for
-    | most supported storage drivers are configured here for reference.
+    | Below you may configure as many disks as necessary, and you may even
+    | have multiple disks for the same driver. Examples for most supported
+    | storage drivers are configured here for reference.
     |
     | Supported drivers: "local", "ftp", "sftp", "s3"
     |
@@ -60,6 +60,25 @@ return [
             'report' => false,
         ],
 
+        // Dedicated off-host backup disk. It is inert while the resilience
+        // off-host capability is disabled and never falls back to generic AWS
+        // credentials. A real provider is configured outside version control.
+        'srcm_backup_s3' => [
+            'driver' => 's3',
+            'key' => env('SRCM_BACKUP_S3_ACCESS_KEY_ID'),
+            'secret' => env('SRCM_BACKUP_S3_SECRET_ACCESS_KEY'),
+            'region' => env('SRCM_BACKUP_S3_REGION', 'us-east-1'),
+            'bucket' => env('SRCM_BACKUP_S3_BUCKET'),
+            'endpoint' => env('SRCM_BACKUP_S3_ENDPOINT'),
+            'use_path_style_endpoint' => env(
+                'SRCM_BACKUP_S3_USE_PATH_STYLE_ENDPOINT',
+                false
+            ),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*
@@ -68,8 +87,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may configure the symbolic links that will be created when the
-    | `storage:link` Artisan command is executed. The array keys should be
-    | the locations of the links and the values should be their targets.
+    | `storage:link` Artisan command is executed. The array keys should be the
+    | locations of the links and the values should be their targets.
     |
     */
 
