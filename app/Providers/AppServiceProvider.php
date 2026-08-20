@@ -4,12 +4,15 @@ namespace App\Providers;
 
 use App\Adapters\Finance\MercadoPago\EnvironmentMercadoPagoConnectionSecretStore;
 use App\Adapters\Fiscal\Arca\DomWsaaLoginCmsResponseParser;
+use App\Adapters\Fiscal\Arca\DomWsfeCompUltimoAutorizadoSoapResponseParser;
+use App\Adapters\Fiscal\Arca\DomWsfeCompUltimoAutorizadoSoapSerializer;
 use App\Adapters\Fiscal\Arca\DomWsfeFecaeSoapResponseParser;
 use App\Adapters\Fiscal\Arca\DomWsfeFecaeSoapSerializer;
 use App\Adapters\Fiscal\Arca\EncryptedCacheWsaaAccessTicketProvider;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialProvider;
 use App\Adapters\Fiscal\Arca\EnvironmentWsaaCredentialMaterialReferenceStore;
 use App\Adapters\Fiscal\Arca\GuzzleWsaaLoginCmsTransport;
+use App\Adapters\Fiscal\Arca\GuzzleWsfeCompUltimoAutorizadoSoapTransport;
 use App\Adapters\Fiscal\Arca\GuzzleWsfeFecaeSoapTransport;
 use App\Adapters\Fiscal\Arca\NativeWsaaCmsProcessRunner;
 use App\Adapters\Fiscal\Arca\OfficialWsaaCmsDigestPolicy;
@@ -34,6 +37,9 @@ use App\Domain\Fiscal\WsaaTraBuilder;
 use App\Domain\Fiscal\WsaaTraClock;
 use App\Domain\Fiscal\WsaaTraUniqueIdProvider;
 use App\Domain\Fiscal\WsaaTraWindowPolicy;
+use App\Domain\Fiscal\WsfeCompUltimoAutorizadoSoapResponseParser;
+use App\Domain\Fiscal\WsfeCompUltimoAutorizadoSoapSerializer;
+use App\Domain\Fiscal\WsfeCompUltimoAutorizadoSoapTransport;
 use App\Domain\Fiscal\WsfeFecaeSoapResponseParser;
 use App\Domain\Fiscal\WsfeFecaeSoapSerializer;
 use App\Domain\Fiscal\WsfeFecaeSoapTransport;
@@ -137,6 +143,21 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(WsaaCmsDigestPolicy::class),
                 $app->make(WsaaCmsSigner::class),
                 $app->make(WsaaLoginCmsTransport::class),
+            )
+        );
+        $this->app->singleton(
+            WsfeCompUltimoAutorizadoSoapSerializer::class,
+            DomWsfeCompUltimoAutorizadoSoapSerializer::class
+        );
+        $this->app->singleton(
+            WsfeCompUltimoAutorizadoSoapResponseParser::class,
+            DomWsfeCompUltimoAutorizadoSoapResponseParser::class
+        );
+        $this->app->singleton(
+            WsfeCompUltimoAutorizadoSoapTransport::class,
+            fn ($app) => new GuzzleWsfeCompUltimoAutorizadoSoapTransport(
+                $app->make(WsfeCompUltimoAutorizadoSoapSerializer::class),
+                $app->make(WsfeCompUltimoAutorizadoSoapResponseParser::class),
             )
         );
         $this->app->singleton(
