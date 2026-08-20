@@ -32,8 +32,12 @@ Principio vinculante:
 
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
+Cierre local P10: **GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`. La deuda externa `REAL_ARCA_HOMOLOGATION` continúa diferida, WSASS diferido y producción bloqueada; no impide comenzar P11.
+
+Post-P10 Roadmap RECON V1: P11 es el siguiente bloque mayor y la primera frontera recomendada es **Production Security Baseline**. Antes de programar debe aislarse la superficie exacta de auth/session/rate-limit/step-up/security-headers/secrets-audit; MFA/passkeys, OpenTelemetry, backup automation y outbox permanecen fuera del primer corte.
+
 Próximo paso exacto:
-`ARCA_WSFE_P10_LOCAL_CLOSURE_REVIEW_V1`. Review local/read-only; la homologación real no se reactiva automáticamente.
+`P11_PRODUCTION_SECURITY_BASELINE_RECON_V1`.
 
 ### Disciplina irrefutable de recuperación
 

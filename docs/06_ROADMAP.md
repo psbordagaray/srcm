@@ -92,8 +92,12 @@ Las 29 migraciones no fiscales continúan deliberadamente pendientes.
 
 **Preparado para conectar ARCA ≠ integración ARCA validada.**
 
+Cierre local P10: **GREEN** en checkpoint documental `7922c51f7f52995c7137094ec7e8be9cbdd32192`; la deuda externa `REAL_ARCA_HOMOLOGATION` permanece diferida y no bloquea P11.
+
+Post-P10 Roadmap RECON V1: P11 es el siguiente bloque mayor. Primera frontera recomendada: **Production Security Baseline**; quedan fuera del primer corte MFA/passkeys, OpenTelemetry, backup automation y outbox.
+
 Próxima frontera exacta:
-`ARCA_WSFE_P10_LOCAL_CLOSURE_REVIEW_V1`.
+`P11_PRODUCTION_SECURITY_BASELINE_RECON_V1`.
 
 ---
 
@@ -673,15 +677,19 @@ dependencia de `FiscalDocumentNumber` local.
 
 Validación del corte: **62/329 focal, 89/461 regresión fiscal y 1052 tests / 7911 assertions GREEN**. BD real lógica y canary binario permanecieron intactos.
 
-**Próximo paso exacto:** `ARCA_WSFE_P10_LOCAL_CLOSURE_REVIEW_V1`.
+**Cierre local P10:** GREEN. La arquitectura local fiscal queda completa y testeada; homologación ARCA real permanece como deuda externa diferida.
 
-Debe realizar un cierre/auditoría local read-only de P10 y distinguir explícitamente completitud estructural local de validación externa ARCA pendiente.
+**Próximo paso exacto:** `P11_PRODUCTION_SECURITY_BASELINE_RECON_V1`.
+
+Debe inventariar de forma focal la superficie real de seguridad de producción —auth/session/rate-limit/step-up/security-headers/secrets-audit— antes de definir el primer patch funcional P11. MFA/passkeys, OpenTelemetry, backup automation y outbox quedan fuera de ese primer corte.
 
 ---
 
 ## 10. P11 — Producción, seguridad, observabilidad y recuperación
 
 Antes de depender de SRCM como sistema único:
+
+**Estado de entrada a P11 tras Post-P10 Roadmap RECON V1:** la observabilidad y resiliencia poseen bases parciales; la seguridad de producción requiere un baseline focal antes de implementar. Primera frontera: `P11_PRODUCTION_SECURITY_BASELINE_RECON_V1`. ARCA real no bloquea este avance.
 
 ### Seguridad
 - MFA/step-up para acciones peligrosas;

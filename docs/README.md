@@ -35,8 +35,14 @@ Estado verificado al cierre de **ARCA WSFE Authorization Runtime Binding V1**:
   y **93 migraciones** / `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`;
 - SHA binario SQLite continúa siendo canary solamente.
 
+Cierre local P10 verificado en checkpoint documental `7922c51f7f52995c7137094ec7e8be9cbdd32192`: `P10_LOCAL_CLOSURE=GREEN`, repo/BD intactos y evidencia funcional vigente **62/329 focal, 89/461 regresión fiscal y 1052 tests / 7911 assertions GREEN**.
+
+La única deuda P10 remanente es `REAL_ARCA_HOMOLOGATION`; no bloquea P11. WSASS continúa diferido y producción bloqueada.
+
+El Post-P10 Roadmap RECON V1 clasificó P11 como siguiente bloque mayor y recomendó abrir primero **Production Security Baseline**. El primer corte no implementará todavía MFA/passkeys, OpenTelemetry, backup automation ni outbox; antes debe realizarse un RECON focal sobre auth/session/rate-limit/step-up/security-headers/secrets-audit.
+
 Próximo paso exacto:
-`ARCA_WSFE_P10_LOCAL_CLOSURE_REVIEW_V1`. Fase local/read-only; ARCA real permanece fuera de alcance.
+`P11_PRODUCTION_SECURITY_BASELINE_RECON_V1`.
 
 ## Jerarquía de verdad
 
