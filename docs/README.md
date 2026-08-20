@@ -1,7 +1,7 @@
 # SRCM Full — Puerta de entrada y continuidad maestra
 
 Estado: **vinculante para recuperación de contexto**
-Actualizado: **2026-08-19**
+Actualizado: **2026-08-20**
 Rama canónica de desarrollo: `feature/core-entity`
 
 ## Empezar siempre aquí
@@ -14,8 +14,8 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`b712081c550d2fba36704ec75678eba1f5b73ff9`
-— `feat(security): add production security baseline`
+`a17b8aec8ee583dbb121931fd58fc54663de46c7`
+— `feat(observability): add production observability baseline`
 
 Estado verificado al cierre de **ARCA WSFE Authorization Runtime Binding V1**:
 
@@ -39,14 +39,14 @@ Cierre local P10 verificado en checkpoint documental `7922c51f7f52995c7137094ec7
 
 La única deuda P10 remanente es `REAL_ARCA_HOMOLOGATION`; no bloquea P11. WSASS continúa diferido y producción bloqueada.
 
-P11 — **Production Security Baseline V1** quedó publicado en `b712081c550d2fba36704ec75678eba1f5b73ff9`: headers globales conservadores, gate de configuración de producción fail-closed, step-up por confirmación reciente de contraseña en operaciones de alto impacto y guard de higiene de secretos/configuración. ADR: `docs/130_ADR_PRODUCTION_SECURITY_BASELINE_V1.md`.
+P11 ya tiene publicados **Production Security Baseline V1** en `b712081c550d2fba36704ec75678eba1f5b73ff9` y **Production Observability Baseline V1** en `a17b8aec8ee583dbb121931fd58fc54663de46c7`. Observabilidad agrega request/correlation IDs globales, contexto de excepciones, logging JSON `stderr_json` para producción, señales seguras de queue/jobs/integraciones y readiness `GET /api/health/ready`; ADR: `docs/131_ADR_PRODUCTION_OBSERVABILITY_BASELINE_V1.md`.
 
-Validación publicada: **9/59 focal, 72/573 Auth+Security y 1061 tests / 7970 assertions GREEN**. La BD real permaneció exacta en el baseline canónico. MFA/passkeys, PIN supervisor dedicado, CSP/Permissions-Policy, OpenTelemetry, backup automation y outbox continúan diferidos dentro de P11; producción permanece bloqueada hasta completar los release gates.
+Validación del corte de observabilidad: **10/53 focal, 18/111 regresión Observability+Security+Integration y 1071 tests / 8023 assertions GREEN**. La BD real permaneció exacta en el baseline canónico. OpenTelemetry, métricas externas, tracing distribuido, alert provider, Horizon/Telescope, backup automation y outbox siguen diferidos; producción permanece bloqueada hasta completar los release gates P11.
 
 La deuda P10 `REAL_ARCA_HOMOLOGATION` y WSASS siguen diferidos y no bloquean P11.
 
 Próximo paso exacto:
-`P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`.
+`P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`.
 
 ## Jerarquía de verdad
 
@@ -120,21 +120,31 @@ desde cero.
 | P10.1–P10.7.4 | Configuración fiscal, documento, autorización, numeración, integración, perfil/política, composición, clasificación y concepto/período publicados |
 | P10 — Payload WSFE | Receptor, fecha, resumen monetario, moneda/cotización, vencimiento, ajustes, asociaciones, secuencia remota y clasificación tributaria publicados |
 | P10 — ARCA readiness | `FeCAEReq`, transport, Ticket WSAA, endpoint map, SOAP 1.1, response normalization y provider-result convergence/persistencia neutral publicados; red real aún bloqueada |
-| P11 — Production Security Baseline | Publicado en `b712081c550d2fba36704ec75678eba1f5b73ff9`: headers globales, producción fail-closed, step-up de alto impacto y guard de secret/config hygiene; `P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1` siguiente |
+| P11 — Security + Observability Baselines | Security `b712081c550d2fba36704ec75678eba1f5b73ff9`; Observability `a17b8aec8ee583dbb121931fd58fc54663de46c7`: correlación global, JSON logging, queue/integration signals y readiness publicados; `P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1` siguiente |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
 
-## Estado funcional P11 — Production Security Baseline V1
+## Estado funcional P11 — Production Baselines V1
 
-Checkpoint funcional publicado: `b712081c550d2fba36704ec75678eba1f5b73ff9` — `feat(security): add production security baseline`.
+Security checkpoint: `b712081c550d2fba36704ec75678eba1f5b73ff9` — `feat(security): add production security baseline`.
 
-El baseline agrega headers HTTP globales conservadores; bloquea producción ante `APP_DEBUG`, `APP_KEY`, HTTPS o sesión insegura; reutiliza confirmación de contraseña para mutaciones de alto impacto sin replay automático; y congela por test los secret boundaries explícitos existentes sin materializar secretos en config cache.
+Observability checkpoint: `a17b8aec8ee583dbb121931fd58fc54663de46c7` — `feat(observability): add production observability baseline`.
 
-Validación: **9/59 focal, 72/573 Auth+Security y 1061 tests / 7970 assertions GREEN**. BD canónica intacta, sin migrate y sin ARCA real.
+Security conserva headers HTTP globales conservadores, producción fail-closed por configuración insegura, step-up por contraseña reciente en mutaciones de alto impacto y guard de secret/config hygiene.
 
-Fuera del corte y todavía diferido: MFA/passkeys, PIN supervisor dedicado, CSP/Permissions-Policy, OpenTelemetry, backup automation, outbox y homologación ARCA real.
+Observability publica:
+- `request_id` UUID propio y `correlation_id` global para web/API/health, aceptando `X-Correlation-ID` sólo si es UUID válido;
+- propagación del contexto a excepciones y al job de webhook Mercado Pago sin reutilizar el `x-request-id` provider-specific;
+- canal Monolog `stderr_json` para producción, sin paquete externo;
+- señales seguras `queue.job_exception`, `queue.job_failed` y eventos de integración sin payloads/secretos;
+- limpieza de contexto en workers largos para impedir contaminación entre jobs;
+- readiness `GET /api/health/ready` limitado a estados `ok/fail` de DB, queue, failed_jobs y structured logging.
 
-Próximo paso exacto: `P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`. Debe inventariar primero logs estructurados, request/correlation IDs, health checks, colas/jobs y errores de integración; OpenTelemetry no se incorpora antes de ese RECON.
+Validación observability: **10/53 focal, 18/111 regresión Observability+Security+Integration y 1071 tests / 8023 assertions GREEN**. BD canónica intacta, sin migrate y sin ARCA real.
+
+Fuera del corte y todavía diferido: OpenTelemetry, métricas externas, tracing distribuido, proveedor externo de alertas, Horizon/Telescope, backup automation, outbox, MFA/passkeys, PIN supervisor dedicado, CSP/Permissions-Policy y homologación ARCA real.
+
+Próximo paso exacto: `P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`. Debe relevar backups, cifrado/retención, restore drills, RPO/RTO, plan de desastre, migraciones/rollback y CI/CD antes de implementar resiliencia adicional.
 
 ## Estado funcional P10 al cierre de ARCA WSFE Authorization Runtime Binding V1
 
@@ -182,9 +192,9 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P11 — Production Observability Baseline RECON V1** (`P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`).
+**P11 — Production Resilience Baseline RECON V1** (`P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`).
 
-Debe ser read-only y focal: separar implementación real de menciones documentales para logs estructurados, request/correlation IDs, health checks, visibilidad de colas/jobs, errores de integración y cualquier métrica/tracing ya existente. OpenTelemetry se decide sólo después de este inventario; no se implementa por presunción.
+Debe ser read-only y focal: inventariar backups actuales, cifrado y retención, posibilidad real de restore, RPO/RTO, disaster recovery, migraciones/rollback, CI/CD y automatización de la suite. No crear backup automation ni pipeline nuevo antes de verificar qué existe realmente.
 
 ## Registro mínimo de cada relevo
 

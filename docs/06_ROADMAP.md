@@ -1,12 +1,12 @@
 # SRCM — Roadmap maestro
 
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
-Actualizado: **2026-08-19**
+Actualizado: **2026-08-20**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada al cierre de P11 Production Security Baseline V1:
+Base funcional publicada al cierre de P11 Production Observability Baseline V1:
 
-`b712081c550d2fba36704ec75678eba1f5b73ff9`
-`feat(security): add production security baseline`
+`a17b8aec8ee583dbb121931fd58fc54663de46c7`
+`feat(observability): add production observability baseline`
 
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
@@ -68,25 +68,28 @@ Si uno de los tres queda atrasado, no se abre el siguiente corte funcional.
 
 ---
 
-## 1.1. Estado maestro tras P11 Production Security Baseline V1
+## 1.1. Estado maestro tras P11 Production Observability Baseline V1
 
-El checkpoint funcional `b712081c550d2fba36704ec75678eba1f5b73ff9` mantiene P1–P10 publicados/cerrados en su alcance local e inicia P11 con un baseline de seguridad de producción explícito.
+El checkpoint funcional `a17b8aec8ee583dbb121931fd58fc54663de46c7` mantiene P1–P10 publicados/cerrados en su alcance local y consolida P11 con Security + Observability baselines nativos y testeados.
 
-P10 permanece **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; `REAL_ARCA_HOMOLOGATION`, WSASS e identidad fiscal real siguen diferidos y no bloquean P11. Preparado para conectar ARCA sigue sin equivaler a integración ARCA validada.
+P10 permanece **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; `REAL_ARCA_HOMOLOGATION`, WSASS e identidad fiscal real siguen diferidos y no bloquean P11.
 
-Production Security Baseline V1 publica:
-- headers globales `X-Content-Type-Options`, `X-Frame-Options` y `Referrer-Policy`, con HSTS sólo en producción HTTPS;
-- gate global fail-closed de `APP_DEBUG=false`, `APP_KEY`, HTTPS, sesión Secure/HttpOnly/encrypted/JSON, SameSite seguro y timeout de step-up acotado;
-- confirmación reciente de contraseña, sólo en producción, sobre administración/membresías y operaciones financieras de alto impacto, sin replay automático de mutaciones;
-- allowlist testeado de secret boundaries existentes y rechazo de material sensible versionado;
-- ADR 130 aceptado.
+Security Baseline V1 en `b712081c550d2fba36704ec75678eba1f5b73ff9` conserva headers globales, producción fail-closed, step-up de alto impacto y secret/config hygiene.
 
-Validación: **9/59 focal, 72/573 Auth+Security y 1061 tests / 7970 assertions GREEN**. Baseline real autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones con hash lógico `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
+Observability Baseline V1 publica:
+- `request_id`/`correlation_id` globales y contexto de excepción;
+- JSON logging de producción por `stderr_json`;
+- señales de queue/job/integración sin payloads ni secretos;
+- propagación segura de correlación al webhook job y limpieza de contexto entre jobs;
+- readiness `/api/health/ready` sobre DB, queue, failed_jobs y logging estructurado;
+- ADR 131 aceptado.
 
-MFA/passkeys, PIN supervisor dedicado, CSP/Permissions-Policy, OpenTelemetry, backup automation y outbox siguen diferidos. Producción continúa bloqueada hasta completar los release gates de P11.
+Validación: **10/53 focal, 18/111 regresión Observability+Security+Integration y 1071 tests / 8023 assertions GREEN**. Baseline real autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones con hash lógico `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`.
+
+OpenTelemetry, métricas externas, tracing distribuido, alert provider, Horizon/Telescope, backup automation y outbox siguen diferidos. Producción continúa bloqueada hasta completar los release gates de P11.
 
 Próxima frontera exacta:
-`P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`.
+`P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`.
 
 ---
 
@@ -674,45 +677,32 @@ Validación del corte: **62/329 focal, 89/461 regresión fiscal y 1052 tests / 7
 
 Antes de depender de SRCM como sistema único:
 
-**Estado actual:** Production Security Baseline V1 publicado en `b712081c550d2fba36704ec75678eba1f5b73ff9`, con **9/59 focal, 72/573 Auth+Security y 1061 tests / 7970 assertions GREEN** y BD canónica intacta. La próxima frontera es `P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`.
+**Estado actual:** Security Baseline V1 `b712081c550d2fba36704ec75678eba1f5b73ff9` y Observability Baseline V1 `a17b8aec8ee583dbb121931fd58fc54663de46c7` publicados. El último corte validó **10/53 focal, 18/111 regresión Observability+Security+Integration y 1071 tests / 8023 assertions GREEN** con BD canónica intacta. La próxima frontera es `P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`.
 
 ### Seguridad
 - **PUBLICADO baseline V1:** headers globales conservadores; configuración de producción fail-closed; step-up por contraseña reciente en operaciones de alto impacto; guard de secret/config hygiene; ADR 130;
-- MFA/step-up fuerte para acciones peligrosas: confirmación de contraseña ya cubierta como baseline; MFA/passkeys quedan para corte posterior;
-- PIN/supervisor en POS cuando corresponda — diferido;
-- passkeys/WebAuthn progresivamente — diferido;
-- sesiones y dispositivos — baseline de cookie/sesión endurecido; gestión de dispositivos pendiente;
-- principio de mínimo privilegio — permisos existentes conservados; revisión continua;
-- secretos fuera del repo — guard testeado; rotación de credenciales pendiente;
-- rate limiting — login existente y verificado; ampliaciones futuras según superficie;
-- protección CSRF/XSS/SQLi desde framework + revisión específica;
-- auditoría de actos sensibles.
-
-CSP y Permissions-Policy no se imponen todavía: requieren inventario de scripts/assets, cámara/scanner y proveedores para no romper POS/hardware.
+- MFA/passkeys, PIN supervisor dedicado y gestión avanzada de dispositivos — diferidos;
+- CSP/Permissions-Policy — diferidos hasta inventario específico de scripts/assets/hardware;
+- rotación de credenciales y revisión continua de mínimo privilegio — pendientes de cortes posteriores.
 
 ### Observabilidad
-**SIGUIENTE RECON:** `P11_PRODUCTION_OBSERVABILITY_BASELINE_RECON_V1`. Antes de incorporar OpenTelemetry debe inventariar implementación real y brechas de:
-- logs estructurados;
-- correlation/request IDs;
-- métricas;
-- traces;
-- health checks;
-- alertas;
-- colas/jobs visibles;
-- errores de integración accionables.
-
-OpenTelemetry sigue siendo estándar preferido, no una dependencia asumida antes del RECON.
+- **PUBLICADO baseline V1:** request/correlation IDs globales; contexto de excepción; JSON `stderr_json`; señales de queue/job/integración; readiness `/api/health/ready`; ADR 131;
+- workers largos limpian contexto antes/después para no contaminar jobs;
+- webhook Mercado Pago transporta sólo `correlation_id` UUID opcional, sin secretos/payloads;
+- OpenTelemetry, métricas externas, tracing distribuido, alert provider y Horizon/Telescope — diferidos.
 
 ### Resiliencia
-- backups automáticos;
-- cifrado;
+**SIGUIENTE RECON:** `P11_PRODUCTION_RESILIENCE_BASELINE_RECON_V1`. Debe inventariar implementación real y brechas de:
+- backups automáticos y su cifrado;
 - retención;
-- restore drills;
-- RPO/RTO definidos;
+- restore drills verificables;
+- RPO/RTO;
 - plan de desastre;
 - migraciones verificadas;
 - rollback técnico controlado sin borrar hechos comerciales;
 - CI/CD y suite automática.
+
+No se implementa backup automation ni pipeline por presunción antes del RECON.
 
 ### Integraciones robustas
 - outbox/eventos internos;
@@ -721,6 +711,8 @@ OpenTelemetry sigue siendo estándar preferido, no una dependencia asumida antes
 - dead-letter/revisión;
 - webhooks firmados;
 - versionado de contratos.
+
+Outbox permanece diferido hasta después de la frontera de resiliencia.
 
 ---
 
