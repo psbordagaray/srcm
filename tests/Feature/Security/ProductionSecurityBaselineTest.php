@@ -240,6 +240,7 @@ class ProductionSecurityBaselineTest extends TestCase
             'app/Adapters/Fiscal/Arca/EnvironmentWsaaCredentialMaterialProvider.php',
             'app/Adapters/Fiscal/Arca/EnvironmentWsaaCredentialMaterialReferenceStore.php',
             'app/Adapters/Fiscal/Arca/OpenSslCliWsaaCmsSigner.php',
+            'app/Adapters/Resilience/EnvironmentBackupEncryptionKeyResolver.php',
         ];
         sort($expected);
 

@@ -25,6 +25,10 @@ use App\Adapters\Fiscal\Arca\WsaaBackedFiscalAuthorizationTransport;
 use App\Adapters\Fiscal\Arca\WsaaBackedFiscalRemoteSequenceAuthority;
 use App\Adapters\Fiscal\Arca\WsaaCmsProcessRunner;
 use App\Adapters\Finance\MercadoPago\MercadoPagoPointRefundAdapter;
+use App\Adapters\Resilience\EnvironmentBackupEncryptionKeyResolver;
+use App\Adapters\Resilience\LaravelFilesystemOffHostBackupTransport;
+use App\Contracts\Resilience\BackupEncryptionKeyResolver;
+use App\Contracts\Resilience\OffHostBackupTransport;
 use App\Contracts\Finance\MercadoPagoConnectionSecretStore;
 use App\Domain\Finance\FinancialProviderRefundAdapterRegistry;
 use App\Domain\Fiscal\ArcaHomologationReadiness;
@@ -238,6 +242,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(
             MercadoPagoConnectionSecretStore::class,
             EnvironmentMercadoPagoConnectionSecretStore::class
+        );
+        $this->app->singleton(
+            BackupEncryptionKeyResolver::class,
+            EnvironmentBackupEncryptionKeyResolver::class
+        );
+        $this->app->singleton(
+            OffHostBackupTransport::class,
+            LaravelFilesystemOffHostBackupTransport::class
         );
 
         $this->app->singleton(
