@@ -16,15 +16,32 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(AssignRequestId::class);
         $middleware->append(EnforceProductionSecurityBaseline::class);
         $middleware->append(AddProductionSecurityHeaders::class);
-
-        $middleware->appendToGroup(
-            'web',
-            AssignRequestId::class
-        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->context(function (): array {
+            if (! app()->bound('request')) {
+                return [];
+            }
+
+            $request = app('request');
+            if (! $request instanceof Request) {
+                return [];
+            }
+
+            $context = [];
+            foreach (['request_id', 'correlation_id'] as $key) {
+                $value = $request->attributes->get($key);
+                if (is_string($value) && $value !== '') {
+                    $context[$key] = $value;
+                }
+            }
+
+            return $context;
+        });
+
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*'),
         );

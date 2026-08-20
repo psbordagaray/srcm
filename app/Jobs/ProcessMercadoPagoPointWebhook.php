@@ -10,6 +10,7 @@ use App\Models\FinancialProviderConnection;
 use DomainException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 final class ProcessMercadoPagoPointWebhook implements ShouldQueue
@@ -22,11 +23,17 @@ final class ProcessMercadoPagoPointWebhook implements ShouldQueue
 
     public bool $failOnTimeout = true;
 
+    public ?string $correlationId = null;
+
     public function __construct(
         public readonly string $connectionPublicId,
         public readonly string $resourceId,
-        public readonly ?string $notificationId
+        public readonly ?string $notificationId,
+        ?string $correlationId = null
     ) {
+        if (is_string($correlationId) && Str::isUuid($correlationId)) {
+            $this->correlationId = strtolower($correlationId);
+        }
     }
 
     /**
@@ -42,6 +49,16 @@ final class ProcessMercadoPagoPointWebhook implements ShouldQueue
         MercadoPagoPointWebhookResolver $resolver,
         ExternalFinancialProviderIngestor $ingestor
     ): void {
+        $context = [
+            'job' => self::class,
+            'integration' => 'mercado_pago_point',
+        ];
+        if ($this->correlationId !== null) {
+            $context['correlation_id'] = $this->correlationId;
+        }
+        Log::shareContext($context);
+        Log::info('integration.job_started');
+
         if (! Str::isUuid($this->connectionPublicId)) {
             throw new DomainException(
                 'El job Mercado Pago no posee una conexión válida.'
@@ -72,5 +89,7 @@ final class ProcessMercadoPagoPointWebhook implements ShouldQueue
             FinancialMovementSource::Webhook,
             $observation
         );
+
+        Log::info('integration.job_succeeded');
     }
 }
