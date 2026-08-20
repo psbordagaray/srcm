@@ -69,6 +69,7 @@ use App\Http\Controllers\SupplierPayableController;
 use App\Http\Controllers\SupplierOfferController;
 use App\Http\Controllers\TechnicalModelController;
 use App\Http\Middleware\RequireOrganization;
+use App\Http\Middleware\RequireProductionPasswordConfirmation;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -301,7 +302,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 ->whereNumber('organization')
                 ->name('organizations.activate');
 
-            Route::middleware('can:manage-organization')
+            Route::middleware([
+                'can:manage-organization',
+                RequireProductionPasswordConfirmation::class,
+            ])
                 ->group(function () {
                     Route::get(
                         '/organization/edit',
@@ -352,7 +356,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )->name('organization-members.index');
                 });
 
-            Route::middleware('can:manage-organization-members')
+            Route::middleware([
+                'can:manage-organization-members',
+                RequireProductionPasswordConfirmation::class,
+            ])
                 ->group(function () {
                     Route::post(
                         '/organization/members',
@@ -547,7 +554,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )->name('cash-registers.close');
                 });
 
-            Route::middleware('can:approve-cash-security-drop')
+            Route::middleware([
+                'can:approve-cash-security-drop',
+                RequireProductionPasswordConfirmation::class,
+            ])
                 ->group(function () {
                     Route::post(
                         'financial/cash-registers/security-drop-requests/{cashSecurityDropRequest:public_id}/approve',
@@ -654,7 +664,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->name('financial-reconciliation.differences.resolve');
                 });
 
-            Route::middleware('can:manage-financial-accounts')
+            Route::middleware([
+                'can:manage-financial-accounts',
+                RequireProductionPasswordConfirmation::class,
+            ])
                 ->group(function () {
                     Route::get(
                         'financial/accounts/create',
@@ -784,9 +797,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('commerce-post-sale.customer-credits.store');
             });
 
-            Route::middleware(
-                'can:execute-commerce-post-sale-cash-refund'
-            )->group(function () {
+            Route::middleware([
+                'can:execute-commerce-post-sale-cash-refund',
+                RequireProductionPasswordConfirmation::class,
+            ])->group(function () {
                 Route::get(
                     'commerce/post-sale/resolutions/{commercePostSaleResolution:public_id}/cash-refund',
                     [CommercePostSaleCashRefundController::class, 'create']
@@ -802,9 +816,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('commerce-post-sale.cash-refunds.store');
             });
 
-            Route::middleware(
-                'can:execute-commerce-post-sale-external-refund'
-            )->group(function () {
+            Route::middleware([
+                'can:execute-commerce-post-sale-external-refund',
+                RequireProductionPasswordConfirmation::class,
+            ])->group(function () {
                 Route::post(
                     'commerce/post-sale/resolutions/{commercePostSaleResolution:public_id}/external-refund',
                     [CommercePostSaleExternalRefundController::class, 'store']
@@ -849,9 +864,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     ->name('commerce-post-sale.exchange-executions.store');
             });
 
-            Route::middleware(
-                'can:dispatch-commerce-post-sale-external-refund'
-            )->group(function () {
+            Route::middleware([
+                'can:dispatch-commerce-post-sale-external-refund',
+                RequireProductionPasswordConfirmation::class,
+            ])->group(function () {
                 Route::post(
                     'commerce/post-sale/external-refund-instructions/{externalRefundInstruction:public_id}/submit',
                     [CommercePostSaleExternalRefundSubmissionController::class, 'store']
@@ -1030,7 +1046,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         ->name('purchase-payment-groups.cancel');
                 });
 
-            Route::middleware('can:execute-purchase-payments')
+            Route::middleware([
+                'can:execute-purchase-payments',
+                RequireProductionPasswordConfirmation::class,
+            ])
                 ->group(function () {
                     Route::post(
                         'purchases/payment-requests/{purchasePaymentRequest:public_id}/execute',
@@ -1071,7 +1090,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         );
                 });
 
-            Route::middleware('can:approve-purchase-payments')
+            Route::middleware([
+                'can:approve-purchase-payments',
+                RequireProductionPasswordConfirmation::class,
+            ])
                 ->group(function () {
                     Route::post(
                         'purchases/payment-requests/{purchasePaymentRequest:public_id}/approve',
