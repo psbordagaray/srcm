@@ -14,22 +14,22 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`2afe2ad74521629ab7e5ee979c29eff8fea78c05`
-— `feat(fiscal): add WSFE FECAE transport boundary`
+`6d757a7fa2815ec4669f98c009067357cdc38bb9`
+— `feat(fiscal): add WSFE remote sequence boundary`
 
-Estado verificado al cierre de **ARCA WSFE FECAE Transport Boundary V1**:
+Estado verificado al cierre de **ARCA WSFE Remote Sequence Boundary V1**:
 
 - `WsaaAccessTicketProvider` permanece publicado con cache database cifrado, lock por scope y reutilización de TA vigente;
-- `WsfeFecaeSoapSerializer` → `DomWsfeFecaeSoapSerializer`;
-- `WsfeFecaeSoapResponseParser` → `DomWsfeFecaeSoapResponseParser`, con `LIBXML_NONET`, rechazo de DOCTYPE y límite SOAP de 2 MiB;
-- `WsfeFecaeSoapTransport` → `GuzzleWsfeFecaeSoapTransport`, sólo homologación, POST SOAP 1.1, TLS verify activo, redirects bloqueados, timeouts explícitos, streaming acotado y sin retry automático;
-- `WsfeFecaeSoap11Call` sigue siendo el borde efímero/redactado de `Auth(Token,Sign,Cuit) + FeCAEReq` y no contiene red;
-- parser → `WsfeFecaeSoapResultData` → normalizer → convergence preserva CAE, vencimiento, observaciones, eventos, errores y campos provider;
-- producción falla antes del HTTP;
-- `FiscalAuthorizationTransport` y `FiscalRemoteSequenceAuthority` permanecen deliberadamente sin binding;
-- WSASS, identidad fiscal real y homologación externa continúan diferidos; no hubo certificado/clave/CUIT real, CMS real, `LoginCms` real, `FECAESolicitar` real ni HTTP ARCA;
-- ADR relacionado: `docs/127_ADR_ARCA_WSFE_FECAE_TRANSPORT_BOUNDARY_V1.md`;
-- validación funcional: **32/171 focal, 68/349 regresión fiscal y 1041 tests / 7848 assertions GREEN**;
+- `WsfeFecaeSoapSerializer` / parser / transporte Guzzle homologación-only permanecen publicados para `FECAESolicitar`;
+- `WsfeCompUltimoAutorizadoSoap11Call` fija `Auth(Token,Sign,Cuit) + PtoVta + CbteTipo` como borde efímero/redactado;
+- `WsfeCompUltimoAutorizadoSoapSerializer` → `DomWsfeCompUltimoAutorizadoSoapSerializer`;
+- `WsfeCompUltimoAutorizadoSoapResponseParser` → `DomWsfeCompUltimoAutorizadoSoapResponseParser`, con `LIBXML_NONET`, rechazo de DOCTYPE y límite SOAP de 1 MiB;
+- `WsfeCompUltimoAutorizadoSoapTransport` → `GuzzleWsfeCompUltimoAutorizadoSoapTransport`, sólo homologación, TLS verify, redirects bloqueados, timeouts explícitos, streaming acotado y sin retry automático;
+- el parser exige identidad exacta `PtoVta + CbteTipo`, acepta `CbteNro=0` como secuencia inicial y falla cerrado ante errores provider;
+- `FiscalRemoteSequenceAuthority` y `FiscalAuthorizationTransport` permanecen deliberadamente sin binding;
+- WSASS, identidad fiscal real y homologación externa continúan diferidos; no hubo certificado/clave/CUIT real, CMS real, `LoginCms`, `FECompUltimoAutorizado`, `FECAESolicitar` ni HTTP ARCA real;
+- ADR relacionado: `docs/128_ADR_ARCA_WSFE_REMOTE_SEQUENCE_TRANSPORT_BOUNDARY_V1.md`;
+- validación funcional: **30/179 focal, 57/311 regresión fiscal y 1047 tests / 7888 assertions GREEN**;
 - BD autoritativa preservada: **107 tablas de negocio**, fingerprint
   `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema
   `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42`
@@ -37,7 +37,7 @@ Estado verificado al cierre de **ARCA WSFE FECAE Transport Boundary V1**:
 - SHA binario SQLite continúa siendo canary solamente.
 
 Próximo paso exacto:
-`ARCA_WSFE_REMOTE_SEQUENCE_BOUNDARY_V1`.
+`ARCA_WSFE_AUTHORIZATION_RUNTIME_BINDING_V1`.
 
 ## Jerarquía de verdad
 
@@ -113,21 +113,21 @@ desde cero.
 | P10 — ARCA readiness | `FeCAEReq`, transport, Ticket WSAA, endpoint map, SOAP 1.1, response normalization y provider-result convergence/persistencia neutral publicados; red real aún bloqueada |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
-## Estado funcional P10 al cierre de ARCA WSFE FECAE Transport Boundary V1
+## Estado funcional P10 al cierre de ARCA WSFE Remote Sequence Boundary V1
 
 P10 mantiene el contrato **venta comercial ≠ comprobante fiscal ≠ autorización fiscal**.
 
-La capa wire de `FECAESolicitar` ya está publicada: serialización DOM SOAP 1.1, parser DOM fail-closed y transporte Guzzle de homologación con red inyectable para tests. Esta capa consume una llamada ya autenticada y no decide por sí sola credenciales, TA, secuencia remota ni persistencia fiscal.
+Las dos capas wire WSFE previas al runtime completo ya están publicadas: `FECAESolicitar` para autorización y `FECompUltimoAutorizado` para consultar la secuencia remota por `PtoVta + CbteTipo`. Ambas son homologación-only, usan SOAP 1.1 DOM + Guzzle inyectable y producción fail-closed.
 
-`FiscalAuthorizationTransport` y `FiscalRemoteSequenceAuthority` continúan sin binding para impedir una integración runtime prematura. Producción y homologación externa real siguen bloqueadas.
+Todavía no se enlazan `FiscalRemoteSequenceAuthority` ni `FiscalAuthorizationTransport`: el próximo corte debe componer ambas sobre `WsaaAccessTicketProvider` y los wire transports existentes, resolviendo service/CUIT mediante configuración explícita, nunca por inferencia desde la venta.
 
 Checkpoint funcional publicado de referencia:
-`2afe2ad74521629ab7e5ee979c29eff8fea78c05`.
+`6d757a7fa2815ec4669f98c009067357cdc38bb9`.
 
-ADR relacionado: `docs/127_ADR_ARCA_WSFE_FECAE_TRANSPORT_BOUNDARY_V1.md`.
+ADR relacionado: `docs/128_ADR_ARCA_WSFE_REMOTE_SEQUENCE_TRANSPORT_BOUNDARY_V1.md`.
 
 Próximo paso exacto:
-`ARCA_WSFE_REMOTE_SEQUENCE_BOUNDARY_V1`.
+`ARCA_WSFE_AUTHORIZATION_RUNTIME_BINDING_V1`.
 
 ## Estado funcional P9.7l
 
@@ -160,9 +160,9 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P10 — ARCA WSFE Remote Sequence Boundary V1**.
+**P10 — ARCA WSFE Authorization Runtime Binding V1**.
 
-Debe implementar la autoridad remota de `FECompUltimoAutorizado` como frontera separada y homologación-only, con transporte sintético/injectable en tests, fail-closed en producción y sin requerir CUIT real, WSASS ni llamada externa ARCA durante esta etapa.
+Debe enlazar `FiscalRemoteSequenceAuthority` y `FiscalAuthorizationTransport` con los wire boundaries ya publicados, usando `WsaaAccessTicketProvider` y configuración explícita de service/CUIT, manteniendo pruebas sintéticas, cero ARCA real, WSASS diferido y producción fail-closed.
 
 ## Registro mínimo de cada relevo
 
