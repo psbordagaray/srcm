@@ -1,30 +1,34 @@
 # SRCM — Visión y Roadmap Full 2026
 
 Estado: **North Star / contrato de dirección y continuidad**
-Fecha: **2026-08-20**
+Fecha: **2026-08-21**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 Puerta de entrada de continuidad: `docs/README.md`
 
 ---
 
-## Current P11 checkpoint - S3-Compatible Remote Adapter Foundation
+## Current P11 checkpoint — Resilience External Gates Closure V1
 
-Encrypted off-host backup capability remains published at 0a433cb2ed22ea08c44f8c5c299749aacb5feb75.
-S3-compatible remote adapter foundation remains published at c154eeda909ba70ba36931fc9d58615db13fd418.
-CI hotfix checkpoint: cfb7d784d5f898b6c04a72ac473f69e95d91c603 - fix(resilience): normalize blank S3 backup configuration.
-The hotfix only normalizes empty dedicated S3 configuration slots to null.
-No provider is selected, no credentials are added, no remote provider I/O is executed, and no schedule is enabled.
-Functional GitHub Actions push run: 32435048926 - GREEN.
-The authoritative SQLite database remained unchanged.
-Production remains blocked and off_host_encrypted_backup=false.
-Next exact boundary: P11_OFF_HOST_S3_PROVIDER_CONFIGURATION_RECON_V1.
+Functional checkpoint: `a41e1f6b8197a7d05dbc1932c3bf8f60555d7303` — `feat(release): close evidenced resilience gates`.
+Functional GitHub Actions push run: `32537456278` — GREEN.
+P11 now has real evidence for encrypted off-host backup and operational restore: a verified SQLite backup is retained encrypted in Cloudflare R2 and was restored in isolation using the backup key recovered from independent storage.
+The drill validated authenticated envelope identity, `quick_check=ok`, `integrity_check=ok`, schema, **112 tables**, **93 migrations**, the configured **240-minute RTO**, and cleanup of temporary plaintext.
+Accordingly:
+- `release.external_gates.off_host_encrypted_backup=true`;
+- `release.external_gates.operational_restore_drill=true`;
+- `release.external_gates.production_environment_secrets_and_approvals=false`;
+- `release.production_release_enabled=false`.
+
+Production remains explicitly blocked.
+ADR: `docs/136_ADR_RESILIENCE_EXTERNAL_GATES_EVIDENCE_CLOSURE_V1.md`.
+Next exact boundary: `P11_PRODUCTION_ENVIRONMENT_SECRETS_AND_APPROVALS_RECON_V1`.
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada tras **P11 S3-Compatible Remote Adapter Foundation CI hotfix**:
+Base funcional publicada tras **P11 Resilience External Gates Closure V1**:
 
-`cfb7d784d5f898b6c04a72ac473f69e95d91c603`
-— `fix(resilience): normalize blank S3 backup configuration`
+`a41e1f6b8197a7d05dbc1932c3bf8f60555d7303`
+— `feat(release): close evidenced resilience gates`
 
 Estado: P1–P9 publicados/cerrados según sus checkpoints; P10 **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; P11 tiene publicados Production Security, Observability y Resilience Baselines V1.
 
@@ -34,12 +38,12 @@ Security Baseline V1 `b712081c550d2fba36704ec75678eba1f5b73ff9` aporta headers g
 
 Validación resilience publicada: **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN**. BD autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones / `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`. Las pruebas de resiliencia no hicieron backup/restore de la BD real.
 
-Producción general sigue bloqueada hasta completar los release gates P11. Backup off-host cifrado/KMS, CI/CD y deploy gates, además de OpenTelemetry, outbox y hardenings avanzados ya diferidos, continúan pendientes.
+Producción general sigue bloqueada. El backup off-host cifrado y el restore drill operativo ya tienen evidencia real y gates cerrados; `production_environment_secrets_and_approvals` y `production_release_enabled` permanecen bloqueados. OpenTelemetry, outbox y hardenings avanzados continúan diferidos fuera de esta frontera.
 
 Próximo paso exacto:
-`P11_OFF_HOST_S3_PROVIDER_CONFIGURATION_RECON_V1`. Debe relevar CI/CD y release gates reales —incluido backup off-host cifrado— antes de implementar automatización o desbloquear producción.
+`P11_PRODUCTION_ENVIRONMENT_SECRETS_AND_APPROVALS_RECON_V1`. Debe relevar CI/CD y release gates reales —incluido backup off-host cifrado— antes de implementar automatización o desbloquear producción.
 
-CI/CD Release Gates V1 publica workflow versionado con checkout fijado por SHA, permisos mínimos, instalaciones desde lockfiles, `git diff --check`, full suite, build y `srcm:release-preflight --ci`. El preflight inventaría migraciones sin ejecutar migrate/rollback, exige `down()` no vacío y valida `GET /api/health/ready`. Producción continúa fail-closed: backup off-host cifrado, restore drill operativo y secretos/aprobaciones de producción siguen abiertos. ADR: `docs/133_ADR_PRODUCTION_CI_CD_RELEASE_GATES_V1.md`. Validación: **6/32 focal, 31/180 regresión Release+Resilience+Observability+Security, 1083/8091 full + asset build GREEN**.
+CI/CD Release Gates V1 publica workflow versionado con checkout fijado por SHA, permisos mínimos, instalaciones desde lockfiles, `git diff --check`, full suite, build y `srcm:release-preflight --ci`. El preflight inventaría migraciones sin ejecutar migrate/rollback, exige `down()` no vacío y valida `GET /api/health/ready`. Producción continúa fail-closed: backup off-host cifrado y restore drill operativo ya están cerrados por evidencia; secretos/aprobaciones de producción y el switch global siguen bloqueados. ADR: `docs/133_ADR_PRODUCTION_CI_CD_RELEASE_GATES_V1.md`. Validación: **6/32 focal, 31/180 regresión Release+Resilience+Observability+Security, 1083/8091 full + asset build GREEN**.
 
 ### Disciplina irrefutable de recuperación
 

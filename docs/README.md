@@ -1,20 +1,25 @@
 # SRCM Full — Puerta de entrada y continuidad maestra
 
 Estado: **vinculante para recuperación de contexto**
-Actualizado: **2026-08-20**
+Actualizado: **2026-08-21**
 Rama canónica de desarrollo: `feature/core-entity`
 
-## Current P11 checkpoint - S3-Compatible Remote Adapter Foundation
+## Current P11 checkpoint — Resilience External Gates Closure V1
 
-Encrypted off-host backup capability remains published at 0a433cb2ed22ea08c44f8c5c299749aacb5feb75.
-S3-compatible remote adapter foundation remains published at c154eeda909ba70ba36931fc9d58615db13fd418.
-CI hotfix checkpoint: cfb7d784d5f898b6c04a72ac473f69e95d91c603 - fix(resilience): normalize blank S3 backup configuration.
-The hotfix only normalizes empty dedicated S3 configuration slots to null.
-No provider is selected, no credentials are added, no remote provider I/O is executed, and no schedule is enabled.
-Functional GitHub Actions push run: 32435048926 - GREEN.
-The authoritative SQLite database remained unchanged.
-Production remains blocked and off_host_encrypted_backup=false.
-Next exact boundary: P11_OFF_HOST_S3_PROVIDER_CONFIGURATION_RECON_V1.
+Functional checkpoint: `a41e1f6b8197a7d05dbc1932c3bf8f60555d7303` — `feat(release): close evidenced resilience gates`.
+Functional GitHub Actions push run: `32537456278` — GREEN.
+Local focal validation: **16 tests / 101 assertions GREEN**.
+Local full validation: **1093 tests / 8160 assertions GREEN**.
+`release.external_gates.off_host_encrypted_backup=true`.
+`release.external_gates.operational_restore_drill=true`.
+The real verified SQLite backup was externalized outside the repository, encrypted with AES-256-GCM and retained in Cloudflare R2; authenticated readback and an isolated real restore drill from that retained object are GREEN.
+The restore drill recovered the backup key from independent storage, validated `quick_check=ok`, `integrity_check=ok`, schema, **112 tables**, **93 migrations**, RTO **240 min**, and proved temporary plaintext cleanup.
+`release.external_gates.production_environment_secrets_and_approvals=false`.
+`release.production_release_enabled=false`.
+Production remains blocked; closing resilience evidence does not authorize deployment.
+ADR: `docs/136_ADR_RESILIENCE_EXTERNAL_GATES_EVIDENCE_CLOSURE_V1.md`.
+Functional closure RESULT SHA-256: `64db2e0f7e5173dfcb7e2b5c1f8cbd6697af23e95fbeea70ee880f8e7cc18a09`.
+Next exact boundary: `P11_PRODUCTION_ENVIRONMENT_SECRETS_AND_APPROVALS_RECON_V1`.
 
 ## Empezar siempre aquí
 
@@ -26,8 +31,8 @@ El checkpoint canónico actual es siempre el `HEAD` publicado de
 está limpio. La base funcional publicada que este checkpoint documental
 sincroniza es:
 
-`cfb7d784d5f898b6c04a72ac473f69e95d91c603`
-— `fix(resilience): normalize blank S3 backup configuration`
+`a41e1f6b8197a7d05dbc1932c3bf8f60555d7303`
+— `feat(release): close evidenced resilience gates`
 
 Estado verificado al cierre de **ARCA WSFE Authorization Runtime Binding V1**:
 
@@ -55,14 +60,14 @@ P11 ya tiene publicados **Production Security Baseline V1** en `b712081c550d2fba
 
 Validación del corte de resiliencia: **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN**. La BD real permaneció exacta en el baseline canónico y las pruebas de backup/restore usaron SQLite sintética temporal: no hubo backup ni restore sobre `database/database.sqlite`. RPO objetivo: **60 min**; RTO objetivo: **240 min**; retención baseline: **168 snapshots**; freshness gate: **90 min**.
 
-Remote provider configuration, provider smoke, operational restore drill, production secrets and approvals remain open release gates; production remains blocked.
+Cloudflare R2 provider configuration, real encrypted backup export and operational restore drill are now evidenced and closed as resilience release gates; production secrets/approvals and the global production switch remain blocked.
 
 La deuda P10 `REAL_ARCA_HOMOLOGATION` y WSASS siguen diferidos y no bloquean P11.
 
 Próximo paso exacto:
-`P11_OFF_HOST_S3_PROVIDER_CONFIGURATION_RECON_V1`.
+`P11_PRODUCTION_ENVIRONMENT_SECRETS_AND_APPROVALS_RECON_V1`.
 
-CI/CD Release Gates V1 publica workflow versionado con checkout fijado por SHA, permisos mínimos, instalaciones desde lockfiles, `git diff --check`, full suite, build y `srcm:release-preflight --ci`. El preflight inventaría migraciones sin ejecutar migrate/rollback, exige `down()` no vacío y valida `GET /api/health/ready`. Producción continúa fail-closed: backup off-host cifrado, restore drill operativo y secretos/aprobaciones de producción siguen abiertos. ADR: `docs/133_ADR_PRODUCTION_CI_CD_RELEASE_GATES_V1.md`. Validación: **6/32 focal, 31/180 regresión Release+Resilience+Observability+Security, 1083/8091 full + asset build GREEN**.
+CI/CD Release Gates V1 publica workflow versionado con checkout fijado por SHA, permisos mínimos, instalaciones desde lockfiles, `git diff --check`, full suite, build y `srcm:release-preflight --ci`. El preflight inventaría migraciones sin ejecutar migrate/rollback, exige `down()` no vacío y valida `GET /api/health/ready`. Producción continúa fail-closed: backup off-host cifrado y restore drill operativo ya están cerrados por evidencia; secretos/aprobaciones de producción y el switch global siguen bloqueados. ADR: `docs/133_ADR_PRODUCTION_CI_CD_RELEASE_GATES_V1.md`. Validación: **6/32 focal, 31/180 regresión Release+Resilience+Observability+Security, 1083/8091 full + asset build GREEN**.
 
 ## Jerarquía de verdad
 
@@ -136,7 +141,7 @@ desde cero.
 | P10.1–P10.7.4 | Configuración fiscal, documento, autorización, numeración, integración, perfil/política, composición, clasificación y concepto/período publicados |
 | P10 — Payload WSFE | Receptor, fecha, resumen monetario, moneda/cotización, vencimiento, ajustes, asociaciones, secuencia remota y clasificación tributaria publicados |
 | P10 — ARCA readiness | `FeCAEReq`, transport, Ticket WSAA, endpoint map, SOAP 1.1, response normalization y provider-result convergence/persistencia neutral publicados; red real aún bloqueada |
-| P11 - Production gates and off-host backup | Security, Observability, Resilience and CI/CD published; encrypted off-host capability 0a433cb2ed22ea08c44f8c5c299749aacb5feb75; S3-compatible adapter foundation c154eeda909ba70ba36931fc9d58615db13fd418 plus CI hotfix cfb7d784d5f898b6c04a72ac473f69e95d91c603; provider not configured; P11_OFF_HOST_S3_PROVIDER_CONFIGURATION_RECON_V1 next |
+| P11 - Production gates and off-host backup | Security, Observability, Resilience and CI/CD published; encrypted off-host capability 0a433cb2ed22ea08c44f8c5c299749aacb5feb75; S3-compatible adapter foundation c154eeda909ba70ba36931fc9d58615db13fd418 plus CI hotfix cfb7d784d5f898b6c04a72ac473f69e95d91c603; provider not configured; P11_PRODUCTION_ENVIRONMENT_SECRETS_AND_APPROVALS_RECON_V1 next |
 
 P9.7c fue un relevamiento de brechas; no introdujo una verdad productiva nueva.
 
@@ -164,9 +169,9 @@ Resilience publica:
 
 Validación resilience: **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN**. BD canónica intacta, sin migrate/rollback, sin backup/restore sobre la BD real y sin ARCA real.
 
-Release gates todavía abiertos: copia off-host cifrada, proveedor remoto/KMS, CI/CD y deploy gates reales, además de outbox/OpenTelemetry y los hardenings avanzados de seguridad ya diferidos. La existencia de documentación o scripts locales no cuenta como CI/CD implementado.
+Release state P11: copia off-host cifrada y restore drill operativo cerrados con evidencia real; CI/CD versionado publicado; secretos/aprobaciones del entorno de producción y el switch global siguen bloqueados. Outbox/OpenTelemetry y hardenings avanzados permanecen diferidos.
 
-Próximo paso exacto: `P11_OFF_HOST_S3_PROVIDER_CONFIGURATION_RECON_V1`. Debe relevar workflows reales, gates de tests/build, migraciones/deploy, rollback/release, artefactos, secretos de CI y el gate off-host/encrypted backup antes de implementar automatización adicional.
+Próximo paso exacto: `P11_PRODUCTION_ENVIRONMENT_SECRETS_AND_APPROVALS_RECON_V1`. Debe relevar workflows reales, gates de tests/build, migraciones/deploy, rollback/release, artefactos, secretos de CI y el gate off-host/encrypted backup antes de implementar automatización adicional.
 
 ## Estado funcional P10 al cierre de ARCA WSFE Authorization Runtime Binding V1
 
@@ -214,7 +219,7 @@ Autorización y evidencia externa no reducen CxP.
 
 ## Próximo paso exacto
 
-**P11 — Production CI/CD & Release Gates RECON V1** (`P11_OFF_HOST_S3_PROVIDER_CONFIGURATION_RECON_V1`).
+**P11 — Production CI/CD & Release Gates RECON V1** (`P11_PRODUCTION_ENVIRONMENT_SECRETS_AND_APPROVALS_RECON_V1`).
 
 Debe ser estrictamente read-only y focal: verificar workflows/pipelines reales, gates automáticos de tests y build, estrategia de migraciones/deploy/rollback, artefactos y secretos de CI, y el release gate de backup off-host cifrado. No crear workflow, deploy automation ni proveedor remoto antes del relevamiento.
 
