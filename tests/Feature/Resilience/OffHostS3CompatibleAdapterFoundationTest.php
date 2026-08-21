@@ -7,7 +7,7 @@ use Tests\TestCase;
 
 final class OffHostS3CompatibleAdapterFoundationTest extends TestCase
 {
-    public function test_dedicated_backup_disk_is_s3_private_and_fail_closed(): void
+    public function test_dedicated_backup_disk_is_s3_private_and_uses_only_backup_specific_credentials(): void
     {
         $disk = config('filesystems.disks.srcm_backup_s3');
 
@@ -16,10 +16,26 @@ final class OffHostS3CompatibleAdapterFoundationTest extends TestCase
         $this->assertSame('private', $disk['visibility'] ?? null);
         $this->assertTrue($disk['throw'] ?? false);
         $this->assertFalse($disk['report'] ?? true);
-        $this->assertNull($disk['key'] ?? null);
-        $this->assertNull($disk['secret'] ?? null);
-        $this->assertNull($disk['bucket'] ?? null);
-        $this->assertNull($disk['endpoint'] ?? null);
+
+        $source = (string) file_get_contents(config_path('filesystems.php'));
+        $start = strpos($source, "'srcm_backup_s3' => [");
+        $end = strpos($source, "\n\n    ],", $start);
+
+        $this->assertIsInt($start);
+        $this->assertIsInt($end);
+
+        $dedicated = substr($source, $start, $end - $start);
+
+        $this->assertStringContainsString("env('SRCM_BACKUP_S3_ACCESS_KEY_ID')", $dedicated);
+        $this->assertStringContainsString("env('SRCM_BACKUP_S3_SECRET_ACCESS_KEY')", $dedicated);
+        $this->assertStringContainsString("env('SRCM_BACKUP_S3_REGION'", $dedicated);
+        $this->assertStringContainsString("env('SRCM_BACKUP_S3_BUCKET')", $dedicated);
+        $this->assertStringContainsString("env('SRCM_BACKUP_S3_ENDPOINT')", $dedicated);
+        $this->assertStringContainsString("'SRCM_BACKUP_S3_USE_PATH_STYLE_ENDPOINT'", $dedicated);
+        $this->assertStringNotContainsString('AWS_ACCESS_KEY_ID', $dedicated);
+        $this->assertStringNotContainsString('AWS_SECRET_ACCESS_KEY', $dedicated);
+        $this->assertStringNotContainsString('AWS_BUCKET', $dedicated);
+        $this->assertStringNotContainsString('AWS_ENDPOINT', $dedicated);
 
         $this->assertFalse(config('resilience.off_host.enabled'));
         $this->assertSame('srcm_backup_s3', config('resilience.off_host.remote_disk'));
@@ -70,13 +86,13 @@ final class OffHostS3CompatibleAdapterFoundationTest extends TestCase
         $this->assertStringContainsString('SRCM_BACKUP_S3_USE_PATH_STYLE_ENDPOINT=false', $example);
     }
 
-    public function test_foundation_does_not_schedule_export_or_close_release_gate(): void
+    public function test_evidenced_gate_does_not_schedule_export_or_enable_production(): void
     {
         $release = (string) file_get_contents(config_path('release.php'));
         $console = (string) file_get_contents(base_path('routes/console.php'));
 
         $this->assertMatchesRegularExpression(
-            "/'off_host_encrypted_backup'\s*=>\s*false/",
+            "/'off_host_encrypted_backup'\s*=>\s*true/",
             $release,
         );
         $this->assertMatchesRegularExpression(

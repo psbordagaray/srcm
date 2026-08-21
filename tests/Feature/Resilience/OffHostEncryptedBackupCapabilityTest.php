@@ -106,10 +106,10 @@ final class OffHostEncryptedBackupCapabilityTest extends TestCase
         app(LaravelFilesystemOffHostBackupTransport::class)->assertReady();
     }
 
-    public function test_capability_does_not_authorize_release_or_schedule_provider_io(): void
+    public function test_evidenced_gate_does_not_enable_runtime_or_schedule_provider_io(): void
     {
         $this->assertFalse(config('resilience.off_host.enabled'));
-        $this->assertFalse(config('release.external_gates.off_host_encrypted_backup'));
+        $this->assertTrue(config('release.external_gates.off_host_encrypted_backup'));
 
         $console = file_get_contents(base_path('routes/console.php'));
         $this->assertIsString($console);

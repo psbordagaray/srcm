@@ -21,8 +21,8 @@ return [
     ],
 
     'external_gates' => [
-        'off_host_encrypted_backup' => false,
-        'operational_restore_drill' => false,
+        'off_host_encrypted_backup' => true,
+        'operational_restore_drill' => true,
         'production_environment_secrets_and_approvals' => false,
     ],
 ];
