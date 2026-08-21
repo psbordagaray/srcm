@@ -65,11 +65,11 @@ return [
         // credentials. A real provider is configured outside version control.
         'srcm_backup_s3' => [
             'driver' => 's3',
-            'key' => env('SRCM_BACKUP_S3_ACCESS_KEY_ID'),
-            'secret' => env('SRCM_BACKUP_S3_SECRET_ACCESS_KEY'),
+            'key' => env('SRCM_BACKUP_S3_ACCESS_KEY_ID') === '' ? null : env('SRCM_BACKUP_S3_ACCESS_KEY_ID'),
+            'secret' => env('SRCM_BACKUP_S3_SECRET_ACCESS_KEY') === '' ? null : env('SRCM_BACKUP_S3_SECRET_ACCESS_KEY'),
             'region' => env('SRCM_BACKUP_S3_REGION', 'us-east-1'),
-            'bucket' => env('SRCM_BACKUP_S3_BUCKET'),
-            'endpoint' => env('SRCM_BACKUP_S3_ENDPOINT'),
+            'bucket' => env('SRCM_BACKUP_S3_BUCKET') === '' ? null : env('SRCM_BACKUP_S3_BUCKET'),
+            'endpoint' => env('SRCM_BACKUP_S3_ENDPOINT') === '' ? null : env('SRCM_BACKUP_S3_ENDPOINT'),
             'use_path_style_endpoint' => env(
                 'SRCM_BACKUP_S3_USE_PATH_STYLE_ENDPOINT',
                 false
