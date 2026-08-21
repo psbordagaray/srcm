@@ -1,35 +1,47 @@
-# SRCM — Visión y Roadmap Full 2026
+# SRCM â€” VisiÃ³n y Roadmap Full 2026
 
-Estado: **North Star / contrato de dirección y continuidad**
+Estado: **North Star / contrato de direcciÃ³n y continuidad**
 Fecha: **2026-08-20**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 Puerta de entrada de continuidad: `docs/README.md`
 
 ---
 
+## Current P11 checkpoint - S3-Compatible Remote Adapter Foundation
+
+Encrypted off-host backup capability remains published at 0a433cb2ed22ea08c44f8c5c299749aacb5feb75.
+S3-compatible remote adapter foundation remains published at c154eeda909ba70ba36931fc9d58615db13fd418.
+CI hotfix checkpoint: cfb7d784d5f898b6c04a72ac473f69e95d91c603 - fix(resilience): normalize blank S3 backup configuration.
+The hotfix only normalizes empty dedicated S3 configuration slots to null.
+No provider is selected, no credentials are added, no remote provider I/O is executed, and no schedule is enabled.
+Functional GitHub Actions push run: 32435048926 - GREEN.
+The authoritative SQLite database remained unchanged.
+Production remains blocked and off_host_encrypted_backup=false.
+Next exact boundary: P11_OFF_HOST_S3_PROVIDER_CONFIGURATION_RECON_V1.
+
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada al cierre de **P11 Production CI/CD Release Gates V1**:
+Base funcional publicada tras **P11 S3-Compatible Remote Adapter Foundation CI hotfix**:
 
-`ceb521fd9d65c24937e0632f128538586678008c`
-— `feat(release): add production CI CD release gates baseline`
+`cfb7d784d5f898b6c04a72ac473f69e95d91c603`
+â€” `fix(resilience): normalize blank S3 backup configuration`
 
-Estado: P1–P9 publicados/cerrados según sus checkpoints; P10 **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; P11 tiene publicados Production Security, Observability y Resilience Baselines V1.
+Estado: P1â€“P9 publicados/cerrados segÃºn sus checkpoints; P10 **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; P11 tiene publicados Production Security, Observability y Resilience Baselines V1.
 
-P10 conserva su verdad: runtime local WSAA/WSFE estructuralmente completo, producción fiscal bloqueada y `REAL_ARCA_HOMOLOGATION` / WSASS diferidos. Preparado para conectar ARCA no equivale a integración ARCA validada.
+P10 conserva su verdad: runtime local WSAA/WSFE estructuralmente completo, producciÃ³n fiscal bloqueada y `REAL_ARCA_HOMOLOGATION` / WSASS diferidos. Preparado para conectar ARCA no equivale a integraciÃ³n ARCA validada.
 
-Security Baseline V1 `b712081c550d2fba36704ec75678eba1f5b73ff9` aporta headers globales, producción fail-closed, step-up de alto impacto y guard de secret/config hygiene. Observability Baseline V1 `a17b8aec8ee583dbb121931fd58fc54663de46c7` aporta correlación global, logging JSON, señales seguras de queue/jobs/integraciones y readiness. Resilience Baseline V1 `95b9ae392a7c3a038f6c4db55774f238681ff00d` aporta snapshots SQLite consistentes, retención, restore verification aislada, freshness gate, RPO 60 min y RTO 240 min; ADR relacionado: `docs/132_ADR_PRODUCTION_RESILIENCE_BASELINE_V1.md`.
+Security Baseline V1 `b712081c550d2fba36704ec75678eba1f5b73ff9` aporta headers globales, producciÃ³n fail-closed, step-up de alto impacto y guard de secret/config hygiene. Observability Baseline V1 `a17b8aec8ee583dbb121931fd58fc54663de46c7` aporta correlaciÃ³n global, logging JSON, seÃ±ales seguras de queue/jobs/integraciones y readiness. Resilience Baseline V1 `95b9ae392a7c3a038f6c4db55774f238681ff00d` aporta snapshots SQLite consistentes, retenciÃ³n, restore verification aislada, freshness gate, RPO 60 min y RTO 240 min; ADR relacionado: `docs/132_ADR_PRODUCTION_RESILIENCE_BASELINE_V1.md`.
 
-Validación resilience publicada: **6/36 focal, 19/112 regresión Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN**. BD autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones / `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`. Las pruebas de resiliencia no hicieron backup/restore de la BD real.
+ValidaciÃ³n resilience publicada: **6/36 focal, 19/112 regresiÃ³n Resilience+Observability+Security y 1077 tests / 8059 assertions GREEN**. BD autoritativa preservada: 107 tablas de negocio, fingerprint `D682F392715CFC9EAE886BD1D865DC60415D345E8369B9071EC89FD3436DAC3D`, schema `F2653BE8FF9B9160A6E544868478E39B7C37E57123E096BC97756CE902D92F42` y 93 migraciones / `03AC754F8B637811B412AB381F881BB55F3C838D77FCE547748878CB5BA6FC14`. Las pruebas de resiliencia no hicieron backup/restore de la BD real.
 
-Producción general sigue bloqueada hasta completar los release gates P11. Backup off-host cifrado/KMS, CI/CD y deploy gates, además de OpenTelemetry, outbox y hardenings avanzados ya diferidos, continúan pendientes.
+ProducciÃ³n general sigue bloqueada hasta completar los release gates P11. Backup off-host cifrado/KMS, CI/CD y deploy gates, ademÃ¡s de OpenTelemetry, outbox y hardenings avanzados ya diferidos, continÃºan pendientes.
 
-Próximo paso exacto:
-`P11_PRODUCTION_OFF_HOST_ENCRYPTED_BACKUP_RESTORE_DRILL_RECON_V1`. Debe relevar CI/CD y release gates reales —incluido backup off-host cifrado— antes de implementar automatización o desbloquear producción.
+PrÃ³ximo paso exacto:
+`P11_OFF_HOST_S3_PROVIDER_CONFIGURATION_RECON_V1`. Debe relevar CI/CD y release gates reales â€”incluido backup off-host cifradoâ€” antes de implementar automatizaciÃ³n o desbloquear producciÃ³n.
 
-CI/CD Release Gates V1 publica workflow versionado con checkout fijado por SHA, permisos mínimos, instalaciones desde lockfiles, `git diff --check`, full suite, build y `srcm:release-preflight --ci`. El preflight inventaría migraciones sin ejecutar migrate/rollback, exige `down()` no vacío y valida `GET /api/health/ready`. Producción continúa fail-closed: backup off-host cifrado, restore drill operativo y secretos/aprobaciones de producción siguen abiertos. ADR: `docs/133_ADR_PRODUCTION_CI_CD_RELEASE_GATES_V1.md`. Validación: **6/32 focal, 31/180 regresión Release+Resilience+Observability+Security, 1083/8091 full + asset build GREEN**.
+CI/CD Release Gates V1 publica workflow versionado con checkout fijado por SHA, permisos mÃ­nimos, instalaciones desde lockfiles, `git diff --check`, full suite, build y `srcm:release-preflight --ci`. El preflight inventarÃ­a migraciones sin ejecutar migrate/rollback, exige `down()` no vacÃ­o y valida `GET /api/health/ready`. ProducciÃ³n continÃºa fail-closed: backup off-host cifrado, restore drill operativo y secretos/aprobaciones de producciÃ³n siguen abiertos. ADR: `docs/133_ADR_PRODUCTION_CI_CD_RELEASE_GATES_V1.md`. ValidaciÃ³n: **6/32 focal, 31/180 regresiÃ³n Release+Resilience+Observability+Security, 1083/8091 full + asset build GREEN**.
 
-### Disciplina irrefutable de recuperación
+### Disciplina irrefutable de recuperaciÃ³n
 
 Los tres documentos maestros forman una cadena obligatoria:
 
@@ -39,13 +51,13 @@ Los tres documentos maestros forman una cadena obligatoria:
 
 Cada paso que cambie el estado real de SRCM debe actualizar, validar y publicar los tres antes de abrir la frontera siguiente. Cuando corresponda, el mismo runner ejecuta el commit funcional y un segundo commit documental; ambos se mantienen separados.
 
-Los gates locales de los tres maestros son estructurales: paths exactos, `diff --check`, commit/push exactos y repo limpio. La verificación semántica se realiza una sola vez sobre GitHub después de publicar.
+Los gates locales de los tres maestros son estructurales: paths exactos, `diff --check`, commit/push exactos y repo limpio. La verificaciÃ³n semÃ¡ntica se realiza una sola vez sobre GitHub despuÃ©s de publicar.
 
 ---
 
 ## 1. North Star
 
-SRCM debe convertirse en una plataforma integral para comercios reales: rápida para el operador, segura para el dueño, auditable para la administración, integrable con terceros y preparada para crecer desde un local hasta una operación multi-sucursal.
+SRCM debe convertirse en una plataforma integral para comercios reales: rÃ¡pida para el operador, segura para el dueÃ±o, auditable para la administraciÃ³n, integrable con terceros y preparada para crecer desde un local hasta una operaciÃ³n multi-sucursal.
 
 La plataforma debe reducir:
 - doble carga;
@@ -54,7 +66,7 @@ La plataforma debe reducir:
 - conciliaciones manuales;
 - errores de caja;
 - sobreventa;
-- pérdida de evidencia;
+- pÃ©rdida de evidencia;
 - decisiones sin autoridad;
 - tareas repetitivas.
 
@@ -65,32 +77,32 @@ Y aumentar:
 - trazabilidad;
 - calidad de compras;
 - seguridad;
-- automatización;
-- información para decidir.
+- automatizaciÃ³n;
+- informaciÃ³n para decidir.
 
 ---
 
-## 2. Qué significa “full”
+## 2. QuÃ© significa â€œfullâ€
 
 SRCM full cubre o integra:
 
-**Catálogo + conocimiento + stock + compras + proveedores + ventas + clientes + POS + pagos + cajas + tesorería + cuentas por cobrar + cuentas por pagar + fiscalidad + devoluciones + reparaciones + omnicanalidad + logística + promociones + CRM + fidelización + hardware + offline + seguridad + observabilidad + analítica + IA + API + automatizaciones.**
+**CatÃ¡logo + conocimiento + stock + compras + proveedores + ventas + clientes + POS + pagos + cajas + tesorerÃ­a + cuentas por cobrar + cuentas por pagar + fiscalidad + devoluciones + reparaciones + omnicanalidad + logÃ­stica + promociones + CRM + fidelizaciÃ³n + hardware + offline + seguridad + observabilidad + analÃ­tica + IA + API + automatizaciones.**
 
-No todo tiene que ser nativo. Lo commodity puede integrarse si una integración bien diseñada sirve mejor al comerciante que reescribir un producto entero.
+No todo tiene que ser nativo. Lo commodity puede integrarse si una integraciÃ³n bien diseÃ±ada sirve mejor al comerciante que reescribir un producto entero.
 
 ---
 
-## 2.1. Fiscalidad: verdad separada de la operación
+## 2.1. Fiscalidad: verdad separada de la operaciÃ³n
 
 En Argentina, SRCM debe estar preparado para que la realidad comercial y la realidad fiscal tengan ritmos distintos sin confundirlas.
 
 Contrato:
 
-`Venta confirmada → Estado fiscal independiente`
+`Venta confirmada â†’ Estado fiscal independiente`
 
-La venta no desaparece porque el comprobante fiscal todavía no exista. La fiscalidad puede estar pendiente, autorizada, rechazada o en contingencia. SRCM no debe incluir funciones destinadas a ocultar ventas o evadir obligaciones; sí debe conservar una verdad comercial completa y un estado fiscal explícito y auditable.
+La venta no desaparece porque el comprobante fiscal todavÃ­a no exista. La fiscalidad puede estar pendiente, autorizada, rechazada o en contingencia. SRCM no debe incluir funciones destinadas a ocultar ventas o evadir obligaciones; sÃ­ debe conservar una verdad comercial completa y un estado fiscal explÃ­cito y auditable.
 
-ARCA será un adapter fiscal argentino, no la fuente primaria de verdad de Comercio.
+ARCA serÃ¡ un adapter fiscal argentino, no la fuente primaria de verdad de Comercio.
 
 ---
 
@@ -100,10 +112,10 @@ SRCM Full apunta principalmente a:
 
 - retail general y consumo masivo;
 - kioscos/maxikioscos/minimercados/supermercados;
-- ferreterías/corralones/materiales/electricidad;
-- electrónica, celulares, informática y electrodomésticos;
-- repuestos, autopartes, neumáticos y talleres;
-- servicios técnicos y comercios híbridos;
+- ferreterÃ­as/corralones/materiales/electricidad;
+- electrÃ³nica, celulares, informÃ¡tica y electrodomÃ©sticos;
+- repuestos, autopartes, neumÃ¡ticos y talleres;
+- servicios tÃ©cnicos y comercios hÃ­bridos;
 - mayoristas, distribuidores e importadores;
 - productos fraccionados;
 - comercios de alto valor con series/IMEI;
@@ -111,45 +123,45 @@ SRCM Full apunta principalmente a:
 - hogar/multirrubro;
 - empresas multi-sucursal;
 - operaciones omnicanal;
-- preventa/reserva/seña;
+- preventa/reserva/seÃ±a;
 - servicios con materiales;
 - PYMEs y empresas familiares.
 
-Los rubros con dominios muy especializados —restaurantes, hoteles, clínicas, farmacias, estaciones de servicio, fabricación MRP, etc.— se abordarán mediante verticales específicos cuando corresponda.
+Los rubros con dominios muy especializados â€”restaurantes, hoteles, clÃ­nicas, farmacias, estaciones de servicio, fabricaciÃ³n MRP, etc.â€” se abordarÃ¡n mediante verticales especÃ­ficos cuando corresponda.
 
 ---
 
 ## 2.3. Knowledge Universe como capacidad diferencial opcional
 
-SRCM conserva Knowledge Universe como una de sus capacidades diferenciales, pero la plataforma no obliga a cada empresa a exponer ni operar esa complejidad. El catálogo comercial universal debe funcionar plenamente por sí mismo.
+SRCM conserva Knowledge Universe como una de sus capacidades diferenciales, pero la plataforma no obliga a cada empresa a exponer ni operar esa complejidad. El catÃ¡logo comercial universal debe funcionar plenamente por sÃ­ mismo.
 
-Cuando la organización habilita Knowledge, el Core conecta:
+Cuando la organizaciÃ³n habilita Knowledge, el Core conecta:
 
-`producto ↔ modelo ↔ código ↔ compatibilidad ↔ componente ↔ falla ↔ solución ↔ riesgo ↔ evidencia ↔ fuente`
+`producto â†” modelo â†” cÃ³digo â†” compatibilidad â†” componente â†” falla â†” soluciÃ³n â†” riesgo â†” evidencia â†” fuente`
 
-El sistema puede aprender de operaciones internas y de fuentes externas verificables, siempre conservando provenance, confianza, contexto y validación.
+El sistema puede aprender de operaciones internas y de fuentes externas verificables, siempre conservando provenance, confianza, contexto y validaciÃ³n.
 
-Los datos privados de una organización nunca se vuelven conocimiento compartido por defecto. Deshabilitar la superficie Knowledge no borra historia ni evidencia y no afecta productos, stock, compras o ventas.
+Los datos privados de una organizaciÃ³n nunca se vuelven conocimiento compartido por defecto. Deshabilitar la superficie Knowledge no borra historia ni evidencia y no afecta productos, stock, compras o ventas.
 
-### 2.3.1. Potencia modular y superficies por organización
+### 2.3.1. Potencia modular y superficies por organizaciÃ³n
 
-SRCM se concibe como una plataforma de capacidades. El Dueño/Admin general podrá decidir qué módulos utiliza la organización y delegar a administradores de segundo nivel sólo las configuraciones y empleados dentro de su alcance.
+SRCM se concibe como una plataforma de capacidades. El DueÃ±o/Admin general podrÃ¡ decidir quÃ© mÃ³dulos utiliza la organizaciÃ³n y delegar a administradores de segundo nivel sÃ³lo las configuraciones y empleados dentro de su alcance.
 
-Los roles actuales son presets iniciales. La autoridad futura evoluciona a capacidades granulares y alcances organizacionales. La navegación debe derivarse de esa misma verdad: una función deshabilitada o ajena al trabajo del usuario no ensucia su superficie cotidiana.
+Los roles actuales son presets iniciales. La autoridad futura evoluciona a capacidades granulares y alcances organizacionales. La navegaciÃ³n debe derivarse de esa misma verdad: una funciÃ³n deshabilitada o ajena al trabajo del usuario no ensucia su superficie cotidiana.
 
-Los presets por rubro aceleran la configuración inicial, pero nunca encierran a la empresa. Moda/belleza puede operar catálogo, variantes, compras, stock multisucursal, ventas, caja, clientes y promociones sin Knowledge técnico; repuestos/electro puede habilitar modelos, compatibilidades y conocimiento enriquecido sobre el mismo Core comercial.
+Los presets por rubro aceleran la configuraciÃ³n inicial, pero nunca encierran a la empresa. Moda/belleza puede operar catÃ¡logo, variantes, compras, stock multisucursal, ventas, caja, clientes y promociones sin Knowledge tÃ©cnico; repuestos/electro puede habilitar modelos, compatibilidades y conocimiento enriquecido sobre el mismo Core comercial.
 
 Principio:
 
-> **La potencia total pertenece a SRCM; la complejidad visible pertenece sólo a quien la necesita.**
+> **La potencia total pertenece a SRCM; la complejidad visible pertenece sÃ³lo a quien la necesita.**
 
-### 2.3.2. Atención operativa orientada a autoridad
+### 2.3.2. AtenciÃ³n operativa orientada a autoridad
 
-La modularidad define qué puede hacer cada persona; el Centro de Atención Operativa debe decirle qué requiere su intervención ahora.
+La modularidad define quÃ© puede hacer cada persona; el Centro de AtenciÃ³n Operativa debe decirle quÃ© requiere su intervenciÃ³n ahora.
 
-SRCM proyecta desde los hechos de dominio una bandeja personal de acciones y resultados, filtrada por organización, capacidad y alcance. La campana superior y el Dashboard consumen la misma proyección y llevan mediante deep-link al punto exacto de resolución.
+SRCM proyecta desde los hechos de dominio una bandeja personal de acciones y resultados, filtrada por organizaciÃ³n, capacidad y alcance. La campana superior y el Dashboard consumen la misma proyecciÃ³n y llevan mediante deep-link al punto exacto de resoluciÃ³n.
 
-La proyección nunca sustituye Gates, Policies, reglas de dominio ni integridad DB. Tampoco crea una segunda verdad de negocio: una autorización sigue viviendo en su workflow original; la atención sólo hace visible que requiere acción o que produjo un resultado relevante.
+La proyecciÃ³n nunca sustituye Gates, Policies, reglas de dominio ni integridad DB. Tampoco crea una segunda verdad de negocio: una autorizaciÃ³n sigue viviendo en su workflow original; la atenciÃ³n sÃ³lo hace visible que requiere acciÃ³n o que produjo un resultado relevante.
 
 Principio:
 
@@ -161,7 +173,7 @@ Principio:
 
 SRCM debe extenderse al piso de venta mediante Customer Kiosk / Price Checker, scanner 1D/2D, QR/DataMatrix, customer display, EAS, RFID/EPC y Smart Exit/Loss Prevention.
 
-La consulta de precios consume la misma verdad comercial de SRCM. Un código de barras no sustituye un tag EAS/RFID.
+La consulta de precios consume la misma verdad comercial de SRCM. Un cÃ³digo de barras no sustituye un tag EAS/RFID.
 
 ---
 
@@ -169,22 +181,22 @@ La consulta de precios consume la misma verdad comercial de SRCM. Un código de 
 
 Red comercial opt-in entre organizaciones.
 
-Cada empresa conserva privados sus clientes, costos, márgenes, stock no publicado, finanzas, autoridad y auditoría; puede decidir compartir perfil, rubros, marcas, catálogo/ofertas seleccionadas, capacidad de entrega, documentos B2B necesarios y conocimiento compartible.
+Cada empresa conserva privados sus clientes, costos, mÃ¡rgenes, stock no publicado, finanzas, autoridad y auditorÃ­a; puede decidir compartir perfil, rubros, marcas, catÃ¡logo/ofertas seleccionadas, capacidad de entrega, documentos B2B necesarios y conocimiento compartible.
 
 Objetivos:
 - descubrir proveedores;
 - RFQ/cotizaciones;
-- convertir ofertas en órdenes;
+- convertir ofertas en Ã³rdenes;
 - transmitir SalesOrder/Invoice/Remito/ASN;
 - precargar inbound/recepciones;
 - eliminar doble carga;
 - 3-way match;
-- reputación operacional;
+- reputaciÃ³n operacional;
 - Knowledge Network.
 
 Regla:
-`Documento proveedor → recepción esperada`, nunca `Documento proveedor → stock`.
-Sólo `control físico + confirmación → stock propio`.
+`Documento proveedor â†’ recepciÃ³n esperada`, nunca `Documento proveedor â†’ stock`.
+SÃ³lo `control fÃ­sico + confirmaciÃ³n â†’ stock propio`.
 
 ---
 
@@ -203,21 +215,21 @@ Verdad durable:
 - documentos;
 - evidencias.
 
-### B. Sistema de operación
+### B. Sistema de operaciÃ³n
 Lo que usa el comercio:
 - POS;
 - compras;
-- recepción;
+- recepciÃ³n;
 - caja;
 - reparaciones;
 - devoluciones;
 - stock;
 - fulfillment;
-- campañas.
+- campaÃ±as.
 
 ### C. Sistema de control
-- auditoría;
-- conciliación;
+- auditorÃ­a;
+- conciliaciÃ³n;
 - cierres;
 - diferencias;
 - autorizaciones;
@@ -225,12 +237,12 @@ Lo que usa el comercio:
 - compliance;
 - fiscalidad.
 
-### D. Sistema de decisión
+### D. Sistema de decisiÃ³n
 - dashboards;
-- márgenes;
-- rotación;
+- mÃ¡rgenes;
+- rotaciÃ³n;
 - forecasting;
-- anomalías;
+- anomalÃ­as;
 - IA;
 - recomendaciones.
 
@@ -252,8 +264,8 @@ Lo que usa el comercio:
 - protocolos;
 - evidencia;
 - provenance;
-- reputación por dominio;
-- validación;
+- reputaciÃ³n por dominio;
+- validaciÃ³n;
 - fuentes externas;
 - aprendizaje de operaciones;
 - conocimiento compartible gobernado.
@@ -277,25 +289,25 @@ SRCM conserva hechos monetarios separados en ambas direcciones.
 2. importe aplicado;
 3. efectivo entregado y vuelto cuando corresponda;
 4. cobro declarado;
-5. operación externa;
-6. acreditación real;
-7. conciliación.
+5. operaciÃ³n externa;
+6. acreditaciÃ³n real;
+7. conciliaciÃ³n.
 
 **Salida:**
-1. causa comercial/recepción;
-2. obligación económica;
-3. autorización;
-4. ejecución del pago;
+1. causa comercial/recepciÃ³n;
+2. obligaciÃ³n econÃ³mica;
+3. autorizaciÃ³n;
+4. ejecuciÃ³n del pago;
 5. movimiento de cuenta/caja;
-6. débito externo verificado;
-7. conciliación.
+6. dÃ©bito externo verificado;
+7. conciliaciÃ³n.
 
-`entregado ≠ aplicado`, `vuelto ≠ reembolso`, `recepción ≠ pago` y `autorizar ≠ ejecutar`.
+`entregado â‰  aplicado`, `vuelto â‰  reembolso`, `recepciÃ³n â‰  pago` y `autorizar â‰  ejecutar`.
 
 ### Caja
 Separar:
 - cuenta financiera;
-- caja física/lógica;
+- caja fÃ­sica/lÃ³gica;
 - turno;
 - movimiento;
 - arqueo;
@@ -304,95 +316,95 @@ Separar:
 ### Compras
 Separar:
 - pedido;
-- recepción;
+- recepciÃ³n;
 - documento;
-- obligación;
-- autorización;
+- obligaciÃ³n;
+- autorizaciÃ³n;
 - pago.
 
 ### Fiscalidad
 Separar:
 - hecho comercial;
 - documento fiscal;
-- autorización fiscal;
+- autorizaciÃ³n fiscal;
 - contingencia.
 
 ### IA
 Separar:
-- observación;
-- recomendación;
-- preparación;
-- aprobación;
-- ejecución.
+- observaciÃ³n;
+- recomendaciÃ³n;
+- preparaciÃ³n;
+- aprobaciÃ³n;
+- ejecuciÃ³n.
 
 ### Business Network
 Separar:
 - documento declarado por proveedor;
 - compra/orden propia;
-- recepción esperada;
-- realidad física;
+- recepciÃ³n esperada;
+- realidad fÃ­sica;
 - ingreso de stock;
-- obligación de pago.
+- obligaciÃ³n de pago.
 
-Nunca incrementar stock por factura/remito/ASN sin recepción física confirmada.
+Nunca incrementar stock por factura/remito/ASN sin recepciÃ³n fÃ­sica confirmada.
 
 ---
 
-## 5. Prioridad de construcción
+## 5. Prioridad de construcciÃ³n
 
-### Prioridad A — antes de depender de SRCM como sistema único
-1. P4 Caja/Tesorería/Pagos a proveedores.
+### Prioridad A â€” antes de depender de SRCM como sistema Ãºnico
+1. P4 Caja/TesorerÃ­a/Pagos a proveedores.
 2. P5 adaptadores.
-3. P6 conciliación visual.
+3. P6 conciliaciÃ³n visual.
 4. P7 importadores sin API.
 5. P8 devoluciones/cambios/reembolsos.
 6. P9 CxC/CxP.
 7. P10 ARCA/fiscal.
-8. P11 producción/seguridad/observabilidad/backups.
+8. P11 producciÃ³n/seguridad/observabilidad/backups.
 9. P12 continuidad offline/hardware esencial.
 
-### Prioridad B — crecimiento retail
+### Prioridad B â€” crecimiento retail
 10. P13 reservas/holds/concurrencia.
 11. P14 multi-sucursal/fulfillment.
 12. P15 omnicanal/SULU Media.
 13. P16 promociones/CRM/loyalty.
 14. P17 GS1/2D/labels/series/lotes.
-15. P18 reposición/forecasting.
-16. P19 BI/analítica.
+15. P18 reposiciÃ³n/forecasting.
+16. P19 BI/analÃ­tica.
 
-### Prioridad C — plataforma full
-17. logística avanzada;
+### Prioridad C â€” plataforma full
+17. logÃ­stica avanzada;
 18. mobile/PWA;
 19. experiencias de tienda;
 20. integraciones administrativas;
 21. gobierno de datos;
 22. IA operacional;
 23. agentes;
-24. API pública/ecosistema;
+24. API pÃºblica/ecosistema;
 25. conocimiento/comunidad.
 
 ---
 
-## 6. Criterios de “terminado” por función
+## 6. Criterios de â€œterminadoâ€ por funciÃ³n
 
-Una función no está terminada sólo porque existe una pantalla.
+Una funciÃ³n no estÃ¡ terminada sÃ³lo porque existe una pantalla.
 
-Debe tener, según corresponda:
+Debe tener, segÃºn corresponda:
 - modelo de dominio;
 - tenant isolation;
 - permisos;
-- validación server-side;
-- transacción;
+- validaciÃ³n server-side;
+- transacciÃ³n;
 - idempotencia;
 - inmutabilidad;
-- auditoría;
+- auditorÃ­a;
 - UX;
 - accesibilidad;
 - tests;
-- migración;
-- rollback/compensación;
+- migraciÃ³n;
+- rollback/compensaciÃ³n;
 - observabilidad;
-- documentación;
+- documentaciÃ³n;
 - caso manual real;
 - exportabilidad;
 - manejo de error.
@@ -403,37 +415,37 @@ Debe tener, según corresponda:
 
 - stock derivado de texto libre;
 - dinero derivado de notas;
-- borrar hechos confirmados para “arreglar”;
+- borrar hechos confirmados para â€œarreglarâ€;
 - asumir Efectivo;
 - inventar conciliaciones;
-- mezclar cobro con acreditación;
+- mezclar cobro con acreditaciÃ³n;
 - registrar dinero entregado como si fuera importe vendido/aplicado;
-- tratar vuelto como descuento, gasto o devolución posventa;
-- inventar evidencia histórica de entregado/vuelto;
-- mezclar recepción con obligación;
-- mezclar recepción con pago;
-- mezclar autorización con ejecución;
+- tratar vuelto como descuento, gasto o devoluciÃ³n posventa;
+- inventar evidencia histÃ³rica de entregado/vuelto;
+- mezclar recepciÃ³n con obligaciÃ³n;
+- mezclar recepciÃ³n con pago;
+- mezclar autorizaciÃ³n con ejecuciÃ³n;
 - mezclar retiro de seguridad con gasto;
-- mezclar caja física con cuenta bancaria;
+- mezclar caja fÃ­sica con cuenta bancaria;
 - permitir cross-tenant;
 - guardar PAN/CVV;
-- automatizar una decisión ambigua;
+- automatizar una decisiÃ³n ambigua;
 - hacer depender el Core de un proveedor;
-- crear una integración sin idempotencia/retry;
+- crear una integraciÃ³n sin idempotencia/retry;
 - usar IA para ejecutar actos irreversibles sin autoridad;
-- reabrir bugs/pendientes ya resueltos sin evidencia de regresión.
+- reabrir bugs/pendientes ya resueltos sin evidencia de regresiÃ³n.
 
 ---
 
-## 8. Producción y SRE mínimo
+## 8. ProducciÃ³n y SRE mÃ­nimo
 
 Antes del go-live:
-- backups automáticos;
+- backups automÃ¡ticos;
 - restore probado;
 - monitoreo;
 - alertas;
 - logs estructurados;
-- traces/métricas;
+- traces/mÃ©tricas;
 - health checks;
 - jobs observables;
 - secrets;
@@ -449,10 +461,10 @@ Antes del go-live:
 
 ## 9. Estrategia de integraciones
 
-### Contrato común
+### Contrato comÃºn
 Cada adapter debe declarar:
 - proveedor;
-- organización;
+- organizaciÃ³n;
 - cuenta;
 - credenciales;
 - capacidades;
@@ -460,7 +472,7 @@ Cada adapter debe declarar:
 - external ID;
 - timestamps;
 - idempotency;
-- firma/verificación;
+- firma/verificaciÃ³n;
 - estado;
 - payload seguro;
 - errores/retry.
@@ -468,34 +480,34 @@ Cada adapter debe declarar:
 ### Orden de preferencia
 1. API/webhook oficial;
 2. polling oficial;
-3. importación estructurada;
+3. importaciÃ³n estructurada;
 4. manual controlado.
 
-### P5.1 — límite provider-neutral
-- la conexión de proveedor referencia una cuenta financiera privada pero no conserva credenciales ni secretos;
+### P5.1 â€” lÃ­mite provider-neutral
+- la conexiÃ³n de proveedor referencia una cuenta financiera privada pero no conserva credenciales ni secretos;
 - adapters concretos producen observaciones seguras y el Core las ingiere sobre `FinancialExternalMovement` P3;
 - API/webhook/polling son transportes, no nuevas verdades financieras;
-- reintentos y entregas multicanal de la misma operación/estado no deben duplicar efectos;
+- reintentos y entregas multicanal de la misma operaciÃ³n/estado no deben duplicar efectos;
 - cambios de estado externos son nuevos hechos inmutables, no updates retrospectivos;
-- una inconsistencia monetaria para la misma operación/estado falla cerrado;
-- conciliación sigue siendo un acto separado y verificable.
+- una inconsistencia monetaria para la misma operaciÃ³n/estado falla cerrado;
+- conciliaciÃ³n sigue siendo un acto separado y verificable.
 
 ---
 
 ## 10. Estrategia de IA
 
-La IA se añade después de tener buenos hechos.
+La IA se aÃ±ade despuÃ©s de tener buenos hechos.
 
 ### Puede
 - buscar;
 - resumir;
 - explicar;
 - clasificar;
-- detectar anomalías;
+- detectar anomalÃ­as;
 - estimar;
 - recomendar;
 - preparar borradores;
-- preparar acciones para aprobación.
+- preparar acciones para aprobaciÃ³n.
 
 ### No debe, por defecto
 - confirmar una venta;
@@ -510,19 +522,19 @@ El permiso de un agente nunca puede superar el permiso del usuario/servicio que 
 
 ---
 
-## 11. Referencias tecnológicas 2026
+## 11. Referencias tecnolÃ³gicas 2026
 
 ### Fiscalidad argentina
-ARCA mantiene Web Services oficiales de facturación electrónica, incluyendo WSFEv1; el diseño SRCM debe tratar punto de venta, correlatividad, autorización y contingencia como dominio fiscal separado del hecho comercial.
+ARCA mantiene Web Services oficiales de facturaciÃ³n electrÃ³nica, incluyendo WSFEv1; el diseÃ±o SRCM debe tratar punto de venta, correlatividad, autorizaciÃ³n y contingencia como dominio fiscal separado del hecho comercial.
 
 ### GS1
 GS1 Digital Link 1.1.4 fue publicado en enero de 2026. SRCM debe evitar un modelo de identificadores que impida adoptar 2D, Application Identifiers, lotes/series y Digital Link.
 
 ### Observabilidad
-OpenTelemetry es la referencia vendor-neutral para instrumentación de traces, métricas y logs.
+OpenTelemetry es la referencia vendor-neutral para instrumentaciÃ³n de traces, mÃ©tricas y logs.
 
-### Autenticación
-FIDO2/WebAuthn/passkeys son una dirección madura para autenticación resistente al phishing. En POS también se necesita step-up operacional simple y rápido.
+### AutenticaciÃ³n
+FIDO2/WebAuthn/passkeys son una direcciÃ³n madura para autenticaciÃ³n resistente al phishing. En POS tambiÃ©n se necesita step-up operacional simple y rÃ¡pido.
 
 ### POS moderno
 La referencia funcional ya incluye:
@@ -531,12 +543,12 @@ La referencia funcional ya incluye:
 - cash in/out;
 - efectivo esperado vs contado;
 - devoluciones;
-- operación temporal offline;
-- periféricos;
+- operaciÃ³n temporal offline;
+- perifÃ©ricos;
 - loyalty;
 - QR;
 - customer display;
-- múltiples tiendas.
+- mÃºltiples tiendas.
 
 No copiar productos ajenos: usar estas capacidades como benchmark de cobertura.
 
@@ -544,17 +556,17 @@ No copiar productos ajenos: usar estas capacidades como benchmark de cobertura.
 
 ## 12. Arquitectura objetivo
 
-Mantener Laravel como modular monolith mientras siga siendo la opción más simple y segura.
+Mantener Laravel como modular monolith mientras siga siendo la opciÃ³n mÃ¡s simple y segura.
 
-Separar servicios sólo cuando:
+Separar servicios sÃ³lo cuando:
 - exista escalamiento independiente real;
 - aislamiento de seguridad lo justifique;
 - un adapter requiera proceso independiente;
 - disponibilidad o carga lo exija.
 
 Preferir:
-- módulos de dominio;
-- servicios explícitos;
+- mÃ³dulos de dominio;
+- servicios explÃ­citos;
 - contratos;
 - colas;
 - outbox;
@@ -574,17 +586,17 @@ Este documento es deliberadamente amplio.
 Cada fase debe:
 1. relevar el repo real;
 2. convertir alcance en ADR/plan cuando haga falta;
-3. implementar bloques pequeños;
+3. implementar bloques pequeÃ±os;
 4. validar;
 5. actualizar `docs/06_ROADMAP.md`;
 6. registrar checkpoint;
 7. actualizar este documento si cambia la North Star.
 
-No es válido “terminar” un bloque y dejar el roadmap afirmando que sigue pendiente.
+No es vÃ¡lido â€œterminarâ€ un bloque y dejar el roadmap afirmando que sigue pendiente.
 
 ---
 
-## 14. Protocolo de recuperación de conversación
+## 14. Protocolo de recuperaciÃ³n de conversaciÃ³n
 
 Al abrir un chat nuevo o recuperar uno trabado:
 
@@ -595,18 +607,18 @@ Al abrir un chat nuevo o recuperar uno trabado:
 5. leer este archivo;
 6. si se toca dinero/ventas, leer `docs/32_PLAN_TERMINAL_COBRO_CUENTAS_CONCILIACION_V1.md`;
 7. leer todos los ADR del dominio afectado;
-8. leer RESULT del último bloque;
-9. reconstruir la frontera de código, migraciones, permisos, rutas, UI y tests;
-10. continuar desde el checkpoint y próximo paso documentados, no desde memoria informal.
+8. leer RESULT del Ãºltimo bloque;
+9. reconstruir la frontera de cÃ³digo, migraciones, permisos, rutas, UI y tests;
+10. continuar desde el checkpoint y prÃ³ximo paso documentados, no desde memoria informal.
 
 ---
 
 ## 15. Mandato permanente
 
-La meta no es “tener un ERP grande”.
+La meta no es â€œtener un ERP grandeâ€.
 
 La meta es que el comerciante sienta que SRCM:
-- entiende su operación;
+- entiende su operaciÃ³n;
 - le ahorra trabajo;
 - le muestra lo importante;
 - le impide errores peligrosos;
@@ -615,65 +627,65 @@ La meta es que el comerciante sienta que SRCM:
 - se integra con el mundo real;
 - crece sin perder la verdad.
 
-**SRCM full = menos trabajo manual, más control y una sola verdad operacional.**
+**SRCM full = menos trabajo manual, mÃ¡s control y una sola verdad operacional.**
 
 <!-- P5.2_MERCADO_PAGO_POINT_ADAPTER_V1 -->
-## Continuidad P5.2 — Mercado Pago Point
-El primer proveedor concreto de P5 será Mercado Pago Point sobre la API de Orders. Su adapter traduce recursos completos a la verdad financiera P3/P5.1; no crea un ledger paralelo. La primera verificación productiva será sólo lectura de terminales. El cobro real queda detrás de un checkpoint explícito posterior.
+## Continuidad P5.2 â€” Mercado Pago Point
+El primer proveedor concreto de P5 serÃ¡ Mercado Pago Point sobre la API de Orders. Su adapter traduce recursos completos a la verdad financiera P3/P5.1; no crea un ledger paralelo. La primera verificaciÃ³n productiva serÃ¡ sÃ³lo lectura de terminales. El cobro real queda detrÃ¡s de un checkpoint explÃ­cito posterior.
 
 
 <!-- P5.3_MERCADO_PAGO_ORDERS_TEST_V1 -->
-## Continuidad P5.3 — Point Orders antes de producción
-La integración Mercado Pago avanza por un test harness controlado: crear order,
+## Continuidad P5.3 â€” Point Orders antes de producciÃ³n
+La integraciÃ³n Mercado Pago avanza por un test harness controlado: crear order,
 simular resultado, consultar recurso completo y normalizarlo. El dispositivo
 virtual y las credenciales de prueba son una frontera obligatoria antes de
-habilitar el Point físico y dinero real. El transporte no obtiene autoridad
-para crear hechos financieros por sí mismo.
+habilitar el Point fÃ­sico y dinero real. El transporte no obtiene autoridad
+para crear hechos financieros por sÃ­ mismo.
 
 
 <!-- P5.4_MERCADO_PAGO_WEBHOOK_RESOLUTION_V1 -->
-## Continuidad P5.4 — autenticidad antes de automatización
-Los Webhooks de proveedores externos sólo pueden producir observaciones después
+## Continuidad P5.4 â€” autenticidad antes de automatizaciÃ³n
+Los Webhooks de proveedores externos sÃ³lo pueden producir observaciones despuÃ©s
 de validar su firma y resolver identidad interna sin confiar en datos de tenancy
-recibidos. El transporte y el body externo jamás reciben autoridad directa para
-elegir una organización, una cuenta financiera o escribir el ledger.
+recibidos. El transporte y el body externo jamÃ¡s reciben autoridad directa para
+elegir una organizaciÃ³n, una cuenta financiera o escribir el ledger.
 
 
 <!-- P5.5_MERCADO_PAGO_WEBHOOK_HTTP_QUEUE_V1 -->
-## Continuidad P5.5 — Webhook operativo sin entregar autoridad externa
-La recepción HTTP pública se separa del trabajo financiero: autenticar y
-encolar es una fase; consultar la evidencia canónica e ingerirla es otra. Los
-secretos permanecen fuera del ledger, la base y los jobs. La conexión interna
+## Continuidad P5.5 â€” Webhook operativo sin entregar autoridad externa
+La recepciÃ³n HTTP pÃºblica se separa del trabajo financiero: autenticar y
+encolar es una fase; consultar la evidencia canÃ³nica e ingerirla es otra. Los
+secretos permanecen fuera del ledger, la base y los jobs. La conexiÃ³n interna
 se fija por una URL configurada por SRCM y queda protegida por su propio HMAC.
 
 
-## Continuidad P9 — CxC/CxP y desembolso de proveedores
+## Continuidad P9 â€” CxC/CxP y desembolso de proveedores
 
-P9.1–P9.6b publicó deuda de clientes, cobranzas e imputaciones, aging, política
-de crédito, cuotas, anticipos y convergencia de excedentes. P9.7a–P9.7l publicó
-documento de proveedor, 3-way match derivado, notas de crédito, aplicaciones,
-anticipos, autorización agrupada, el parent canónico de desembolso y su
+P9.1â€“P9.6b publicÃ³ deuda de clientes, cobranzas e imputaciones, aging, polÃ­tica
+de crÃ©dito, cuotas, anticipos y convergencia de excedentes. P9.7aâ€“P9.7l publicÃ³
+documento de proveedor, 3-way match derivado, notas de crÃ©dito, aplicaciones,
+anticipos, autorizaciÃ³n agrupada, el parent canÃ³nico de desembolso y su
 superficie operacional con evidencia externa saliente.
 
 P9.7j expone esa verdad mediante HTTP/UI individual y agrupada, cash y
 non-cash, sin duplicar reglas de dominio. `PurchasePaymentExecution` se conserva
 como historia append-only; `PurchasePaymentDisbursement` y sus allocations son
-la verdad canónica nueva. Un desembolso cash produce un solo `CashMovement` por
+la verdad canÃ³nica nueva. Un desembolso cash produce un solo `CashMovement` por
 el total y un desembolso non-cash no fabrica evidencia bancaria externa.
 
-P9.7k vincula explícitamente un desembolso non-cash con un
+P9.7k vincula explÃ­citamente un desembolso non-cash con un
 `FinancialExternalMovement` `Debit + Posted` mediante evidencia append-only,
-sin ampliar `PaymentReconciliation` ni automatizar la decisión. P9.7l incorpora
-resolución/derivación append-only por observación externa, preserva snapshots y
+sin ampliar `PaymentReconciliation` ni automatizar la decisiÃ³n. P9.7l incorpora
+resoluciÃ³n/derivaciÃ³n append-only por observaciÃ³n externa, preserva snapshots y
 mantiene CxP intacta.
 
-P9.8 deriva exposición y aging desde obligaciones y sus cuatro streams de
-liquidación. Separa proveedor, beneficiario y moneda; fija vencimiento efectivo
+P9.8 deriva exposiciÃ³n y aging desde obligaciones y sus cuatro streams de
+liquidaciÃ³n. Separa proveedor, beneficiario y moneda; fija vencimiento efectivo
 y publica estado de cuenta sin tabla, snapshot ni saldo paralelo. Con este corte
 P9 CxC/CxP queda cerrado en V1.
 
-P10 RECON confirma que `CommerceSale` no depende de autorización fiscal y que
+P10 RECON confirma que `CommerceSale` no depende de autorizaciÃ³n fiscal y que
 su `sale_number` es interno. P10.1 agrega `FiscalOrganizationProfile` y
 `FiscalPointOfSale` por ambiente, con identidad protegida, sin documento,
-secuencia, WSAA, WSFE, CAE, CAEA ni QR. El siguiente corte es P10.2 — Fiscal
+secuencia, WSAA, WSFE, CAE, CAEA ni QR. El siguiente corte es P10.2 â€” Fiscal
 Document Core RECON.
