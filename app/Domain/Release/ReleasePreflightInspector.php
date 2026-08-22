@@ -16,9 +16,13 @@ final class ReleasePreflightInspector
     /** @return array<string, mixed> */
     public function inspect(): array
     {
-        $workflow = base_path('.github/workflows/ci.yml');
-        $workflowBody = is_file($workflow) ? file_get_contents($workflow) : false;
-        $workflowBody = is_string($workflowBody) ? $workflowBody : '';
+        $ciWorkflowBody = $this->fileBody(base_path('.github/workflows/ci.yml'));
+        $deployWorkflowBody = $this->fileBody(base_path('.github/workflows/deploy-production.yml'));
+        $deployScriptBody = $this->fileBody(base_path('ops/production/deploy-release.sh'));
+        $queueUnitBody = $this->fileBody(base_path('ops/production/systemd/srcm-queue.service'));
+        $schedulerServiceBody = $this->fileBody(base_path('ops/production/systemd/srcm-schedule.service'));
+        $schedulerTimerBody = $this->fileBody(base_path('ops/production/systemd/srcm-schedule.timer'));
+        $nginxBody = $this->fileBody(base_path('ops/production/nginx/srcm.conf'));
 
         $migrationFiles = $this->migrationFiles();
         $irreversible = [];
@@ -39,19 +43,52 @@ final class ReleasePreflightInspector
         $static = [
             'composer_lock' => is_file(base_path('composer.lock')),
             'package_lock' => is_file(base_path('package-lock.json')),
-            'versioned_ci_workflow' => $workflowBody !== '',
+            'versioned_ci_workflow' => $ciWorkflowBody !== '',
             'ci_pinned_checkout' => str_contains(
-                $workflowBody,
+                $ciWorkflowBody,
                 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683'
             ),
-            'ci_locked_composer_install' => str_contains($workflowBody, 'composer install'),
-            'ci_locked_node_install' => str_contains($workflowBody, 'npm ci --ignore-scripts'),
-            'ci_diff_check' => str_contains($workflowBody, 'git diff --check'),
-            'ci_full_suite' => str_contains($workflowBody, 'composer test'),
-            'ci_asset_build' => str_contains($workflowBody, 'npm run build'),
+            'ci_locked_composer_install' => str_contains($ciWorkflowBody, 'composer install'),
+            'ci_locked_node_install' => str_contains($ciWorkflowBody, 'npm ci --ignore-scripts'),
+            'ci_diff_check' => str_contains($ciWorkflowBody, 'git diff --check'),
+            'ci_full_suite' => str_contains($ciWorkflowBody, 'composer test'),
+            'ci_asset_build' => str_contains($ciWorkflowBody, 'npm run build'),
             'ci_release_preflight' => str_contains(
-                $workflowBody,
+                $ciWorkflowBody,
                 'php artisan srcm:release-preflight --ci'
+            ),
+            'production_deploy_workflow' => $deployWorkflowBody !== '',
+            'production_deploy_manual_only' => $this->deploymentWorkflowIsManualOnly($deployWorkflowBody),
+            'production_deploy_environment_gate' => str_contains(
+                $deployWorkflowBody,
+                'environment: production'
+            ),
+            'production_deploy_concurrency_gate' => str_contains(
+                $deployWorkflowBody,
+                'group: srcm-production-deploy'
+            ) && str_contains($deployWorkflowBody, 'cancel-in-progress: false'),
+            'production_deploy_dual_source_authorization' => str_contains(
+                $deployWorkflowBody,
+                "production_environment_secrets_and_approvals"
+            ) && str_contains($deployWorkflowBody, "production_release_enabled"),
+            'production_deploy_relative_checksum_contract' => str_contains(
+                $deployWorkflowBody,
+                'sha256sum "srcm-${RELEASE_SHA}.tar.gz"'
+            ) && ! str_contains(
+                $deployWorkflowBody,
+                'sha256sum "$RUNNER_TEMP/srcm-${RELEASE_SHA}.tar.gz"'
+            ),
+            'production_deploy_runtime_secrets_excluded' => $this->workflowExcludesRuntimeSecrets(
+                $deployWorkflowBody
+            ),
+            'immutable_release_activation_contract' => $this->immutableReleaseContractIsPresent(
+                $deployScriptBody
+            ),
+            'production_runtime_units' => $this->runtimeUnitsArePresent(
+                $queueUnitBody,
+                $schedulerServiceBody,
+                $schedulerTimerBody,
+                $nginxBody
             ),
             'all_migrations_have_non_empty_down' => $irreversible === [],
             'post_deploy_readiness_contract' => $this->readinessContractIsPresent(),
@@ -88,6 +125,85 @@ final class ReleasePreflightInspector
             'external_green' => $externalGreen,
             'production_authorized' => $productionAuthorized,
         ];
+    }
+
+    private function fileBody(string $path): string
+    {
+        if (! is_file($path)) {
+            return '';
+        }
+
+        $body = file_get_contents($path);
+
+        return is_string($body) ? $body : '';
+    }
+
+    private function deploymentWorkflowIsManualOnly(string $workflow): bool
+    {
+        if ($workflow === '' || ! str_contains($workflow, 'workflow_dispatch:')) {
+            return false;
+        }
+
+        return ! preg_match('/^\s{2}(push|pull_request|schedule):/m', $workflow);
+    }
+
+    private function workflowExcludesRuntimeSecrets(string $workflow): bool
+    {
+        if ($workflow === '') {
+            return false;
+        }
+
+        foreach ([
+            'SRCM_MERCADO_PAGO_CONNECTION_SECRETS_JSON',
+            'SRCM_ARCA_WSAA_CREDENTIAL_REFERENCES_JSON',
+            'SRCM_ARCA_WSAA_CREDENTIAL_ROOT',
+            'SRCM_BACKUP_ENCRYPTION_KEY_REFERENCE',
+            'SRCM_BACKUP_S3_ACCESS_KEY_ID',
+            'SRCM_BACKUP_S3_SECRET_ACCESS_KEY',
+        ] as $forbidden) {
+            if (str_contains($workflow, $forbidden)) {
+                return false;
+            }
+        }
+
+        return str_contains($workflow, 'SRCM_DEPLOY_SSH_PRIVATE_KEY')
+            && str_contains($workflow, 'SRCM_DEPLOY_KNOWN_HOSTS');
+    }
+
+    private function immutableReleaseContractIsPresent(string $script): bool
+    {
+        if ($script === '') {
+            return false;
+        }
+
+        foreach ([
+            '/srv/srcm/releases',
+            '/srv/srcm/current',
+            '/srv/srcm/shared',
+            'database/database.sqlite',
+            'migrate --force',
+            'api/health/ready',
+            'srcm-queue.service',
+        ] as $required) {
+            if (! str_contains($script, $required)) {
+                return false;
+            }
+        }
+
+        return ! str_contains($script, 'migrate:rollback');
+    }
+
+    private function runtimeUnitsArePresent(
+        string $queueUnit,
+        string $schedulerService,
+        string $schedulerTimer,
+        string $nginx
+    ): bool {
+        return str_contains($queueUnit, 'artisan queue:work')
+            && str_contains($schedulerService, 'artisan schedule:run')
+            && str_contains($schedulerTimer, 'OnCalendar=*-*-* *:*:00')
+            && str_contains($nginx, '/run/php/php8.3-fpm.sock')
+            && str_contains($nginx, '/srv/srcm/current/public');
     }
 
     /** @return list<string> */
@@ -156,7 +272,6 @@ final class ReleasePreflightInspector
                 continue;
             }
 
-            // Skip an optional ampersand for functions returning by reference.
             if ($tokens[$nameIndex] === '&') {
                 $nameIndex = $this->nextSignificantToken($tokens, $nameIndex + 1);
             }

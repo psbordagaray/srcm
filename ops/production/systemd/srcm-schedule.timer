@@ -1,0 +1,11 @@
+[Unit]
+Description=Run SRCM Laravel scheduler every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+Persistent=true
+AccuracySec=1s
+Unit=srcm-schedule.service
+
+[Install]
+WantedBy=timers.target
