@@ -1,27 +1,49 @@
 # SRCM — Visión y Roadmap Full 2026
 
 Estado: **North Star / contrato de dirección y continuidad**
-Fecha: **2026-08-21**
+Fecha: **2026-08-24**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 Puerta de entrada de continuidad: `docs/README.md`
 
 ---
 
-## Current P11 checkpoint — Resilience External Gates Closure V1
+## Current P11 checkpoint — Production Host Foundation + Local DB Reconciliation Pending
 
-Functional checkpoint: `a41e1f6b8197a7d05dbc1932c3bf8f60555d7303` — `feat(release): close evidenced resilience gates`.
-Functional GitHub Actions push run: `32537456278` — GREEN.
-P11 now has real evidence for encrypted off-host backup and operational restore: a verified SQLite backup is retained encrypted in Cloudflare R2 and was restored in isolation using the backup key recovered from independent storage.
-The drill validated authenticated envelope identity, `quick_check=ok`, `integrity_check=ok`, schema, **112 tables**, **93 migrations**, the configured **240-minute RTO**, and cleanup of temporary plaintext.
-Accordingly:
-- `release.external_gates.off_host_encrypted_backup=true`;
-- `release.external_gates.operational_restore_drill=true`;
-- `release.external_gates.production_environment_secrets_and_approvals=false`;
-- `release.production_release_enabled=false`.
+Canonical source checkpoint before this documentation sync: `6123eff8dbe5b561398099dc89f40bdce2bd0e83` — `chore(release):add-tailscale-private-ssh-auth-smoke`.
+Branch: `feature/core-entity`.
+Production release authorization remains fail-closed: `release.production_release_enabled=false`.
 
-Production remains explicitly blocked.
-ADR: `docs/136_ADR_RESILIENCE_EXTERNAL_GATES_EVIDENCE_CLOSURE_V1.md`.
-Next exact boundary: `P11_PRODUCTION_ENVIRONMENT_SECRETS_AND_APPROVALS_RECON_V1`.
+Production host evidence now closed:
+- GitHub OIDC/WIF → Tailscale ephemeral runner → private `100.64.245.55:22` path is GREEN;
+- strict OpenSSH auth as `straleon-deploy` is GREEN with pinned ED25519 host key;
+- the temporary local deploy private key copy was retired after GitHub secret authentication was proven;
+- `/srv/srcm`, releases/shared/storage/backups boundaries are created with the published ownership/mode model;
+- published queue/scheduler systemd units are installed byte-exact but remain inactive/not enabled;
+- `/srv/srcm/shared/.env` exists as `root:www-data 0640` with a fresh production APP_KEY generated on-host and never logged;
+- runtime hostname decision is `app.straleon.ar`; DNS/TLS/Nginx activation remains intentionally unconfigured;
+- `/srv/srcm/current` and `/srv/srcm/shared/database/database.sqlite` remain absent;
+- Nginx/PHP-FPM remain inactive/disabled and no public 80/443 listener exists.
+
+Local authoritative SQLite cutover preparation:
+- source DB before reconciliation: SHA-256 `15969f45cd14c88dc053588637ed226c1e895eeb8279f03d2aff62781acf18ae`, 112 user tables, 332 logical rows;
+- migration ledger: 93 applied of 122, exactly 29 pending, zero unknown applied migrations;
+- isolated `VACUUM INTO` clone simulation applied all 29 cleanly: 122/122, zero pending/unknown, integrity/FK GREEN, original data fingerprint unchanged;
+- expected delta from the 29 migrations is 46 new empty tables plus 6 new columns with zero non-null cells on original rows;
+- the real source DB remained byte-exact after the simulation.
+
+Latest reconciliation runner status:
+- V1 failed before DB access because its self-path was resolved inside a child scope;
+- V2 fixed self-path but failed at `CHECKPOINT` before DB access because native Git stderr handling was still exposed to Windows PowerShell terminating `RemoteException`; no rollback was attempted and no DB mutation was reached;
+- the next recovery must use the already-proven `ProcessStartInfo` Git capture pattern with an explicit repository working directory for every checkpoint/final Git command.
+
+Master-document sync recovery status:
+- continuity sync V1 failed before document mutation because its helper used the reserved PowerShell automatic variable `$Args`; Git therefore launched without the intended arguments (`GIT_HEAD_EXIT=1`, empty stderr);
+- continuity sync V2 replaces that helper with the proven `GitArgs`/native subprocess capture pattern and remains limited to these three master documents.
+
+This block is the canonical continuity state and supersedes older P11 checkpoint narrative preserved below for historical context.
+
+Next exact boundary after this documentation sync:
+`P11_LOCAL_DATABASE_MIGRATION_RECONCILIATION_V3_NATIVE_GIT_CAPTURE_RECOVERY`.
 
 ## 0. Estado maestro de continuidad
 
