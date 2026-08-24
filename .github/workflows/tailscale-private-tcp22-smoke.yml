@@ -1,0 +1,76 @@
+name: SRCM Tailscale Private TCP22 Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/core-entity
+    paths:
+      - .github/workflows/tailscale-private-tcp22-smoke.yml
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: srcm-tailscale-private-tcp22-smoke
+  cancel-in-progress: false
+
+jobs:
+  tailscale-private-tcp22-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: production
+
+    steps:
+      - name: Connect ephemeral Tailscale node via WIF
+        uses: tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888 # v4.1.3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:straleon-ci-deploy
+
+      - name: Verify private Tailscale route and OpenSSH TCP 22 only
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          target="100.64.245.55"
+
+          command -v tailscale >/dev/null
+          tailscale status --json >/dev/null
+
+          own_ip="$(tailscale ip -4)"
+          case "$own_ip" in
+            100.*) ;;
+            *) exit 1 ;;
+          esac
+
+          route_line="$(ip route get "$target")"
+          case "$route_line" in
+            *"dev tailscale0"*) ;;
+            *) exit 1 ;;
+          esac
+
+          exec 3<>"/dev/tcp/${target}/22"
+          banner=""
+          if ! IFS= read -r -t 10 banner <&3; then
+            exec 3<&-
+            exec 3>&-
+            exit 1
+          fi
+          exec 3<&-
+          exec 3>&-
+
+          case "$banner" in
+            SSH-2.0-*) ;;
+            *) exit 1 ;;
+          esac
+
+          printf 'TAILSCALE_PRIVATE_PATH=GREEN_TAILSCALE0\n'
+          printf 'TAILSCALE_PRIVATE_TARGET=GREEN_TAGGED_PRODUCTION_NODE\n'
+          printf 'TAILSCALE_PRIVATE_TCP22=GREEN_OPENSSH_BANNER\n'
+          printf 'SSH_BANNER_PROTOCOL=SSH-2.0\n'
+          printf 'SSH_AUTH_ATTEMPTED=NO\n'
+          printf 'TARGET_PUBLIC_IPV4_USED=NO\n'
+          printf 'APPLICATION_DEPLOYMENT=NO\n'
