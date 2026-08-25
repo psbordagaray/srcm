@@ -50,6 +50,16 @@ final class ReleasePreflightInspector
             'composer_lock' => is_file(base_path('composer.lock')),
             'package_lock' => is_file(base_path('package-lock.json')),
             'versioned_ci_workflow' => $ciWorkflowBody !== '',
+            'ci_default_branch_push_coverage' => $this->workflowEventIncludesBranch(
+                $ciWorkflowBody,
+                'push',
+                'main'
+            ),
+            'ci_default_branch_pull_request_coverage' => $this->workflowEventIncludesBranch(
+                $ciWorkflowBody,
+                'pull_request',
+                'main'
+            ),
             'ci_pinned_checkout' => str_contains(
                 $ciWorkflowBody,
                 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683'
@@ -180,6 +190,37 @@ final class ReleasePreflightInspector
         $body = file_get_contents($path);
 
         return is_string($body) ? $body : '';
+    }
+
+    private function workflowEventIncludesBranch(
+        string $workflow,
+        string $event,
+        string $branch
+    ): bool {
+        if ($workflow === '') {
+            return false;
+        }
+
+        $eventPattern = sprintf(
+            '/(?ms)^  %s:\s*\R(?<body>.*?)(?=^  [A-Za-z_][A-Za-z0-9_-]*:\s*|^permissions:\s*|^concurrency:\s*|^jobs:\s*|\z)/',
+            preg_quote($event, '/')
+        );
+
+        if (preg_match($eventPattern, $workflow, $match) !== 1) {
+            return false;
+        }
+
+        $body = (string) ($match['body'] ?? '');
+        if (preg_match('/(?m)^    branches:\s*$/', $body) !== 1) {
+            return false;
+        }
+
+        $branchPattern = sprintf(
+            '/(?m)^      -\s+["\']?%s["\']?\s*$/',
+            preg_quote($branch, '/')
+        );
+
+        return preg_match($branchPattern, $body) === 1;
     }
 
     private function deploymentWorkflowIsManualOnly(string $workflow): bool

@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - feature/core-entity
+      - main
   pull_request:
     branches:
       - feature/core-entity
+      - main
 
 permissions:
   contents: read

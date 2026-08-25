@@ -62,6 +62,26 @@ final class ProductionDeploymentFoundationTest extends TestCase
         );
     }
 
+    public function test_ci_covers_feature_and_default_branches_before_main_promotion(): void
+    {
+        $workflow = file_get_contents(base_path('.github/workflows/ci.yml'));
+        $this->assertIsString($workflow);
+
+        $normalized = str_replace("\r\n", "\n", $workflow);
+        $this->assertStringContainsString(
+            "  push:\n    branches:\n      - feature/core-entity\n      - main\n",
+            $normalized
+        );
+        $this->assertStringContainsString(
+            "  pull_request:\n    branches:\n      - feature/core-entity\n      - main\n",
+            $normalized
+        );
+
+        $result = app(ReleasePreflightInspector::class)->inspect();
+        $this->assertTrue($result['static']['ci_default_branch_push_coverage']);
+        $this->assertTrue($result['static']['ci_default_branch_pull_request_coverage']);
+    }
+
     public function test_production_workflow_is_manual_protected_and_source_blocked_before_remote_io(): void
     {
         $workflow = file_get_contents(base_path('.github/workflows/deploy-production.yml'));
@@ -309,6 +329,8 @@ final class ProductionDeploymentFoundationTest extends TestCase
         $result = app(ReleasePreflightInspector::class)->inspect();
 
         foreach ([
+            'ci_default_branch_push_coverage',
+            'ci_default_branch_pull_request_coverage',
             'production_deploy_workflow',
             'production_deploy_manual_only',
             'production_deploy_environment_gate',
