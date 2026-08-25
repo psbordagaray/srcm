@@ -19,6 +19,12 @@ final class ReleasePreflightInspector
         $ciWorkflowBody = $this->fileBody(base_path('.github/workflows/ci.yml'));
         $deployWorkflowBody = $this->fileBody(base_path('.github/workflows/deploy-production.yml'));
         $deployScriptBody = $this->fileBody(base_path('ops/production/deploy-release.sh'));
+        $bootstrapWorkflowBody = $this->fileBody(
+            base_path('.github/workflows/bootstrap-production-initial-release.yml')
+        );
+        $bootstrapScriptBody = $this->fileBody(
+            base_path('ops/production/bootstrap-initial-release.sh')
+        );
         $queueUnitBody = $this->fileBody(base_path('ops/production/systemd/srcm-queue.service'));
         $schedulerServiceBody = $this->fileBody(base_path('ops/production/systemd/srcm-schedule.service'));
         $schedulerTimerBody = $this->fileBody(base_path('ops/production/systemd/srcm-schedule.timer'));
@@ -84,6 +90,44 @@ final class ReleasePreflightInspector
             'immutable_release_activation_contract' => $this->immutableReleaseContractIsPresent(
                 $deployScriptBody
             ),
+            'production_initial_bootstrap_workflow' => $bootstrapWorkflowBody !== '',
+            'production_initial_bootstrap_manual_only' => $this->deploymentWorkflowIsManualOnly(
+                $bootstrapWorkflowBody
+            ),
+            'production_initial_bootstrap_environment_gate' => str_contains(
+                $bootstrapWorkflowBody,
+                'environment: production'
+            ),
+            'production_initial_bootstrap_concurrency_gate' => str_contains(
+                $bootstrapWorkflowBody,
+                'group: srcm-production-initial-bootstrap'
+            ) && str_contains($bootstrapWorkflowBody, 'cancel-in-progress: false'),
+            'production_initial_bootstrap_pre_authorization_artifact_handoff' =>
+                $this->initialBootstrapWorkflowSeparatesBuildFromProtectedInstall(
+                    $bootstrapWorkflowBody
+                ),
+            'production_initial_bootstrap_policy_contract' =>
+                $this->initialBootstrapPolicyIsPresent(),
+            'production_initial_bootstrap_source_authorization' => str_contains(
+                $bootstrapWorkflowBody,
+                'initial_application_release_bootstrap_enabled'
+            ) && str_contains(
+                $bootstrapWorkflowBody,
+                'production_environment_secrets_and_approvals'
+            ) && str_contains($bootstrapWorkflowBody, 'production_release_enabled'),
+            'production_initial_bootstrap_relative_checksum_contract' => str_contains(
+                $bootstrapWorkflowBody,
+                'sha256sum "$artifact" > "$artifact.sha256"'
+            ) && ! str_contains(
+                $bootstrapWorkflowBody,
+                'sha256sum "$RUNNER_TEMP/$artifact"'
+            ),
+            'production_initial_bootstrap_runtime_secrets_excluded' => $this->workflowExcludesRuntimeSecrets(
+                $bootstrapWorkflowBody
+            ),
+            'immutable_initial_bootstrap_contract' => $this->initialBootstrapContractIsPresent(
+                $bootstrapScriptBody
+            ),
             'production_runtime_units' => $this->runtimeUnitsArePresent(
                 $queueUnitBody,
                 $schedulerServiceBody,
@@ -147,6 +191,83 @@ final class ReleasePreflightInspector
         return ! preg_match('/^\s{2}(push|pull_request|schedule):/m', $workflow);
     }
 
+    private function initialBootstrapWorkflowSeparatesBuildFromProtectedInstall(
+        string $workflow
+    ): bool {
+        if ($workflow === '') {
+            return false;
+        }
+
+        $buildJob = strpos($workflow, '  build-initial-release-artifact:');
+        $artifactBuild = strpos($workflow, 'Build immutable initial release artifact');
+        $artifactUpload = strpos(
+            $workflow,
+            'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02'
+        );
+        $installJob = strpos($workflow, '  install-inactive-initial-release:');
+        $environmentGate = strpos($workflow, '    environment: production');
+        $artifactDownload = strpos(
+            $workflow,
+            'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093'
+        );
+        $authorization = strpos(
+            $workflow,
+            'Authorization boundary - fail closed before bootstrap remote IO'
+        );
+        $remoteIo = strpos($workflow, 'Configure SSH transport');
+
+        foreach ([
+            $buildJob,
+            $artifactBuild,
+            $artifactUpload,
+            $installJob,
+            $environmentGate,
+            $artifactDownload,
+            $authorization,
+            $remoteIo,
+        ] as $position) {
+            if (! is_int($position)) {
+                return false;
+            }
+        }
+
+        return $buildJob < $artifactBuild
+            && $artifactBuild < $artifactUpload
+            && $artifactUpload < $installJob
+            && $installJob < $environmentGate
+            && $environmentGate < $artifactDownload
+            && $artifactDownload < $authorization
+            && $authorization < $remoteIo
+            && str_contains($workflow, 'needs: build-initial-release-artifact');
+    }
+
+    private function initialBootstrapPolicyIsPresent(): bool
+    {
+        $policy = config('release.deployment.initial_application_release');
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return ($policy['foundation_version'] ?? null) === 1
+            && ($policy['mode'] ?? null) === 'one_time_inactive_bootstrap'
+            && ($policy['authorization_switch'] ?? null)
+                === 'initial_application_release_bootstrap_enabled'
+            && ($policy['requires_current_absent'] ?? null) === true
+            && ($policy['requires_releases_directory_empty'] ?? null) === true
+            && ($policy['artifact_built_in_github_actions'] ?? null) === true
+            && ($policy['artifact_build_is_pre_authorization'] ?? null) === true
+            && ($policy['remote_install_is_environment_protected'] ?? null) === true
+            && ($policy['expected_database_sha256'] ?? null)
+                === 'b07434ffcaaea6c1be8373b2187e725dceb70be40bfbdc3571af5df5ba85595e'
+            && ($policy['expected_database_size_bytes'] ?? null) === 3694592
+            && ($policy['expected_applied_migrations'] ?? null) === 122
+            && ($policy['migration_allowed'] ?? null) === false
+            && ($policy['creates_current_symlink'] ?? null) === false
+            && ($policy['starts_services'] ?? null) === false
+            && ($policy['public_readiness_check'] ?? null) === false
+            && ($policy['activation_is_separate_cut'] ?? null) === true;
+    }
+
     private function workflowExcludesRuntimeSecrets(string $workflow): bool
     {
         if ($workflow === '') {
@@ -191,6 +312,49 @@ final class ReleasePreflightInspector
         }
 
         return ! str_contains($script, 'migrate:rollback');
+    }
+
+    private function initialBootstrapContractIsPresent(string $script): bool
+    {
+        if ($script === '') {
+            return false;
+        }
+
+        foreach ([
+            '/srv/srcm/releases',
+            '/srv/srcm/current',
+            '/srv/srcm/shared',
+            'initial_current_must_be_absent',
+            'initial_releases_directory_must_be_empty',
+            'EXPECTED_DB_SHA256=b07434ffcaaea6c1be8373b2187e725dceb70be40bfbdc3571af5df5ba85595e',
+            'EXPECTED_DB_SIZE=3694592',
+            'EXPECTED_MIGRATIONS=122',
+            'php artisan srcm:release-preflight --ci',
+            'php artisan optimize',
+            'mv "$incoming_release" "$final_release"',
+            'SRCM_INITIAL_BOOTSTRAP_CURRENT=ABSENT',
+            'SRCM_INITIAL_BOOTSTRAP_SERVICES=INACTIVE',
+            'SRCM_INITIAL_BOOTSTRAP_MIGRATE=NO',
+        ] as $required) {
+            if (! str_contains($script, $required)) {
+                return false;
+            }
+        }
+
+        foreach ([
+            'php artisan migrate',
+            'systemctl start',
+            'systemctl restart',
+            'systemctl reload',
+            'systemctl enable',
+            'ln -s "$final_release" "$CURRENT"',
+        ] as $forbidden) {
+            if (str_contains($script, $forbidden)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function runtimeUnitsArePresent(

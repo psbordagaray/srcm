@@ -12,7 +12,7 @@ final class ProductionDeploymentFoundationTest extends TestCase
         $deployment = config('release.deployment');
 
         $this->assertIsArray($deployment);
-        $this->assertSame(1, $deployment['foundation_version']);
+        $this->assertSame(2, $deployment['foundation_version']);
         $this->assertSame('production', $deployment['environment']);
         $this->assertSame('linux_vps_single_host', $deployment['target_class']);
         $this->assertSame('github_actions_ssh', $deployment['transport']);
@@ -31,6 +31,31 @@ final class ProductionDeploymentFoundationTest extends TestCase
         $this->assertFalse($deployment['automatic_database_rollback']);
         $this->assertTrue($deployment['automatic_code_symlink_rollback']);
 
+        $bootstrap = $deployment['initial_application_release'];
+        $this->assertSame(1, $bootstrap['foundation_version']);
+        $this->assertSame('one_time_inactive_bootstrap', $bootstrap['mode']);
+        $this->assertSame(
+            'initial_application_release_bootstrap_enabled',
+            $bootstrap['authorization_switch']
+        );
+        $this->assertTrue($bootstrap['requires_current_absent']);
+        $this->assertTrue($bootstrap['requires_releases_directory_empty']);
+        $this->assertTrue($bootstrap['artifact_built_in_github_actions']);
+        $this->assertTrue($bootstrap['artifact_build_is_pre_authorization']);
+        $this->assertTrue($bootstrap['remote_install_is_environment_protected']);
+        $this->assertSame(
+            'b07434ffcaaea6c1be8373b2187e725dceb70be40bfbdc3571af5df5ba85595e',
+            $bootstrap['expected_database_sha256']
+        );
+        $this->assertSame(3694592, $bootstrap['expected_database_size_bytes']);
+        $this->assertSame(122, $bootstrap['expected_applied_migrations']);
+        $this->assertFalse($bootstrap['migration_allowed']);
+        $this->assertFalse($bootstrap['creates_current_symlink']);
+        $this->assertFalse($bootstrap['starts_services']);
+        $this->assertFalse($bootstrap['public_readiness_check']);
+        $this->assertTrue($bootstrap['activation_is_separate_cut']);
+
+        $this->assertFalse(config('release.initial_application_release_bootstrap_enabled'));
         $this->assertFalse(config('release.production_release_enabled'));
         $this->assertFalse(
             config('release.external_gates.production_environment_secrets_and_approvals')
@@ -90,6 +115,156 @@ final class ProductionDeploymentFoundationTest extends TestCase
         }
     }
 
+    public function test_initial_application_bootstrap_workflow_builds_before_a_separate_fail_closed_remote_boundary(): void
+    {
+        $workflow = file_get_contents(
+            base_path('.github/workflows/bootstrap-production-initial-release.yml')
+        );
+        $this->assertIsString($workflow);
+
+        $this->assertStringContainsString('workflow_dispatch:', $workflow);
+        $this->assertDoesNotMatchRegularExpression('/^\s{2}(push|pull_request|schedule):/m', $workflow);
+        $this->assertStringContainsString('environment: production', $workflow);
+        $this->assertStringContainsString('group: srcm-production-initial-bootstrap', $workflow);
+        $this->assertStringContainsString('cancel-in-progress: false', $workflow);
+        $this->assertStringContainsString('test "$CONFIRMATION" = "BOOTSTRAP"', $workflow);
+        $this->assertStringContainsString(
+            'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683',
+            $workflow
+        );
+        $this->assertStringContainsString(
+            'shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240',
+            $workflow
+        );
+        $this->assertStringContainsString('php artisan srcm:release-preflight --ci', $workflow);
+        $this->assertStringContainsString('npm run build', $workflow);
+        $this->assertStringContainsString('composer test', $workflow);
+
+        $buildJob = strpos($workflow, '  build-initial-release-artifact:');
+        $artifact = strpos($workflow, 'Build immutable initial release artifact');
+        $upload = strpos(
+            $workflow,
+            'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02'
+        );
+        $installJob = strpos($workflow, '  install-inactive-initial-release:');
+        $environment = strpos($workflow, '    environment: production');
+        $download = strpos(
+            $workflow,
+            'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093'
+        );
+        $authorization = strpos(
+            $workflow,
+            'Authorization boundary - fail closed before bootstrap remote IO'
+        );
+        $ssh = strpos($workflow, 'Configure SSH transport');
+        foreach ([
+            $buildJob,
+            $artifact,
+            $upload,
+            $installJob,
+            $environment,
+            $download,
+            $authorization,
+            $ssh,
+        ] as $position) {
+            $this->assertIsInt($position);
+        }
+        $this->assertTrue($buildJob < $artifact);
+        $this->assertTrue($artifact < $upload);
+        $this->assertTrue($upload < $installJob);
+        $this->assertTrue($installJob < $environment);
+        $this->assertTrue($environment < $download);
+        $this->assertTrue($download < $authorization);
+        $this->assertTrue($authorization < $ssh);
+        $this->assertStringContainsString('needs: build-initial-release-artifact', $workflow);
+
+        $this->assertStringContainsString(
+            'initial_application_release_bootstrap_enabled',
+            $workflow
+        );
+        $this->assertStringContainsString(
+            'production_environment_secrets_and_approvals',
+            $workflow
+        );
+        $this->assertStringContainsString('$normalRelease === false', $workflow);
+        $this->assertStringContainsString(
+            '($policy["artifact_build_is_pre_authorization"] ?? null) === true',
+            $workflow
+        );
+        $this->assertStringContainsString(
+            '($policy["remote_install_is_environment_protected"] ?? null) === true',
+            $workflow
+        );
+        $this->assertStringContainsString('($policy["migration_allowed"] ?? null) === false', $workflow);
+        $this->assertStringContainsString(
+            '($policy["creates_current_symlink"] ?? null) === false',
+            $workflow
+        );
+        $this->assertStringContainsString('($policy["starts_services"] ?? null) === false', $workflow);
+        $this->assertStringContainsString(
+            'sha256sum "$artifact" > "$artifact.sha256"',
+            $workflow
+        );
+        $this->assertStringNotContainsString(
+            'sha256sum "$RUNNER_TEMP/$artifact"',
+            $workflow
+        );
+        $this->assertStringContainsString('SRCM_DEPLOY_SSH_PRIVATE_KEY', $workflow);
+        $this->assertStringContainsString('SRCM_DEPLOY_KNOWN_HOSTS', $workflow);
+
+        foreach ([
+            'SRCM_MERCADO_PAGO_CONNECTION_SECRETS_JSON',
+            'SRCM_ARCA_WSAA_CREDENTIAL_REFERENCES_JSON',
+            'SRCM_ARCA_WSAA_CREDENTIAL_ROOT',
+            'SRCM_BACKUP_ENCRYPTION_KEY_REFERENCE',
+            'SRCM_BACKUP_S3_ACCESS_KEY_ID',
+            'SRCM_BACKUP_S3_SECRET_ACCESS_KEY',
+        ] as $runtimeSecret) {
+            $this->assertStringNotContainsString($runtimeSecret, $workflow);
+        }
+    }
+
+    public function test_initial_application_bootstrap_installs_only_an_inactive_verified_release(): void
+    {
+        $script = file_get_contents(base_path('ops/production/bootstrap-initial-release.sh'));
+        $this->assertIsString($script);
+
+        foreach ([
+            'ROOT=/srv/srcm',
+            'RELEASES=/srv/srcm/releases',
+            'CURRENT=/srv/srcm/current',
+            'SHARED=/srv/srcm/shared',
+            'initial_current_must_be_absent',
+            'initial_releases_directory_must_be_empty',
+            'EXPECTED_DB_SHA256=b07434ffcaaea6c1be8373b2187e725dceb70be40bfbdc3571af5df5ba85595e',
+            'EXPECTED_DB_SIZE=3694592',
+            'EXPECTED_MIGRATIONS=122',
+            'PRAGMA query_only=ON',
+            'PRAGMA quick_check',
+            'PRAGMA integrity_check',
+            'PRAGMA foreign_key_check',
+            'php artisan srcm:release-preflight --ci',
+            'php artisan optimize',
+            'mv "$incoming_release" "$final_release"',
+            'SRCM_INITIAL_BOOTSTRAP_CURRENT=ABSENT',
+            'SRCM_INITIAL_BOOTSTRAP_SERVICES=INACTIVE',
+            'SRCM_INITIAL_BOOTSTRAP_MIGRATE=NO',
+        ] as $required) {
+            $this->assertStringContainsString($required, $script);
+        }
+
+        foreach ([
+            'php artisan migrate',
+            'systemctl start',
+            'systemctl restart',
+            'systemctl reload',
+            'systemctl enable',
+            'ln -s "$final_release" "$CURRENT"',
+        ] as $forbidden) {
+            $this->assertStringNotContainsString($forbidden, $script);
+        }
+    }
+
     public function test_target_activation_contract_keeps_shared_state_outside_immutable_releases(): void
     {
         $script = file_get_contents(base_path('ops/production/deploy-release.sh'));
@@ -142,6 +317,16 @@ final class ProductionDeploymentFoundationTest extends TestCase
             'production_deploy_relative_checksum_contract',
             'production_deploy_runtime_secrets_excluded',
             'immutable_release_activation_contract',
+            'production_initial_bootstrap_workflow',
+            'production_initial_bootstrap_manual_only',
+            'production_initial_bootstrap_environment_gate',
+            'production_initial_bootstrap_concurrency_gate',
+            'production_initial_bootstrap_pre_authorization_artifact_handoff',
+            'production_initial_bootstrap_policy_contract',
+            'production_initial_bootstrap_source_authorization',
+            'production_initial_bootstrap_relative_checksum_contract',
+            'production_initial_bootstrap_runtime_secrets_excluded',
+            'immutable_initial_bootstrap_contract',
             'production_runtime_units',
         ] as $gate) {
             $this->assertTrue($result['static'][$gate], $gate.' must be green');

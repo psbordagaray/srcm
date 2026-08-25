@@ -14,6 +14,19 @@ return [
     */
     'production_release_enabled' => false,
 
+    /*
+    |--------------------------------------------------------------------------
+    | One-time initial application release bootstrap authorization
+    |--------------------------------------------------------------------------
+    |
+    | This switch is independent from normal production activation. It may only
+    | authorize the one-time installation of an immutable release while current
+    | is absent and all production services remain stopped. A later cut must
+    | explicitly activate current and the runtimes.
+    |
+    */
+    'initial_application_release_bootstrap_enabled' => false,
+
     'post_deploy_readiness' => [
         'route_name' => 'api.health.ready',
         'uri' => 'api/health/ready',
@@ -21,7 +34,7 @@ return [
     ],
 
     'deployment' => [
-        'foundation_version' => 1,
+        'foundation_version' => 2,
         'environment' => 'production',
         'target_class' => 'linux_vps_single_host',
         'transport' => 'github_actions_ssh',
@@ -49,6 +62,24 @@ return [
         'migration_policy' => 'fresh_readiness_backup_then_migrate_force',
         'automatic_database_rollback' => false,
         'automatic_code_symlink_rollback' => true,
+        'initial_application_release' => [
+            'foundation_version' => 1,
+            'mode' => 'one_time_inactive_bootstrap',
+            'authorization_switch' => 'initial_application_release_bootstrap_enabled',
+            'requires_current_absent' => true,
+            'requires_releases_directory_empty' => true,
+            'artifact_built_in_github_actions' => true,
+            'artifact_build_is_pre_authorization' => true,
+            'remote_install_is_environment_protected' => true,
+            'expected_database_sha256' => 'b07434ffcaaea6c1be8373b2187e725dceb70be40bfbdc3571af5df5ba85595e',
+            'expected_database_size_bytes' => 3694592,
+            'expected_applied_migrations' => 122,
+            'migration_allowed' => false,
+            'creates_current_symlink' => false,
+            'starts_services' => false,
+            'public_readiness_check' => false,
+            'activation_is_separate_cut' => true,
+        ],
     ],
 
     'external_gates' => [
