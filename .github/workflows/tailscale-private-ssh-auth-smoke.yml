@@ -2,11 +2,6 @@ name: SRCM Tailscale Private SSH Auth Smoke
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feature/core-entity
-    paths:
-      - .github/workflows/tailscale-private-ssh-auth-smoke.yml
 
 permissions:
   contents: read
@@ -55,7 +50,7 @@ jobs:
           printf 'DEPLOY_PRIVATE_KEY_IDENTITY=GREEN_EXPECTED_ED25519_FINGERPRINT\n'
           printf 'TARGET_KNOWN_HOSTS=GREEN_EXACT_OOB_ED25519_FINGERPRINT\n'
 
-      - name: Verify private route and authenticate restricted deploy identity
+      - name: Verify private route and authenticate restricted deploy identity read-only
         shell: bash
         run: |
           set -euo pipefail
@@ -85,11 +80,44 @@ jobs:
             -o ConnectTimeout=10 \
             -i "$HOME/.ssh/id_ed25519" \
             "$user@$target" \
-            'set -eu; test "$(id -un)" = "straleon-deploy"; test "$(hostname)" = "straleon-prod-01"; test ! -e /srv/srcm; printf "REMOTE_DEPLOY_IDENTITY=GREEN_STRICT_READ_ONLY_AUTH\\nREMOTE_HOSTNAME=GREEN_STRALEON_PROD_01\\nREMOTE_FILESYSTEM_BOUNDARY=UNCHANGED_ABSENT\\n"')"
+            'set -eu
+             root=/srv/srcm
+             releases="$root/releases"
+             current="$root/current"
+             shared="$root/shared"
+             db="$shared/database/database.sqlite"
+             test "$(id -un)" = "straleon-deploy"
+             test "$(hostname)" = "straleon-prod-01"
+             test -d "$root"
+             test -d "$releases"
+             test -d "$shared"
+             test -f "$shared/.env"
+             test -d "$shared/storage"
+             test -f "$db"
+             test ! -e "$current"
+             test ! -L "$current"
+             test -z "$(find "$releases" -mindepth 1 -maxdepth 1 -print -quit)"
+             db_sha="$(sha256sum "$db" | cut -d " " -f 1)"
+             db_size="$(stat -c %s "$db")"
+             test "$db_sha" = "b07434ffcaaea6c1be8373b2187e725dceb70be40bfbdc3571af5df5ba85595e"
+             test "$db_size" = "3694592"
+             printf "REMOTE_DEPLOY_IDENTITY=GREEN_STRICT_READ_ONLY_AUTH\\n"
+             printf "REMOTE_HOSTNAME=GREEN_STRALEON_PROD_01\\n"
+             printf "REMOTE_PREPARED_INFRASTRUCTURE=GREEN_ROOT_SHARED_RELEASES\\n"
+             printf "REMOTE_RELEASES=GREEN_EMPTY\\n"
+             printf "REMOTE_CURRENT=GREEN_ABSENT\\n"
+             printf "REMOTE_DATABASE_SHA256=GREEN_EXACT_INITIAL_SNAPSHOT\\n"
+             printf "REMOTE_DATABASE_SIZE=GREEN_EXACT_INITIAL_SNAPSHOT\\n"
+             printf "REMOTE_MUTATION=NO\\n"')"
 
           printf '%s\n' "$remote_output" | grep -qx 'REMOTE_DEPLOY_IDENTITY=GREEN_STRICT_READ_ONLY_AUTH'
           printf '%s\n' "$remote_output" | grep -qx 'REMOTE_HOSTNAME=GREEN_STRALEON_PROD_01'
-          printf '%s\n' "$remote_output" | grep -qx 'REMOTE_FILESYSTEM_BOUNDARY=UNCHANGED_ABSENT'
+          printf '%s\n' "$remote_output" | grep -qx 'REMOTE_PREPARED_INFRASTRUCTURE=GREEN_ROOT_SHARED_RELEASES'
+          printf '%s\n' "$remote_output" | grep -qx 'REMOTE_RELEASES=GREEN_EMPTY'
+          printf '%s\n' "$remote_output" | grep -qx 'REMOTE_CURRENT=GREEN_ABSENT'
+          printf '%s\n' "$remote_output" | grep -qx 'REMOTE_DATABASE_SHA256=GREEN_EXACT_INITIAL_SNAPSHOT'
+          printf '%s\n' "$remote_output" | grep -qx 'REMOTE_DATABASE_SIZE=GREEN_EXACT_INITIAL_SNAPSHOT'
+          printf '%s\n' "$remote_output" | grep -qx 'REMOTE_MUTATION=NO'
 
           printf 'TAILSCALE_PRIVATE_PATH=GREEN_TAILSCALE0\n'
           printf 'PRIVATE_SSH_AUTH=GREEN_STRICT_HOSTKEY_PUBLICKEY_ONLY\n'
