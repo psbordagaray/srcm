@@ -75,6 +75,8 @@ final class ReleasePreflightInspector
             ),
             'production_deploy_workflow' => $deployWorkflowBody !== '',
             'production_deploy_manual_only' => $this->deploymentWorkflowIsManualOnly($deployWorkflowBody),
+            'production_deploy_protected_main_dispatch_identity' =>
+                $this->workflowUsesProtectedMainDispatchIdentity($deployWorkflowBody, 1),
             'production_deploy_environment_gate' => str_contains(
                 $deployWorkflowBody,
                 'environment: production'
@@ -109,6 +111,8 @@ final class ReleasePreflightInspector
             'production_initial_bootstrap_manual_only' => $this->deploymentWorkflowIsManualOnly(
                 $bootstrapWorkflowBody
             ),
+            'production_initial_bootstrap_protected_main_dispatch_identity' =>
+                $this->workflowUsesProtectedMainDispatchIdentity($bootstrapWorkflowBody, 2),
             'production_initial_bootstrap_environment_gate' => str_contains(
                 $bootstrapWorkflowBody,
                 'environment: production'
@@ -231,6 +235,28 @@ final class ReleasePreflightInspector
         );
 
         return preg_match($branchPattern, $body) === 1;
+    }
+
+    private function workflowUsesProtectedMainDispatchIdentity(
+        string $workflow,
+        int $expectedOccurrences
+    ): bool {
+        if ($workflow === '' || $expectedOccurrences < 1) {
+            return false;
+        }
+
+        foreach ([
+            'test "$GITHUB_REF_TYPE" = "branch"',
+            'test "$GITHUB_REF_NAME" = "main"',
+            'test "$GITHUB_REF_PROTECTED" = "true"',
+            'test "${RELEASE_SHA_INPUT,,}" = "${GITHUB_SHA,,}"',
+        ] as $required) {
+            if (substr_count($workflow, $required) !== $expectedOccurrences) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function deploymentWorkflowIsManualOnly(string $workflow): bool
