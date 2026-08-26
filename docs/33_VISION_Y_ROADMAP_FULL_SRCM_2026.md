@@ -1,56 +1,50 @@
 # SRCM — Visión y Roadmap Full 2026
 
 Estado: **North Star / contrato de dirección y continuidad**
-Fecha: **2026-08-24**
+Fecha: **2026-08-26**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 Puerta de entrada de continuidad: `docs/README.md`
 
 ---
 
-## Current P11 checkpoint — Production Host Foundation + Local DB Reconciliation Pending
+## Current P11 checkpoint — Protected Main Dispatch Identity + Canonical Alignment
 
-Canonical source checkpoint before this documentation sync: `6123eff8dbe5b561398099dc89f40bdce2bd0e83` — `chore(release):add-tailscale-private-ssh-auth-smoke`.
-Branch: `feature/core-entity`.
-Production release authorization remains fail-closed: `release.production_release_enabled=false`.
+Canonical source checkpoint before this documentation-only consolidation:
+`c2333566d273670dd23da9a5cb1208914cb0af93` — `fix(release): require protected main dispatch identity`.
+Branch/local/origin main/origin feature were aligned at that exact commit before this cut.
+Production release authorization remains fail-closed.
 
-Production host evidence now closed:
-- GitHub OIDC/WIF → Tailscale ephemeral runner → private `100.64.245.55:22` path is GREEN;
-- strict OpenSSH auth as `straleon-deploy` is GREEN with pinned ED25519 host key;
-- the temporary local deploy private key copy was retired after GitHub secret authentication was proven;
-- `/srv/srcm`, releases/shared/storage/backups boundaries are created with the published ownership/mode model;
-- published queue/scheduler systemd units are installed byte-exact but remain inactive/not enabled;
-- `/srv/srcm/shared/.env` exists as `root:www-data 0640` with a fresh production APP_KEY generated on-host and never logged;
-- runtime hostname decision is `app.straleon.ar`; DNS/TLS/Nginx activation remains intentionally unconfigured;
-- `/srv/srcm/current` and `/srv/srcm/shared/database/database.sqlite` remain absent;
-- Nginx/PHP-FPM remain inactive/disabled and no public 80/443 listener exists.
+P11 production governance evidence now consolidated:
+- the stable production node identity is the logical Tailscale name `straleon-prod-01`; runtime Tailscale IP is telemetry only and is not release identity;
+- Safe Smoke Run 3 is GREEN through Tailscale whois/tag/route identity plus pinned SSH, strictly read-only and without application deployment;
+- PR #4 rebase-merged the protected-main dispatch hardening; CI35 (feature), CI36 (PR), CI37 (main) and CI38 (feature realignment) are GREEN;
+- manual production deploy/bootstrap workflows require a branch dispatch on protected `main` and require requested `release_sha` to equal the dispatch `GITHUB_SHA`;
+- bootstrap applies that identity contract before build/install authorization boundaries, while deploy applies it before the protected production job;
+- ADR 139 remains the stable-node-identity decision and ADR 140 remains the protected-main-dispatch decision; no new ADR is required by this consolidation;
+- local database continuity is canonical by integrity, schema, 122 migrations and non-session logical state; SQLite binary SHA and session row count are telemetry only;
+- security, privacy, encrypted off-host backup, restore evidence and continuity remain architectural priorities and are not weakened by this docs-only cut.
 
-Local authoritative SQLite cutover preparation:
-- source DB before reconciliation: SHA-256 `15969f45cd14c88dc053588637ed226c1e895eeb8279f03d2aff62781acf18ae`, 112 user tables, 332 logical rows;
-- migration ledger: 93 applied of 122, exactly 29 pending, zero unknown applied migrations;
-- isolated `VACUUM INTO` clone simulation applied all 29 cleanly: 122/122, zero pending/unknown, integrity/FK GREEN, original data fingerprint unchanged;
-- expected delta from the 29 migrations is 46 new empty tables plus 6 new columns with zero non-null cells on original rows;
-- the real source DB remained byte-exact after the simulation.
+Authorization source gates remain closed:
+- `release.production_release_enabled=false`;
+- `release.initial_application_release_bootstrap_enabled=false`;
+- `release.external_gates.production_environment_secrets_and_approvals=false`.
 
-Latest reconciliation runner status:
-- V1 failed before DB access because its self-path was resolved inside a child scope;
-- V2 fixed self-path but failed at `CHECKPOINT` before DB access because native Git stderr handling was still exposed to Windows PowerShell terminating `RemoteException`; no rollback was attempted and no DB mutation was reached;
-- the next recovery must use the already-proven `ProcessStartInfo` Git capture pattern with an explicit repository working directory for every checkpoint/final Git command.
+This documentation-only cut does not dispatch a workflow, open SSH, mutate the server,
+deploy an application, mutate the production database, authorize bootstrap, or activate
+public traffic.
 
-Master-document sync recovery status:
-- continuity sync V1 failed before document mutation because its helper used the reserved PowerShell automatic variable `$Args`; Git therefore launched without the intended arguments (`GIT_HEAD_EXIT=1`, empty stderr);
-- continuity sync V2 replaces that helper with the proven `GitArgs`/native subprocess capture pattern and remains limited to these three master documents.
+This block is the canonical continuity state and supersedes older P11 checkpoint
+narrative preserved below for historical context.
 
-This block is the canonical continuity state and supersedes older P11 checkpoint narrative preserved below for historical context.
-
-Next exact boundary after this documentation sync:
-`P11_LOCAL_DATABASE_MIGRATION_RECONCILIATION_V3_NATIVE_GIT_CAPTURE_RECOVERY`.
+Next exact boundary:
+`NEXT_FRONTIER_BOOTSTRAP_AUTHORIZATION_SOURCE_REVIEW_BEFORE_ANY_EXECUTION`.
 
 ## 0. Estado maestro de continuidad
 
-Base funcional publicada tras **P11 Resilience External Gates Closure V1**:
+Base funcional publicada tras **P11 Protected Main Dispatch Identity V1**:
 
-`a41e1f6b8197a7d05dbc1932c3bf8f60555d7303`
-— `feat(release): close evidenced resilience gates`
+`c2333566d273670dd23da9a5cb1208914cb0af93`
+— `fix(release): require protected main dispatch identity`
 
 Estado: P1–P9 publicados/cerrados según sus checkpoints; P10 **LOCAL_CLOSURE=GREEN** en `7922c51f7f52995c7137094ec7e8be9cbdd32192`; P11 tiene publicados Production Security, Observability y Resilience Baselines V1.
 
