@@ -135,6 +135,32 @@ final class ProductionDeploymentFoundationTest extends TestCase
         }
     }
 
+    public function test_manual_production_workflows_require_protected_main_and_exact_dispatch_sha(): void
+    {
+        $cases = [
+            ['.github/workflows/deploy-production.yml', 1],
+            ['.github/workflows/bootstrap-production-initial-release.yml', 2],
+        ];
+
+        foreach ($cases as [$path, $expectedOccurrences]) {
+            $workflow = file_get_contents(base_path($path));
+            $this->assertIsString($workflow);
+
+            foreach ([
+                'test "$GITHUB_REF_TYPE" = "branch"',
+                'test "$GITHUB_REF_NAME" = "main"',
+                'test "$GITHUB_REF_PROTECTED" = "true"',
+                'test "${RELEASE_SHA_INPUT,,}" = "${GITHUB_SHA,,}"',
+            ] as $guard) {
+                $this->assertSame(
+                    $expectedOccurrences,
+                    substr_count($workflow, $guard),
+                    $path.' missing protected dispatch identity guard: '.$guard
+                );
+            }
+        }
+    }
+
     public function test_production_remote_workflows_resolve_and_prove_stable_tailscale_node_identity_before_ssh(): void
     {
         $cases = [
@@ -454,6 +480,7 @@ final class ProductionDeploymentFoundationTest extends TestCase
             'ci_default_branch_pull_request_coverage',
             'production_deploy_workflow',
             'production_deploy_manual_only',
+            'production_deploy_protected_main_dispatch_identity',
             'production_deploy_environment_gate',
             'production_deploy_concurrency_gate',
             'production_deploy_dual_source_authorization',
@@ -463,6 +490,7 @@ final class ProductionDeploymentFoundationTest extends TestCase
             'immutable_release_activation_contract',
             'production_initial_bootstrap_workflow',
             'production_initial_bootstrap_manual_only',
+            'production_initial_bootstrap_protected_main_dispatch_identity',
             'production_initial_bootstrap_environment_gate',
             'production_initial_bootstrap_concurrency_gate',
             'production_initial_bootstrap_pre_authorization_artifact_handoff',
