@@ -176,6 +176,25 @@ final class ProductionDeploymentFoundationTest extends TestCase
                 $this->assertStringContainsString($required, $workflow, $path);
             }
 
+            $this->assertMatchesRegularExpression(
+                '/(?m)^\h+test "\$DEPLOY_PORT" = "22"\h*\r?$/',
+                $workflow,
+                $path
+            );
+            $this->assertMatchesRegularExpression(
+                '/(?m)^\h+test -n "\$SSH_PRIVATE_KEY"\h*\r?$/',
+                $workflow,
+                $path
+            );
+
+            if ($path === '.github/workflows/deploy-production.yml') {
+                $this->assertMatchesRegularExpression(
+                    '/(?m)^\h+\[\[ "\$READINESS_URL" =~ \^https:\/\/ \]\]\h*\r?$/',
+                    $workflow,
+                    $path
+                );
+            }
+
             $this->assertStringNotContainsString('64.176.3.12', $workflow, $path);
             $this->assertStringNotContainsString('100.64.245.55', $workflow, $path);
             $this->assertSame(

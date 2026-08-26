@@ -238,7 +238,8 @@ jobs:
           test "$DEPLOY_USER" = "straleon-deploy"
           test -n "$DEPLOY_PORT"
           [[ "$DEPLOY_PORT" =~ ^[0-9]+$ ]]
-          test "$DEPLOY_PORT" = "22"          test -n "$SSH_PRIVATE_KEY"
+          test "$DEPLOY_PORT" = "22"
+          test -n "$SSH_PRIVATE_KEY"
           test -n "$KNOWN_HOSTS"
 
           own_ip="$(tailscale ip --4)"
