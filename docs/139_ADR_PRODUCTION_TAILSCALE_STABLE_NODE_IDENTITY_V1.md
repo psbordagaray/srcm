@@ -1,7 +1,7 @@
 # ADR 139 — Production Tailscale Stable Node Identity V1
 
-**Status:** Accepted  
-**Scope:** P11 production CI/CD stable node identity  
+**Status:** Accepted
+**Scope:** P11 production CI/CD stable node identity
 **Date:** 2026-08-26
 
 ## Context
