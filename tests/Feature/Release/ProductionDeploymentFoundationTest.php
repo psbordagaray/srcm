@@ -135,7 +135,7 @@ final class ProductionDeploymentFoundationTest extends TestCase
         }
     }
 
-    public function test_production_remote_workflows_require_pinned_private_tailscale_transport_before_ssh(): void
+    public function test_production_remote_workflows_resolve_and_prove_stable_tailscale_node_identity_before_ssh(): void
     {
         $cases = [
             [
@@ -158,12 +158,18 @@ final class ProductionDeploymentFoundationTest extends TestCase
                 '${{ secrets.TS_OAUTH_CLIENT_ID }}',
                 '${{ secrets.TS_AUDIENCE }}',
                 'tag:straleon-ci-deploy',
-                'test "$DEPLOY_HOST" = "100.64.245.55"',
+                'test "$DEPLOY_HOST" = "straleon-prod-01"',
                 'test "$DEPLOY_USER" = "straleon-deploy"',
                 'test "$DEPLOY_PORT" = "22"',
-                'tailscale ip -4',
-                'ip route get "$DEPLOY_HOST"',
+                'tailscale ip --4 "$DEPLOY_HOST"',
+                'tailscale whois --json "$resolved_deploy_ip"',
+                '.Node.Name // empty',
+                'tag:straleon-prod',
+                '(.Node.Tags // [])',
+                'ip route get "$resolved_deploy_ip"',
                 'dev tailscale0',
+                'RESOLVED_DEPLOY_IP',
+                'known_key_material=',
                 'SHA256:x6L1N7kD+rcrlqD7EB+boZgwDQc4AtO6NMMltEHZhpw',
                 'SHA256:iy4hCZtEYlqi3MjSxLFmX7cKPTFXXfecZultd7c2Xj4',
             ] as $required) {
@@ -171,6 +177,7 @@ final class ProductionDeploymentFoundationTest extends TestCase
             }
 
             $this->assertStringNotContainsString('64.176.3.12', $workflow, $path);
+            $this->assertStringNotContainsString('100.64.245.55', $workflow, $path);
             $this->assertSame(
                 1,
                 substr_count(
@@ -185,19 +192,51 @@ final class ProductionDeploymentFoundationTest extends TestCase
                 $workflow,
                 'tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888'
             );
-            $route = strpos($workflow, 'ip route get "$DEPLOY_HOST"');
+            $resolve = strpos($workflow, 'tailscale ip --4 "$DEPLOY_HOST"');
+            $whois = strpos($workflow, 'tailscale whois --json "$resolved_deploy_ip"');
+            $route = strpos($workflow, 'ip route get "$resolved_deploy_ip"');
             $ssh = strpos($workflow, 'Configure SSH transport');
 
-            foreach ([$authorization, $tailscale, $route, $ssh] as $position) {
+            foreach ([$authorization, $tailscale, $resolve, $whois, $route, $ssh] as $position) {
                 $this->assertIsInt($position, $path);
             }
 
             $this->assertTrue($authorization < $tailscale, $path);
-            $this->assertTrue($tailscale < $route, $path);
+            $this->assertTrue($tailscale < $resolve, $path);
+            $this->assertTrue($resolve < $whois, $path);
+            $this->assertTrue($whois < $route, $path);
             $this->assertTrue($route < $ssh, $path);
         }
     }
 
+    public function test_tailscale_safe_smoke_proves_stable_node_identity_without_private_ip_literal(): void
+    {
+        $workflow = file_get_contents(
+            base_path('.github/workflows/tailscale-private-ssh-auth-smoke.yml')
+        );
+        $this->assertIsString($workflow);
+
+        foreach ([
+            'Resolve and verify stable production node identity',
+            '${{ vars.SRCM_DEPLOY_HOST }}',
+            'test "$DEPLOY_HOST" = "straleon-prod-01"',
+            'tailscale ip --4 "$DEPLOY_HOST"',
+            'tailscale whois --json "$resolved_deploy_ip"',
+            '.Node.Name // empty',
+            'tag:straleon-prod',
+            '(.Node.Tags // [])',
+            'ip route get "$resolved_deploy_ip"',
+            'RESOLVED_DEPLOY_IP',
+            'known_key_material=',
+            'TARGET_IP_POLICY=GREEN_RUNTIME_RESOLVED_NOT_PINNED',
+            'test "$(hostname)" = "straleon-prod-01"',
+        ] as $required) {
+            $this->assertStringContainsString($required, $workflow);
+        }
+
+        $this->assertStringNotContainsString('64.176.3.12', $workflow);
+        $this->assertStringNotContainsString('100.64.245.55', $workflow);
+    }
     public function test_initial_application_bootstrap_workflow_builds_before_a_separate_fail_closed_remote_boundary(): void
     {
         $workflow = file_get_contents(
