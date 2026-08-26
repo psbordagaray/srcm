@@ -97,6 +97,11 @@ final class ReleasePreflightInspector
             'production_deploy_runtime_secrets_excluded' => $this->workflowExcludesRuntimeSecrets(
                 $deployWorkflowBody
             ),
+            'production_deploy_private_tailscale_transport' =>
+                $this->workflowUsesPrivateTailscaleTransport(
+                    $deployWorkflowBody,
+                    'Authorization boundary - fail closed before remote IO'
+                ),
             'immutable_release_activation_contract' => $this->immutableReleaseContractIsPresent(
                 $deployScriptBody
             ),
@@ -135,6 +140,11 @@ final class ReleasePreflightInspector
             'production_initial_bootstrap_runtime_secrets_excluded' => $this->workflowExcludesRuntimeSecrets(
                 $bootstrapWorkflowBody
             ),
+            'production_initial_bootstrap_private_tailscale_transport' =>
+                $this->workflowUsesPrivateTailscaleTransport(
+                    $bootstrapWorkflowBody,
+                    'Authorization boundary - fail closed before bootstrap remote IO'
+                ),
             'immutable_initial_bootstrap_contract' => $this->initialBootstrapContractIsPresent(
                 $bootstrapScriptBody
             ),
@@ -307,6 +317,64 @@ final class ReleasePreflightInspector
             && ($policy['starts_services'] ?? null) === false
             && ($policy['public_readiness_check'] ?? null) === false
             && ($policy['activation_is_separate_cut'] ?? null) === true;
+    }
+
+    private function workflowUsesPrivateTailscaleTransport(
+        string $workflow,
+        string $authorizationBoundary
+    ): bool {
+        if ($workflow === '') {
+            return false;
+        }
+
+        foreach ([
+            'id-token: write',
+            'tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888',
+            '${{ secrets.TS_OAUTH_CLIENT_ID }}',
+            '${{ secrets.TS_AUDIENCE }}',
+            'tag:straleon-ci-deploy',
+            'test "$DEPLOY_HOST" = "100.64.245.55"',
+            'test "$DEPLOY_USER" = "straleon-deploy"',
+            'test "$DEPLOY_PORT" = "22"',
+            'tailscale ip -4',
+            'ip route get "$DEPLOY_HOST"',
+            'dev tailscale0',
+            'SHA256:x6L1N7kD+rcrlqD7EB+boZgwDQc4AtO6NMMltEHZhpw',
+            'SHA256:iy4hCZtEYlqi3MjSxLFmX7cKPTFXXfecZultd7c2Xj4',
+        ] as $required) {
+            if (! str_contains($workflow, $required)) {
+                return false;
+            }
+        }
+
+        if (str_contains($workflow, '64.176.3.12')) {
+            return false;
+        }
+
+        if (substr_count(
+            $workflow,
+            'tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888'
+        ) !== 1) {
+            return false;
+        }
+
+        $authorization = strpos($workflow, $authorizationBoundary);
+        $tailscale = strpos(
+            $workflow,
+            'tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888'
+        );
+        $route = strpos($workflow, 'ip route get "$DEPLOY_HOST"');
+        $ssh = strpos($workflow, 'Configure SSH transport');
+
+        foreach ([$authorization, $tailscale, $route, $ssh] as $position) {
+            if (! is_int($position)) {
+                return false;
+            }
+        }
+
+        return $authorization < $tailscale
+            && $tailscale < $route
+            && $route < $ssh;
     }
 
     private function workflowExcludesRuntimeSecrets(string $workflow): bool

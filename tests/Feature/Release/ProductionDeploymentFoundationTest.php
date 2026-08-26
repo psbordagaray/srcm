@@ -135,6 +135,69 @@ final class ProductionDeploymentFoundationTest extends TestCase
         }
     }
 
+    public function test_production_remote_workflows_require_pinned_private_tailscale_transport_before_ssh(): void
+    {
+        $cases = [
+            [
+                '.github/workflows/deploy-production.yml',
+                'Authorization boundary - fail closed before remote IO',
+            ],
+            [
+                '.github/workflows/bootstrap-production-initial-release.yml',
+                'Authorization boundary - fail closed before bootstrap remote IO',
+            ],
+        ];
+
+        foreach ($cases as [$path, $authorizationBoundary]) {
+            $workflow = file_get_contents(base_path($path));
+            $this->assertIsString($workflow);
+
+            foreach ([
+                'id-token: write',
+                'tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888',
+                '${{ secrets.TS_OAUTH_CLIENT_ID }}',
+                '${{ secrets.TS_AUDIENCE }}',
+                'tag:straleon-ci-deploy',
+                'test "$DEPLOY_HOST" = "100.64.245.55"',
+                'test "$DEPLOY_USER" = "straleon-deploy"',
+                'test "$DEPLOY_PORT" = "22"',
+                'tailscale ip -4',
+                'ip route get "$DEPLOY_HOST"',
+                'dev tailscale0',
+                'SHA256:x6L1N7kD+rcrlqD7EB+boZgwDQc4AtO6NMMltEHZhpw',
+                'SHA256:iy4hCZtEYlqi3MjSxLFmX7cKPTFXXfecZultd7c2Xj4',
+            ] as $required) {
+                $this->assertStringContainsString($required, $workflow, $path);
+            }
+
+            $this->assertStringNotContainsString('64.176.3.12', $workflow, $path);
+            $this->assertSame(
+                1,
+                substr_count(
+                    $workflow,
+                    'tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888'
+                ),
+                $path
+            );
+
+            $authorization = strpos($workflow, $authorizationBoundary);
+            $tailscale = strpos(
+                $workflow,
+                'tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888'
+            );
+            $route = strpos($workflow, 'ip route get "$DEPLOY_HOST"');
+            $ssh = strpos($workflow, 'Configure SSH transport');
+
+            foreach ([$authorization, $tailscale, $route, $ssh] as $position) {
+                $this->assertIsInt($position, $path);
+            }
+
+            $this->assertTrue($authorization < $tailscale, $path);
+            $this->assertTrue($tailscale < $route, $path);
+            $this->assertTrue($route < $ssh, $path);
+        }
+    }
+
     public function test_initial_application_bootstrap_workflow_builds_before_a_separate_fail_closed_remote_boundary(): void
     {
         $workflow = file_get_contents(
@@ -338,6 +401,7 @@ final class ProductionDeploymentFoundationTest extends TestCase
             'production_deploy_dual_source_authorization',
             'production_deploy_relative_checksum_contract',
             'production_deploy_runtime_secrets_excluded',
+            'production_deploy_private_tailscale_transport',
             'immutable_release_activation_contract',
             'production_initial_bootstrap_workflow',
             'production_initial_bootstrap_manual_only',
@@ -348,6 +412,7 @@ final class ProductionDeploymentFoundationTest extends TestCase
             'production_initial_bootstrap_source_authorization',
             'production_initial_bootstrap_relative_checksum_contract',
             'production_initial_bootstrap_runtime_secrets_excluded',
+            'production_initial_bootstrap_private_tailscale_transport',
             'immutable_initial_bootstrap_contract',
             'production_runtime_units',
         ] as $gate) {
