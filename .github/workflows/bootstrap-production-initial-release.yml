@@ -233,31 +233,48 @@ jobs:
           KNOWN_HOSTS: ${{ secrets.SRCM_DEPLOY_KNOWN_HOSTS }}
         run: |
           set -euo pipefail
-          test "$DEPLOY_HOST" = "100.64.245.55"
+          test "$DEPLOY_HOST" = "straleon-prod-01"
           test -n "$DEPLOY_USER"
           test "$DEPLOY_USER" = "straleon-deploy"
           test -n "$DEPLOY_PORT"
           [[ "$DEPLOY_PORT" =~ ^[0-9]+$ ]]
-          test "$DEPLOY_PORT" = "22"
-          test -n "$SSH_PRIVATE_KEY"
+          test "$DEPLOY_PORT" = "22"          test -n "$SSH_PRIVATE_KEY"
           test -n "$KNOWN_HOSTS"
 
-          own_ip="$(tailscale ip -4)"
+          own_ip="$(tailscale ip --4)"
           case "$own_ip" in
             100.*) ;;
             *) exit 1 ;;
           esac
 
-          route_line="$(ip route get "$DEPLOY_HOST")"
+          command -v jq >/dev/null
+          mapfile -t resolved_ips < <(tailscale ip --4 "$DEPLOY_HOST")
+          test "${#resolved_ips[@]}" -eq 1
+          resolved_deploy_ip="${resolved_ips[0]}"
+          [[ "$resolved_deploy_ip" =~ ^100\. ]]
+
+          whois_json="$(tailscale whois --json "$resolved_deploy_ip")"
+          whois_machine_name="$(printf '%s\n' "$whois_json" | jq -r '.Node.Name // empty')"
+          test -n "$whois_machine_name"
+          whois_machine_name="${whois_machine_name%.}"
+          whois_machine_label="${whois_machine_name%%.*}"
+          test "$whois_machine_label" = "$DEPLOY_HOST"
+          printf '%s\n' "$whois_json" | jq -e --arg tag 'tag:straleon-prod' '(.Node.Tags // []) | index($tag) != null' >/dev/null
+          printf '%s\n' "$whois_json" | jq -e --arg ip "$resolved_deploy_ip" '(.Node.Addresses // []) | map(split("/")[0]) | index($ip) != null' >/dev/null
+
+          route_line="$(ip route get "$resolved_deploy_ip")"
           case "$route_line" in
             *"dev tailscale0"*) ;;
             *) exit 1 ;;
           esac
 
+          echo "RESOLVED_DEPLOY_IP=$resolved_deploy_ip" >> "$GITHUB_ENV"
+
       - name: Configure SSH transport
         shell: bash
         env:
           DEPLOY_HOST: ${{ vars.SRCM_DEPLOY_HOST }}
+          RESOLVED_DEPLOY_IP: ${{ env.RESOLVED_DEPLOY_IP }}
           SSH_PRIVATE_KEY: ${{ secrets.SRCM_DEPLOY_SSH_PRIVATE_KEY }}
           KNOWN_HOSTS: ${{ secrets.SRCM_DEPLOY_KNOWN_HOSTS }}
         run: |
@@ -266,13 +283,16 @@ jobs:
           install -d -m 700 "$HOME/.ssh"
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
           chmod 600 "$HOME/.ssh/id_ed25519"
-          printf '%s\n' "$KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          test -n "$RESOLVED_DEPLOY_IP"
+          known_key_material="$(printf '%s\n' "$KNOWN_HOSTS" | awk 'NF >= 3 && $1 !~ /^#/ {print $2 " " $3; exit}')"
+          test -n "$known_key_material"
+          printf '%s %s\n' "$RESOLVED_DEPLOY_IP" "$known_key_material" > "$HOME/.ssh/known_hosts"
           chmod 600 "$HOME/.ssh/known_hosts"
 
           private_fingerprint="$(ssh-keygen -yf "$HOME/.ssh/id_ed25519" | ssh-keygen -lf - -E sha256 | awk '{print $2}')"
           test "$private_fingerprint" = 'SHA256:x6L1N7kD+rcrlqD7EB+boZgwDQc4AtO6NMMltEHZhpw'
 
-          known_line="$(ssh-keygen -F "$DEPLOY_HOST" -f "$HOME/.ssh/known_hosts" | grep -v '^#' | head -n 1)"
+          known_line="$(ssh-keygen -F "$RESOLVED_DEPLOY_IP" -f "$HOME/.ssh/known_hosts" | grep -v '^#' | head -n 1)"
           test -n "$known_line"
           known_fingerprint="$(printf '%s\n' "$known_line" | ssh-keygen -lf - -E sha256 | awk '{print $2}')"
           test "$known_fingerprint" = 'SHA256:iy4hCZtEYlqi3MjSxLFmX7cKPTFXXfecZultd7c2Xj4'
@@ -281,31 +301,37 @@ jobs:
         shell: bash
         env:
           DEPLOY_HOST: ${{ vars.SRCM_DEPLOY_HOST }}
+          RESOLVED_DEPLOY_IP: ${{ env.RESOLVED_DEPLOY_IP }}
           DEPLOY_USER: ${{ vars.SRCM_DEPLOY_USER }}
           DEPLOY_PORT: ${{ vars.SRCM_DEPLOY_PORT }}
         run: |
           set -euo pipefail
+          test "$DEPLOY_HOST" = "straleon-prod-01"
+          test -n "$RESOLVED_DEPLOY_IP"
           remote_dir="/tmp/srcm-initial-bootstrap-${RELEASE_SHA}"
           artifact="srcm-initial-${RELEASE_SHA}.tar.gz"
           artifact_dir="$RUNNER_TEMP/initial-release-artifact"
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" "umask 077; mkdir -p '$remote_dir'"
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$RESOLVED_DEPLOY_IP" "test \"\$(hostname)\" = \"straleon-prod-01\"; umask 077; mkdir -p '$remote_dir'"
           scp -P "$DEPLOY_PORT" \
             "$artifact_dir/$artifact" \
             "$artifact_dir/$artifact.sha256" \
             ops/production/bootstrap-initial-release.sh \
-            "$DEPLOY_USER@$DEPLOY_HOST:$remote_dir/"
+            "$DEPLOY_USER@$RESOLVED_DEPLOY_IP:$remote_dir/"
 
       - name: Install verified inactive initial release
         shell: bash
         env:
           DEPLOY_HOST: ${{ vars.SRCM_DEPLOY_HOST }}
+          RESOLVED_DEPLOY_IP: ${{ env.RESOLVED_DEPLOY_IP }}
           DEPLOY_USER: ${{ vars.SRCM_DEPLOY_USER }}
           DEPLOY_PORT: ${{ vars.SRCM_DEPLOY_PORT }}
         run: |
           set -euo pipefail
+          test "$DEPLOY_HOST" = "straleon-prod-01"
+          test -n "$RESOLVED_DEPLOY_IP"
           remote_dir="/tmp/srcm-initial-bootstrap-${RELEASE_SHA}"
           artifact="srcm-initial-${RELEASE_SHA}.tar.gz"
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$RESOLVED_DEPLOY_IP" \
             "bash '$remote_dir/bootstrap-initial-release.sh' '$RELEASE_SHA' '$remote_dir/$artifact' '$remote_dir/$artifact.sha256'"
 
       - name: Remove SSH material from runner
