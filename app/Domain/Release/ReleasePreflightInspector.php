@@ -355,6 +355,25 @@ final class ReleasePreflightInspector
             }
         }
 
+        foreach ([
+            '/(?m)^\h+test "\$DEPLOY_PORT" = "22"\h*\r?$/',
+            '/(?m)^\h+test -n "\$SSH_PRIVATE_KEY"\h*\r?$/',
+        ] as $requiredCommandLine) {
+            if (preg_match($requiredCommandLine, $workflow) !== 1) {
+                return false;
+            }
+        }
+
+        if (
+            str_contains($workflow, 'READINESS_URL')
+            && preg_match(
+                '/(?m)^\h+\[\[ "\$READINESS_URL" =~ \^https:\/\/ \]\]\h*\r?$/',
+                $workflow
+            ) !== 1
+        ) {
+            return false;
+        }
+
         foreach (['64.176.3.12', '100.64.245.55'] as $forbiddenTarget) {
             if (str_contains($workflow, $forbiddenTarget)) {
                 return false;
