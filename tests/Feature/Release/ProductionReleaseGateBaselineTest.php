@@ -7,13 +7,13 @@ use Tests\TestCase;
 
 final class ProductionReleaseGateBaselineTest extends TestCase
 {
-    public function test_release_config_authorizes_only_inactive_bootstrap_while_normal_production_stays_fail_closed(): void
+    public function test_release_config_revokes_initial_bootstrap_and_keeps_normal_production_fail_closed(): void
     {
         $this->assertFalse(config('release.production_release_enabled'));
-        $this->assertTrue(config('release.initial_application_release_bootstrap_enabled'));
+        $this->assertFalse(config('release.initial_application_release_bootstrap_enabled'));
         $this->assertTrue(config('release.external_gates.off_host_encrypted_backup'));
         $this->assertTrue(config('release.external_gates.operational_restore_drill'));
-        $this->assertTrue(
+        $this->assertFalse(
             config('release.external_gates.production_environment_secrets_and_approvals')
         );
     }

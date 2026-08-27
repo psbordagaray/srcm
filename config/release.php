@@ -25,7 +25,7 @@ return [
     | explicitly activate current and the runtimes.
     |
     */
-    'initial_application_release_bootstrap_enabled' => true,
+    'initial_application_release_bootstrap_enabled' => false,
 
     'post_deploy_readiness' => [
         'route_name' => 'api.health.ready',
@@ -108,6 +108,6 @@ return [
     'external_gates' => [
         'off_host_encrypted_backup' => true,
         'operational_restore_drill' => true,
-        'production_environment_secrets_and_approvals' => true,
+        'production_environment_secrets_and_approvals' => false,
     ],
 ];
