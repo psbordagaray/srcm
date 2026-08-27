@@ -127,6 +127,10 @@ final class ReleasePreflightInspector
                 ),
             'production_initial_bootstrap_policy_contract' =>
                 $this->initialBootstrapPolicyIsPresent(),
+            'production_environment_governance_policy_contract' =>
+                $this->productionEnvironmentGovernancePolicyIsPresent(),
+            'production_normal_release_reviewer_hardening_guard' =>
+                $this->normalProductionReleaseReviewerHardeningIsSafe(),
             'production_initial_bootstrap_source_authorization' => str_contains(
                 $bootstrapWorkflowBody,
                 'initial_application_release_bootstrap_enabled'
@@ -193,6 +197,45 @@ final class ReleasePreflightInspector
             'external_green' => $externalGreen,
             'production_authorized' => $productionAuthorized,
         ];
+    }
+
+    private function productionEnvironmentGovernancePolicyIsPresent(): bool
+    {
+        $policy = config('release.deployment.environment_governance');
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return ($policy['foundation_version'] ?? null) === 1
+            && ($policy['environment'] ?? null) === 'production'
+            && ($policy['minimum_required_reviewers'] ?? null) === 1
+            && ($policy['prevent_self_review'] ?? null) === false
+            && ($policy['bootstrap_self_review_temporarily_allowed'] ?? null) === true
+            && ($policy['normal_release_requires_prevent_self_review'] ?? null) === true
+            && ($policy['can_admins_bypass'] ?? null) === false
+            && ($policy['protected_branches_only'] ?? null) === true
+            && ($policy['required_secret_names'] ?? null) === [
+                'TS_OAUTH_CLIENT_ID',
+                'TS_AUDIENCE',
+                'SRCM_DEPLOY_SSH_PRIVATE_KEY',
+                'SRCM_DEPLOY_KNOWN_HOSTS',
+            ]
+            && ($policy['required_variables'] ?? null) === [
+                'SRCM_DEPLOY_HOST' => 'straleon-prod-01',
+                'SRCM_DEPLOY_USER' => 'straleon-deploy',
+                'SRCM_DEPLOY_PORT' => '22',
+            ]
+            && ($policy['secret_values_must_never_be_read_or_logged'] ?? null) === true
+            && ($policy['authorization_requires_live_policy_match'] ?? null) === true;
+    }
+
+    private function normalProductionReleaseReviewerHardeningIsSafe(): bool
+    {
+        if (config('release.production_release_enabled') !== true) {
+            return true;
+        }
+
+        return config('release.deployment.environment_governance.prevent_self_review') === true;
     }
 
     private function fileBody(string $path): string

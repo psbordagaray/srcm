@@ -62,6 +62,43 @@ final class ProductionDeploymentFoundationTest extends TestCase
         );
     }
 
+    public function test_production_environment_governance_policy_is_versioned_without_granting_authorization(): void
+    {
+        $policy = config('release.deployment.environment_governance');
+
+        $this->assertIsArray($policy);
+        $this->assertSame(1, $policy['foundation_version']);
+        $this->assertSame('production', $policy['environment']);
+        $this->assertSame(1, $policy['minimum_required_reviewers']);
+        $this->assertFalse($policy['prevent_self_review']);
+        $this->assertTrue($policy['bootstrap_self_review_temporarily_allowed']);
+        $this->assertTrue($policy['normal_release_requires_prevent_self_review']);
+        $this->assertFalse($policy['can_admins_bypass']);
+        $this->assertTrue($policy['protected_branches_only']);
+        $this->assertSame([
+            'TS_OAUTH_CLIENT_ID',
+            'TS_AUDIENCE',
+            'SRCM_DEPLOY_SSH_PRIVATE_KEY',
+            'SRCM_DEPLOY_KNOWN_HOSTS',
+        ], $policy['required_secret_names']);
+        $this->assertSame([
+            'SRCM_DEPLOY_HOST' => 'straleon-prod-01',
+            'SRCM_DEPLOY_USER' => 'straleon-deploy',
+            'SRCM_DEPLOY_PORT' => '22',
+        ], $policy['required_variables']);
+        $this->assertTrue($policy['secret_values_must_never_be_read_or_logged']);
+        $this->assertTrue($policy['authorization_requires_live_policy_match']);
+
+        $result = app(ReleasePreflightInspector::class)->inspect();
+        $this->assertTrue($result['static']['production_environment_governance_policy_contract']);
+        $this->assertTrue($result['static']['production_normal_release_reviewer_hardening_guard']);
+        $this->assertFalse(config('release.initial_application_release_bootstrap_enabled'));
+        $this->assertFalse(config('release.production_release_enabled'));
+        $this->assertFalse(
+            config('release.external_gates.production_environment_secrets_and_approvals')
+        );
+    }
+
     public function test_ci_covers_feature_and_default_branches_before_main_promotion(): void
     {
         $workflow = file_get_contents(base_path('.github/workflows/ci.yml'));
