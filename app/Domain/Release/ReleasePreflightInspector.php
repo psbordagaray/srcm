@@ -131,6 +131,10 @@ final class ReleasePreflightInspector
                 $this->productionEnvironmentGovernancePolicyIsPresent(),
             'production_normal_release_reviewer_hardening_guard' =>
                 $this->normalProductionReleaseReviewerHardeningIsSafe(),
+            'production_operating_governance_contract' =>
+                $this->productionOperatingGovernancePolicyIsPresent(),
+            'production_recovery_anchor_contract' =>
+                $this->productionRecoveryAnchorPolicyIsPresent(),
             'production_initial_bootstrap_source_authorization' => str_contains(
                 $bootstrapWorkflowBody,
                 'initial_application_release_bootstrap_enabled'
@@ -229,13 +233,52 @@ final class ReleasePreflightInspector
             && ($policy['authorization_requires_live_policy_match'] ?? null) === true;
     }
 
+    private function productionOperatingGovernancePolicyIsPresent(): bool
+    {
+        $policy = config('release.deployment.operating_governance');
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return ($policy['foundation_version'] ?? null) === 1
+            && ($policy['current_mode'] ?? null) === 'single_trusted_operator'
+            && ($policy['second_operator_status'] ?? null) === 'planned_not_yet_onboarded'
+            && ($policy['independent_second_reviewer_required_before_prevent_self_review'] ?? null) === true
+            && ($policy['normal_release_remains_blocked_until_second_operator_onboarded'] ?? null) === true
+            && ($policy['single_operator_mode_must_not_enable_production_release'] ?? null) === true;
+    }
+
+    private function productionRecoveryAnchorPolicyIsPresent(): bool
+    {
+        $policy = config('release.deployment.recovery_anchor');
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return ($policy['foundation_version'] ?? null) === 1
+            && ($policy['required_before_sensitive_mutation'] ?? null) === true
+            && ($policy['evidence_result_sha256_lock_required'] ?? null) === true
+            && ($policy['git_identity_anchor_required'] ?? null) === true
+            && ($policy['local_environment_integrity_anchor_required'] ?? null) === true
+            && ($policy['database_canonical_integrity_anchor_required'] ?? null) === true
+            && ($policy['verified_database_snapshot_required_before_database_mutation'] ?? null) === true
+            && ($policy['post_mutation_failure_requires_reconciliation_before_retry'] ?? null) === true
+            && ($policy['code_rollback_never_implies_database_rollback'] ?? null) === true
+            && ($policy['previous_immutable_release_must_be_preserved'] ?? null) === true
+            && ($policy['precommit_failure_may_restore_exact_anchor_automatically'] ?? null) === true;
+    }
+
     private function normalProductionReleaseReviewerHardeningIsSafe(): bool
     {
         if (config('release.production_release_enabled') !== true) {
             return true;
         }
 
-        return config('release.deployment.environment_governance.prevent_self_review') === true;
+        return config('release.deployment.environment_governance.prevent_self_review') === true
+            && config('release.deployment.operating_governance.current_mode')
+                === 'independent_second_operator'
+            && config('release.deployment.operating_governance.second_operator_status')
+                === 'onboarded_verified';
     }
 
     private function fileBody(string $path): string

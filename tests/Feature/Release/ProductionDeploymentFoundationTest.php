@@ -99,6 +99,42 @@ final class ProductionDeploymentFoundationTest extends TestCase
         );
     }
 
+    public function test_single_operator_governance_and_recovery_anchor_are_versioned_fail_closed(): void
+    {
+        $operating = config('release.deployment.operating_governance');
+        $this->assertIsArray($operating);
+        $this->assertSame(1, $operating['foundation_version']);
+        $this->assertSame('single_trusted_operator', $operating['current_mode']);
+        $this->assertSame('planned_not_yet_onboarded', $operating['second_operator_status']);
+        $this->assertTrue($operating['independent_second_reviewer_required_before_prevent_self_review']);
+        $this->assertTrue($operating['normal_release_remains_blocked_until_second_operator_onboarded']);
+        $this->assertTrue($operating['single_operator_mode_must_not_enable_production_release']);
+
+        $recovery = config('release.deployment.recovery_anchor');
+        $this->assertIsArray($recovery);
+        $this->assertSame(1, $recovery['foundation_version']);
+        $this->assertTrue($recovery['required_before_sensitive_mutation']);
+        $this->assertTrue($recovery['evidence_result_sha256_lock_required']);
+        $this->assertTrue($recovery['git_identity_anchor_required']);
+        $this->assertTrue($recovery['local_environment_integrity_anchor_required']);
+        $this->assertTrue($recovery['database_canonical_integrity_anchor_required']);
+        $this->assertTrue($recovery['verified_database_snapshot_required_before_database_mutation']);
+        $this->assertTrue($recovery['post_mutation_failure_requires_reconciliation_before_retry']);
+        $this->assertTrue($recovery['code_rollback_never_implies_database_rollback']);
+        $this->assertTrue($recovery['previous_immutable_release_must_be_preserved']);
+        $this->assertTrue($recovery['precommit_failure_may_restore_exact_anchor_automatically']);
+
+        $result = app(ReleasePreflightInspector::class)->inspect();
+        $this->assertTrue($result['static']['production_operating_governance_contract']);
+        $this->assertTrue($result['static']['production_recovery_anchor_contract']);
+        $this->assertTrue($result['static']['production_normal_release_reviewer_hardening_guard']);
+        $this->assertFalse(config('release.production_release_enabled'));
+        $this->assertFalse(config('release.initial_application_release_bootstrap_enabled'));
+        $this->assertFalse(
+            config('release.external_gates.production_environment_secrets_and_approvals')
+        );
+        $this->assertFalse($result['production_authorized']);
+    }
     public function test_initial_bootstrap_source_authorization_is_revoked_after_successful_inactive_install(): void
     {
         $this->assertFalse(config('release.initial_application_release_bootstrap_enabled'));
