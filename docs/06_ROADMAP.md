@@ -5,15 +5,15 @@ Actualizado: **2026-08-28**
 Rama de desarrollo: `feature/core-entity`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint — P12.2 IndexedDB Snapshot Store Foundation GREEN
+## Current P12 checkpoint — P12.2 Snapshot Reference Panel Foundation GREEN
 
 <!--
-P12_2_INDEXEDDB_SNAPSHOT_STORE_STATUS=GREEN_PUBLISHED
-P12_2_FUNCTIONAL_CHECKPOINT=adfa5ad51bebed32863e7a99d2d1c8254275d3d3
-P12_2_FUNCTIONAL_PARENT=aa0b8d7a1ce6ffd395b625cb5867502d64165793
-P12_2_FUNCTIONAL_TREE=ee32c4d29de123749e9f038d9ede285c37923753
-P12_2_CI71_RUN_ID=33215561773
-P12_2_CI71_JOB_ID=98998265573
+P12_2_SNAPSHOT_REFERENCE_PANEL_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=cd03ddd673bca942a4d13b23192d4a237fab95bb
+P12_2_FUNCTIONAL_PARENT=bb86c7379872633a6310ac0f999cafa913d84969
+P12_2_FUNCTIONAL_TREE=069be93ab88e8eff903e1b00a0c43ad249f3ba45
+P12_2_CI73_RUN_ID=33219420366
+P12_2_CI73_JOB_ID=99010136491
 P12_2_DB_MIGRATIONS=124
 P12_2_SNAPSHOT_CONTRACT_VERSION=2
 P12_2_SNAPSHOT_CAPABILITY=restricted_offline_read_model
@@ -22,74 +22,81 @@ P12_2_INDEXEDDB_STORAGE_SCHEMA_VERSION=1
 P12_2_INDEXEDDB_DATABASE_NAME=srcm-restricted-offline-v1
 P12_2_INDEXEDDB_OBJECT_STORE=operational-read-model-snapshots
 P12_2_INDEXEDDB_RECORD_KEY=current
-P12_2_INDEXEDDB_ENVELOPE_FIELDS=storage_schema_version,snapshot_version,binding_public_id,device_public_id,binding_expires_at,content_fingerprint,generated_at,stored_at,payload
-P12_2_INDEXEDDB_PERSISTENT_STORAGE_ENTITLEMENT=NOT_REQUESTED
-P12_2_OFFLINE_UI_CONSUMPTION=NOT_IMPLEMENTED
-P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_SNAPSHOT_CONSUMPTION_RECON_V1
+P12_2_REFERENCE_PANEL_SURFACE=product_catalog_same_page_read_only
+P12_2_REFERENCE_PANEL_STATE_MODEL=online-refreshed,offline-cached-valid,no-valid-cache,authority-rejected
+P12_2_REFERENCE_PANEL_SEARCH=sku,name,category,brand,manufacturer,snapshot_identifiers
+P12_2_REFERENCE_PANEL_FRESHNESS=generated_at,stored_at,exact_age,binding_expiry
+P12_2_REFERENCE_PANEL_AUTHORITY=informational_only_server_revalidation_required
+P12_2_REFERENCE_PANEL_CONTENT_INTEGRITY=content_fingerprint_revalidated_by_store
+P12_2_REFERENCE_PANEL_CONCURRENCY_EVIDENCE=balance_version_informational_only
+P12_2_TRUE_OFFLINE_RELOAD_NAVIGATION=NOT_IMPLEMENTED
+P12_2_SERVICE_WORKER=NOT_IMPLEMENTED
+P12_2_LOCAL_OFFLINE_QUEUE=NOT_IMPLEMENTED
+P12_2_POS_OFFLINE_CHECKOUT=NOT_IMPLEMENTED
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_SERVICE_WORKER_APP_SHELL_RECON_V1
 -->
 
 Checkpoint funcional publicado:
-`adfa5ad51bebed32863e7a99d2d1c8254275d3d3` — `feat(offline): add indexeddb snapshot store foundation`, parent `aa0b8d7a1ce6ffd395b625cb5867502d64165793`, tree `ee32c4d29de123749e9f038d9ede285c37923753`.
+`cd03ddd673bca942a4d13b23192d4a237fab95bb` — `feat(offline): add snapshot reference panel`, parent `bb86c7379872633a6310ac0f999cafa913d84969`, tree `069be93ab88e8eff903e1b00a0c43ad249f3ba45`.
 
 La cadena P12.2 queda ahora:
 1. Operational Device identity/capabilities/replay;
 2. Browser Binding server-issued, revocable y expirable;
 3. Snapshot V2 read-only con scope explícito;
-4. IndexedDB Snapshot Store Foundation V1 publicada y CI-verificada.
+4. IndexedDB Snapshot Store Foundation V1;
+5. Snapshot Consumption RECON;
+6. **Snapshot Reference Panel Foundation V1 publicada y CI-verificada**.
 
-Fundación IndexedDB publicada:
-- store nativo y same-origin;
-- schema local V1;
-- DB `srcm-restricted-offline-v1`;
-- object store `operational-read-model-snapshots`;
-- key fija `current`;
-- envelope con `content_fingerprint` y `stored_at` explícitos;
-- un solo Snapshot V2 completo por vez;
-- envelope scope-aware;
-- canonicalización + SHA-256 cliente para detectar alteración;
-- read fail-closed ante contract/scope/device/expiry/fingerprint/policy mismatch;
-- purge de lifecycle en login/logout/organization switch/unbind;
-- quota/corrupción degradan seguro;
-- outage de red/5xx sólo conserva cache válido no expirado;
-- rechazo de autoridad purga;
-- persistent-storage entitlement diferido.
+Superficie ya implementada:
+- Catálogo/Productos contiene un panel Alpine same-page de sólo consulta;
+- facade JS consume sólo `readOperationalSnapshot` / `refreshOperationalSnapshot`;
+- búsqueda local por SKU/nombre/categoría/marca/fabricante/identificadores;
+- precio y disponibilidad son informativos;
+- ubicación, condición y `balance_version` se exponen como evidencia;
+- el store valida `content_fingerprint` antes de exponer el snapshot;
+- estado visible: online actualizado / cache local válido / sin cache válido / autoridad rechazada;
+- freshness visible por `generated_at`, `stored_at`, edad exacta y expiración de binding;
+- sin links, forms ni write actions;
+- POS/checkout permanece separado.
 
 Gates cerrados:
-- recuperación V1 falsa RED por npm shim cerrada;
-- Node contract tests GREEN;
+- 9 pruebas focales del facade/panel GREEN;
+- toda la suite JS offline GREEN;
 - production asset build GREEN;
-- Snapshot V2 server focal GREEN;
+- focal server-side Snapshot V2 GREEN;
 - full Laravel suite GREEN;
 - `git diff --check` GREEN;
-- exactamente cinco paths: tres modificados + dos agregados;
+- exactamente 4 paths: 2 modificados + 2 agregados;
 - `package-lock.json` intacto;
 - cero dependencias nuevas;
 - cero migraciones;
 - push fast-forward único;
-- CI71 run `33215561773` / job `98998265573` GREEN, intento 1;
-- paso `Offline snapshot store contract tests` GREEN en CI;
+- CI73 run `33219420366` / job `99010136491` GREEN, intento 1;
 - Post-Push CI RECON GREEN;
 - BD canónica exacta con **124 migraciones**;
 - `.env` intacto;
 - `main` protegido e inalterado.
 
 Próxima frontera exacta:
-`P12_2_RESTRICTED_OFFLINE_SNAPSHOT_CONSUMPTION_RECON_V1`.
+`P12_2_RESTRICTED_OFFLINE_SERVICE_WORKER_APP_SHELL_RECON_V1`.
 
-Ese RECON debe relevar antes de implementar:
-- qué Blade/Alpine/POS/catalog surfaces pueden consumir el snapshot;
-- cómo distinguir online, offline válido, stale/expirado y authority-rejected;
-- qué freshness debe mostrarse al operador;
-- qué datos son sólo informativos y cuáles deben seguir bloqueando acción;
-- cómo evitar que un cache previo a logout/org-switch/unbind reaparezca;
-- qué pruebas UI/JS deterministas son necesarias;
-- si hace falta un pequeño facade de lectura entre IndexedDB y las superficies existentes.
+Ese RECON debe responder antes de implementar Service Worker:
+- qué assets versionados de Vite integran el app shell mínimo;
+- qué rutas Blade/read-only pueden responder desde shell sin red;
+- cómo evitar cachear respuestas autenticadas o datos de autoridad incorrectamente;
+- cómo interactúa auth/session con una recarga offline;
+- qué CSP/security headers afectan registro/ejecución del worker;
+- cómo purgar caches de app shell en logout, cambio de organización y unbind;
+- cómo versionar/invalidatear el shell sin mezclarlo con `storage_schema_version=1`;
+- qué UX debe mostrar cuando el shell está disponible pero no existe Snapshot V2 válido;
+- qué pruebas deterministas deben cubrir install/activate/fetch sin abrir mutation replay.
 
 Fuera de alcance:
-- Service Worker;
-- precache/app shell offline;
+- implementar Service Worker en este corte;
 - Background Sync;
-- cola/replay de mutaciones;
+- mutation queue/replay;
+- POS offline checkout;
+- clientes/crédito/caja/cuentas financieras offline;
 - venta/pago/fiscalidad final offline;
 - sustituir autoridad server-side;
 - merge silencioso de conflictos.

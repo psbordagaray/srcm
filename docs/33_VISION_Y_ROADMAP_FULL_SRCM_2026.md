@@ -5,15 +5,15 @@ Fecha: **2026-08-28**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 continuity — P12.2 IndexedDB Snapshot Store Foundation published
+## Current P12 continuity — P12.2 Snapshot Reference Panel Foundation published
 
 <!--
-P12_2_INDEXEDDB_SNAPSHOT_STORE_STATUS=GREEN_PUBLISHED
-P12_2_FUNCTIONAL_CHECKPOINT=adfa5ad51bebed32863e7a99d2d1c8254275d3d3
-P12_2_FUNCTIONAL_PARENT=aa0b8d7a1ce6ffd395b625cb5867502d64165793
-P12_2_FUNCTIONAL_TREE=ee32c4d29de123749e9f038d9ede285c37923753
-P12_2_CI71_RUN_ID=33215561773
-P12_2_CI71_JOB_ID=98998265573
+P12_2_SNAPSHOT_REFERENCE_PANEL_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=cd03ddd673bca942a4d13b23192d4a237fab95bb
+P12_2_FUNCTIONAL_PARENT=bb86c7379872633a6310ac0f999cafa913d84969
+P12_2_FUNCTIONAL_TREE=069be93ab88e8eff903e1b00a0c43ad249f3ba45
+P12_2_CI73_RUN_ID=33219420366
+P12_2_CI73_JOB_ID=99010136491
 P12_2_DB_MIGRATIONS=124
 P12_2_SNAPSHOT_CONTRACT_VERSION=2
 P12_2_SNAPSHOT_CAPABILITY=restricted_offline_read_model
@@ -22,45 +22,52 @@ P12_2_INDEXEDDB_STORAGE_SCHEMA_VERSION=1
 P12_2_INDEXEDDB_DATABASE_NAME=srcm-restricted-offline-v1
 P12_2_INDEXEDDB_OBJECT_STORE=operational-read-model-snapshots
 P12_2_INDEXEDDB_RECORD_KEY=current
-P12_2_INDEXEDDB_ENVELOPE_FIELDS=storage_schema_version,snapshot_version,binding_public_id,device_public_id,binding_expires_at,content_fingerprint,generated_at,stored_at,payload
-P12_2_INDEXEDDB_PERSISTENT_STORAGE_ENTITLEMENT=NOT_REQUESTED
-P12_2_OFFLINE_UI_CONSUMPTION=NOT_IMPLEMENTED
-P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_SNAPSHOT_CONSUMPTION_RECON_V1
+P12_2_REFERENCE_PANEL_SURFACE=product_catalog_same_page_read_only
+P12_2_REFERENCE_PANEL_STATE_MODEL=online-refreshed,offline-cached-valid,no-valid-cache,authority-rejected
+P12_2_REFERENCE_PANEL_SEARCH=sku,name,category,brand,manufacturer,snapshot_identifiers
+P12_2_REFERENCE_PANEL_FRESHNESS=generated_at,stored_at,exact_age,binding_expiry
+P12_2_REFERENCE_PANEL_AUTHORITY=informational_only_server_revalidation_required
+P12_2_REFERENCE_PANEL_CONTENT_INTEGRITY=content_fingerprint_revalidated_by_store
+P12_2_REFERENCE_PANEL_CONCURRENCY_EVIDENCE=balance_version_informational_only
+P12_2_TRUE_OFFLINE_RELOAD_NAVIGATION=NOT_IMPLEMENTED
+P12_2_SERVICE_WORKER=NOT_IMPLEMENTED
+P12_2_LOCAL_OFFLINE_QUEUE=NOT_IMPLEMENTED
+P12_2_POS_OFFLINE_CHECKOUT=NOT_IMPLEMENTED
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_SERVICE_WORKER_APP_SHELL_RECON_V1
 -->
 
-P12 now has its first browser-side persistence primitive for restricted offline continuity. Functional checkpoint `adfa5ad51bebed32863e7a99d2d1c8254275d3d3` (`feat(offline): add indexeddb snapshot store foundation`) is published from parent `aa0b8d7a1ce6ffd395b625cb5867502d64165793` with tree `ee32c4d29de123749e9f038d9ede285c37923753`; CI71 run `33215561773` and `quality-gates` job `98998265573` completed successfully on attempt 1.
+P12 now has its first operator-visible consumer of the restricted Snapshot V2 cache. Functional checkpoint `cd03ddd673bca942a4d13b23192d4a237fab95bb` (`feat(offline): add snapshot reference panel`) is published from parent `bb86c7379872633a6310ac0f999cafa913d84969` with tree `069be93ab88e8eff903e1b00a0c43ad249f3ba45`; CI73 run `33219420366` and `quality-gates` job `99010136491` completed successfully on attempt 1.
 
-The published store is intentionally narrow:
-- native same-origin IndexedDB;
-- storage schema version 1;
-- one canonical record in `srcm-restricted-offline-v1` / `operational-read-model-snapshots`;
-- the local envelope carries `content_fingerprint` and `stored_at` explicitly;
-- only complete, authoritative online Snapshot V2 responses may replace `current`;
-- local reads validate contract, Browser Binding/device scope, binding expiry, fingerprint and fail-closed policy;
-- the browser re-canonicalizes operational content and recalculates SHA-256 instead of trusting the stored fingerprint blindly;
-- login/logout/organization switch/unbind and invalid-contract/corruption boundaries purge local state;
-- quota failure degrades safely;
-- network/5xx outages may preserve only a still-valid, nonexpired cache;
-- authority rejection purges;
-- persistent-storage entitlement remains intentionally unrequested.
+The new layer is intentionally a **reference surface**, not an offline POS:
+- a JS facade reads only through the validated IndexedDB store contract;
+- the first consumer lives inside the already-loaded Products catalog page;
+- the panel is read-only and contains no links, forms or write operations;
+- catalog/search terms, prices, availability, locations and conditions are joined locally;
+- the validated store preserves `content_fingerprint` integrity and exposes `balance_version` only as informational concurrency evidence;
+- exact cache age, generated time, stored time and binding expiry are visible;
+- authority states distinguish online refresh, valid offline cache, no valid cache and authority rejection;
+- cached price/availability can inform the operator but cannot authorize a transaction;
+- checkout and all server-authoritative confirmation paths remain unchanged.
 
-The store does **not** grant commercial authority. Snapshot V2 continues to expose information, not permission:
-- price and availability remain subject to server revalidation;
-- `balance_version` is concurrency evidence, not authorization;
-- Browser Binding scope determines cache ownership, not transaction authority;
-- customer, credit, cash-session, financial-account, payment and fiscal-secret surfaces remain excluded;
-- offline final sale, payment and fiscal authorization remain blocked.
+This closes an important product boundary: SRCM can now preserve **useful operational reference** during a connection loss while the current document remains loaded, without pretending that it can yet operate as a fully reloadable offline application.
 
-CI now has a deterministic `Offline snapshot store contract tests` gate before the production asset build. No extra test dependency was introduced and `package-lock.json` did not change. The canonical database remains at **124 migrations**, unchanged by this client-side persistence foundation.
+True offline reload/navigation is still absent. IndexedDB is data persistence, not an app-shell delivery mechanism. A Service Worker/app shell is therefore the next architectural subject, but only after a dedicated read-only RECON.
+
+No IndexedDB schema change occurred; storage schema remains version 1 in `srcm-restricted-offline-v1` / `operational-read-model-snapshots` / `current`. No new dependency or migration was introduced. The canonical database remains at **124 migrations**.
+
+Commercial authority remains server-side:
+- final sale offline blocked;
+- payment finalization offline blocked;
+- fiscal authorization offline blocked;
+- customers/credit/cash/financial accounts remain outside this local reference;
+- silent price/stock conflict merge remains forbidden.
 
 The next exact boundary is:
-`P12_2_RESTRICTED_OFFLINE_SNAPSHOT_CONSUMPTION_RECON_V1`.
+`P12_2_RESTRICTED_OFFLINE_SERVICE_WORKER_APP_SHELL_RECON_V1`.
 
-That boundary is a RECON, not an implementation. It must map which real application surfaces can safely consume the cached Snapshot V2, define operator-visible freshness/authority states, and decide the minimum read facade/UI contract before any offline-read UX is enabled.
+That RECON must design the minimum safe **read-only app shell** around existing Vite/Blade/auth/security behavior before any worker is implemented. It must ensure that shell caching never becomes an authority cache and that logout/org-switch/unbind lifecycle invalidates what must not survive.
 
-Service Worker, Background Sync, mutation replay and final business authority remain behind later explicit gates.
-
-North Star rule remains unchanged: offline continuity may preserve **useful information and evidence**, never silently manufacture authority. A valid local cache can keep the operator informed; it cannot itself confirm a sale, payment, fiscal authorization or stock truth.
+North Star rule remains unchanged: offline continuity may preserve information and usability, but never manufacture permission or truth.
 
 Puerta de entrada de continuidad: `docs/README.md`
 
