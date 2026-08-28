@@ -282,6 +282,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'show',
                 ]
             )->name('operational-runtime.device.show');
+            Route::get(
+                '/runtime/offline-read-model-snapshot',
+                [
+                    \App\Http\Controllers\OperationalDeviceReadModelSnapshotController::class,
+                    'show',
+                ]
+            )
+                ->middleware('can:record-commerce-sales')
+                ->name(
+                    'operational-runtime.read-model-snapshot.show'
+                );
 
             Route::post(
                 '/operational-devices/{operationalDevice:public_id}/browser-binding',

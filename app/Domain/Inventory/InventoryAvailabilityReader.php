@@ -72,6 +72,7 @@ final class InventoryAvailabilityReader
                 'balances.condition',
                 'balances.quantity',
                 'balances.base_unit_code',
+                'balances.version',
                 'products.sku as product_sku',
                 'products.name as product_name',
                 'products.active as product_active',
@@ -100,6 +101,7 @@ final class InventoryAvailabilityReader
                     deficitQuantity: InventoryQuantity::deficit($physical),
                     baseUnitCode: (string) $balance->base_unit_code,
                     quantityScale: (int) $balance->quantity_scale,
+                    balanceVersion: (int) $balance->version,
                 );
             })
             ->values();
