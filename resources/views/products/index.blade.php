@@ -43,6 +43,208 @@
             </div>
         @endif
 
+        @can('record-commerce-sales')
+            {{-- P12_2_OFFLINE_SNAPSHOT_REFERENCE_PANEL_V1_START --}}
+            <section
+                x-data="operationalSnapshotReferencePanel"
+                x-init="init()"
+                class="rounded-2xl border border-cyan-500/20 bg-slate-900/80 p-5 shadow-xl shadow-black/10"
+            >
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-400">
+                            Referencia operativa local
+                        </p>
+
+                        <h2 class="mt-1 text-lg font-bold text-white">
+                            Snapshot V2 de solo consulta
+                        </h2>
+
+                        <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                            Este panel lee exclusivamente el snapshot validado del dispositivo.
+                            Precio y disponibilidad son informativos: no confirman ventas,
+                            pagos ni autorizaciones fiscales y siempre requieren revalidacion
+                            del servidor al confirmar una operacion.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span
+                            class="inline-flex rounded-full border px-3 py-1.5 text-xs font-semibold"
+                            :class="stateClass()"
+                            x-text="stateLabel()"
+                        ></span>
+
+                        <button
+                            type="button"
+                            @click="refresh()"
+                            :disabled="busy || !isOnline()"
+                            class="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs font-semibold text-cyan-200 transition hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                            <span x-show="!busy">Actualizar desde servidor</span>
+                            <span x-show="busy">Validando...</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-4 rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-xs text-slate-400">
+                    <span class="font-semibold text-slate-200">Origen:</span>
+                    <span x-text="sourceLabel()"></span>
+                    <span class="mx-2 text-slate-700">|</span>
+                    La recarga o navegacion real sin red sigue bloqueada hasta un futuro
+                    Service Worker / app shell.
+                </div>
+
+                <template x-if="reference">
+                    <div class="mt-5 space-y-5">
+                        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+                                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                    Dispositivo
+                                </div>
+                                <div class="mt-1 text-sm font-semibold text-white" x-text="reference.deviceLabel"></div>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+                                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                    Generado
+                                </div>
+                                <div class="mt-1 text-sm text-slate-200" x-text="formatTimestamp(reference.generatedAt)"></div>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+                                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                    Guardado
+                                </div>
+                                <div class="mt-1 text-sm text-slate-200" x-text="formatTimestamp(reference.storedAt)"></div>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+                                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                    Edad exacta
+                                </div>
+                                <div class="mt-1 font-mono text-sm text-amber-200" x-text="formatAge(reference.ageMs)"></div>
+                            </div>
+
+                            <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-3">
+                                <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                    Binding vence
+                                </div>
+                                <div class="mt-1 text-sm text-slate-200" x-text="formatTimestamp(reference.bindingExpiresAt)"></div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                Buscar dentro del snapshot
+                            </label>
+
+                            <input
+                                type="search"
+                                x-model="query"
+                                @input.debounce.120ms="search()"
+                                placeholder="SKU, nombre, marca, categoria o identificador..."
+                                class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-sm text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-cyan-400"
+                            >
+
+                            <p class="mt-2 text-xs text-slate-500">
+                                Resultados locales, sin enlaces ni acciones de escritura.
+                                Mostrando hasta 20 coincidencias.
+                            </p>
+                        </div>
+
+                        <div
+                            x-show="results.length === 0"
+                            class="rounded-xl border border-slate-800 bg-slate-950/50 px-4 py-6 text-center text-sm text-slate-400"
+                        >
+                            No hay coincidencias en el snapshot local valido.
+                        </div>
+
+                        <div class="grid gap-3 xl:grid-cols-2">
+                            <template x-for="product in results" :key="product.id">
+                                <article class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                        <div>
+                                            <div class="font-semibold text-white" x-text="product.name"></div>
+                                            <div class="mt-1 font-mono text-xs text-cyan-300" x-text="product.sku"></div>
+                                            <div class="mt-2 text-xs text-slate-500">
+                                                <span x-text="product.category || 'Sin categoria'"></span>
+                                                <span class="mx-1">-</span>
+                                                <span x-text="product.brand || 'Sin marca'"></span>
+                                            </div>
+                                        </div>
+
+                                        <div class="text-left sm:text-right">
+                                            <template x-if="product.prices.length === 0">
+                                                <span class="text-xs font-semibold text-amber-200">
+                                                    Sin precio cacheado
+                                                </span>
+                                            </template>
+
+                                            <template x-for="price in product.prices" :key="price.currency + ':' + price.amountMinor">
+                                                <div
+                                                    class="text-sm font-bold text-emerald-300"
+                                                    x-text="formatMoney(price.amountMinor, price.currency)"
+                                                ></div>
+                                            </template>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 border-t border-slate-800 pt-3">
+                                        <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                                            Disponibilidad informativa
+                                        </div>
+
+                                        <template x-if="product.availability.length === 0">
+                                            <div class="mt-2 text-xs text-slate-500">
+                                                Sin posiciones cacheadas.
+                                            </div>
+                                        </template>
+
+                                        <div class="mt-2 flex flex-wrap gap-2">
+                                            <template
+                                                x-for="position in product.availability"
+                                                :key="position.locationId + ':' + position.condition + ':' + position.balanceVersion"
+                                            >
+                                                <span class="inline-flex rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs text-slate-300">
+                                                    <span x-text="position.location"></span>
+                                                    <span class="mx-1 text-slate-600">/</span>
+                                                    <span x-text="position.conditionLabel"></span>
+                                                    <span class="mx-1 text-slate-600">:</span>
+                                                    <strong
+                                                        class="text-white"
+                                                        x-text="formatQuantity(position.availableQuantity, product.scale) + ' ' + product.unit"
+                                                    ></strong>
+                                                    <span class="ml-2 font-mono text-slate-600" x-text="'v' + position.balanceVersion"></span>
+                                                </span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </article>
+                            </template>
+                        </div>
+
+                        <div class="rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-xs leading-5 text-amber-100">
+                            <strong>Autoridad:</strong>
+                            esta referencia nunca autoriza una venta ni reserva stock.
+                            El servidor sigue siendo la verdad final y debe revalidar precio
+                            y disponibilidad antes de cualquier confirmacion.
+                        </div>
+                    </div>
+                </template>
+
+                <div
+                    x-show="!reference && state !== 'loading'"
+                    class="mt-5 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-4 text-sm text-amber-100"
+                >
+                    No existe un snapshot local valido para consultar en este contexto.
+                    Si hay red, usa "Actualizar desde servidor"; una negativa de autoridad
+                    no reutiliza datos cacheados.
+                </div>
+            </section>
+            {{-- P12_2_OFFLINE_SNAPSHOT_REFERENCE_PANEL_V1_END --}}
+        @endcan
+
         <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/80 shadow-xl shadow-black/10">
             <div class="border-b border-slate-800 p-4">
                 <form
