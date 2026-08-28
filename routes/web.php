@@ -276,6 +276,44 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(RequireOrganization::class)
         ->group(function () {
             Route::get(
+                '/runtime/operational-device',
+                [
+                    \App\Http\Controllers\OperationalDeviceBrowserBindingController::class,
+                    'show',
+                ]
+            )->name('operational-runtime.device.show');
+
+            Route::post(
+                '/operational-devices/{operationalDevice:public_id}/browser-binding',
+                [
+                    \App\Http\Controllers\OperationalDeviceBrowserBindingController::class,
+                    'store',
+                ]
+            )
+                ->middleware([
+                    'can:manage-organization',
+                    RequireProductionPasswordConfirmation::class,
+                ])
+                ->whereUuid('operationalDevice')
+                ->name(
+                    'operational-device-browser-bindings.store'
+                );
+
+            Route::delete(
+                '/operational-device/browser-binding',
+                [
+                    \App\Http\Controllers\OperationalDeviceBrowserBindingController::class,
+                    'destroy',
+                ]
+            )
+                ->middleware([
+                    'can:manage-organization',
+                    RequireProductionPasswordConfirmation::class,
+                ])
+                ->name(
+                    'operational-device-browser-bindings.destroy'
+                );
+            Route::get(
                 '/dashboard',
                 [DashboardController::class, 'index']
             )->name('dashboard');
