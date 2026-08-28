@@ -1,8 +1,20 @@
 # SRCM — Visión y Roadmap Full 2026
 
 Estado: **North Star / contrato de dirección y continuidad**
-Fecha: **2026-08-26**
+Fecha: **2026-08-28**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
+
+<!-- P12_CURRENT_CONTINUITY_V1 -->
+## Current P12 continuity - Offline/Hardware foundation reclassification
+
+P12 opens from recovery anchor `a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4` with P11 production governance preserved fail-closed. The P12.1 read-only reconciliation demonstrates that the intended offline, POS-hardware, kiosk/price-checker and Loss Prevention capabilities are roadmap scope, not existing runtime implementation.
+
+The authoritative interpretation is **new direct P12 foundation required**. Broad `eas` substring matches are not EAS evidence, and `config/cache.php` is Laravel cache infrastructure rather than offline continuity. Existing Audit, Commerce checkout and Inventory movement foundations may be composed where appropriate; Service-domain IMEI/serial/asset-tag identifiers do not become a generic Device Registry by reuse.
+
+The first implementation boundary is a vendor-neutral **Restricted Offline Capability + Operational Device Registry Foundation V1**: explicit operational device identity, capability-based contracts and server-side idempotency/replay safety first.
+Machine boundary identifier: `P12_1_RESTRICTED_OFFLINE_CAPABILITY_OPERATIONAL_DEVICE_REGISTRY_FOUNDATION_V1`. Full browser offline storage/queueing, peripherals, self-service transactions, RFID/EAS and cryptographic device signing are separate later cuts and must not be claimed prematurely.
+
+This preserves the North Star principle: offline/hardware capability grows from explicit operational truth and fail-closed reconciliation, not from vendor coupling or inferred device identity.
 Puerta de entrada de continuidad: `docs/README.md`
 
 ---

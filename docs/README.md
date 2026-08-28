@@ -1,7 +1,30 @@
 # SRCM Full — Puerta de entrada y continuidad maestra
 
 Estado: **vinculante para recuperación de contexto**
-Actualizado: **2026-08-26**
+Actualizado: **2026-08-28**
+
+<!-- P12_CURRENT_CONTINUITY_V1 -->
+## Current P12 checkpoint - Existing Offline/Hardware Surface Reconciliation V1
+
+Canonical inherited P11 recovery anchor:
+`a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4` - `feat(release): add single-operator recovery governance`.
+`HEAD`, `origin/main` and `origin/feature/core-entity` were aligned at that exact commit when P12.1 RECON closed GREEN/read-only.
+
+P12.1 establishes the following authoritative classification:
+- **direct P12 runtime foundation is absent; a new foundation is required**;
+- the prior 229 Loss Prevention hits were false positives caused by matching `eas` as a substring; strict `EAS` runtime code count is zero;
+- `config/cache.php` is ordinary Laravel cache configuration and is explicitly **not** an offline-runtime implementation;
+- POS hardware runtime/tests: zero; kiosk/price-checker runtime/tests: zero; Loss Prevention runtime/tests: zero; no Service Worker, IndexedDB/local queue, hardware driver or RFID/EAS runtime exists;
+- `AuditRecorder`, Commerce checkout and the Inventory movement ledger are adjacent reusable foundations;
+- Service IMEI/serial/asset-tag identifiers remain Service-domain concepts and must not be reused as a general operational Device Registry.
+
+First functional P12 cut:
+`P12_1_RESTRICTED_OFFLINE_CAPABILITY_OPERATIONAL_DEVICE_REGISTRY_FOUNDATION_V1`.
+It must be vendor-neutral and capability-based, introduce operational-device identity plus server-side idempotency/replay foundations, and remain honest about what is not implemented yet. Service Worker/IndexedDB, a real local offline queue, printer/scanner drivers, kiosk transactions, RFID/EAS and device-operation cryptographic signing remain outside this first foundation until their own lifecycle/security boundaries exist.
+
+Recovery Anchor Protocol V1 remains mandatory before every sensitive mutation. Production governance remains `single_trusted_operator`; bootstrap, environment and normal production release authorization remain fail-closed.
+
+This block supersedes older P11 next-boundary narrative retained below as historical context.
 Rama canónica de desarrollo: `feature/core-entity`
 
 ## Current P11 checkpoint — Protected Main Dispatch Identity + Canonical Alignment
@@ -43,12 +66,10 @@ herramienta no pueda alterar dónde quedó SRCM ni hacia dónde continúa.
 
 El checkpoint canónico actual es siempre el `HEAD` publicado de
 `origin/feature/core-entity` cuando local y remoto coinciden y el repositorio
-está limpio. La base funcional publicada que este checkpoint documental
-sincroniza es:
+está limpio. El checkpoint canonico heredado de P11 y usado para abrir P12 es:
 
-`c2333566d273670dd23da9a5cb1208914cb0af93`
-— `fix(release): require protected main dispatch identity`
-
+`a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4`
+- `feat(release): add single-operator recovery governance`
 Estado verificado al cierre de **ARCA WSFE Authorization Runtime Binding V1**:
 
 - `FiscalAuthorizationRuntimeScopeStore` queda enlazado a `EnvironmentFiscalAuthorizationRuntimeScopeStore` y toma `service + issuer_cuit` del mismo mapa tenant-scoped WSAA, sin inferir identidad desde perfil fiscal ni venta;
