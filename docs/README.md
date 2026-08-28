@@ -4,27 +4,44 @@ Estado: **vinculante para recuperación de contexto**
 Actualizado: **2026-08-28**
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint - Existing Offline/Hardware Surface Reconciliation V1
+## Current P12 checkpoint — P12.1 Operational Device Registry Foundation GREEN
 
-Canonical inherited P11 recovery anchor:
-`a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4` - `feat(release): add single-operator recovery governance`.
-`HEAD`, `origin/main` and `origin/feature/core-entity` were aligned at that exact commit when P12.1 RECON closed GREEN/read-only.
+<!--
+P12_1_FOUNDATION_STATUS=GREEN_PUBLISHED
+P12_1_FUNCTIONAL_CHECKPOINT=67465a62439185bac1aacef1d6e3e57224c17ef1
+P12_1_FUNCTIONAL_PARENT=fda5cf6f2a9a3e181ea4d29106e874808ecde145
+P12_1_FUNCTIONAL_TREE=06512de100ee87ab153c3bcd29b47bfdf4c042a5
+P12_1_CI63_RUN_ID=33193072370
+P12_1_CI63_JOB_ID=98923200928
+P12_1_DB_MIGRATIONS=123
+P12_1_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_CLIENT_RUNTIME_AND_RECONNECT_RECON_V1
+-->
 
-P12.1 establishes the following authoritative classification:
-- **direct P12 runtime foundation is absent; a new foundation is required**;
-- the prior 229 Loss Prevention hits were false positives caused by matching `eas` as a substring; strict `EAS` runtime code count is zero;
-- `config/cache.php` is ordinary Laravel cache configuration and is explicitly **not** an offline-runtime implementation;
-- POS hardware runtime/tests: zero; kiosk/price-checker runtime/tests: zero; Loss Prevention runtime/tests: zero; no Service Worker, IndexedDB/local queue, hardware driver or RFID/EAS runtime exists;
-- `AuditRecorder`, Commerce checkout and the Inventory movement ledger are adjacent reusable foundations;
-- Service IMEI/serial/asset-tag identifiers remain Service-domain concepts and must not be reused as a general operational Device Registry.
+Checkpoint funcional publicado:
+`67465a62439185bac1aacef1d6e3e57224c17ef1` — `feat(offline): add operational device replay foundation`.
 
-First functional P12 cut:
-`P12_1_RESTRICTED_OFFLINE_CAPABILITY_OPERATIONAL_DEVICE_REGISTRY_FOUNDATION_V1`.
-It must be vendor-neutral and capability-based, introduce operational-device identity plus server-side idempotency/replay foundations, and remain honest about what is not implemented yet. Service Worker/IndexedDB, a real local offline queue, printer/scanner drivers, kiosk transactions, RFID/EAS and device-operation cryptographic signing remain outside this first foundation until their own lifecycle/security boundaries exist.
+P12.1 quedó cerrado funcionalmente y reconciliado post-push. CI63 (`33193072370`) y su job único `quality-gates` (`98923200928`) terminaron `completed / success` en primer intento. `main` permanece protegido e intacto en `fda5cf6f2a9a3e181ea4d29106e874808ecde145` y `feature/core-entity` publica el checkpoint funcional anterior.
 
-Recovery Anchor Protocol V1 remains mandatory before every sensitive mutation. Production governance remains `single_trusted_operator`; bootstrap, environment and normal production release authorization remain fail-closed.
+La fundación P12.1 establece:
+- identidad operacional de dispositivo tenant-scoped mediante `public_id` UUID opaco, separada de IMEI, serial y `asset_tag` del dominio Service;
+- capacidades explícitas y vendor-neutral; la capacidad inicial es `restricted_offline_replay`;
+- ledger server-side inmutable de claims de operación;
+- `client_operation_id` estable + fingerprint SHA-256 canónico para replay idempotente;
+- replay exacto cuando identificador y contenido coinciden, y conflicto explícito cuando el mismo identificador reaparece con contenido distinto;
+- fail-closed cuando el dispositivo está inactivo, carece de la capacidad requerida o pertenece a otra organización;
+- alta/desactivación auditables mediante la fundación `AuditRecorder`.
 
-This block supersedes older P11 next-boundary narrative retained below as historical context.
+La migración canónica P12.1 llevó el ledger local de 122 a **123 migraciones** y creó exactamente `operational_devices`, `operational_device_capabilities` y `operational_device_operation_claims`. El Post-Push CI RECON verificó las tres tablas presentes y vacías, `.env` intacto, repo limpio y producción sin mutación.
+
+P12.1 **no** implementa todavía Service Worker, IndexedDB/cola local, drivers de impresora o scanner, kiosk transaccional, RFID/EAS, credenciales criptográficas de dispositivo ni ejecución de ventas/stock/pagos desde un claim offline. El ledger publicado es una frontera de identidad, capacidad e idempotencia; no una afirmación de operación offline completa.
+
+Próxima frontera exacta, obligatoriamente RECON antes de código cliente:
+`P12_2_RESTRICTED_OFFLINE_CLIENT_RUNTIME_AND_RECONNECT_RECON_V1`.
+
+Ese RECON debe relevar la superficie real del frontend/POS, autenticación y sesión, CSRF/API, build Vite, rutas y dependencias de datos para definir qué operaciones pueden ser offline, qué permanece server-authoritative y cómo se resuelven conflictos al reconectar.
+
+Recovery Anchor Protocol V1 continúa obligatorio antes de toda mutación. Producción permanece fail-closed y no se autoriza deploy, bootstrap ni tráfico público por este checkpoint.
+
 Rama canónica de desarrollo: `feature/core-entity`
 
 ## Current P11 checkpoint — Protected Main Dispatch Identity + Canonical Alignment

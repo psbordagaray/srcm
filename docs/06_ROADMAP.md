@@ -5,38 +5,41 @@ Actualizado: **2026-08-28**
 Rama de desarrollo: `feature/core-entity`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint - Restricted Offline / Hardware Foundation Entry
+## Current P12 checkpoint — P12.1 Operational Device Registry Foundation GREEN
 
-Inherited canonical recovery anchor: `a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4` (`feat(release): add single-operator recovery governance`). P12.1 Existing Offline/Hardware Surface Reconciliation V1 closed GREEN/read-only with repo, `.env` and canonical DB continuity preserved and production release still closed.
+<!--
+P12_1_FOUNDATION_STATUS=GREEN_PUBLISHED
+P12_1_FUNCTIONAL_CHECKPOINT=67465a62439185bac1aacef1d6e3e57224c17ef1
+P12_1_FUNCTIONAL_PARENT=fda5cf6f2a9a3e181ea4d29106e874808ecde145
+P12_1_FUNCTIONAL_TREE=06512de100ee87ab153c3bcd29b47bfdf4c042a5
+P12_1_CI63_RUN_ID=33193072370
+P12_1_CI63_JOB_ID=98923200928
+P12_1_DB_MIGRATIONS=123
+P12_1_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_CLIENT_RUNTIME_AND_RECONNECT_RECON_V1
+-->
 
-Authoritative P12.1 conclusion: **P12 DIRECT RUNTIME FOUNDATION = ABSENT / NEW FOUNDATION REQUIRED**. The 229 broad Loss Prevention hits were scanner false positives from substring `eas`; strict `EAS` runtime code is zero. `config/cache.php` is normal Laravel cache configuration and does not count as offline continuity. Direct POS hardware, kiosk/price-checker and Loss Prevention runtime/tests are absent.
+Checkpoint funcional P12.1 publicado:
+`67465a62439185bac1aacef1d6e3e57224c17ef1` — `feat(offline): add operational device replay foundation`, parent `fda5cf6f2a9a3e181ea4d29106e874808ecde145`, tree `06512de100ee87ab153c3bcd29b47bfdf4c042a5`.
 
-Reusable adjacent foundations are `AuditRecorder`, Commerce checkout and the Inventory movement ledger. Service IMEI, serial number and asset tag concepts remain confined to Service and must not be conflated with an operational Device Registry.
+La entrada a P12 ya no es sólo una clasificación de ausencia: la primera fundación directa existe y quedó validada. P12.1 publica identidad operacional UUID opaca y tenant-scoped, capability declaration vendor-neutral con `restricted_offline_replay`, y un ledger inmutable de claims server-side con `client_operation_id` + fingerprint canónico. El contrato admite replay exacto e idempotente y rechaza explícitamente reutilización del mismo identificador con contenido diferente.
 
-Next functional cut: `P12_1_RESTRICTED_OFFLINE_CAPABILITY_OPERATIONAL_DEVICE_REGISTRY_FOUNDATION_V1`. It will establish vendor-neutral operational-device identity, capability declarations and server-side idempotency/replay boundaries. It does **not** claim full offline operation and will not yet add Service Worker, IndexedDB/local offline queue, printer/scanner drivers, transactional kiosk, RFID/EAS or cryptographic device-operation signing.
+Gates cerrados:
+- focal `OperationalDeviceFoundationTest` GREEN;
+- full Laravel suite GREEN antes del commit;
+- migración canónica exacta 122 → **123**, con tres tablas P12 nuevas;
+- commit funcional de exactamente diez archivos nuevos;
+- push fast-forward único a `feature/core-entity`;
+- CI63 run `33193072370` / job `quality-gates` `98923200928` GREEN en intento 1;
+- Post-Push CI RECON GREEN con repo limpio, `.env` intacto, tres tablas P12 presentes/vacías y `main` protegido sin cambios.
 
-Recovery Anchor Protocol V1 remains mandatory before mutation. Production governance remains single-trusted-operator and all production authorization source switches remain closed.
-Base funcional publicada tras cierre P11 y usada como Recovery Anchor de P12:
+Límites vinculantes: P12.1 no es offline completo. No existen todavía Service Worker, IndexedDB/cola local, drivers de periféricos, kiosk transaccional, RFID/EAS, credenciales criptográficas de dispositivo ni ejecución de una operación comercial desde el claim offline.
 
-`a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4`
-`feat(release): add single-operator recovery governance`
-El checkpoint canónico es siempre el `HEAD` de
-`origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
-limpio. Este documento debe mantenerse sincronizado con `docs/README.md`.
+Próxima frontera exacta:
+`P12_2_RESTRICTED_OFFLINE_CLIENT_RUNTIME_AND_RECONNECT_RECON_V1`.
 
-Puerta de entrada obligatoria para recuperación:
+P12.2 debe comenzar read-only: relevar frontend/POS, sesión/autenticación, CSRF/API, rutas, Vite y dependencias server-authoritative para decidir el mínimo runtime offline seguro, la persistencia local y la política explícita de conflictos/reconexión. No se implementa Service Worker o cola local antes de ese RECON.
 
-`docs/README.md`
-
-Documento detallado complementario:
-
-`docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`
-
-Documento financiero complementario:
-
-`docs/32_PLAN_TERMINAL_COBRO_CUENTAS_CONCILIACION_V1.md`
-
----
+Recovery Anchor Protocol V1 sigue vigente. Producción continúa fail-closed y los switches de autorización de release permanecen cerrados.
 
 ## Current P11 checkpoint — Protected Main Dispatch Identity + Canonical Alignment
 

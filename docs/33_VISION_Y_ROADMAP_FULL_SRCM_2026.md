@@ -5,16 +5,39 @@ Fecha: **2026-08-28**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 continuity - Offline/Hardware foundation reclassification
+## Current P12 continuity — P12.1 device identity/capability/replay foundation published
 
-P12 opens from recovery anchor `a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4` with P11 production governance preserved fail-closed. The P12.1 read-only reconciliation demonstrates that the intended offline, POS-hardware, kiosk/price-checker and Loss Prevention capabilities are roadmap scope, not existing runtime implementation.
+<!--
+P12_1_FOUNDATION_STATUS=GREEN_PUBLISHED
+P12_1_FUNCTIONAL_CHECKPOINT=67465a62439185bac1aacef1d6e3e57224c17ef1
+P12_1_FUNCTIONAL_PARENT=fda5cf6f2a9a3e181ea4d29106e874808ecde145
+P12_1_FUNCTIONAL_TREE=06512de100ee87ab153c3bcd29b47bfdf4c042a5
+P12_1_CI63_RUN_ID=33193072370
+P12_1_CI63_JOB_ID=98923200928
+P12_1_DB_MIGRATIONS=123
+P12_1_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_CLIENT_RUNTIME_AND_RECONNECT_RECON_V1
+-->
 
-The authoritative interpretation is **new direct P12 foundation required**. Broad `eas` substring matches are not EAS evidence, and `config/cache.php` is Laravel cache infrastructure rather than offline continuity. Existing Audit, Commerce checkout and Inventory movement foundations may be composed where appropriate; Service-domain IMEI/serial/asset-tag identifiers do not become a generic Device Registry by reuse.
+P12 now has its first direct runtime foundation. Functional checkpoint `67465a62439185bac1aacef1d6e3e57224c17ef1` (`feat(offline): add operational device replay foundation`) is published from parent `fda5cf6f2a9a3e181ea4d29106e874808ecde145` with tree `06512de100ee87ab153c3bcd29b47bfdf4c042a5`; CI63 run `33193072370` and `quality-gates` job `98923200928` completed successfully on the exact feature SHA.
 
-The first implementation boundary is a vendor-neutral **Restricted Offline Capability + Operational Device Registry Foundation V1**: explicit operational device identity, capability-based contracts and server-side idempotency/replay safety first.
-Machine boundary identifier: `P12_1_RESTRICTED_OFFLINE_CAPABILITY_OPERATIONAL_DEVICE_REGISTRY_FOUNDATION_V1`. Full browser offline storage/queueing, peripherals, self-service transactions, RFID/EAS and cryptographic device signing are separate later cuts and must not be claimed prematurely.
+The architectural truth established by P12.1 is deliberately narrow:
+- an operational device has an opaque UUID identity scoped to its organization;
+- device authority is capability-based and vendor-neutral, beginning with `restricted_offline_replay`;
+- Service IMEI, serial-number and asset-tag concepts remain Service-domain identifiers and are not reused as generic device identity;
+- server-side operation claims are immutable and use a stable client operation UUID plus canonical SHA-256 request fingerprint;
+- identical replay resolves to the existing claim; identifier reuse with different content is an explicit conflict;
+- inactive devices, missing capabilities and cross-tenant use fail closed;
+- registration/deactivation reuse the existing audit foundation.
 
-This preserves the North Star principle: offline/hardware capability grows from explicit operational truth and fail-closed reconciliation, not from vendor coupling or inferred device identity.
+The canonical local schema now has **123 migrations** and the three new P12 foundation tables. Post-push reconciliation verified those tables present and empty, with repository, `.env`, main protection and production boundaries preserved.
+
+This foundation does **not** yet claim browser offline continuity or peripheral operation. Service Worker, IndexedDB/local queueing, printer/scanner drivers, transactional kiosk, RFID/EAS, device cryptographic credentials/signing and execution of sales/inventory/payment mutations from offline claims remain separate future boundaries.
+
+The next exact boundary is:
+`P12_2_RESTRICTED_OFFLINE_CLIENT_RUNTIME_AND_RECONNECT_RECON_V1`.
+
+That boundary is read-only first. It must map the actual frontend/POS runtime, authentication/session and CSRF/API boundaries, Vite assets, routes and server-authoritative data dependencies before choosing browser persistence, synchronization or conflict-resolution mechanisms. The North Star remains restricted, fail-closed offline capability with explicit reconnect conflicts rather than optimistic silent reconciliation.
+
 Puerta de entrada de continuidad: `docs/README.md`
 
 ---
