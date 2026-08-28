@@ -5,88 +5,93 @@ Actualizado: **2026-08-28**
 Rama de desarrollo: `feature/core-entity`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint — P12.2 Snapshot Scope Envelope V2 GREEN
+## Current P12 checkpoint — P12.2 IndexedDB Snapshot Store Foundation GREEN
 
 <!--
-P12_2_SNAPSHOT_SCOPE_ENVELOPE_STATUS=GREEN_PUBLISHED
-P12_2_FUNCTIONAL_CHECKPOINT=2a85ed0e5b520733ffe27602a599b4d6a16e3c64
-P12_2_FUNCTIONAL_PARENT=06a9bc07489b205e0abdbe23e3537d95b3e7dc19
-P12_2_FUNCTIONAL_TREE=b7f6f39231ccf49d2f3fc86ab230bfae2ce9b3fe
-P12_2_CI69_RUN_ID=33212746368
-P12_2_CI69_JOB_ID=98989529976
+P12_2_INDEXEDDB_SNAPSHOT_STORE_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=adfa5ad51bebed32863e7a99d2d1c8254275d3d3
+P12_2_FUNCTIONAL_PARENT=aa0b8d7a1ce6ffd395b625cb5867502d64165793
+P12_2_FUNCTIONAL_TREE=ee32c4d29de123749e9f038d9ede285c37923753
+P12_2_CI71_RUN_ID=33215561773
+P12_2_CI71_JOB_ID=98998265573
 P12_2_DB_MIGRATIONS=124
 P12_2_SNAPSHOT_CONTRACT_VERSION=2
 P12_2_SNAPSHOT_CAPABILITY=restricted_offline_read_model
 P12_2_SNAPSHOT_SCOPE_FIELDS=binding_public_id,device_public_id,binding_expires_at
-P12_2_CLIENT_PERSISTENCE_ENGINE=INDEXEDDB
-P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_INDEXEDDB_SNAPSHOT_STORE_FOUNDATION_V1
+P12_2_INDEXEDDB_STORAGE_SCHEMA_VERSION=1
+P12_2_INDEXEDDB_DATABASE_NAME=srcm-restricted-offline-v1
+P12_2_INDEXEDDB_OBJECT_STORE=operational-read-model-snapshots
+P12_2_INDEXEDDB_RECORD_KEY=current
+P12_2_INDEXEDDB_ENVELOPE_FIELDS=storage_schema_version,snapshot_version,binding_public_id,device_public_id,binding_expires_at,content_fingerprint,generated_at,stored_at,payload
+P12_2_INDEXEDDB_PERSISTENT_STORAGE_ENTITLEMENT=NOT_REQUESTED
+P12_2_OFFLINE_UI_CONSUMPTION=NOT_IMPLEMENTED
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_SNAPSHOT_CONSUMPTION_RECON_V1
 -->
 
 Checkpoint funcional publicado:
-`2a85ed0e5b520733ffe27602a599b4d6a16e3c64` — `feat(offline): add snapshot binding scope envelope`, parent `06a9bc07489b205e0abdbe23e3537d95b3e7dc19`, tree `b7f6f39231ccf49d2f3fc86ab230bfae2ce9b3fe`.
+`adfa5ad51bebed32863e7a99d2d1c8254275d3d3` — `feat(offline): add indexeddb snapshot store foundation`, parent `aa0b8d7a1ce6ffd395b625cb5867502d64165793`, tree `ee32c4d29de123749e9f038d9ede285c37923753`.
 
-P12.2 cerró la preparación server-side completa para una primera persistencia de lectura:
-- Operational Device identity/capabilities/replay;
-- Browser Binding server-issued, revocable y expirable;
-- Snapshot V1 versionado y read-only;
-- Client Persistence RECON V3;
-- Snapshot V2 con scope persistible explícito.
+La cadena P12.2 queda ahora:
+1. Operational Device identity/capabilities/replay;
+2. Browser Binding server-issued, revocable y expirable;
+3. Snapshot V2 read-only con scope explícito;
+4. IndexedDB Snapshot Store Foundation V1 publicada y CI-verificada.
 
-El Client Persistence RECON V3 fijó:
-- persistencia existente: ausente;
-- motor recomendado: IndexedDB asíncrono/estructurado/same-origin;
-- durabilidad: best-effort y reconstruible;
-- `navigator.storage.persist()` diferido;
-- HTTP cache reutilizable como autoridad: no;
-- local snapshot = cache operacional, nunca autoridad;
-- write policy futura = atomic replace after complete online snapshot only;
-- purge en unbind/logout/organization switch/contract mismatch/binding expiry/corruption;
-- Service Worker y mutation queue detrás de esta frontera.
-
-Snapshot Scope Envelope V2 resuelve el bloqueo de aislamiento previo a IndexedDB:
-- `snapshot_version=2`;
-- `scope.binding_public_id`;
-- `scope.device_public_id`;
-- `scope.binding_expires_at`;
-- token y `token_hash` excluidos;
-- `content_fingerprint` permanece independiente del scope;
-- binding rotation cambia scope pero, con contenido estable, no cambia fingerprint;
-- `balance_version` continúa siendo evidencia informativa de concurrencia, no permiso de mutación.
+Fundación IndexedDB publicada:
+- store nativo y same-origin;
+- schema local V1;
+- DB `srcm-restricted-offline-v1`;
+- object store `operational-read-model-snapshots`;
+- key fija `current`;
+- envelope con `content_fingerprint` y `stored_at` explícitos;
+- un solo Snapshot V2 completo por vez;
+- envelope scope-aware;
+- canonicalización + SHA-256 cliente para detectar alteración;
+- read fail-closed ante contract/scope/device/expiry/fingerprint/policy mismatch;
+- purge de lifecycle en login/logout/organization switch/unbind;
+- quota/corrupción degradan seguro;
+- outage de red/5xx sólo conserva cache válido no expirado;
+- rechazo de autoridad purga;
+- persistent-storage entitlement diferido.
 
 Gates cerrados:
-- Client Persistence RECON V3 GREEN;
-- focal Snapshot Scope Envelope GREEN;
+- recuperación V1 falsa RED por npm shim cerrada;
+- Node contract tests GREEN;
+- production asset build GREEN;
+- Snapshot V2 server focal GREEN;
 - full Laravel suite GREEN;
 - `git diff --check` GREEN;
-- exactamente dos paths modificados;
+- exactamente cinco paths: tres modificados + dos agregados;
+- `package-lock.json` intacto;
+- cero dependencias nuevas;
 - cero migraciones;
 - push fast-forward único;
-- CI69 run `33212746368` / job `98989529976` GREEN, intento 1;
+- CI71 run `33215561773` / job `98998265573` GREEN, intento 1;
+- paso `Offline snapshot store contract tests` GREEN en CI;
 - Post-Push CI RECON GREEN;
 - BD canónica exacta con **124 migraciones**;
 - `.env` intacto;
 - `main` protegido e inalterado.
 
 Próxima frontera exacta:
-`P12_2_RESTRICTED_OFFLINE_INDEXEDDB_SNAPSHOT_STORE_FOUNDATION_V1`.
+`P12_2_RESTRICTED_OFFLINE_SNAPSHOT_CONSUMPTION_RECON_V1`.
 
-Alcance de esa fundación IndexedDB:
-- store/schema local versionado;
-- envelope scope-aware;
-- escritura atómica de Snapshot V2 completo;
-- lectura fail-closed ante versión/scope/expiración inválidos;
-- validación de fingerprint;
-- `stored_at` y freshness local explícitos;
-- purge/clear seguro;
-- manejo de quota y corrupción;
-- tests browser-unitarios o JS deterministas integrados al build/CI según la superficie real.
+Ese RECON debe relevar antes de implementar:
+- qué Blade/Alpine/POS/catalog surfaces pueden consumir el snapshot;
+- cómo distinguir online, offline válido, stale/expirado y authority-rejected;
+- qué freshness debe mostrarse al operador;
+- qué datos son sólo informativos y cuáles deben seguir bloqueando acción;
+- cómo evitar que un cache previo a logout/org-switch/unbind reaparezca;
+- qué pruebas UI/JS deterministas son necesarias;
+- si hace falta un pequeño facade de lectura entre IndexedDB y las superficies existentes.
 
-Fuera de alcance del próximo corte:
+Fuera de alcance:
 - Service Worker;
-- background sync;
+- precache/app shell offline;
+- Background Sync;
 - cola/replay de mutaciones;
 - venta/pago/fiscalidad final offline;
-- reemplazar autoridad server-side;
+- sustituir autoridad server-side;
 - merge silencioso de conflictos.
 
 Recovery Anchor Protocol V1 continúa vigente. Producción sigue fail-closed.

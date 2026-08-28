@@ -5,58 +5,62 @@ Fecha: **2026-08-28**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 continuity — P12.2 Snapshot Scope Envelope V2 published
+## Current P12 continuity — P12.2 IndexedDB Snapshot Store Foundation published
 
 <!--
-P12_2_SNAPSHOT_SCOPE_ENVELOPE_STATUS=GREEN_PUBLISHED
-P12_2_FUNCTIONAL_CHECKPOINT=2a85ed0e5b520733ffe27602a599b4d6a16e3c64
-P12_2_FUNCTIONAL_PARENT=06a9bc07489b205e0abdbe23e3537d95b3e7dc19
-P12_2_FUNCTIONAL_TREE=b7f6f39231ccf49d2f3fc86ab230bfae2ce9b3fe
-P12_2_CI69_RUN_ID=33212746368
-P12_2_CI69_JOB_ID=98989529976
+P12_2_INDEXEDDB_SNAPSHOT_STORE_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=adfa5ad51bebed32863e7a99d2d1c8254275d3d3
+P12_2_FUNCTIONAL_PARENT=aa0b8d7a1ce6ffd395b625cb5867502d64165793
+P12_2_FUNCTIONAL_TREE=ee32c4d29de123749e9f038d9ede285c37923753
+P12_2_CI71_RUN_ID=33215561773
+P12_2_CI71_JOB_ID=98998265573
 P12_2_DB_MIGRATIONS=124
 P12_2_SNAPSHOT_CONTRACT_VERSION=2
 P12_2_SNAPSHOT_CAPABILITY=restricted_offline_read_model
 P12_2_SNAPSHOT_SCOPE_FIELDS=binding_public_id,device_public_id,binding_expires_at
-P12_2_CLIENT_PERSISTENCE_ENGINE=INDEXEDDB
-P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_INDEXEDDB_SNAPSHOT_STORE_FOUNDATION_V1
+P12_2_INDEXEDDB_STORAGE_SCHEMA_VERSION=1
+P12_2_INDEXEDDB_DATABASE_NAME=srcm-restricted-offline-v1
+P12_2_INDEXEDDB_OBJECT_STORE=operational-read-model-snapshots
+P12_2_INDEXEDDB_RECORD_KEY=current
+P12_2_INDEXEDDB_ENVELOPE_FIELDS=storage_schema_version,snapshot_version,binding_public_id,device_public_id,binding_expires_at,content_fingerprint,generated_at,stored_at,payload
+P12_2_INDEXEDDB_PERSISTENT_STORAGE_ENTITLEMENT=NOT_REQUESTED
+P12_2_OFFLINE_UI_CONSUMPTION=NOT_IMPLEMENTED
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_SNAPSHOT_CONSUMPTION_RECON_V1
 -->
 
-P12 now has the server-side identity, authority and cache-scope chain required before the browser stores business read-model data. Functional checkpoint `2a85ed0e5b520733ffe27602a599b4d6a16e3c64` (`feat(offline): add snapshot binding scope envelope`) is published from parent `06a9bc07489b205e0abdbe23e3537d95b3e7dc19` with tree `b7f6f39231ccf49d2f3fc86ab230bfae2ce9b3fe`; CI69 run `33212746368` and `quality-gates` job `98989529976` completed successfully on attempt 1.
+P12 now has its first browser-side persistence primitive for restricted offline continuity. Functional checkpoint `adfa5ad51bebed32863e7a99d2d1c8254275d3d3` (`feat(offline): add indexeddb snapshot store foundation`) is published from parent `aa0b8d7a1ce6ffd395b625cb5867502d64165793` with tree `ee32c4d29de123749e9f038d9ede285c37923753`; CI71 run `33215561773` and `quality-gates` job `98998265573` completed successfully on attempt 1.
 
-Snapshot V2 adds a deliberately separate scope envelope:
-- `binding_public_id`;
-- `device_public_id`;
-- `binding_expires_at`.
+The published store is intentionally narrow:
+- native same-origin IndexedDB;
+- storage schema version 1;
+- one canonical record in `srcm-restricted-offline-v1` / `operational-read-model-snapshots`;
+- the local envelope carries `content_fingerprint` and `stored_at` explicitly;
+- only complete, authoritative online Snapshot V2 responses may replace `current`;
+- local reads validate contract, Browser Binding/device scope, binding expiry, fingerprint and fail-closed policy;
+- the browser re-canonicalizes operational content and recalculates SHA-256 instead of trusting the stored fingerprint blindly;
+- login/logout/organization switch/unbind and invalid-contract/corruption boundaries purge local state;
+- quota failure degrades safely;
+- network/5xx outages may preserve only a still-valid, nonexpired cache;
+- authority rejection purges;
+- persistent-storage entitlement remains intentionally unrequested.
 
-Those values identify **which live Browser Binding/device scope may own a local cache**. They are not secrets and do not replace the HttpOnly binding credential. Token and `token_hash` remain excluded.
+The store does **not** grant commercial authority. Snapshot V2 continues to expose information, not permission:
+- price and availability remain subject to server revalidation;
+- `balance_version` is concurrency evidence, not authorization;
+- Browser Binding scope determines cache ownership, not transaction authority;
+- customer, credit, cash-session, financial-account, payment and fiscal-secret surfaces remain excluded;
+- offline final sale, payment and fiscal authorization remain blocked.
 
-The content identity remains separate:
-- `content_fingerprint` continues to cover only canonical operational content;
-- `generated_at` and `scope` do not participate;
-- rotating or reissuing a Browser Binding invalidates/re-scopes local cache ownership without pretending that catalog, price or stock content changed;
-- unchanged operational content therefore keeps the same fingerprint across binding rotation;
-- availability remains informative and carries `balance_version`;
-- final price, stock, human authority, payment and fiscal authority remain server-side truths.
-
-Client Persistence RECON V3 established the first storage architecture:
-- IndexedDB is the baseline engine;
-- storage is best-effort because the snapshot is reconstructible;
-- persistent-storage entitlement is not required initially;
-- local snapshot data is an operational cache, never transactional authority;
-- only a complete online Snapshot V2 may atomically replace the local record;
-- scope, contract version, expiry and fingerprint must be validated before local use;
-- unbind, logout, organization switch, binding expiry, contract mismatch and corruption must purge or invalidate local state;
-- quota failure must degrade safely rather than fabricate continuity.
-
-The functional Scope Envelope cut required no migration; the canonical database remains at **124 migrations** with unchanged schema and binary evidence.
+CI now has a deterministic `Offline snapshot store contract tests` gate before the production asset build. No extra test dependency was introduced and `package-lock.json` did not change. The canonical database remains at **124 migrations**, unchanged by this client-side persistence foundation.
 
 The next exact boundary is:
-`P12_2_RESTRICTED_OFFLINE_INDEXEDDB_SNAPSHOT_STORE_FOUNDATION_V1`.
+`P12_2_RESTRICTED_OFFLINE_SNAPSHOT_CONSUMPTION_RECON_V1`.
 
-That cut may introduce the first IndexedDB storage code, but only for this read-only Snapshot V2 contract. It must not yet introduce Service Worker execution, background sync, offline mutation replay, final sale/payment/fiscal authority or silent reconciliation.
+That boundary is a RECON, not an implementation. It must map which real application surfaces can safely consume the cached Snapshot V2, define operator-visible freshness/authority states, and decide the minimum read facade/UI contract before any offline-read UX is enabled.
 
-North Star rule remains unchanged: restricted offline continuity may preserve **useful evidence and workflow**, never silently manufacture authority. A local cache can improve availability of information; it cannot turn stale information into commercial truth.
+Service Worker, Background Sync, mutation replay and final business authority remain behind later explicit gates.
+
+North Star rule remains unchanged: offline continuity may preserve **useful information and evidence**, never silently manufacture authority. A valid local cache can keep the operator informed; it cannot itself confirm a sale, payment, fiscal authorization or stock truth.
 
 Puerta de entrada de continuidad: `docs/README.md`
 
