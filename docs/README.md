@@ -4,63 +4,78 @@ Estado: **vinculante para recuperación de contexto**
 Actualizado: **2026-08-28**
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint — P12.2 Versioned Operational Read-Model Snapshot Foundation GREEN
+## Current P12 checkpoint — P12.2 Snapshot Scope Envelope V2 GREEN
 
 <!--
-P12_2_READ_MODEL_SNAPSHOT_STATUS=GREEN_PUBLISHED
-P12_2_FUNCTIONAL_CHECKPOINT=0b081d363b5c3a1f38b1ae55c25ace166e047e37
-P12_2_FUNCTIONAL_PARENT=f01e769a49f3382017ba6fef1ca04430876afaca
-P12_2_FUNCTIONAL_TREE=8924cfbcbb5ee7051e6f1ebcb3c65a0462f589f6
-P12_2_CI67_RUN_ID=33207112997
-P12_2_CI67_JOB_ID=98970862027
+P12_2_SNAPSHOT_SCOPE_ENVELOPE_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=2a85ed0e5b520733ffe27602a599b4d6a16e3c64
+P12_2_FUNCTIONAL_PARENT=06a9bc07489b205e0abdbe23e3537d95b3e7dc19
+P12_2_FUNCTIONAL_TREE=b7f6f39231ccf49d2f3fc86ab230bfae2ce9b3fe
+P12_2_CI69_RUN_ID=33212746368
+P12_2_CI69_JOB_ID=98989529976
 P12_2_DB_MIGRATIONS=124
-P12_2_SNAPSHOT_CONTRACT_VERSION=1
+P12_2_SNAPSHOT_CONTRACT_VERSION=2
 P12_2_SNAPSHOT_CAPABILITY=restricted_offline_read_model
-P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_CLIENT_PERSISTENCE_RECON_V1
+P12_2_SNAPSHOT_SCOPE_FIELDS=binding_public_id,device_public_id,binding_expires_at
+P12_2_CLIENT_PERSISTENCE_ENGINE=INDEXEDDB
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_INDEXEDDB_SNAPSHOT_STORE_FOUNDATION_V1
 -->
 
 Checkpoint funcional publicado:
-`0b081d363b5c3a1f38b1ae55c25ace166e047e37` — `feat(offline): add versioned operational read model snapshot`.
+`2a85ed0e5b520733ffe27602a599b4d6a16e3c64` — `feat(offline): add snapshot binding scope envelope`.
 
-P12.2 ya tiene cerrada la secuencia server-side necesaria antes de persistir datos de negocio en el navegador:
-1. P12.1 — identidad operacional, capabilities y ledger idempotente de claims;
-2. P12.2 Browser Binding — credencial server-issued que vincula navegador y `OperationalDevice` sin tratar el UUID público como secreto;
-3. P12.2 Versioned Read-Model Snapshot — contrato de lectura operacional versionado, capability separada y autoridad final explícitamente server-side.
+P12.2 ya tiene cerrada la cadena server-side necesaria antes de la primera persistencia cliente:
+1. identidad operacional + capabilities + replay claims;
+2. Browser Binding revocable/expirable;
+3. Read-Model Snapshot V1 con contenido operacional mínimo y autoridad final server-side;
+4. Client Persistence RECON V3, que eligió IndexedDB best-effort pero bloqueó cualquier escritura hasta disponer de scope persistible;
+5. Snapshot Scope Envelope V2, que agrega ese scope sin exponer credenciales.
 
-CI67 (`33207112997`) y su único job `quality-gates` (`98970862027`) terminaron `completed / success` en intento 1 sobre el SHA funcional exacto. El Post-Push CI RECON confirmó parent/tree/mensaje, exactamente 3 paths agregados + 4 modificados, `main` protegido e intacto y BD canónica sin migración.
+CI69 (`33212746368`) y su único job `quality-gates` (`98989529976`) terminaron `completed / success` en intento 1 sobre el SHA funcional exacto. El Post-Push CI RECON confirmó parent/tree/mensaje, exactamente dos paths modificados, `main` protegido e intacto y BD canónica sin migración.
 
-Contrato Snapshot V1 publicado:
-- `snapshot_version=1`;
-- capability independiente `restricted_offline_read_model`;
-- Browser Binding vigente + dispositivo activo + organización activa + autorización humana siguen siendo dimensiones separadas;
-- `generated_at` informa el momento de generación, pero **no** participa del fingerprint lógico;
-- `content_fingerprint` SHA-256 identifica el contenido canónico y cambia cuando cambia el read-model;
-- catálogo activo mínimo con términos de búsqueda;
-- ubicaciones activas y condiciones de inventario;
-- precios vigentes con `valid_from` / `valid_until`;
-- disponibilidad informativa con `balance_version`;
-- precio y disponibilidad deben revalidarse contra autoridad server-side al confirmar cualquier operación futura;
-- el snapshot no contiene clientes, crédito, sesión de caja, cuentas financieras, pagos ni credenciales/datos fiscales.
+Contrato Snapshot V2 publicado:
+- `snapshot_version=2`;
+- capability `restricted_offline_read_model`;
+- bloque top-level `scope`;
+- `scope.binding_public_id`;
+- `scope.device_public_id`;
+- `scope.binding_expires_at`;
+- **sin** binding token ni `token_hash`;
+- `content_fingerprint` continúa calculado exclusivamente sobre contenido operacional;
+- `scope` y `generated_at` permanecen fuera del fingerprint;
+- una rotación/reemisión de Browser Binding cambia el scope pero mantiene el fingerprint cuando catálogo/precio/stock no cambian;
+- disponibilidad informativa conserva `balance_version`;
+- precio, stock y autoridad final continúan revalidados server-side.
 
-El corte no agregó migraciones: la BD canónica permanece en **124 migraciones**, schema `437ab508213ecb039f48b52b99438d1a7e50dcaa28d2e859ea1dad77c0fb7c9c` y binario `9c94e562dff64821b808d3fca5cbed533f54f694ab38336dc6e0a87df132aeb3`. La nueva capability reutiliza la tabla existente `operational_device_capabilities`.
+La BD canónica permanece en **124 migraciones**, schema `437ab508213ecb039f48b52b99438d1a7e50dcaa28d2e859ea1dad77c0fb7c9c` y binario `9c94e562dff64821b808d3fca5cbed533f54f694ab38336dc6e0a87df132aeb3`. Este corte no agregó tabla ni migración.
+
+La arquitectura de persistencia cliente queda fijada:
+- motor inicial: **IndexedDB nativo/asíncrono**, same-origin;
+- durabilidad inicial: best-effort, porque el snapshot es reconstruible desde servidor;
+- no pedir persistent-storage entitlement en la primera baseline;
+- escritura futura: reemplazo atómico sólo después de recibir un snapshot online completo;
+- lectura futura: validar schema local, `snapshot_version`, scope, expiración y fingerprint antes de usar;
+- envelope local previsto: `storage_schema_version`, `snapshot_version`, `binding_public_id`, `device_public_id`, `binding_expires_at`, `content_fingerprint`, `generated_at`, `stored_at`, `payload`;
+- purga obligatoria ante unbind, logout, cambio de organización, incompatibilidad de contrato, expiración del binding o corrupción;
+- `QuotaExceededError` debe fallar seguro y permitir reconstrucción desde servidor;
+- ningún dato cacheado adquiere autoridad transaccional.
 
 Límites vinculantes que permanecen cerrados:
-- Service Worker: no implementado;
-- IndexedDB/persistencia local de negocio: no implementada;
-- cola de mutaciones offline: no implementada;
-- ejecución de operaciones de negocio offline: no implementada;
-- venta final offline: bloqueada;
-- finalización de pagos offline: bloqueada;
-- autorización fiscal offline: bloqueada;
-- merge silencioso de conflictos de precio o stock: prohibido;
-- el fingerprint del snapshot no constituye autorización transaccional.
+- IndexedDB todavía **no está implementado**;
+- Service Worker no implementado;
+- cola de mutaciones offline no implementada;
+- ejecución de operaciones de negocio offline no implementada;
+- venta final offline bloqueada;
+- pago final offline bloqueado;
+- autorización fiscal offline bloqueada;
+- merge silencioso de precio/stock prohibido.
 
 Próxima frontera exacta:
-`P12_2_RESTRICTED_OFFLINE_CLIENT_PERSISTENCE_RECON_V1`.
+`P12_2_RESTRICTED_OFFLINE_INDEXEDDB_SNAPSHOT_STORE_FOUNDATION_V1`.
 
-Ese RECON debe definir la primera persistencia cliente segura del snapshot ya publicado: almacenamiento elegido, versionado local, esquema/upgrade, expiración, invalidación, cuotas, borrado/revocación, aislamiento por organización/dispositivo, protección frente a usuario equivocado y comportamiento ante snapshot incompatible o corrupto. **No** habilita aún cola de mutaciones ni venta offline final.
+Ese corte implementará únicamente la fundación del store IndexedDB para **Snapshot V2**, incluyendo schema/versionado local, escritura atómica, validación de scope/fingerprint, expiración, borrado seguro, quota/corrupción y lifecycle básico. No habilitará todavía Service Worker, UI offline ni mutation replay.
 
-Recovery Anchor Protocol V1 continúa obligatorio. Producción permanece fail-closed y este checkpoint no autoriza deploy, bootstrap ni tráfico público.
+Recovery Anchor Protocol V1 continúa obligatorio. Producción permanece fail-closed.
 
 Rama canónica de desarrollo: `feature/core-entity`
 

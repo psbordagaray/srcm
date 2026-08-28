@@ -5,85 +5,91 @@ Actualizado: **2026-08-28**
 Rama de desarrollo: `feature/core-entity`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint — P12.2 Versioned Operational Read-Model Snapshot Foundation GREEN
+## Current P12 checkpoint — P12.2 Snapshot Scope Envelope V2 GREEN
 
 <!--
-P12_2_READ_MODEL_SNAPSHOT_STATUS=GREEN_PUBLISHED
-P12_2_FUNCTIONAL_CHECKPOINT=0b081d363b5c3a1f38b1ae55c25ace166e047e37
-P12_2_FUNCTIONAL_PARENT=f01e769a49f3382017ba6fef1ca04430876afaca
-P12_2_FUNCTIONAL_TREE=8924cfbcbb5ee7051e6f1ebcb3c65a0462f589f6
-P12_2_CI67_RUN_ID=33207112997
-P12_2_CI67_JOB_ID=98970862027
+P12_2_SNAPSHOT_SCOPE_ENVELOPE_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=2a85ed0e5b520733ffe27602a599b4d6a16e3c64
+P12_2_FUNCTIONAL_PARENT=06a9bc07489b205e0abdbe23e3537d95b3e7dc19
+P12_2_FUNCTIONAL_TREE=b7f6f39231ccf49d2f3fc86ab230bfae2ce9b3fe
+P12_2_CI69_RUN_ID=33212746368
+P12_2_CI69_JOB_ID=98989529976
 P12_2_DB_MIGRATIONS=124
-P12_2_SNAPSHOT_CONTRACT_VERSION=1
+P12_2_SNAPSHOT_CONTRACT_VERSION=2
 P12_2_SNAPSHOT_CAPABILITY=restricted_offline_read_model
-P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_CLIENT_PERSISTENCE_RECON_V1
+P12_2_SNAPSHOT_SCOPE_FIELDS=binding_public_id,device_public_id,binding_expires_at
+P12_2_CLIENT_PERSISTENCE_ENGINE=INDEXEDDB
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_INDEXEDDB_SNAPSHOT_STORE_FOUNDATION_V1
 -->
 
 Checkpoint funcional publicado:
-`0b081d363b5c3a1f38b1ae55c25ace166e047e37` — `feat(offline): add versioned operational read model snapshot`, parent `f01e769a49f3382017ba6fef1ca04430876afaca`, tree `8924cfbcbb5ee7051e6f1ebcb3c65a0462f589f6`.
+`2a85ed0e5b520733ffe27602a599b4d6a16e3c64` — `feat(offline): add snapshot binding scope envelope`, parent `06a9bc07489b205e0abdbe23e3537d95b3e7dc19`, tree `b7f6f39231ccf49d2f3fc86ab230bfae2ce9b3fe`.
 
-P12.2 ya cerró tres fundaciones consecutivas antes de cualquier operación offline mutable:
-- identidad/capabilities/replay claims de dispositivo;
-- Browser Binding revocable y expirable;
-- snapshot operacional server-side versionado y read-only.
+P12.2 cerró la preparación server-side completa para una primera persistencia de lectura:
+- Operational Device identity/capabilities/replay;
+- Browser Binding server-issued, revocable y expirable;
+- Snapshot V1 versionado y read-only;
+- Client Persistence RECON V3;
+- Snapshot V2 con scope persistible explícito.
 
-El snapshot V1 exige `restricted_offline_read_model` como capability separada de `restricted_offline_replay`. El endpoint permanece dentro de la sesión web existente y exige organización activa, autorización humana aplicable, Browser Binding vigente y dispositivo activo.
+El Client Persistence RECON V3 fijó:
+- persistencia existente: ausente;
+- motor recomendado: IndexedDB asíncrono/estructurado/same-origin;
+- durabilidad: best-effort y reconstruible;
+- `navigator.storage.persist()` diferido;
+- HTTP cache reutilizable como autoridad: no;
+- local snapshot = cache operacional, nunca autoridad;
+- write policy futura = atomic replace after complete online snapshot only;
+- purge en unbind/logout/organization switch/contract mismatch/binding expiry/corruption;
+- Service Worker y mutation queue detrás de esta frontera.
 
-Contenido autorizado del snapshot:
-- catálogo activo mínimo y términos de búsqueda;
-- ubicaciones activas;
-- condiciones;
-- precio actual con provenance `valid_from` / `valid_until`;
-- disponibilidad **informativa** con `balance_version`;
-- política explícita de revalidación server-side.
-
-Contenido deliberadamente excluido:
-- clientes;
-- crédito;
-- sesión de caja;
-- cuentas financieras;
-- pagos;
-- fiscalidad/credenciales fiscales.
-
-Semántica de versión y autoridad:
-- contrato `snapshot_version=1`;
-- `generated_at` es telemetría temporal;
-- `content_fingerprint` se deriva del contenido canónico y excluye `generated_at`;
-- cambios de contenido cambian el fingerprint;
-- `balance_version` conserva evidencia de concurrencia del saldo observado;
-- ver un precio o stock en un snapshot **no** autoriza a confirmarlo;
-- cualquier futura operación debe revalidar precio, disponibilidad y autoridad al reconectar;
-- merge silencioso de conflictos sigue prohibido.
+Snapshot Scope Envelope V2 resuelve el bloqueo de aislamiento previo a IndexedDB:
+- `snapshot_version=2`;
+- `scope.binding_public_id`;
+- `scope.device_public_id`;
+- `scope.binding_expires_at`;
+- token y `token_hash` excluidos;
+- `content_fingerprint` permanece independiente del scope;
+- binding rotation cambia scope pero, con contenido estable, no cambia fingerprint;
+- `balance_version` continúa siendo evidencia informativa de concurrencia, no permiso de mutación.
 
 Gates cerrados:
-- RECON read-model V3 GREEN;
-- recuperación V1 de la fundación: RED sólo del test por transporte de cookie, sin commit/push;
-- V2 cambió únicamente `getJson()` → `get()` en requests cookie-bearing; código productivo byte-identical al V1;
-- focal GREEN;
+- Client Persistence RECON V3 GREEN;
+- focal Snapshot Scope Envelope GREEN;
 - full Laravel suite GREEN;
 - `git diff --check` GREEN;
-- commit funcional exacto de 7 paths: 3 agregados + 4 modificados;
-- push fast-forward único a `feature/core-entity`;
-- CI67 run `33207112997` / job `98970862027` GREEN, intento 1;
+- exactamente dos paths modificados;
+- cero migraciones;
+- push fast-forward único;
+- CI69 run `33212746368` / job `98989529976` GREEN, intento 1;
 - Post-Push CI RECON GREEN;
-- BD canónica exacta, sin migración, **124 migraciones**;
-- `.env` intacto y `main` protegido sin cambios.
-
-Límites vinculantes:
-- no Service Worker;
-- no IndexedDB/cache persistente de negocio;
-- no local mutation queue;
-- no ejecución de venta/pago/fiscalidad offline;
-- no reemplazo de autoridad humana por identidad del dispositivo;
-- no uso del fingerprint como permiso de mutación.
+- BD canónica exacta con **124 migraciones**;
+- `.env` intacto;
+- `main` protegido e inalterado.
 
 Próxima frontera exacta:
-`P12_2_RESTRICTED_OFFLINE_CLIENT_PERSISTENCE_RECON_V1`.
+`P12_2_RESTRICTED_OFFLINE_INDEXEDDB_SNAPSHOT_STORE_FOUNDATION_V1`.
 
-Debe comenzar en modo RECON/read-only y clasificar cómo persistir **sólo este snapshot** en el cliente: store/schema, claves de aislamiento, lifecycle, TTL/freshness, invalidación por revocación/cambio de organización, quota/error handling, compatibilidad de versiones, limpieza segura y recuperación ante corrupción. Service Worker y replay de mutaciones siguen detrás de esa frontera.
+Alcance de esa fundación IndexedDB:
+- store/schema local versionado;
+- envelope scope-aware;
+- escritura atómica de Snapshot V2 completo;
+- lectura fail-closed ante versión/scope/expiración inválidos;
+- validación de fingerprint;
+- `stored_at` y freshness local explícitos;
+- purge/clear seguro;
+- manejo de quota y corrupción;
+- tests browser-unitarios o JS deterministas integrados al build/CI según la superficie real.
 
-Recovery Anchor Protocol V1 sigue vigente. Producción continúa fail-closed.
+Fuera de alcance del próximo corte:
+- Service Worker;
+- background sync;
+- cola/replay de mutaciones;
+- venta/pago/fiscalidad final offline;
+- reemplazar autoridad server-side;
+- merge silencioso de conflictos.
+
+Recovery Anchor Protocol V1 continúa vigente. Producción sigue fail-closed.
 
 ## Current P11 checkpoint — Protected Main Dispatch Identity + Canonical Alignment
 
