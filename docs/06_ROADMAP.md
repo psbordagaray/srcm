@@ -5,41 +5,60 @@ Actualizado: **2026-08-28**
 Rama de desarrollo: `feature/core-entity`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint — P12.1 Operational Device Registry Foundation GREEN
+## Current P12 checkpoint — P12.2 Operational Device Browser Binding Foundation GREEN
 
 <!--
-P12_1_FOUNDATION_STATUS=GREEN_PUBLISHED
-P12_1_FUNCTIONAL_CHECKPOINT=67465a62439185bac1aacef1d6e3e57224c17ef1
-P12_1_FUNCTIONAL_PARENT=fda5cf6f2a9a3e181ea4d29106e874808ecde145
-P12_1_FUNCTIONAL_TREE=06512de100ee87ab153c3bcd29b47bfdf4c042a5
-P12_1_CI63_RUN_ID=33193072370
-P12_1_CI63_JOB_ID=98923200928
-P12_1_DB_MIGRATIONS=123
-P12_1_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_CLIENT_RUNTIME_AND_RECONNECT_RECON_V1
+P12_2_BROWSER_BINDING_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=889823a566a60ca9ff10aad82547cc6d43156b30
+P12_2_FUNCTIONAL_PARENT=5fed76aab34dde60d2241d4ca95db624cecebb74
+P12_2_FUNCTIONAL_TREE=6a0222e4ebceba14615ac2d3fca85e3b017c428f
+P12_2_CI65_RUN_ID=33200967493
+P12_2_CI65_JOB_ID=98950027992
+P12_2_DB_MIGRATIONS=124
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_READ_MODEL_SNAPSHOT_RECON_V1
 -->
 
-Checkpoint funcional P12.1 publicado:
-`67465a62439185bac1aacef1d6e3e57224c17ef1` — `feat(offline): add operational device replay foundation`, parent `fda5cf6f2a9a3e181ea4d29106e874808ecde145`, tree `06512de100ee87ab153c3bcd29b47bfdf4c042a5`.
+Checkpoint funcional P12.2 publicado:
+`889823a566a60ca9ff10aad82547cc6d43156b30` — `feat(offline): add operational device browser binding`, parent `5fed76aab34dde60d2241d4ca95db624cecebb74`, tree `6a0222e4ebceba14615ac2d3fca85e3b017c428f`.
 
-La entrada a P12 ya no es sólo una clasificación de ausencia: la primera fundación directa existe y quedó validada. P12.1 publica identidad operacional UUID opaca y tenant-scoped, capability declaration vendor-neutral con `restricted_offline_replay`, y un ledger inmutable de claims server-side con `client_operation_id` + fingerprint canónico. El contrato admite replay exacto e idempotente y rechaza explícitamente reutilización del mismo identificador con contenido diferente.
+P12.2 ya tiene cerradas dos decisiones de arquitectura. Primero, el RECON demostró que el POS actual es Blade + Alpine + Vite, sin runtime offline ni binding navegador↔dispositivo y con venta/stock/pagos todavía bajo autoridad server-side. Segundo, Browser Binding publica la identidad segura que debe existir antes de cualquier persistencia o cola cliente.
+
+Contrato publicado:
+- `OperationalDevice.public_id` sigue siendo identificador público y no secreto;
+- el servidor emite un token aleatorio de 256 bits y sólo persiste su SHA-256;
+- el token viaja en cookie `HttpOnly` / `SameSite=Strict`, con `Secure` obligatorio en producción/HTTPS;
+- binding expirable, revocable y rotado de forma auditable;
+- tenant activo + binding vigente + dispositivo activo son gates fail-closed;
+- la sesión humana sigue siendo requisito independiente del binding del navegador;
+- runtime read-only expone identidad pública/capabilities y políticas, nunca secreto ni autoridad de mutación.
 
 Gates cerrados:
-- focal `OperationalDeviceFoundationTest` GREEN;
-- full Laravel suite GREEN antes del commit;
-- migración canónica exacta 122 → **123**, con tres tablas P12 nuevas;
-- commit funcional de exactamente diez archivos nuevos;
+- recuperación V1: el único RED fue una expectativa de test `401` vs redirect web `302`; producción no cambió;
+- diagnóstico V2 reprodujo 5/6 focales GREEN, aisló la expectativa y restauró todo;
+- V3 corrigió sólo la expectativa del test, con código productivo idéntico al V1;
+- focal Browser Binding GREEN;
+- full Laravel suite GREEN;
+- migración canónica exacta 123 → **124**;
+- tabla `operational_device_browser_bindings` presente y vacía;
+- commit funcional de exactamente 8 paths: 7 agregados + `routes/web.php` modificado;
 - push fast-forward único a `feature/core-entity`;
-- CI63 run `33193072370` / job `quality-gates` `98923200928` GREEN en intento 1;
-- Post-Push CI RECON GREEN con repo limpio, `.env` intacto, tres tablas P12 presentes/vacías y `main` protegido sin cambios.
+- CI65 run `33200967493` / job `quality-gates` `98950027992` GREEN en intento 1;
+- Post-Push CI RECON GREEN con repo limpio, `.env` intacto, `main` protegido y BD estable.
 
-Límites vinculantes: P12.1 no es offline completo. No existen todavía Service Worker, IndexedDB/cola local, drivers de periféricos, kiosk transaccional, RFID/EAS, credenciales criptográficas de dispositivo ni ejecución de una operación comercial desde el claim offline.
+Límites vinculantes:
+- no Service Worker;
+- no IndexedDB ni cache persistente de negocio;
+- no offline mutation queue;
+- venta final, pago final y fiscalidad offline permanecen bloqueados;
+- no merge silencioso de precio/stock;
+- no se utiliza Browser Binding como reemplazo de autenticación o autorización humana.
 
 Próxima frontera exacta:
-`P12_2_RESTRICTED_OFFLINE_CLIENT_RUNTIME_AND_RECONNECT_RECON_V1`.
+`P12_2_RESTRICTED_OFFLINE_READ_MODEL_SNAPSHOT_RECON_V1`.
 
-P12.2 debe comenzar read-only: relevar frontend/POS, sesión/autenticación, CSRF/API, rutas, Vite y dependencias server-authoritative para decidir el mínimo runtime offline seguro, la persistencia local y la política explícita de conflictos/reconexión. No se implementa Service Worker o cola local antes de ese RECON.
+Debe comenzar read-only y clasificar el read-model que puede salir del servidor hacia un dispositivo vinculado: catálogo, precio autorizado, disponibilidad, versión, freshness, tamaño, datos sensibles, invalidación y reglas de autoridad al reconectar. Sólo después podrá definirse el snapshot versionado; la persistencia browser y el replay de mutaciones siguen detrás de esa frontera.
 
-Recovery Anchor Protocol V1 sigue vigente. Producción continúa fail-closed y los switches de autorización de release permanecen cerrados.
+Recovery Anchor Protocol V1 sigue vigente. Producción continúa fail-closed y los switches de autorización permanecen cerrados.
 
 ## Current P11 checkpoint — Protected Main Dispatch Identity + Canonical Alignment
 

@@ -4,43 +4,60 @@ Estado: **vinculante para recuperación de contexto**
 Actualizado: **2026-08-28**
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint — P12.1 Operational Device Registry Foundation GREEN
+## Current P12 checkpoint — P12.2 Operational Device Browser Binding Foundation GREEN
 
 <!--
-P12_1_FOUNDATION_STATUS=GREEN_PUBLISHED
-P12_1_FUNCTIONAL_CHECKPOINT=67465a62439185bac1aacef1d6e3e57224c17ef1
-P12_1_FUNCTIONAL_PARENT=fda5cf6f2a9a3e181ea4d29106e874808ecde145
-P12_1_FUNCTIONAL_TREE=06512de100ee87ab153c3bcd29b47bfdf4c042a5
-P12_1_CI63_RUN_ID=33193072370
-P12_1_CI63_JOB_ID=98923200928
-P12_1_DB_MIGRATIONS=123
-P12_1_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_CLIENT_RUNTIME_AND_RECONNECT_RECON_V1
+P12_2_BROWSER_BINDING_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=889823a566a60ca9ff10aad82547cc6d43156b30
+P12_2_FUNCTIONAL_PARENT=5fed76aab34dde60d2241d4ca95db624cecebb74
+P12_2_FUNCTIONAL_TREE=6a0222e4ebceba14615ac2d3fca85e3b017c428f
+P12_2_CI65_RUN_ID=33200967493
+P12_2_CI65_JOB_ID=98950027992
+P12_2_DB_MIGRATIONS=124
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_READ_MODEL_SNAPSHOT_RECON_V1
 -->
 
 Checkpoint funcional publicado:
-`67465a62439185bac1aacef1d6e3e57224c17ef1` — `feat(offline): add operational device replay foundation`.
+`889823a566a60ca9ff10aad82547cc6d43156b30` — `feat(offline): add operational device browser binding`.
 
-P12.1 quedó cerrado funcionalmente y reconciliado post-push. CI63 (`33193072370`) y su job único `quality-gates` (`98923200928`) terminaron `completed / success` en primer intento. `main` permanece protegido e intacto en `fda5cf6f2a9a3e181ea4d29106e874808ecde145` y `feature/core-entity` publica el checkpoint funcional anterior.
+P12.2 Browser Binding quedó cerrado funcionalmente y reconciliado post-push. CI65 (`33200967493`) y su job único `quality-gates` (`98950027992`) terminaron `completed / success` en primer intento. `main` permanece protegido e intacto en `fda5cf6f2a9a3e181ea4d29106e874808ecde145`.
 
-La fundación P12.1 establece:
-- identidad operacional de dispositivo tenant-scoped mediante `public_id` UUID opaco, separada de IMEI, serial y `asset_tag` del dominio Service;
-- capacidades explícitas y vendor-neutral; la capacidad inicial es `restricted_offline_replay`;
-- ledger server-side inmutable de claims de operación;
-- `client_operation_id` estable + fingerprint SHA-256 canónico para replay idempotente;
-- replay exacto cuando identificador y contenido coinciden, y conflicto explícito cuando el mismo identificador reaparece con contenido distinto;
-- fail-closed cuando el dispositivo está inactivo, carece de la capacidad requerida o pertenece a otra organización;
-- alta/desactivación auditables mediante la fundación `AuditRecorder`.
+La secuencia arquitectónica ya comprobada de P12 es:
+1. P12.1 — identidad operacional, capabilities y ledger idempotente de claims;
+2. P12.2 RECON — confirmó que el cliente actual es Blade + Alpine + Vite, sin Service Worker, IndexedDB ni cola offline, y que Checkout continúa server-authoritative;
+3. P12.2 Browser Binding — vincula un navegador autenticado con un `OperationalDevice` mediante una credencial server-issued separada del UUID público.
 
-La migración canónica P12.1 llevó el ledger local de 122 a **123 migraciones** y creó exactamente `operational_devices`, `operational_device_capabilities` y `operational_device_operation_claims`. El Post-Push CI RECON verificó las tres tablas presentes y vacías, `.env` intacto, repo limpio y producción sin mutación.
+La fundación Browser Binding establece:
+- token aleatorio de 256 bits emitido por servidor;
+- sólo SHA-256 del token persistido en BD; el secreto en claro no se almacena;
+- cookie `HttpOnly`, `SameSite=Strict` y política `Secure` para producción/HTTPS;
+- expiración de 90 días;
+- rotación que revoca bindings previos activos del mismo dispositivo;
+- revocación explícita y auditable;
+- resolución fail-closed por organización activa, binding vigente y dispositivo activo;
+- `public_id` del dispositivo como identificador público, **nunca como credencial**;
+- identidad del navegador separada de la autorización del usuario humano;
+- endpoint runtime read-only bajo la sesión web existente, sin introducir una API paralela;
+- payload runtime sin token ni `token_hash`, con `Cache-Control: no-store, private`.
 
-P12.1 **no** implementa todavía Service Worker, IndexedDB/cola local, drivers de impresora o scanner, kiosk transaccional, RFID/EAS, credenciales criptográficas de dispositivo ni ejecución de ventas/stock/pagos desde un claim offline. El ledger publicado es una frontera de identidad, capacidad e idempotencia; no una afirmación de operación offline completa.
+La migración canónica llevó el ledger local de 123 a **124 migraciones** y creó `operational_device_browser_bindings`. El Post-Push CI RECON verificó la tabla presente, su migración exacta y **0 bindings reales**: este corte creó infraestructura, pero no enroló automáticamente ningún dispositivo.
 
-Próxima frontera exacta, obligatoriamente RECON antes de código cliente:
-`P12_2_RESTRICTED_OFFLINE_CLIENT_RUNTIME_AND_RECONNECT_RECON_V1`.
+Límites vinculantes que permanecen cerrados:
+- Service Worker: no implementado;
+- IndexedDB/persistencia local: no implementada;
+- cola de mutaciones offline: no implementada;
+- venta final offline: bloqueada;
+- finalización de pagos offline: bloqueada;
+- autorización fiscal offline: bloqueada;
+- merge silencioso de conflictos de precio o stock: prohibido;
+- drivers de periféricos, kiosk transaccional y RFID/EAS: fronteras posteriores.
 
-Ese RECON debe relevar la superficie real del frontend/POS, autenticación y sesión, CSRF/API, build Vite, rutas y dependencias de datos para definir qué operaciones pueden ser offline, qué permanece server-authoritative y cómo se resuelven conflictos al reconectar.
+Próxima frontera exacta, obligatoriamente RECON antes de persistencia cliente:
+`P12_2_RESTRICTED_OFFLINE_READ_MODEL_SNAPSHOT_RECON_V1`.
 
-Recovery Anchor Protocol V1 continúa obligatorio antes de toda mutación. Producción permanece fail-closed y no se autoriza deploy, bootstrap ni tráfico público por este checkpoint.
+Ese RECON debe definir el primer read-model offline seguro: qué catálogo, precios autorizados, disponibilidad/stock, configuración operativa y metadatos pueden snapshotearse; cómo se versionan, cuándo caducan, qué información sensible debe excluirse y qué autoridad prevalece al reconectar. No se agrega Service Worker, IndexedDB ni cola de ventas antes de cerrar ese contrato.
+
+Recovery Anchor Protocol V1 continúa obligatorio. Producción permanece fail-closed y este checkpoint no autoriza deploy, bootstrap ni tráfico público.
 
 Rama canónica de desarrollo: `feature/core-entity`
 
