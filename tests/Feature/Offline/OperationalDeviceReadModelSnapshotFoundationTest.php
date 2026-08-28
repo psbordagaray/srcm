@@ -194,10 +194,22 @@ class OperationalDeviceReadModelSnapshotFoundationTest extends TestCase
 
         $response
             ->assertOk()
-            ->assertJsonPath('snapshot_version', 1)
+            ->assertJsonPath('snapshot_version', 2)
             ->assertJsonPath(
                 'generated_at',
                 CarbonImmutable::now()->toAtomString()
+            )
+            ->assertJsonPath(
+                'scope.binding_public_id',
+                $issue->binding->public_id
+            )
+            ->assertJsonPath(
+                'scope.device_public_id',
+                $device->public_id
+            )
+            ->assertJsonPath(
+                'scope.binding_expires_at',
+                $issue->binding->expires_at->toAtomString()
             )
             ->assertJsonPath(
                 'device.public_id',
@@ -375,6 +387,110 @@ class OperationalDeviceReadModelSnapshotFoundationTest extends TestCase
         );
 
         $this->assertNotSame($third, $fourth);
+
+        CarbonImmutable::setTestNow();
+    }
+
+    public function test_binding_rotation_changes_scope_but_not_content_fingerprint_when_content_is_unchanged(): void
+    {
+        CarbonImmutable::setTestNow(
+            CarbonImmutable::parse('2026-08-28 22:00:00')
+        );
+
+        $organization = $this->organization();
+        $admin = $this->user(
+            $organization,
+            UserRole::Admin
+        );
+        $this->actingAs($admin);
+
+        $device = app(
+            OperationalDeviceRegistry::class
+        )->register(
+            $admin,
+            'POS scope rotation',
+            [
+                OperationalDeviceCapability::RestrictedOfflineReadModel,
+            ]
+        );
+
+        $firstIssue = app(
+            OperationalDeviceBrowserBindingManager::class
+        )->issue($admin, $device);
+
+        $firstResponse = $this
+            ->withCookie(
+                OperationalDeviceBrowserBindingManager::COOKIE_NAME,
+                $firstIssue->token
+            )
+            ->get(
+                route(
+                    'operational-runtime.read-model-snapshot.show'
+                )
+            )
+            ->assertOk();
+
+        $firstFingerprint = (string) $firstResponse->json(
+            'content_fingerprint'
+        );
+
+        CarbonImmutable::setTestNow(
+            CarbonImmutable::now()->addMinute()
+        );
+
+        $secondIssue = app(
+            OperationalDeviceBrowserBindingManager::class
+        )->issue($admin, $device);
+
+        $secondResponse = $this
+            ->withCookie(
+                OperationalDeviceBrowserBindingManager::COOKIE_NAME,
+                $secondIssue->token
+            )
+            ->get(
+                route(
+                    'operational-runtime.read-model-snapshot.show'
+                )
+            )
+            ->assertOk();
+
+        $this->assertNotSame(
+            $firstIssue->binding->public_id,
+            $secondIssue->binding->public_id
+        );
+
+        $secondResponse
+            ->assertJsonPath(
+                'snapshot_version',
+                2
+            )
+            ->assertJsonPath(
+                'scope.binding_public_id',
+                $secondIssue->binding->public_id
+            )
+            ->assertJsonPath(
+                'scope.device_public_id',
+                $device->public_id
+            )
+            ->assertJsonPath(
+                'scope.binding_expires_at',
+                $secondIssue->binding->expires_at->toAtomString()
+            );
+
+        $this->assertNotSame(
+            $firstResponse->json('scope.binding_public_id'),
+            $secondResponse->json('scope.binding_public_id')
+        );
+        $this->assertNotSame(
+            $firstResponse->json('scope.binding_expires_at'),
+            $secondResponse->json('scope.binding_expires_at')
+        );
+        $this->assertSame(
+            $firstFingerprint,
+            (string) $secondResponse->json(
+                'content_fingerprint'
+            )
+        );
 
         CarbonImmutable::setTestNow();
     }

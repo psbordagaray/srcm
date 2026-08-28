@@ -17,7 +17,7 @@ use Illuminate\Support\Str;
 
 final class OperationalDeviceReadModelSnapshotBuilder
 {
-    public const SNAPSHOT_VERSION = 1;
+    public const SNAPSHOT_VERSION = 2;
 
     public function __construct(
         private readonly CurrentOrganization $currentOrganization,
@@ -204,9 +204,16 @@ final class OperationalDeviceReadModelSnapshotBuilder
             ],
         ];
 
+        $scope = [
+            'binding_public_id' => (string) $binding->public_id,
+            'device_public_id' => (string) $device->public_id,
+            'binding_expires_at' => $binding->expires_at->toAtomString(),
+        ];
+
         return [
             'snapshot_version' => self::SNAPSHOT_VERSION,
             'generated_at' => CarbonImmutable::now()->toAtomString(),
+            'scope' => $scope,
             'content_fingerprint' => $this->fingerprint($content),
             ...$content,
         ];
