@@ -75,6 +75,10 @@ jobs:
         shell: bash
         run: npm ci --ignore-scripts
 
+      - name: Offline snapshot store contract tests
+        shell: bash
+        run: npm run test:offline
+
       - name: Prepare ephemeral application key
         shell: bash
         run: |

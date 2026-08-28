@@ -4,7 +4,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test:offline": "node --test tests/js/offline/*.test.mjs"
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",
