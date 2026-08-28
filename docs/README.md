@@ -4,58 +4,61 @@ Estado: **vinculante para recuperación de contexto**
 Actualizado: **2026-08-28**
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint — P12.2 Operational Device Browser Binding Foundation GREEN
+## Current P12 checkpoint — P12.2 Versioned Operational Read-Model Snapshot Foundation GREEN
 
 <!--
-P12_2_BROWSER_BINDING_STATUS=GREEN_PUBLISHED
-P12_2_FUNCTIONAL_CHECKPOINT=889823a566a60ca9ff10aad82547cc6d43156b30
-P12_2_FUNCTIONAL_PARENT=5fed76aab34dde60d2241d4ca95db624cecebb74
-P12_2_FUNCTIONAL_TREE=6a0222e4ebceba14615ac2d3fca85e3b017c428f
-P12_2_CI65_RUN_ID=33200967493
-P12_2_CI65_JOB_ID=98950027992
+P12_2_READ_MODEL_SNAPSHOT_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=0b081d363b5c3a1f38b1ae55c25ace166e047e37
+P12_2_FUNCTIONAL_PARENT=f01e769a49f3382017ba6fef1ca04430876afaca
+P12_2_FUNCTIONAL_TREE=8924cfbcbb5ee7051e6f1ebcb3c65a0462f589f6
+P12_2_CI67_RUN_ID=33207112997
+P12_2_CI67_JOB_ID=98970862027
 P12_2_DB_MIGRATIONS=124
-P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_READ_MODEL_SNAPSHOT_RECON_V1
+P12_2_SNAPSHOT_CONTRACT_VERSION=1
+P12_2_SNAPSHOT_CAPABILITY=restricted_offline_read_model
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_CLIENT_PERSISTENCE_RECON_V1
 -->
 
 Checkpoint funcional publicado:
-`889823a566a60ca9ff10aad82547cc6d43156b30` — `feat(offline): add operational device browser binding`.
+`0b081d363b5c3a1f38b1ae55c25ace166e047e37` — `feat(offline): add versioned operational read model snapshot`.
 
-P12.2 Browser Binding quedó cerrado funcionalmente y reconciliado post-push. CI65 (`33200967493`) y su job único `quality-gates` (`98950027992`) terminaron `completed / success` en primer intento. `main` permanece protegido e intacto en `fda5cf6f2a9a3e181ea4d29106e874808ecde145`.
-
-La secuencia arquitectónica ya comprobada de P12 es:
+P12.2 ya tiene cerrada la secuencia server-side necesaria antes de persistir datos de negocio en el navegador:
 1. P12.1 — identidad operacional, capabilities y ledger idempotente de claims;
-2. P12.2 RECON — confirmó que el cliente actual es Blade + Alpine + Vite, sin Service Worker, IndexedDB ni cola offline, y que Checkout continúa server-authoritative;
-3. P12.2 Browser Binding — vincula un navegador autenticado con un `OperationalDevice` mediante una credencial server-issued separada del UUID público.
+2. P12.2 Browser Binding — credencial server-issued que vincula navegador y `OperationalDevice` sin tratar el UUID público como secreto;
+3. P12.2 Versioned Read-Model Snapshot — contrato de lectura operacional versionado, capability separada y autoridad final explícitamente server-side.
 
-La fundación Browser Binding establece:
-- token aleatorio de 256 bits emitido por servidor;
-- sólo SHA-256 del token persistido en BD; el secreto en claro no se almacena;
-- cookie `HttpOnly`, `SameSite=Strict` y política `Secure` para producción/HTTPS;
-- expiración de 90 días;
-- rotación que revoca bindings previos activos del mismo dispositivo;
-- revocación explícita y auditable;
-- resolución fail-closed por organización activa, binding vigente y dispositivo activo;
-- `public_id` del dispositivo como identificador público, **nunca como credencial**;
-- identidad del navegador separada de la autorización del usuario humano;
-- endpoint runtime read-only bajo la sesión web existente, sin introducir una API paralela;
-- payload runtime sin token ni `token_hash`, con `Cache-Control: no-store, private`.
+CI67 (`33207112997`) y su único job `quality-gates` (`98970862027`) terminaron `completed / success` en intento 1 sobre el SHA funcional exacto. El Post-Push CI RECON confirmó parent/tree/mensaje, exactamente 3 paths agregados + 4 modificados, `main` protegido e intacto y BD canónica sin migración.
 
-La migración canónica llevó el ledger local de 123 a **124 migraciones** y creó `operational_device_browser_bindings`. El Post-Push CI RECON verificó la tabla presente, su migración exacta y **0 bindings reales**: este corte creó infraestructura, pero no enroló automáticamente ningún dispositivo.
+Contrato Snapshot V1 publicado:
+- `snapshot_version=1`;
+- capability independiente `restricted_offline_read_model`;
+- Browser Binding vigente + dispositivo activo + organización activa + autorización humana siguen siendo dimensiones separadas;
+- `generated_at` informa el momento de generación, pero **no** participa del fingerprint lógico;
+- `content_fingerprint` SHA-256 identifica el contenido canónico y cambia cuando cambia el read-model;
+- catálogo activo mínimo con términos de búsqueda;
+- ubicaciones activas y condiciones de inventario;
+- precios vigentes con `valid_from` / `valid_until`;
+- disponibilidad informativa con `balance_version`;
+- precio y disponibilidad deben revalidarse contra autoridad server-side al confirmar cualquier operación futura;
+- el snapshot no contiene clientes, crédito, sesión de caja, cuentas financieras, pagos ni credenciales/datos fiscales.
+
+El corte no agregó migraciones: la BD canónica permanece en **124 migraciones**, schema `437ab508213ecb039f48b52b99438d1a7e50dcaa28d2e859ea1dad77c0fb7c9c` y binario `9c94e562dff64821b808d3fca5cbed533f54f694ab38336dc6e0a87df132aeb3`. La nueva capability reutiliza la tabla existente `operational_device_capabilities`.
 
 Límites vinculantes que permanecen cerrados:
 - Service Worker: no implementado;
-- IndexedDB/persistencia local: no implementada;
+- IndexedDB/persistencia local de negocio: no implementada;
 - cola de mutaciones offline: no implementada;
+- ejecución de operaciones de negocio offline: no implementada;
 - venta final offline: bloqueada;
 - finalización de pagos offline: bloqueada;
 - autorización fiscal offline: bloqueada;
 - merge silencioso de conflictos de precio o stock: prohibido;
-- drivers de periféricos, kiosk transaccional y RFID/EAS: fronteras posteriores.
+- el fingerprint del snapshot no constituye autorización transaccional.
 
-Próxima frontera exacta, obligatoriamente RECON antes de persistencia cliente:
-`P12_2_RESTRICTED_OFFLINE_READ_MODEL_SNAPSHOT_RECON_V1`.
+Próxima frontera exacta:
+`P12_2_RESTRICTED_OFFLINE_CLIENT_PERSISTENCE_RECON_V1`.
 
-Ese RECON debe definir el primer read-model offline seguro: qué catálogo, precios autorizados, disponibilidad/stock, configuración operativa y metadatos pueden snapshotearse; cómo se versionan, cuándo caducan, qué información sensible debe excluirse y qué autoridad prevalece al reconectar. No se agrega Service Worker, IndexedDB ni cola de ventas antes de cerrar ese contrato.
+Ese RECON debe definir la primera persistencia cliente segura del snapshot ya publicado: almacenamiento elegido, versionado local, esquema/upgrade, expiración, invalidación, cuotas, borrado/revocación, aislamiento por organización/dispositivo, protección frente a usuario equivocado y comportamiento ante snapshot incompatible o corrupto. **No** habilita aún cola de mutaciones ni venta offline final.
 
 Recovery Anchor Protocol V1 continúa obligatorio. Producción permanece fail-closed y este checkpoint no autoriza deploy, bootstrap ni tráfico público.
 

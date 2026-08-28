@@ -5,60 +5,85 @@ Actualizado: **2026-08-28**
 Rama de desarrollo: `feature/core-entity`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint — P12.2 Operational Device Browser Binding Foundation GREEN
+## Current P12 checkpoint — P12.2 Versioned Operational Read-Model Snapshot Foundation GREEN
 
 <!--
-P12_2_BROWSER_BINDING_STATUS=GREEN_PUBLISHED
-P12_2_FUNCTIONAL_CHECKPOINT=889823a566a60ca9ff10aad82547cc6d43156b30
-P12_2_FUNCTIONAL_PARENT=5fed76aab34dde60d2241d4ca95db624cecebb74
-P12_2_FUNCTIONAL_TREE=6a0222e4ebceba14615ac2d3fca85e3b017c428f
-P12_2_CI65_RUN_ID=33200967493
-P12_2_CI65_JOB_ID=98950027992
+P12_2_READ_MODEL_SNAPSHOT_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=0b081d363b5c3a1f38b1ae55c25ace166e047e37
+P12_2_FUNCTIONAL_PARENT=f01e769a49f3382017ba6fef1ca04430876afaca
+P12_2_FUNCTIONAL_TREE=8924cfbcbb5ee7051e6f1ebcb3c65a0462f589f6
+P12_2_CI67_RUN_ID=33207112997
+P12_2_CI67_JOB_ID=98970862027
 P12_2_DB_MIGRATIONS=124
-P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_READ_MODEL_SNAPSHOT_RECON_V1
+P12_2_SNAPSHOT_CONTRACT_VERSION=1
+P12_2_SNAPSHOT_CAPABILITY=restricted_offline_read_model
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_CLIENT_PERSISTENCE_RECON_V1
 -->
 
-Checkpoint funcional P12.2 publicado:
-`889823a566a60ca9ff10aad82547cc6d43156b30` — `feat(offline): add operational device browser binding`, parent `5fed76aab34dde60d2241d4ca95db624cecebb74`, tree `6a0222e4ebceba14615ac2d3fca85e3b017c428f`.
+Checkpoint funcional publicado:
+`0b081d363b5c3a1f38b1ae55c25ace166e047e37` — `feat(offline): add versioned operational read model snapshot`, parent `f01e769a49f3382017ba6fef1ca04430876afaca`, tree `8924cfbcbb5ee7051e6f1ebcb3c65a0462f589f6`.
 
-P12.2 ya tiene cerradas dos decisiones de arquitectura. Primero, el RECON demostró que el POS actual es Blade + Alpine + Vite, sin runtime offline ni binding navegador↔dispositivo y con venta/stock/pagos todavía bajo autoridad server-side. Segundo, Browser Binding publica la identidad segura que debe existir antes de cualquier persistencia o cola cliente.
+P12.2 ya cerró tres fundaciones consecutivas antes de cualquier operación offline mutable:
+- identidad/capabilities/replay claims de dispositivo;
+- Browser Binding revocable y expirable;
+- snapshot operacional server-side versionado y read-only.
 
-Contrato publicado:
-- `OperationalDevice.public_id` sigue siendo identificador público y no secreto;
-- el servidor emite un token aleatorio de 256 bits y sólo persiste su SHA-256;
-- el token viaja en cookie `HttpOnly` / `SameSite=Strict`, con `Secure` obligatorio en producción/HTTPS;
-- binding expirable, revocable y rotado de forma auditable;
-- tenant activo + binding vigente + dispositivo activo son gates fail-closed;
-- la sesión humana sigue siendo requisito independiente del binding del navegador;
-- runtime read-only expone identidad pública/capabilities y políticas, nunca secreto ni autoridad de mutación.
+El snapshot V1 exige `restricted_offline_read_model` como capability separada de `restricted_offline_replay`. El endpoint permanece dentro de la sesión web existente y exige organización activa, autorización humana aplicable, Browser Binding vigente y dispositivo activo.
+
+Contenido autorizado del snapshot:
+- catálogo activo mínimo y términos de búsqueda;
+- ubicaciones activas;
+- condiciones;
+- precio actual con provenance `valid_from` / `valid_until`;
+- disponibilidad **informativa** con `balance_version`;
+- política explícita de revalidación server-side.
+
+Contenido deliberadamente excluido:
+- clientes;
+- crédito;
+- sesión de caja;
+- cuentas financieras;
+- pagos;
+- fiscalidad/credenciales fiscales.
+
+Semántica de versión y autoridad:
+- contrato `snapshot_version=1`;
+- `generated_at` es telemetría temporal;
+- `content_fingerprint` se deriva del contenido canónico y excluye `generated_at`;
+- cambios de contenido cambian el fingerprint;
+- `balance_version` conserva evidencia de concurrencia del saldo observado;
+- ver un precio o stock en un snapshot **no** autoriza a confirmarlo;
+- cualquier futura operación debe revalidar precio, disponibilidad y autoridad al reconectar;
+- merge silencioso de conflictos sigue prohibido.
 
 Gates cerrados:
-- recuperación V1: el único RED fue una expectativa de test `401` vs redirect web `302`; producción no cambió;
-- diagnóstico V2 reprodujo 5/6 focales GREEN, aisló la expectativa y restauró todo;
-- V3 corrigió sólo la expectativa del test, con código productivo idéntico al V1;
-- focal Browser Binding GREEN;
+- RECON read-model V3 GREEN;
+- recuperación V1 de la fundación: RED sólo del test por transporte de cookie, sin commit/push;
+- V2 cambió únicamente `getJson()` → `get()` en requests cookie-bearing; código productivo byte-identical al V1;
+- focal GREEN;
 - full Laravel suite GREEN;
-- migración canónica exacta 123 → **124**;
-- tabla `operational_device_browser_bindings` presente y vacía;
-- commit funcional de exactamente 8 paths: 7 agregados + `routes/web.php` modificado;
+- `git diff --check` GREEN;
+- commit funcional exacto de 7 paths: 3 agregados + 4 modificados;
 - push fast-forward único a `feature/core-entity`;
-- CI65 run `33200967493` / job `quality-gates` `98950027992` GREEN en intento 1;
-- Post-Push CI RECON GREEN con repo limpio, `.env` intacto, `main` protegido y BD estable.
+- CI67 run `33207112997` / job `98970862027` GREEN, intento 1;
+- Post-Push CI RECON GREEN;
+- BD canónica exacta, sin migración, **124 migraciones**;
+- `.env` intacto y `main` protegido sin cambios.
 
 Límites vinculantes:
 - no Service Worker;
-- no IndexedDB ni cache persistente de negocio;
-- no offline mutation queue;
-- venta final, pago final y fiscalidad offline permanecen bloqueados;
-- no merge silencioso de precio/stock;
-- no se utiliza Browser Binding como reemplazo de autenticación o autorización humana.
+- no IndexedDB/cache persistente de negocio;
+- no local mutation queue;
+- no ejecución de venta/pago/fiscalidad offline;
+- no reemplazo de autoridad humana por identidad del dispositivo;
+- no uso del fingerprint como permiso de mutación.
 
 Próxima frontera exacta:
-`P12_2_RESTRICTED_OFFLINE_READ_MODEL_SNAPSHOT_RECON_V1`.
+`P12_2_RESTRICTED_OFFLINE_CLIENT_PERSISTENCE_RECON_V1`.
 
-Debe comenzar read-only y clasificar el read-model que puede salir del servidor hacia un dispositivo vinculado: catálogo, precio autorizado, disponibilidad, versión, freshness, tamaño, datos sensibles, invalidación y reglas de autoridad al reconectar. Sólo después podrá definirse el snapshot versionado; la persistencia browser y el replay de mutaciones siguen detrás de esa frontera.
+Debe comenzar en modo RECON/read-only y clasificar cómo persistir **sólo este snapshot** en el cliente: store/schema, claves de aislamiento, lifecycle, TTL/freshness, invalidación por revocación/cambio de organización, quota/error handling, compatibilidad de versiones, limpieza segura y recuperación ante corrupción. Service Worker y replay de mutaciones siguen detrás de esa frontera.
 
-Recovery Anchor Protocol V1 sigue vigente. Producción continúa fail-closed y los switches de autorización permanecen cerrados.
+Recovery Anchor Protocol V1 sigue vigente. Producción continúa fail-closed.
 
 ## Current P11 checkpoint — Protected Main Dispatch Identity + Canonical Alignment
 
