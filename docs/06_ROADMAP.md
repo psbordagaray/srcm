@@ -1,13 +1,25 @@
 # SRCM — Roadmap maestro
 
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
-Actualizado: **2026-08-26**
+Actualizado: **2026-08-28**
 Rama de desarrollo: `feature/core-entity`
-Base funcional publicada tras P11 Protected Main Dispatch Identity V1:
 
-`c2333566d273670dd23da9a5cb1208914cb0af93`
-`fix(release): require protected main dispatch identity`
+<!-- P12_CURRENT_CONTINUITY_V1 -->
+## Current P12 checkpoint - Restricted Offline / Hardware Foundation Entry
 
+Inherited canonical recovery anchor: `a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4` (`feat(release): add single-operator recovery governance`). P12.1 Existing Offline/Hardware Surface Reconciliation V1 closed GREEN/read-only with repo, `.env` and canonical DB continuity preserved and production release still closed.
+
+Authoritative P12.1 conclusion: **P12 DIRECT RUNTIME FOUNDATION = ABSENT / NEW FOUNDATION REQUIRED**. The 229 broad Loss Prevention hits were scanner false positives from substring `eas`; strict `EAS` runtime code is zero. `config/cache.php` is normal Laravel cache configuration and does not count as offline continuity. Direct POS hardware, kiosk/price-checker and Loss Prevention runtime/tests are absent.
+
+Reusable adjacent foundations are `AuditRecorder`, Commerce checkout and the Inventory movement ledger. Service IMEI, serial number and asset tag concepts remain confined to Service and must not be conflated with an operational Device Registry.
+
+Next functional cut: `P12_1_RESTRICTED_OFFLINE_CAPABILITY_OPERATIONAL_DEVICE_REGISTRY_FOUNDATION_V1`. It will establish vendor-neutral operational-device identity, capability declarations and server-side idempotency/replay boundaries. It does **not** claim full offline operation and will not yet add Service Worker, IndexedDB/local offline queue, printer/scanner drivers, transactional kiosk, RFID/EAS or cryptographic device-operation signing.
+
+Recovery Anchor Protocol V1 remains mandatory before mutation. Production governance remains single-trusted-operator and all production authorization source switches remain closed.
+Base funcional publicada tras cierre P11 y usada como Recovery Anchor de P12:
+
+`a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4`
+`feat(release): add single-operator recovery governance`
 El checkpoint canónico es siempre el `HEAD` de
 `origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
 limpio. Este documento debe mantenerse sincronizado con `docs/README.md`.
@@ -759,6 +771,7 @@ Outbox permanece diferido hasta después de los release gates de P11.
 
 ## 11. P12 — Continuidad offline y hardware POS
 
+**Estado P12.1 RECON (2026-08-28):** GREEN/read-only. No direct P12 runtime foundation exists. `config/cache.php` is explicitly classified as standard Laravel cache configuration, not offline runtime; strict POS hardware, kiosk/price-checker and Loss Prevention runtime/tests are zero. First functional foundation: `P12_1_RESTRICTED_OFFLINE_CAPABILITY_OPERATIONAL_DEVICE_REGISTRY_FOUNDATION_V1`, reusing audit/checkout/inventory concepts without conflating Service identifiers with operational-device identity.
 ### Offline restringido
 - continuidad temporal de venta cuando sea seguro;
 - cache mínimo necesario;
