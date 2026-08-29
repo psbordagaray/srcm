@@ -5,19 +5,71 @@ Fecha: **2026-08-28**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 continuity - Offline/Hardware foundation reclassification
+## Current P12 continuity — P12.2 Snapshot Reference Panel Foundation published
 
-P12 opens from recovery anchor `a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4` with P11 production governance preserved fail-closed. The P12.1 read-only reconciliation demonstrates that the intended offline, POS-hardware, kiosk/price-checker and Loss Prevention capabilities are roadmap scope, not existing runtime implementation.
+<!--
+P12_2_SNAPSHOT_REFERENCE_PANEL_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=cd03ddd673bca942a4d13b23192d4a237fab95bb
+P12_2_FUNCTIONAL_PARENT=bb86c7379872633a6310ac0f999cafa913d84969
+P12_2_FUNCTIONAL_TREE=069be93ab88e8eff903e1b00a0c43ad249f3ba45
+P12_2_CI73_RUN_ID=33219420366
+P12_2_CI73_JOB_ID=99010136491
+P12_2_DB_MIGRATIONS=124
+P12_2_SNAPSHOT_CONTRACT_VERSION=2
+P12_2_SNAPSHOT_CAPABILITY=restricted_offline_read_model
+P12_2_SNAPSHOT_SCOPE_FIELDS=binding_public_id,device_public_id,binding_expires_at
+P12_2_INDEXEDDB_STORAGE_SCHEMA_VERSION=1
+P12_2_INDEXEDDB_DATABASE_NAME=srcm-restricted-offline-v1
+P12_2_INDEXEDDB_OBJECT_STORE=operational-read-model-snapshots
+P12_2_INDEXEDDB_RECORD_KEY=current
+P12_2_REFERENCE_PANEL_SURFACE=product_catalog_same_page_read_only
+P12_2_REFERENCE_PANEL_STATE_MODEL=online-refreshed,offline-cached-valid,no-valid-cache,authority-rejected
+P12_2_REFERENCE_PANEL_SEARCH=sku,name,category,brand,manufacturer,snapshot_identifiers
+P12_2_REFERENCE_PANEL_FRESHNESS=generated_at,stored_at,exact_age,binding_expiry
+P12_2_REFERENCE_PANEL_AUTHORITY=informational_only_server_revalidation_required
+P12_2_REFERENCE_PANEL_CONTENT_INTEGRITY=content_fingerprint_revalidated_by_store
+P12_2_REFERENCE_PANEL_CONCURRENCY_EVIDENCE=balance_version_informational_only
+P12_2_TRUE_OFFLINE_RELOAD_NAVIGATION=NOT_IMPLEMENTED
+P12_2_SERVICE_WORKER=NOT_IMPLEMENTED
+P12_2_LOCAL_OFFLINE_QUEUE=NOT_IMPLEMENTED
+P12_2_POS_OFFLINE_CHECKOUT=NOT_IMPLEMENTED
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_SERVICE_WORKER_APP_SHELL_RECON_V1
+-->
 
-The authoritative interpretation is **new direct P12 foundation required**. Broad `eas` substring matches are not EAS evidence, and `config/cache.php` is Laravel cache infrastructure rather than offline continuity. Existing Audit, Commerce checkout and Inventory movement foundations may be composed where appropriate; Service-domain IMEI/serial/asset-tag identifiers do not become a generic Device Registry by reuse.
+P12 now has its first operator-visible consumer of the restricted Snapshot V2 cache. Functional checkpoint `cd03ddd673bca942a4d13b23192d4a237fab95bb` (`feat(offline): add snapshot reference panel`) is published from parent `bb86c7379872633a6310ac0f999cafa913d84969` with tree `069be93ab88e8eff903e1b00a0c43ad249f3ba45`; CI73 run `33219420366` and `quality-gates` job `99010136491` completed successfully on attempt 1.
 
-The first implementation boundary is a vendor-neutral **Restricted Offline Capability + Operational Device Registry Foundation V1**: explicit operational device identity, capability-based contracts and server-side idempotency/replay safety first.
-Machine boundary identifier: `P12_1_RESTRICTED_OFFLINE_CAPABILITY_OPERATIONAL_DEVICE_REGISTRY_FOUNDATION_V1`. Full browser offline storage/queueing, peripherals, self-service transactions, RFID/EAS and cryptographic device signing are separate later cuts and must not be claimed prematurely.
+The new layer is intentionally a **reference surface**, not an offline POS:
+- a JS facade reads only through the validated IndexedDB store contract;
+- the first consumer lives inside the already-loaded Products catalog page;
+- the panel is read-only and contains no links, forms or write operations;
+- catalog/search terms, prices, availability, locations and conditions are joined locally;
+- the validated store preserves `content_fingerprint` integrity and exposes `balance_version` only as informational concurrency evidence;
+- exact cache age, generated time, stored time and binding expiry are visible;
+- authority states distinguish online refresh, valid offline cache, no valid cache and authority rejection;
+- cached price/availability can inform the operator but cannot authorize a transaction;
+- checkout and all server-authoritative confirmation paths remain unchanged.
 
-This preserves the North Star principle: offline/hardware capability grows from explicit operational truth and fail-closed reconciliation, not from vendor coupling or inferred device identity.
+This closes an important product boundary: SRCM can now preserve **useful operational reference** during a connection loss while the current document remains loaded, without pretending that it can yet operate as a fully reloadable offline application.
+
+True offline reload/navigation is still absent. IndexedDB is data persistence, not an app-shell delivery mechanism. A Service Worker/app shell is therefore the next architectural subject, but only after a dedicated read-only RECON.
+
+No IndexedDB schema change occurred; storage schema remains version 1 in `srcm-restricted-offline-v1` / `operational-read-model-snapshots` / `current`. No new dependency or migration was introduced. The canonical database remains at **124 migrations**.
+
+Commercial authority remains server-side:
+- final sale offline blocked;
+- payment finalization offline blocked;
+- fiscal authorization offline blocked;
+- customers/credit/cash/financial accounts remain outside this local reference;
+- silent price/stock conflict merge remains forbidden.
+
+The next exact boundary is:
+`P12_2_RESTRICTED_OFFLINE_SERVICE_WORKER_APP_SHELL_RECON_V1`.
+
+That RECON must design the minimum safe **read-only app shell** around existing Vite/Blade/auth/security behavior before any worker is implemented. It must ensure that shell caching never becomes an authority cache and that logout/org-switch/unbind lifecycle invalidates what must not survive.
+
+North Star rule remains unchanged: offline continuity may preserve information and usability, but never manufacture permission or truth.
+
 Puerta de entrada de continuidad: `docs/README.md`
-
----
 
 ## Current P11 checkpoint — Protected Main Dispatch Identity + Canonical Alignment
 

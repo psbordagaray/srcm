@@ -53,6 +53,8 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationMemberController;
 use App\Http\Controllers\OrganizationProductPriceController;
 use App\Http\Controllers\OperationalAttentionController;
+use App\Http\Controllers\RestrictedOfflineSignedGrantController;
+use App\Http\Controllers\RestrictedOfflineTrustedPublicKeyringController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ProfileController;
@@ -275,6 +277,80 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(RequireOrganization::class)
         ->group(function () {
+            Route::get(
+                '/runtime/operational-device',
+                [
+                    \App\Http\Controllers\OperationalDeviceBrowserBindingController::class,
+                    'show',
+                ]
+            )->name('operational-runtime.device.show');
+            Route::get(
+                '/runtime/offline-read-model-snapshot',
+                [
+                    \App\Http\Controllers\OperationalDeviceReadModelSnapshotController::class,
+                    'show',
+                ]
+            )
+                ->middleware('can:record-commerce-sales')
+                ->name(
+                    'operational-runtime.read-model-snapshot.show'
+                );
+
+            Route::get(
+                '/runtime/restricted-offline/trusted-public-keyring',
+                [RestrictedOfflineTrustedPublicKeyringController::class, 'show']
+            )
+                ->middleware('can:record-commerce-sales')
+                ->name('restricted-offline.trusted-public-keyring.show');
+            Route::get(
+                '/runtime/restricted-offline/signed-grant/options',
+                [RestrictedOfflineSignedGrantController::class, 'options']
+            )
+                ->middleware([
+                    'can:record-commerce-sales',
+                    'throttle:restricted-offline-signed-grant',
+                ])
+                ->name('restricted-offline.signed-grant.options');
+
+            Route::post(
+                '/runtime/restricted-offline/signed-grant',
+                [RestrictedOfflineSignedGrantController::class, 'issue']
+            )
+                ->middleware([
+                    'can:record-commerce-sales',
+                    'throttle:restricted-offline-signed-grant',
+                ])
+                ->name('restricted-offline.signed-grant.issue');
+            Route::post(
+                '/operational-devices/{operationalDevice:public_id}/browser-binding',
+                [
+                    \App\Http\Controllers\OperationalDeviceBrowserBindingController::class,
+                    'store',
+                ]
+            )
+                ->middleware([
+                    'can:manage-organization',
+                    RequireProductionPasswordConfirmation::class,
+                ])
+                ->whereUuid('operationalDevice')
+                ->name(
+                    'operational-device-browser-bindings.store'
+                );
+
+            Route::delete(
+                '/operational-device/browser-binding',
+                [
+                    \App\Http\Controllers\OperationalDeviceBrowserBindingController::class,
+                    'destroy',
+                ]
+            )
+                ->middleware([
+                    'can:manage-organization',
+                    RequireProductionPasswordConfirmation::class,
+                ])
+                ->name(
+                    'operational-device-browser-bindings.destroy'
+                );
             Route::get(
                 '/dashboard',
                 [DashboardController::class, 'index']

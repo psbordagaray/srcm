@@ -21,6 +21,7 @@ final readonly class InventoryAvailabilityPosition
         public string $deficitQuantity,
         public string $baseUnitCode,
         public int $quantityScale,
+        public int $balanceVersion,
     ) {
     }
 

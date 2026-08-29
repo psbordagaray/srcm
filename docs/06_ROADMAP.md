@@ -5,38 +5,103 @@ Actualizado: **2026-08-28**
 Rama de desarrollo: `feature/core-entity`
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
-## Current P12 checkpoint - Restricted Offline / Hardware Foundation Entry
+## Current P12 checkpoint — P12.2 Snapshot Reference Panel Foundation GREEN
 
-Inherited canonical recovery anchor: `a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4` (`feat(release): add single-operator recovery governance`). P12.1 Existing Offline/Hardware Surface Reconciliation V1 closed GREEN/read-only with repo, `.env` and canonical DB continuity preserved and production release still closed.
+<!--
+P12_2_SNAPSHOT_REFERENCE_PANEL_STATUS=GREEN_PUBLISHED
+P12_2_FUNCTIONAL_CHECKPOINT=cd03ddd673bca942a4d13b23192d4a237fab95bb
+P12_2_FUNCTIONAL_PARENT=bb86c7379872633a6310ac0f999cafa913d84969
+P12_2_FUNCTIONAL_TREE=069be93ab88e8eff903e1b00a0c43ad249f3ba45
+P12_2_CI73_RUN_ID=33219420366
+P12_2_CI73_JOB_ID=99010136491
+P12_2_DB_MIGRATIONS=124
+P12_2_SNAPSHOT_CONTRACT_VERSION=2
+P12_2_SNAPSHOT_CAPABILITY=restricted_offline_read_model
+P12_2_SNAPSHOT_SCOPE_FIELDS=binding_public_id,device_public_id,binding_expires_at
+P12_2_INDEXEDDB_STORAGE_SCHEMA_VERSION=1
+P12_2_INDEXEDDB_DATABASE_NAME=srcm-restricted-offline-v1
+P12_2_INDEXEDDB_OBJECT_STORE=operational-read-model-snapshots
+P12_2_INDEXEDDB_RECORD_KEY=current
+P12_2_REFERENCE_PANEL_SURFACE=product_catalog_same_page_read_only
+P12_2_REFERENCE_PANEL_STATE_MODEL=online-refreshed,offline-cached-valid,no-valid-cache,authority-rejected
+P12_2_REFERENCE_PANEL_SEARCH=sku,name,category,brand,manufacturer,snapshot_identifiers
+P12_2_REFERENCE_PANEL_FRESHNESS=generated_at,stored_at,exact_age,binding_expiry
+P12_2_REFERENCE_PANEL_AUTHORITY=informational_only_server_revalidation_required
+P12_2_REFERENCE_PANEL_CONTENT_INTEGRITY=content_fingerprint_revalidated_by_store
+P12_2_REFERENCE_PANEL_CONCURRENCY_EVIDENCE=balance_version_informational_only
+P12_2_TRUE_OFFLINE_RELOAD_NAVIGATION=NOT_IMPLEMENTED
+P12_2_SERVICE_WORKER=NOT_IMPLEMENTED
+P12_2_LOCAL_OFFLINE_QUEUE=NOT_IMPLEMENTED
+P12_2_POS_OFFLINE_CHECKOUT=NOT_IMPLEMENTED
+P12_2_NEXT_BOUNDARY=P12_2_RESTRICTED_OFFLINE_SERVICE_WORKER_APP_SHELL_RECON_V1
+-->
 
-Authoritative P12.1 conclusion: **P12 DIRECT RUNTIME FOUNDATION = ABSENT / NEW FOUNDATION REQUIRED**. The 229 broad Loss Prevention hits were scanner false positives from substring `eas`; strict `EAS` runtime code is zero. `config/cache.php` is normal Laravel cache configuration and does not count as offline continuity. Direct POS hardware, kiosk/price-checker and Loss Prevention runtime/tests are absent.
+Checkpoint funcional publicado:
+`cd03ddd673bca942a4d13b23192d4a237fab95bb` — `feat(offline): add snapshot reference panel`, parent `bb86c7379872633a6310ac0f999cafa913d84969`, tree `069be93ab88e8eff903e1b00a0c43ad249f3ba45`.
 
-Reusable adjacent foundations are `AuditRecorder`, Commerce checkout and the Inventory movement ledger. Service IMEI, serial number and asset tag concepts remain confined to Service and must not be conflated with an operational Device Registry.
+La cadena P12.2 queda ahora:
+1. Operational Device identity/capabilities/replay;
+2. Browser Binding server-issued, revocable y expirable;
+3. Snapshot V2 read-only con scope explícito;
+4. IndexedDB Snapshot Store Foundation V1;
+5. Snapshot Consumption RECON;
+6. **Snapshot Reference Panel Foundation V1 publicada y CI-verificada**.
 
-Next functional cut: `P12_1_RESTRICTED_OFFLINE_CAPABILITY_OPERATIONAL_DEVICE_REGISTRY_FOUNDATION_V1`. It will establish vendor-neutral operational-device identity, capability declarations and server-side idempotency/replay boundaries. It does **not** claim full offline operation and will not yet add Service Worker, IndexedDB/local offline queue, printer/scanner drivers, transactional kiosk, RFID/EAS or cryptographic device-operation signing.
+Superficie ya implementada:
+- Catálogo/Productos contiene un panel Alpine same-page de sólo consulta;
+- facade JS consume sólo `readOperationalSnapshot` / `refreshOperationalSnapshot`;
+- búsqueda local por SKU/nombre/categoría/marca/fabricante/identificadores;
+- precio y disponibilidad son informativos;
+- ubicación, condición y `balance_version` se exponen como evidencia;
+- el store valida `content_fingerprint` antes de exponer el snapshot;
+- estado visible: online actualizado / cache local válido / sin cache válido / autoridad rechazada;
+- freshness visible por `generated_at`, `stored_at`, edad exacta y expiración de binding;
+- sin links, forms ni write actions;
+- POS/checkout permanece separado.
 
-Recovery Anchor Protocol V1 remains mandatory before mutation. Production governance remains single-trusted-operator and all production authorization source switches remain closed.
-Base funcional publicada tras cierre P11 y usada como Recovery Anchor de P12:
+Gates cerrados:
+- 9 pruebas focales del facade/panel GREEN;
+- toda la suite JS offline GREEN;
+- production asset build GREEN;
+- focal server-side Snapshot V2 GREEN;
+- full Laravel suite GREEN;
+- `git diff --check` GREEN;
+- exactamente 4 paths: 2 modificados + 2 agregados;
+- `package-lock.json` intacto;
+- cero dependencias nuevas;
+- cero migraciones;
+- push fast-forward único;
+- CI73 run `33219420366` / job `99010136491` GREEN, intento 1;
+- Post-Push CI RECON GREEN;
+- BD canónica exacta con **124 migraciones**;
+- `.env` intacto;
+- `main` protegido e inalterado.
 
-`a3bc84b615d0beeb7729cd8bbe88d1be1910b5c4`
-`feat(release): add single-operator recovery governance`
-El checkpoint canónico es siempre el `HEAD` de
-`origin/feature/core-entity` cuando local/remoto coinciden y el repositorio está
-limpio. Este documento debe mantenerse sincronizado con `docs/README.md`.
+Próxima frontera exacta:
+`P12_2_RESTRICTED_OFFLINE_SERVICE_WORKER_APP_SHELL_RECON_V1`.
 
-Puerta de entrada obligatoria para recuperación:
+Ese RECON debe responder antes de implementar Service Worker:
+- qué assets versionados de Vite integran el app shell mínimo;
+- qué rutas Blade/read-only pueden responder desde shell sin red;
+- cómo evitar cachear respuestas autenticadas o datos de autoridad incorrectamente;
+- cómo interactúa auth/session con una recarga offline;
+- qué CSP/security headers afectan registro/ejecución del worker;
+- cómo purgar caches de app shell en logout, cambio de organización y unbind;
+- cómo versionar/invalidatear el shell sin mezclarlo con `storage_schema_version=1`;
+- qué UX debe mostrar cuando el shell está disponible pero no existe Snapshot V2 válido;
+- qué pruebas deterministas deben cubrir install/activate/fetch sin abrir mutation replay.
 
-`docs/README.md`
+Fuera de alcance:
+- implementar Service Worker en este corte;
+- Background Sync;
+- mutation queue/replay;
+- POS offline checkout;
+- clientes/crédito/caja/cuentas financieras offline;
+- venta/pago/fiscalidad final offline;
+- sustituir autoridad server-side;
+- merge silencioso de conflictos.
 
-Documento detallado complementario:
-
-`docs/33_VISION_Y_ROADMAP_FULL_SRCM_2026.md`
-
-Documento financiero complementario:
-
-`docs/32_PLAN_TERMINAL_COBRO_CUENTAS_CONCILIACION_V1.md`
-
----
+Recovery Anchor Protocol V1 continúa vigente. Producción sigue fail-closed.
 
 ## Current P11 checkpoint — Protected Main Dispatch Identity + Canonical Alignment
 
