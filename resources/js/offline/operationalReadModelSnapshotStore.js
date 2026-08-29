@@ -838,6 +838,7 @@ export function bootstrapOperationalSnapshotPersistence(
         indexedDbFactory = globalThis.indexedDB,
         fetchImpl = globalThis.fetch,
         cryptoImpl = globalThis.crypto,
+        manageSensitiveNavigation = true,
     } = {},
 ) {
     if (
@@ -849,10 +850,13 @@ export function bootstrapOperationalSnapshotPersistence(
         return;
     }
 
-    installSensitiveNavigationPurge(
-        documentObject,
-        indexedDbFactory,
-    );
+    if (manageSensitiveNavigation) {
+        installSensitiveNavigationPurge(
+            documentObject,
+            indexedDbFactory,
+        );
+    }
+
 
     const safeRefresh = () => {
         void refreshOperationalSnapshot({

@@ -5,10 +5,20 @@ import {
 import {
     createOperationalSnapshotReferencePanel,
 } from './offline/operationalSnapshotReference.js';
+import {
+    bootstrapRestrictedOfflineTrustedPublicKeyringPersistence,
+} from './offline/restrictedOfflineTrustedPublicKeyringStore.js';
+import {
+    bootstrapRestrictedOfflineAuthorityLifecycle,
+} from './offline/restrictedOfflineAuthorityLifecycle.js';
 
 window.Alpine = Alpine;
 
-bootstrapOperationalSnapshotPersistence();
+bootstrapOperationalSnapshotPersistence({
+    manageSensitiveNavigation: false,
+});
+bootstrapRestrictedOfflineTrustedPublicKeyringPersistence();
+bootstrapRestrictedOfflineAuthorityLifecycle();
 
 Alpine.data(
     'operationalSnapshotReferencePanel',

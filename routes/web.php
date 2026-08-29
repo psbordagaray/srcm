@@ -54,6 +54,7 @@ use App\Http\Controllers\OrganizationMemberController;
 use App\Http\Controllers\OrganizationProductPriceController;
 use App\Http\Controllers\OperationalAttentionController;
 use App\Http\Controllers\RestrictedOfflineSignedGrantController;
+use App\Http\Controllers\RestrictedOfflineTrustedPublicKeyringController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ProfileController;
@@ -295,6 +296,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'operational-runtime.read-model-snapshot.show'
                 );
 
+            Route::get(
+                '/runtime/restricted-offline/trusted-public-keyring',
+                [RestrictedOfflineTrustedPublicKeyringController::class, 'show']
+            )
+                ->middleware('can:record-commerce-sales')
+                ->name('restricted-offline.trusted-public-keyring.show');
             Route::get(
                 '/runtime/restricted-offline/signed-grant/options',
                 [RestrictedOfflineSignedGrantController::class, 'options']

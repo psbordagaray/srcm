@@ -2,10 +2,12 @@
 
 namespace App\Providers;
 
+use App\Adapters\Offline\ConfiguredRestrictedOfflineTrustedPublicKeyringProvider;
 use App\Adapters\Offline\EnvironmentRestrictedOfflineSignedGrantSigningKeyProvider;
 use App\Adapters\Offline\WebAuthnRestrictedOfflineSignedGrantCredentialMaterialExtractor;
 use App\Contracts\Offline\RestrictedOfflineSignedGrantCredentialMaterialExtractor;
 use App\Contracts\Offline\RestrictedOfflineSignedGrantSigningKeyProvider;
+use App\Contracts\Offline\RestrictedOfflineTrustedPublicKeyringProvider;
 use App\Adapters\Finance\MercadoPago\EnvironmentMercadoPagoConnectionSecretStore;
 use App\Adapters\Fiscal\Arca\DomWsaaLoginCmsResponseParser;
 use App\Adapters\Fiscal\Arca\DomWsfeCompUltimoAutorizadoSoapResponseParser;
@@ -103,6 +105,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(
             RestrictedOfflineSignedGrantSigningKeyProvider::class,
             EnvironmentRestrictedOfflineSignedGrantSigningKeyProvider::class
+        );
+        $this->app->singleton(
+            RestrictedOfflineTrustedPublicKeyringProvider::class,
+            ConfiguredRestrictedOfflineTrustedPublicKeyringProvider::class
         );
         $this->app->singleton(
             RestrictedOfflineSignedGrantCredentialMaterialExtractor::class,
