@@ -53,6 +53,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\OrganizationMemberController;
 use App\Http\Controllers\OrganizationProductPriceController;
 use App\Http\Controllers\OperationalAttentionController;
+use App\Http\Controllers\RestrictedOfflineSignedGrantController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\ProductImportController;
 use App\Http\Controllers\ProfileController;
@@ -294,6 +295,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     'operational-runtime.read-model-snapshot.show'
                 );
 
+            Route::get(
+                '/runtime/restricted-offline/signed-grant/options',
+                [RestrictedOfflineSignedGrantController::class, 'options']
+            )
+                ->middleware([
+                    'can:record-commerce-sales',
+                    'throttle:restricted-offline-signed-grant',
+                ])
+                ->name('restricted-offline.signed-grant.options');
+
+            Route::post(
+                '/runtime/restricted-offline/signed-grant',
+                [RestrictedOfflineSignedGrantController::class, 'issue']
+            )
+                ->middleware([
+                    'can:record-commerce-sales',
+                    'throttle:restricted-offline-signed-grant',
+                ])
+                ->name('restricted-offline.signed-grant.issue');
             Route::post(
                 '/operational-devices/{operationalDevice:public_id}/browser-binding',
                 [

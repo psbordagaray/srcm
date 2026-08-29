@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Adapters\Offline\EnvironmentRestrictedOfflineSignedGrantSigningKeyProvider;
+use App\Adapters\Offline\WebAuthnRestrictedOfflineSignedGrantCredentialMaterialExtractor;
+use App\Contracts\Offline\RestrictedOfflineSignedGrantCredentialMaterialExtractor;
+use App\Contracts\Offline\RestrictedOfflineSignedGrantSigningKeyProvider;
 use App\Adapters\Finance\MercadoPago\EnvironmentMercadoPagoConnectionSecretStore;
 use App\Adapters\Fiscal\Arca\DomWsaaLoginCmsResponseParser;
 use App\Adapters\Fiscal\Arca\DomWsfeCompUltimoAutorizadoSoapResponseParser;
@@ -79,7 +83,10 @@ use App\Models\TechnicalModel;
 use App\Models\User;
 use App\Observers\CatalogAuditObserver;
 use App\Observers\UserOrganizationObserver;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Laravel\Passkeys\Passkeys;
 
@@ -92,6 +99,14 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(
             CurrentOrganization::class,
             fn () => new CurrentOrganization
+        );
+        $this->app->singleton(
+            RestrictedOfflineSignedGrantSigningKeyProvider::class,
+            EnvironmentRestrictedOfflineSignedGrantSigningKeyProvider::class
+        );
+        $this->app->singleton(
+            RestrictedOfflineSignedGrantCredentialMaterialExtractor::class,
+            WebAuthnRestrictedOfflineSignedGrantCredentialMaterialExtractor::class
         );
         $this->app->singleton(
             WsaaCredentialMaterialReferenceStore::class,
@@ -284,6 +299,22 @@ class AppServiceProvider extends ServiceProvider
         TechnicalModel::observe(CatalogAuditObserver::class);
 
         User::observe(UserOrganizationObserver::class);
+
+        RateLimiter::for(
+            'restricted-offline-signed-grant',
+            function (Request $request): Limit {
+                $user = $request->user();
+                $organizationId = $user
+                    ? app(CurrentOrganization::class)->idOrNull($user)
+                    : null;
+
+                return Limit::perMinute(6)->by(implode('|', [
+                    (string) ($user?->getAuthIdentifier() ?? 'guest'),
+                    (string) ($organizationId ?? 0),
+                    (string) ($request->ip() ?? 'unknown'),
+                ]));
+            }
+        );
 
         Gate::define(
             'manage-catalog',

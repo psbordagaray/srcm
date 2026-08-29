@@ -235,6 +235,7 @@ class ProductionSecurityBaselineTest extends TestCase
 
         sort($actual);
         $expected = [
+            'app/Adapters/Offline/EnvironmentRestrictedOfflineSignedGrantSigningKeyProvider.php',
             'app/Adapters/Finance/MercadoPago/EnvironmentMercadoPagoConnectionSecretStore.php',
             'app/Adapters/Fiscal/Arca/EnvironmentFiscalAuthorizationRuntimeScopeStore.php',
             'app/Adapters/Fiscal/Arca/EnvironmentWsaaCredentialMaterialProvider.php',
