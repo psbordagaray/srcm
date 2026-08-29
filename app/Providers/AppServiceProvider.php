@@ -81,11 +81,14 @@ use App\Observers\CatalogAuditObserver;
 use App\Observers\UserOrganizationObserver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Passkeys\Passkeys;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        Passkeys::ignoreRoutes();
+
         $this->app->scoped(
             CurrentOrganization::class,
             fn () => new CurrentOrganization
