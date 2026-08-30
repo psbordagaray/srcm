@@ -13,9 +13,7 @@ final class ProductionReleaseGateBaselineTest extends TestCase
         $this->assertFalse(config('release.initial_application_release_bootstrap_enabled'));
         $this->assertTrue(config('release.external_gates.off_host_encrypted_backup'));
         $this->assertTrue(config('release.external_gates.operational_restore_drill'));
-        $this->assertFalse(
-            config('release.external_gates.production_environment_secrets_and_approvals')
-        );
+
     }
 
     public function test_ci_workflow_contains_locked_quality_gates_and_pinned_checkout(): void

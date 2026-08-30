@@ -1,10 +1,10 @@
-name: SRCM Protected Main Inactive Alignment Foundation
+name: SRCM Protected Main Inactive Alignment Authorization
 
 on:
   workflow_dispatch:
     inputs:
       release_sha:
-        description: Exact protected-main commit SHA to install as a second inactive production release
+        description: Exact fail-closed protected-main predecessor SHA to install inactive
         required: true
         type: string
       confirmation:
@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 40
 
     steps:
-      - name: Validate protected-main alignment identity
+      - name: Validate protected authorization request identity
         shell: bash
         env:
           RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
@@ -37,25 +37,83 @@ jobs:
           test "$GITHUB_REF_TYPE" = "branch"
           test "$GITHUB_REF_NAME" = "main"
           test "$GITHUB_REF_PROTECTED" = "true"
-          test "${RELEASE_SHA_INPUT,,}" = "${GITHUB_SHA,,}"
+          test "${RELEASE_SHA_INPUT,,}" = "3378ce249fb69e922ea218e1858e4efe8186e17d"
+          test "${GITHUB_SHA,,}" != "${RELEASE_SHA_INPUT,,}"
           echo "RELEASE_SHA=${RELEASE_SHA_INPUT,,}" >> "$GITHUB_ENV"
+          echo "AUTHORIZATION_SHA=${GITHUB_SHA,,}" >> "$GITHUB_ENV"
 
-      - name: Checkout exact protected-main alignment revision
+      - name: Checkout exact protected authorization commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: false
+
+      - name: Verify authorization commit topology and temporary gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$AUTHORIZATION_SHA"
+          test "$(git rev-parse HEAD^)" = "$RELEASE_SHA"
+          test -z "$(git status --porcelain)"
+          RELEASE_SHA="$RELEASE_SHA" php -r '
+          $config = require "config/release.php";
+          $alignment = $config["protected_main_inactive_alignment_enabled"] ?? false;
+          $bootstrap = $config["initial_application_release_bootstrap_enabled"] ?? false;
+          $normalRelease = $config["production_release_enabled"] ?? false;
+          $approval = $config["external_gates"]["production_environment_secrets_and_approvals"] ?? false;
+          $policy = $config["deployment"]["protected_main_inactive_alignment"] ?? [];
+          $green = $alignment === true
+              && $bootstrap === false
+              && $normalRelease === false
+              && $approval === true
+              && ($policy["foundation_version"] ?? null) === 2
+              && ($policy["mode"] ?? null) === "protected_main_inactive_alignment"
+              && ($policy["authorized_target_release_sha"] ?? null) === getenv("RELEASE_SHA")
+              && ($policy["authorization_commit_must_directly_descend_from_target"] ?? null) === true
+              && ($policy["authorization_commit_must_not_be_installed"] ?? null) === true
+              && ($policy["target_release_must_remain_fail_closed"] ?? null) === true
+              && ($policy["revocation_required_after_execution"] ?? null) === true
+              && ($policy["historical_release_sha"] ?? null) === "fad6f4ff0ddcffeca5230bf3bcbb604262e55dcc"
+              && ($policy["artifact_build_is_pre_authorization"] ?? null) === true
+              && ($policy["remote_install_is_environment_protected"] ?? null) === true
+              && ($policy["migration_allowed"] ?? null) === false
+              && ($policy["creates_current_symlink"] ?? null) === false
+              && ($policy["starts_or_reloads_services"] ?? null) === false
+              && ($policy["activation_is_separate_cut"] ?? null) === true;
+          if (!$green) {
+              fwrite(STDERR, "SRCM protected authorization commit contract failed.\n");
+              exit(78);
+          }
+          '
+
+      - name: Checkout exact fail-closed predecessor target
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.release_sha }}
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Verify exact checkout
+      - name: Verify exact predecessor target remains fail closed
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
           test -z "$(git status --porcelain)"
+          php -r '
+          $config = require "config/release.php";
+          $green = ($config["production_release_enabled"] ?? true) === false
+              && ($config["initial_application_release_bootstrap_enabled"] ?? true) === false
+              && ($config["protected_main_inactive_alignment_enabled"] ?? true) === false
+              && ($config["external_gates"]["production_environment_secrets_and_approvals"] ?? true) === false;
+          if (!$green) {
+              fwrite(STDERR, "SRCM predecessor target is not fail closed.\n");
+              exit(78);
+          }
+          '
 
       - name: Setup deterministic PHP runtime
-        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        uses: shivammathur/setup-php@f3e473d116dccc5834248c87452386958240 # 2.37.2
         with:
           php-version: '8.3'
           coverage: none
@@ -113,20 +171,26 @@ jobs:
           rm -rf node_modules tests
           rm -f .env
 
-      - name: Build immutable protected-main alignment artifact
+      - name: Build immutable predecessor alignment artifact
         shell: bash
         run: |
           set -euo pipefail
           test ! -e .env
           test ! -e database/database.sqlite
           artifact="srcm-align-${RELEASE_SHA}.tar.gz"
-          tar             --exclude=.git             --exclude=node_modules             --exclude='database/*.sqlite*'             --exclude='storage/*'             --exclude=public/storage             -czf "$RUNNER_TEMP/$artifact" .
+          tar \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude='database/*.sqlite*' \
+            --exclude='storage/*' \
+            --exclude=public/storage \
+            -czf "$RUNNER_TEMP/$artifact" .
           (
             cd "$RUNNER_TEMP"
             sha256sum "$artifact" > "$artifact.sha256"
           )
 
-      - name: Store immutable alignment artifact before production authorization
+      - name: Store immutable predecessor artifact before production authorization
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: srcm-align-${{ inputs.release_sha }}
@@ -147,7 +211,7 @@ jobs:
     environment: production
 
     steps:
-      - name: Validate protected alignment release identity
+      - name: Validate protected authorization request before environment IO
         shell: bash
         env:
           RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
@@ -159,44 +223,26 @@ jobs:
           test "$GITHUB_REF_TYPE" = "branch"
           test "$GITHUB_REF_NAME" = "main"
           test "$GITHUB_REF_PROTECTED" = "true"
-          test "${RELEASE_SHA_INPUT,,}" = "${GITHUB_SHA,,}"
+          test "${RELEASE_SHA_INPUT,,}" = "3378ce249fb69e922ea218e1858e4efe8186e17d"
+          test "${GITHUB_SHA,,}" != "${RELEASE_SHA_INPUT,,}"
           echo "RELEASE_SHA=${RELEASE_SHA_INPUT,,}" >> "$GITHUB_ENV"
+          echo "AUTHORIZATION_SHA=${GITHUB_SHA,,}" >> "$GITHUB_ENV"
 
-      - name: Checkout exact protected alignment revision for install
+      - name: Checkout exact protected authorization commit for environment gate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ inputs.release_sha }}
-          fetch-depth: 1
+          ref: ${{ github.sha }}
+          fetch-depth: 2
           persist-credentials: false
 
-      - name: Verify exact protected checkout
+      - name: Authorization boundary - verify predecessor topology and temporary gates
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test "$(git rev-parse HEAD)" = "$AUTHORIZATION_SHA"
+          test "$(git rev-parse HEAD^)" = "$RELEASE_SHA"
           test -z "$(git status --porcelain)"
-
-      - name: Retrieve immutable alignment artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: srcm-align-${{ inputs.release_sha }}
-          path: ${{ runner.temp }}/alignment-artifact
-
-      - name: Verify downloaded alignment artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          artifact="srcm-align-${RELEASE_SHA}.tar.gz"
-          cd "$RUNNER_TEMP/alignment-artifact"
-          test -f "$artifact"
-          test -f "$artifact.sha256"
-          sha256sum --check "$artifact.sha256"
-
-      - name: Authorization boundary - fail closed before alignment remote IO
-        shell: bash
-        run: |
-          set -euo pipefail
-          php -r '
+          RELEASE_SHA="$RELEASE_SHA" php -r '
           $config = require "config/release.php";
           $alignment = $config["protected_main_inactive_alignment_enabled"] ?? false;
           $bootstrap = $config["initial_application_release_bootstrap_enabled"] ?? false;
@@ -207,24 +253,58 @@ jobs:
               && $bootstrap === false
               && $normalRelease === false
               && $approval === true
-              && ($policy["mode"] ?? null) === "protected_main_inactive_alignment"
-              && ($policy["historical_release_sha"] ?? null) === "fad6f4ff0ddcffeca5230bf3bcbb604262e55dcc"
-              && ($policy["artifact_build_is_pre_authorization"] ?? null) === true
-              && ($policy["remote_install_is_environment_protected"] ?? null) === true
-              && ($policy["requires_current_absent"] ?? null) === true
-              && ($policy["requires_historical_release_present"] ?? null) === true
-              && ($policy["requires_target_release_absent"] ?? null) === true
-              && ($policy["preserves_historical_release"] ?? null) === true
-              && ($policy["preserves_shared_state"] ?? null) === true
-              && ($policy["migration_allowed"] ?? null) === false
-              && ($policy["creates_current_symlink"] ?? null) === false
-              && ($policy["starts_or_reloads_services"] ?? null) === false
-              && ($policy["activation_is_separate_cut"] ?? null) === true;
+              && ($policy["foundation_version"] ?? null) === 2
+              && ($policy["authorized_target_release_sha"] ?? null) === getenv("RELEASE_SHA")
+              && ($policy["authorization_commit_must_directly_descend_from_target"] ?? null) === true
+              && ($policy["authorization_commit_must_not_be_installed"] ?? null) === true
+              && ($policy["target_release_must_remain_fail_closed"] ?? null) === true
+              && ($policy["revocation_required_after_execution"] ?? null) === true;
           if (!$green) {
               fwrite(STDERR, "SRCM protected-main inactive alignment remains source-blocked.\n");
               exit(78);
           }
           '
+
+      - name: Checkout exact fail-closed predecessor target for install
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.release_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify target release is exact and remains fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test -z "$(git status --porcelain)"
+          php -r '
+          $config = require "config/release.php";
+          $green = ($config["production_release_enabled"] ?? true) === false
+              && ($config["initial_application_release_bootstrap_enabled"] ?? true) === false
+              && ($config["protected_main_inactive_alignment_enabled"] ?? true) === false
+              && ($config["external_gates"]["production_environment_secrets_and_approvals"] ?? true) === false;
+          if (!$green) {
+              fwrite(STDERR, "SRCM target release authorization gates are not fail closed.\n");
+              exit(78);
+          }
+          '
+
+      - name: Retrieve immutable predecessor alignment artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: srcm-align-${{ inputs.release_sha }}
+          path: ${{ runner.temp }}/alignment-artifact
+
+      - name: Verify downloaded predecessor alignment artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="srcm-align-${RELEASE_SHA}.tar.gz"
+          cd "$RUNNER_TEMP/alignment-artifact"
+          test -f "$artifact"
+          test -f "$artifact.sha256"
+          sha256sum --check "$artifact.sha256"
 
       - name: Connect protected alignment job to private Tailscale transport via WIF
         uses: tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888 # v4.1.3
@@ -304,7 +384,7 @@ jobs:
           known_fingerprint="$(printf '%s\n' "$known_line" | ssh-keygen -lf - -E sha256 | awk '{print $2}')"
           test "$known_fingerprint" = 'SHA256:iy4hCZtEYlqi3MjSxLFmX7cKPTFXXfecZultd7c2Xj4'
 
-      - name: Transfer immutable protected-main alignment release
+      - name: Transfer immutable predecessor release
         shell: bash
         env:
           RESOLVED_DEPLOY_IP: ${{ env.RESOLVED_DEPLOY_IP }}
@@ -316,11 +396,16 @@ jobs:
           artifact="srcm-align-${RELEASE_SHA}.tar.gz"
           artifact_dir="$RUNNER_TEMP/alignment-artifact"
 
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$RESOLVED_DEPLOY_IP"             "test \"\$(hostname)\" = \"straleon-prod-01\"; umask 077; mkdir -p '$remote_dir'"
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$RESOLVED_DEPLOY_IP" \
+            "test \"\$(hostname)\" = \"straleon-prod-01\"; umask 077; mkdir -p '$remote_dir'"
 
-          scp -P "$DEPLOY_PORT"             "$artifact_dir/$artifact"             "$artifact_dir/$artifact.sha256"             ops/production/align-protected-main-inactive-release.sh             "$DEPLOY_USER@$RESOLVED_DEPLOY_IP:$remote_dir/"
+          scp -P "$DEPLOY_PORT" \
+            "$artifact_dir/$artifact" \
+            "$artifact_dir/$artifact.sha256" \
+            ops/production/align-protected-main-inactive-release.sh \
+            "$DEPLOY_USER@$RESOLVED_DEPLOY_IP:$remote_dir/"
 
-      - name: Install protected-main release inactive beside historical release
+      - name: Install fail-closed predecessor inactive beside historical release
         shell: bash
         env:
           RESOLVED_DEPLOY_IP: ${{ env.RESOLVED_DEPLOY_IP }}
@@ -331,7 +416,8 @@ jobs:
           remote_dir="/tmp/srcm-protected-main-align-${RELEASE_SHA}"
           artifact="srcm-align-${RELEASE_SHA}.tar.gz"
 
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$RESOLVED_DEPLOY_IP"             "bash '$remote_dir/align-protected-main-inactive-release.sh' '$RELEASE_SHA' '$remote_dir/$artifact' '$remote_dir/$artifact.sha256'"
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$RESOLVED_DEPLOY_IP" \
+            "bash '$remote_dir/align-protected-main-inactive-release.sh' '$RELEASE_SHA' '$remote_dir/$artifact' '$remote_dir/$artifact.sha256'"
 
       - name: Remove SSH material from runner
         if: always()

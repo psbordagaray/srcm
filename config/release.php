@@ -38,7 +38,7 @@ return [
     | INACTIVE release while current remains absent.
     |
     */
-    'protected_main_inactive_alignment_enabled' => false,
+    'protected_main_inactive_alignment_enabled' => true,
 
     'post_deploy_readiness' => [
         'route_name' => 'api.health.ready',
@@ -120,9 +120,14 @@ return [
         'automatic_database_rollback' => false,
         'automatic_code_symlink_rollback' => true,
         'protected_main_inactive_alignment' => [
-            'foundation_version' => 1,
+            'foundation_version' => 2,
             'mode' => 'protected_main_inactive_alignment',
             'authorization_switch' => 'protected_main_inactive_alignment_enabled',
+            'authorized_target_release_sha' => '3378ce249fb69e922ea218e1858e4efe8186e17d',
+            'authorization_commit_must_directly_descend_from_target' => true,
+            'authorization_commit_must_not_be_installed' => true,
+            'target_release_must_remain_fail_closed' => true,
+            'revocation_required_after_execution' => true,
             'historical_release_sha' => 'fad6f4ff0ddcffeca5230bf3bcbb604262e55dcc',
             'artifact_built_in_github_actions' => true,
             'artifact_build_is_pre_authorization' => true,
@@ -161,6 +166,6 @@ return [
     'external_gates' => [
         'off_host_encrypted_backup' => true,
         'operational_restore_drill' => true,
-        'production_environment_secrets_and_approvals' => false,
+        'production_environment_secrets_and_approvals' => true,
     ],
 ];
