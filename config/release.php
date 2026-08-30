@@ -27,6 +27,19 @@ return [
     */
     'initial_application_release_bootstrap_enabled' => false,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Protected-main inactive alignment authorization
+    |--------------------------------------------------------------------------
+    |
+    | This one-time recovery/alignment switch is independent from both the
+    | historical empty-releases bootstrap and normal active deployment. It may
+    | only install the exact protected-main revision as a second immutable
+    | INACTIVE release while current remains absent.
+    |
+    */
+    'protected_main_inactive_alignment_enabled' => false,
+
     'post_deploy_readiness' => [
         'route_name' => 'api.health.ready',
         'uri' => 'api/health/ready',
@@ -106,6 +119,25 @@ return [
         'migration_policy' => 'fresh_readiness_backup_then_migrate_force',
         'automatic_database_rollback' => false,
         'automatic_code_symlink_rollback' => true,
+        'protected_main_inactive_alignment' => [
+            'foundation_version' => 1,
+            'mode' => 'protected_main_inactive_alignment',
+            'authorization_switch' => 'protected_main_inactive_alignment_enabled',
+            'historical_release_sha' => 'fad6f4ff0ddcffeca5230bf3bcbb604262e55dcc',
+            'artifact_built_in_github_actions' => true,
+            'artifact_build_is_pre_authorization' => true,
+            'remote_install_is_environment_protected' => true,
+            'requires_current_absent' => true,
+            'requires_historical_release_present' => true,
+            'requires_target_release_absent' => true,
+            'preserves_historical_release' => true,
+            'preserves_shared_state' => true,
+            'migration_allowed' => false,
+            'creates_current_symlink' => false,
+            'starts_or_reloads_services' => false,
+            'activation_is_separate_cut' => true,
+        ],
+
         'initial_application_release' => [
             'foundation_version' => 1,
             'mode' => 'one_time_inactive_bootstrap',
