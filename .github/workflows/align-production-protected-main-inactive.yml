@@ -1,0 +1,339 @@
+name: SRCM Protected Main Inactive Alignment Foundation
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact protected-main commit SHA to install as a second inactive production release
+        required: true
+        type: string
+      confirmation:
+        description: Type ALIGN to confirm the inactive protected-main alignment request
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: srcm-production-protected-main-inactive-alignment
+  cancel-in-progress: false
+
+jobs:
+  build-alignment-artifact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+
+    steps:
+      - name: Validate protected-main alignment identity
+        shell: bash
+        env:
+          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_SHA_INPUT" =~ ^[0-9a-fA-F]{40}$ ]]
+          test "$CONFIRMATION" = "ALIGN"
+          test "$GITHUB_REF_TYPE" = "branch"
+          test "$GITHUB_REF_NAME" = "main"
+          test "$GITHUB_REF_PROTECTED" = "true"
+          test "${RELEASE_SHA_INPUT,,}" = "${GITHUB_SHA,,}"
+          echo "RELEASE_SHA=${RELEASE_SHA_INPUT,,}" >> "$GITHUB_ENV"
+
+      - name: Checkout exact protected-main alignment revision
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.release_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test -z "$(git status --porcelain)"
+
+      - name: Setup deterministic PHP runtime
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer:2.10.2
+
+      - name: Validate build runtime and lockfiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r 'if (PHP_MAJOR_VERSION !== 8 || PHP_MINOR_VERSION !== 3) { exit(1); }'
+          php -r 'if (extension_loaded("xdebug")) { exit(1); }'
+          test -f composer.lock
+          test -f package-lock.json
+          composer validate --strict --no-check-publish
+          node - <<'NODE'
+          const [major, minor] = process.versions.node.split('.').map(Number);
+          const supported = major > 22 || (major === 22 && minor >= 12) || (major === 20 && minor >= 19);
+          if (!supported) throw new Error(`Unsupported Node runtime: ${process.versions.node}`);
+          NODE
+
+      - name: Install locked build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer install --no-interaction --prefer-dist --no-progress
+          npm ci --ignore-scripts
+
+      - name: Prepare ephemeral non-production build environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          php artisan key:generate --force
+
+      - name: Re-run CI release preflight
+        shell: bash
+        run: php artisan srcm:release-preflight --ci
+
+      - name: Build production assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run build
+          test -f public/build/manifest.json
+
+      - name: Re-run full application suite
+        shell: bash
+        run: composer test
+
+      - name: Install production-only PHP dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer install --no-dev --no-interaction --prefer-dist --no-progress --optimize-autoloader
+          rm -rf node_modules tests
+          rm -f .env
+
+      - name: Build immutable protected-main alignment artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -e .env
+          test ! -e database/database.sqlite
+          artifact="srcm-align-${RELEASE_SHA}.tar.gz"
+          tar             --exclude=.git             --exclude=node_modules             --exclude='database/*.sqlite*'             --exclude='storage/*'             --exclude=public/storage             -czf "$RUNNER_TEMP/$artifact" .
+          (
+            cd "$RUNNER_TEMP"
+            sha256sum "$artifact" > "$artifact.sha256"
+          )
+
+      - name: Store immutable alignment artifact before production authorization
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: srcm-align-${{ inputs.release_sha }}
+          path: |
+            ${{ runner.temp }}/srcm-align-${{ env.RELEASE_SHA }}.tar.gz
+            ${{ runner.temp }}/srcm-align-${{ env.RELEASE_SHA }}.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
+  install-inactive-protected-main:
+    needs: build-alignment-artifact
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Validate protected alignment release identity
+        shell: bash
+        env:
+          RELEASE_SHA_INPUT: ${{ inputs.release_sha }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_SHA_INPUT" =~ ^[0-9a-fA-F]{40}$ ]]
+          test "$CONFIRMATION" = "ALIGN"
+          test "$GITHUB_REF_TYPE" = "branch"
+          test "$GITHUB_REF_NAME" = "main"
+          test "$GITHUB_REF_PROTECTED" = "true"
+          test "${RELEASE_SHA_INPUT,,}" = "${GITHUB_SHA,,}"
+          echo "RELEASE_SHA=${RELEASE_SHA_INPUT,,}" >> "$GITHUB_ENV"
+
+      - name: Checkout exact protected alignment revision for install
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.release_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify exact protected checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          test -z "$(git status --porcelain)"
+
+      - name: Retrieve immutable alignment artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: srcm-align-${{ inputs.release_sha }}
+          path: ${{ runner.temp }}/alignment-artifact
+
+      - name: Verify downloaded alignment artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          artifact="srcm-align-${RELEASE_SHA}.tar.gz"
+          cd "$RUNNER_TEMP/alignment-artifact"
+          test -f "$artifact"
+          test -f "$artifact.sha256"
+          sha256sum --check "$artifact.sha256"
+
+      - name: Authorization boundary - fail closed before alignment remote IO
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r '
+          $config = require "config/release.php";
+          $alignment = $config["protected_main_inactive_alignment_enabled"] ?? false;
+          $bootstrap = $config["initial_application_release_bootstrap_enabled"] ?? false;
+          $normalRelease = $config["production_release_enabled"] ?? false;
+          $approval = $config["external_gates"]["production_environment_secrets_and_approvals"] ?? false;
+          $policy = $config["deployment"]["protected_main_inactive_alignment"] ?? [];
+          $green = $alignment === true
+              && $bootstrap === false
+              && $normalRelease === false
+              && $approval === true
+              && ($policy["mode"] ?? null) === "protected_main_inactive_alignment"
+              && ($policy["historical_release_sha"] ?? null) === "fad6f4ff0ddcffeca5230bf3bcbb604262e55dcc"
+              && ($policy["artifact_build_is_pre_authorization"] ?? null) === true
+              && ($policy["remote_install_is_environment_protected"] ?? null) === true
+              && ($policy["requires_current_absent"] ?? null) === true
+              && ($policy["requires_historical_release_present"] ?? null) === true
+              && ($policy["requires_target_release_absent"] ?? null) === true
+              && ($policy["preserves_historical_release"] ?? null) === true
+              && ($policy["preserves_shared_state"] ?? null) === true
+              && ($policy["migration_allowed"] ?? null) === false
+              && ($policy["creates_current_symlink"] ?? null) === false
+              && ($policy["starts_or_reloads_services"] ?? null) === false
+              && ($policy["activation_is_separate_cut"] ?? null) === true;
+          if (!$green) {
+              fwrite(STDERR, "SRCM protected-main inactive alignment remains source-blocked.\n");
+              exit(78);
+          }
+          '
+
+      - name: Connect protected alignment job to private Tailscale transport via WIF
+        uses: tailscale/github-action@780049a30b6ff5c378a9e7b389d15ece7a204888 # v4.1.3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:straleon-ci-deploy
+
+      - name: Validate alignment deployment transport contract
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ vars.SRCM_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ vars.SRCM_DEPLOY_USER }}
+          DEPLOY_PORT: ${{ vars.SRCM_DEPLOY_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.SRCM_DEPLOY_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.SRCM_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test "$DEPLOY_HOST" = "straleon-prod-01"
+          test "$DEPLOY_USER" = "straleon-deploy"
+          test "$DEPLOY_PORT" = "22"
+          test -n "$SSH_PRIVATE_KEY"
+          test -n "$KNOWN_HOSTS"
+
+          own_ip="$(tailscale ip --4)"
+          case "$own_ip" in
+            100.*) ;;
+            *) exit 1 ;;
+          esac
+
+          command -v jq >/dev/null
+          mapfile -t resolved_ips < <(tailscale ip --4 "$DEPLOY_HOST")
+          test "${#resolved_ips[@]}" -eq 1
+          resolved_deploy_ip="${resolved_ips[0]}"
+          [[ "$resolved_deploy_ip" =~ ^100\. ]]
+
+          whois_json="$(tailscale whois --json "$resolved_deploy_ip")"
+          whois_machine_name="$(printf '%s\n' "$whois_json" | jq -r '.Node.Name // empty')"
+          test -n "$whois_machine_name"
+          whois_machine_name="${whois_machine_name%.}"
+          whois_machine_label="${whois_machine_name%%.*}"
+          test "$whois_machine_label" = "$DEPLOY_HOST"
+          printf '%s\n' "$whois_json" | jq -e --arg tag 'tag:straleon-prod' '(.Node.Tags // []) | index($tag) != null' >/dev/null
+          printf '%s\n' "$whois_json" | jq -e --arg ip "$resolved_deploy_ip" '(.Node.Addresses // []) | map(split("/")[0]) | index($ip) != null' >/dev/null
+
+          route_line="$(ip route get "$resolved_deploy_ip")"
+          case "$route_line" in
+            *"dev tailscale0"*) ;;
+            *) exit 1 ;;
+          esac
+
+          echo "RESOLVED_DEPLOY_IP=$resolved_deploy_ip" >> "$GITHUB_ENV"
+
+      - name: Configure alignment SSH transport
+        shell: bash
+        env:
+          RESOLVED_DEPLOY_IP: ${{ env.RESOLVED_DEPLOY_IP }}
+          SSH_PRIVATE_KEY: ${{ secrets.SRCM_DEPLOY_SSH_PRIVATE_KEY }}
+          KNOWN_HOSTS: ${{ secrets.SRCM_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+
+          known_key_material="$(printf '%s\n' "$KNOWN_HOSTS" | awk 'NF >= 3 && $1 !~ /^#/ {print $2 " " $3; exit}')"
+          test -n "$known_key_material"
+          printf '%s %s\n' "$RESOLVED_DEPLOY_IP" "$known_key_material" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/known_hosts"
+
+          private_fingerprint="$(ssh-keygen -yf "$HOME/.ssh/id_ed25519" | ssh-keygen -lf - -E sha256 | awk '{print $2}')"
+          test "$private_fingerprint" = 'SHA256:x6L1N7kD+rcrlqD7EB+boZgwDQc4AtO6NMMltEHZhpw'
+
+          known_line="$(ssh-keygen -F "$RESOLVED_DEPLOY_IP" -f "$HOME/.ssh/known_hosts" | grep -v '^#' | head -n 1)"
+          test -n "$known_line"
+          known_fingerprint="$(printf '%s\n' "$known_line" | ssh-keygen -lf - -E sha256 | awk '{print $2}')"
+          test "$known_fingerprint" = 'SHA256:iy4hCZtEYlqi3MjSxLFmX7cKPTFXXfecZultd7c2Xj4'
+
+      - name: Transfer immutable protected-main alignment release
+        shell: bash
+        env:
+          RESOLVED_DEPLOY_IP: ${{ env.RESOLVED_DEPLOY_IP }}
+          DEPLOY_USER: ${{ vars.SRCM_DEPLOY_USER }}
+          DEPLOY_PORT: ${{ vars.SRCM_DEPLOY_PORT }}
+        run: |
+          set -euo pipefail
+          remote_dir="/tmp/srcm-protected-main-align-${RELEASE_SHA}"
+          artifact="srcm-align-${RELEASE_SHA}.tar.gz"
+          artifact_dir="$RUNNER_TEMP/alignment-artifact"
+
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$RESOLVED_DEPLOY_IP"             "test \"\$(hostname)\" = \"straleon-prod-01\"; umask 077; mkdir -p '$remote_dir'"
+
+          scp -P "$DEPLOY_PORT"             "$artifact_dir/$artifact"             "$artifact_dir/$artifact.sha256"             ops/production/align-protected-main-inactive-release.sh             "$DEPLOY_USER@$RESOLVED_DEPLOY_IP:$remote_dir/"
+
+      - name: Install protected-main release inactive beside historical release
+        shell: bash
+        env:
+          RESOLVED_DEPLOY_IP: ${{ env.RESOLVED_DEPLOY_IP }}
+          DEPLOY_USER: ${{ vars.SRCM_DEPLOY_USER }}
+          DEPLOY_PORT: ${{ vars.SRCM_DEPLOY_PORT }}
+        run: |
+          set -euo pipefail
+          remote_dir="/tmp/srcm-protected-main-align-${RELEASE_SHA}"
+          artifact="srcm-align-${RELEASE_SHA}.tar.gz"
+
+          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$RESOLVED_DEPLOY_IP"             "bash '$remote_dir/align-protected-main-inactive-release.sh' '$RELEASE_SHA' '$remote_dir/$artifact' '$remote_dir/$artifact.sha256'"
+
+      - name: Remove SSH material from runner
+        if: always()
+        shell: bash
+        run: rm -rf "$HOME/.ssh"
