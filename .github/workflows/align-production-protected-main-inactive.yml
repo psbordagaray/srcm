@@ -46,7 +46,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 2
+          fetch-depth: 3
           persist-credentials: false
 
       - name: Verify authorization commit topology and temporary gates
@@ -54,7 +54,8 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$AUTHORIZATION_SHA"
-          test "$(git rev-parse HEAD^)" = "$RELEASE_SHA"
+          test "$(git rev-parse HEAD^)" = "3d5984bee332cc6abb7f8456077db26e7998530a"
+          test "$(git rev-parse HEAD^^)" = "$RELEASE_SHA"
           test -z "$(git status --porcelain)"
           RELEASE_SHA="$RELEASE_SHA" php -r '
           $config = require "config/release.php";
@@ -67,10 +68,15 @@ jobs:
               && $bootstrap === false
               && $normalRelease === false
               && $approval === true
-              && ($policy["foundation_version"] ?? null) === 2
+              && ($policy["foundation_version"] ?? null) === 3
               && ($policy["mode"] ?? null) === "protected_main_inactive_alignment"
               && ($policy["authorized_target_release_sha"] ?? null) === getenv("RELEASE_SHA")
-              && ($policy["authorization_commit_must_directly_descend_from_target"] ?? null) === true
+              && ($policy["prior_authorization_sha"] ?? null) === "3d5984bee332cc6abb7f8456077db26e7998530a"
+              && ($policy["authorization_commit_must_directly_descend_from_prior_authorization"] ?? null) === true
+              && ($policy["prior_authorization_must_directly_descend_from_target"] ?? null) === true
+              && ($policy["failed_dispatch_run_id"] ?? null) === 33388095599
+              && ($policy["failed_dispatch_classification"] ?? null) === "SETUP_ACTION_RESOLUTION_BEFORE_ANY_WORKFLOW_STEP"
+              && ($policy["failed_dispatch_must_not_be_rerun"] ?? null) === true
               && ($policy["authorization_commit_must_not_be_installed"] ?? null) === true
               && ($policy["target_release_must_remain_fail_closed"] ?? null) === true
               && ($policy["revocation_required_after_execution"] ?? null) === true
@@ -113,7 +119,7 @@ jobs:
           '
 
       - name: Setup deterministic PHP runtime
-        uses: shivammathur/setup-php@f3e473d116dccc5834248c87452386958240 # 2.37.2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
         with:
           php-version: '8.3'
           coverage: none
@@ -232,7 +238,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 2
+          fetch-depth: 3
           persist-credentials: false
 
       - name: Authorization boundary - verify predecessor topology and temporary gates
@@ -240,7 +246,8 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$AUTHORIZATION_SHA"
-          test "$(git rev-parse HEAD^)" = "$RELEASE_SHA"
+          test "$(git rev-parse HEAD^)" = "3d5984bee332cc6abb7f8456077db26e7998530a"
+          test "$(git rev-parse HEAD^^)" = "$RELEASE_SHA"
           test -z "$(git status --porcelain)"
           RELEASE_SHA="$RELEASE_SHA" php -r '
           $config = require "config/release.php";
@@ -253,9 +260,14 @@ jobs:
               && $bootstrap === false
               && $normalRelease === false
               && $approval === true
-              && ($policy["foundation_version"] ?? null) === 2
+              && ($policy["foundation_version"] ?? null) === 3
               && ($policy["authorized_target_release_sha"] ?? null) === getenv("RELEASE_SHA")
-              && ($policy["authorization_commit_must_directly_descend_from_target"] ?? null) === true
+              && ($policy["prior_authorization_sha"] ?? null) === "3d5984bee332cc6abb7f8456077db26e7998530a"
+              && ($policy["authorization_commit_must_directly_descend_from_prior_authorization"] ?? null) === true
+              && ($policy["prior_authorization_must_directly_descend_from_target"] ?? null) === true
+              && ($policy["failed_dispatch_run_id"] ?? null) === 33388095599
+              && ($policy["failed_dispatch_classification"] ?? null) === "SETUP_ACTION_RESOLUTION_BEFORE_ANY_WORKFLOW_STEP"
+              && ($policy["failed_dispatch_must_not_be_rerun"] ?? null) === true
               && ($policy["authorization_commit_must_not_be_installed"] ?? null) === true
               && ($policy["target_release_must_remain_fail_closed"] ?? null) === true
               && ($policy["revocation_required_after_execution"] ?? null) === true;
