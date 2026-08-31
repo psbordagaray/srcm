@@ -9,6 +9,8 @@ use Tests\TestCase;
 final class ProductionProtectedMainInactiveAlignmentFoundationTest extends TestCase
 {
     private const TARGET_RELEASE_SHA = '3378ce249fb69e922ea218e1858e4efe8186e17d';
+    private const PRIOR_AUTHORIZATION_SHA = '3d5984bee332cc6abb7f8456077db26e7998530a';
+    private const FAILED_DISPATCH_RUN_ID = 33388095599;
 
     public function test_alignment_authorization_is_temporary_and_target_remains_predecessor(): void
     {
@@ -23,7 +25,7 @@ final class ProductionProtectedMainInactiveAlignmentFoundationTest extends TestC
 
         $policy = $config['deployment']['protected_main_inactive_alignment'];
 
-        $this->assertSame(2, $policy['foundation_version']);
+        $this->assertSame(3, $policy['foundation_version']);
         $this->assertSame('protected_main_inactive_alignment', $policy['mode']);
         $this->assertSame(
             'protected_main_inactive_alignment_enabled',
@@ -33,9 +35,25 @@ final class ProductionProtectedMainInactiveAlignmentFoundationTest extends TestC
             self::TARGET_RELEASE_SHA,
             $policy['authorized_target_release_sha']
         );
-        $this->assertTrue(
-            $policy['authorization_commit_must_directly_descend_from_target']
+        $this->assertSame(
+            self::PRIOR_AUTHORIZATION_SHA,
+            $policy['prior_authorization_sha']
         );
+        $this->assertTrue(
+            $policy['authorization_commit_must_directly_descend_from_prior_authorization']
+        );
+        $this->assertTrue(
+            $policy['prior_authorization_must_directly_descend_from_target']
+        );
+        $this->assertSame(
+            self::FAILED_DISPATCH_RUN_ID,
+            $policy['failed_dispatch_run_id']
+        );
+        $this->assertSame(
+            'SETUP_ACTION_RESOLUTION_BEFORE_ANY_WORKFLOW_STEP',
+            $policy['failed_dispatch_classification']
+        );
+        $this->assertTrue($policy['failed_dispatch_must_not_be_rerun']);
         $this->assertTrue($policy['authorization_commit_must_not_be_installed']);
         $this->assertTrue($policy['target_release_must_remain_fail_closed']);
         $this->assertTrue($policy['revocation_required_after_execution']);
@@ -73,16 +91,23 @@ final class ProductionProtectedMainInactiveAlignmentFoundationTest extends TestC
             'test "${RELEASE_SHA_INPUT,,}" = "' . self::TARGET_RELEASE_SHA . '"',
             'test "${GITHUB_SHA,,}" != "${RELEASE_SHA_INPUT,,}"',
             'ref: ${{ github.sha }}',
-            'fetch-depth: 2',
-            'test "$(git rev-parse HEAD^)" = "$RELEASE_SHA"',
+            'fetch-depth: 3',
+            'test "$(git rev-parse HEAD^)" = "' . self::PRIOR_AUTHORIZATION_SHA . '"',
+            'test "$(git rev-parse HEAD^^)" = "$RELEASE_SHA"',
             'authorized_target_release_sha',
-            'authorization_commit_must_directly_descend_from_target',
+            'prior_authorization_sha',
+            'authorization_commit_must_directly_descend_from_prior_authorization',
+            'prior_authorization_must_directly_descend_from_target',
+            'failed_dispatch_run_id',
+            'failed_dispatch_classification',
+            'failed_dispatch_must_not_be_rerun',
             'authorization_commit_must_not_be_installed',
             'target_release_must_remain_fail_closed',
             'revocation_required_after_execution',
             'Checkout exact fail-closed predecessor target',
             'Checkout exact fail-closed predecessor target for install',
             'ref: ${{ inputs.release_sha }}',
+            'shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240',
             'environment: production',
             '$alignment === true',
             '$bootstrap === false',
@@ -100,6 +125,14 @@ final class ProductionProtectedMainInactiveAlignmentFoundationTest extends TestC
 
         $this->assertStringNotContainsString(
             'test "${RELEASE_SHA_INPUT,,}" = "${GITHUB_SHA,,}"',
+            $workflow
+        );
+        $this->assertStringNotContainsString(
+            'test "$(git rev-parse HEAD^)" = "$RELEASE_SHA"',
+            $workflow
+        );
+        $this->assertStringNotContainsString(
+            'shivammathur/setup-php@f3e473d116dccc5834248c87452386958240',
             $workflow
         );
     }
