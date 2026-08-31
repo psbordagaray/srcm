@@ -8,23 +8,41 @@ use Tests\TestCase;
 
 final class ProductionProtectedMainInactiveAlignmentFoundationTest extends TestCase
 {
-    public function test_alignment_foundation_is_fail_closed_and_inactive(): void
+    private const TARGET_RELEASE_SHA = '3378ce249fb69e922ea218e1858e4efe8186e17d';
+
+    public function test_alignment_authorization_is_temporary_and_target_remains_predecessor(): void
     {
         $config = require base_path('config/release.php');
 
         $this->assertFalse($config['production_release_enabled']);
         $this->assertFalse($config['initial_application_release_bootstrap_enabled']);
-        $this->assertFalse($config['protected_main_inactive_alignment_enabled']);
+        $this->assertTrue($config['protected_main_inactive_alignment_enabled']);
+        $this->assertTrue(
+            $config['external_gates']['production_environment_secrets_and_approvals']
+        );
 
         $policy = $config['deployment']['protected_main_inactive_alignment'];
 
-        $this->assertSame(1, $policy['foundation_version']);
+        $this->assertSame(2, $policy['foundation_version']);
         $this->assertSame('protected_main_inactive_alignment', $policy['mode']);
         $this->assertSame(
             'protected_main_inactive_alignment_enabled',
             $policy['authorization_switch']
         );
-        $this->assertSame('fad6f4ff0ddcffeca5230bf3bcbb604262e55dcc', $policy['historical_release_sha']);
+        $this->assertSame(
+            self::TARGET_RELEASE_SHA,
+            $policy['authorized_target_release_sha']
+        );
+        $this->assertTrue(
+            $policy['authorization_commit_must_directly_descend_from_target']
+        );
+        $this->assertTrue($policy['authorization_commit_must_not_be_installed']);
+        $this->assertTrue($policy['target_release_must_remain_fail_closed']);
+        $this->assertTrue($policy['revocation_required_after_execution']);
+        $this->assertSame(
+            'fad6f4ff0ddcffeca5230bf3bcbb604262e55dcc',
+            $policy['historical_release_sha']
+        );
         $this->assertTrue($policy['artifact_built_in_github_actions']);
         $this->assertTrue($policy['artifact_build_is_pre_authorization']);
         $this->assertTrue($policy['remote_install_is_environment_protected']);
@@ -39,7 +57,7 @@ final class ProductionProtectedMainInactiveAlignmentFoundationTest extends TestC
         $this->assertTrue($policy['activation_is_separate_cut']);
     }
 
-    public function test_alignment_workflow_requires_exact_protected_main_and_environment_authorization(): void
+    public function test_alignment_workflow_installs_exact_fail_closed_predecessor_not_authorization_commit(): void
     {
         $workflow = file_get_contents(
             base_path('.github/workflows/align-production-protected-main-inactive.yml')
@@ -52,13 +70,25 @@ final class ProductionProtectedMainInactiveAlignmentFoundationTest extends TestC
             'test "$CONFIRMATION" = "ALIGN"',
             'test "$GITHUB_REF_NAME" = "main"',
             'test "$GITHUB_REF_PROTECTED" = "true"',
-            'test "${RELEASE_SHA_INPUT,,}" = "${GITHUB_SHA,,}"',
-            'Store immutable alignment artifact before production authorization',
+            'test "${RELEASE_SHA_INPUT,,}" = "' . self::TARGET_RELEASE_SHA . '"',
+            'test "${GITHUB_SHA,,}" != "${RELEASE_SHA_INPUT,,}"',
+            'ref: ${{ github.sha }}',
+            'fetch-depth: 2',
+            'test "$(git rev-parse HEAD^)" = "$RELEASE_SHA"',
+            'authorized_target_release_sha',
+            'authorization_commit_must_directly_descend_from_target',
+            'authorization_commit_must_not_be_installed',
+            'target_release_must_remain_fail_closed',
+            'revocation_required_after_execution',
+            'Checkout exact fail-closed predecessor target',
+            'Checkout exact fail-closed predecessor target for install',
+            'ref: ${{ inputs.release_sha }}',
             'environment: production',
             '$alignment === true',
             '$bootstrap === false',
             '$normalRelease === false',
             '$approval === true',
+            'target release authorization gates are not fail closed',
             'tags: tag:straleon-ci-deploy',
             'test "$DEPLOY_HOST" = "straleon-prod-01"',
             'test "$DEPLOY_USER" = "straleon-deploy"',
@@ -67,6 +97,11 @@ final class ProductionProtectedMainInactiveAlignmentFoundationTest extends TestC
         ] as $required) {
             $this->assertStringContainsString($required, $workflow);
         }
+
+        $this->assertStringNotContainsString(
+            'test "${RELEASE_SHA_INPUT,,}" = "${GITHUB_SHA,,}"',
+            $workflow
+        );
     }
 
     public function test_remote_alignment_script_preserves_inactive_production_contract(): void

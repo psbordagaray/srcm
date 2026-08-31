@@ -57,9 +57,7 @@ final class ProductionDeploymentFoundationTest extends TestCase
 
         $this->assertFalse(config('release.initial_application_release_bootstrap_enabled'));
         $this->assertFalse(config('release.production_release_enabled'));
-        $this->assertFalse(
-            config('release.external_gates.production_environment_secrets_and_approvals')
-        );
+
     }
 
     public function test_production_environment_governance_policy_is_versioned_with_bootstrap_source_revoked(): void
@@ -94,9 +92,7 @@ final class ProductionDeploymentFoundationTest extends TestCase
         $this->assertTrue($result['static']['production_normal_release_reviewer_hardening_guard']);
         $this->assertFalse(config('release.initial_application_release_bootstrap_enabled'));
         $this->assertFalse(config('release.production_release_enabled'));
-        $this->assertFalse(
-            config('release.external_gates.production_environment_secrets_and_approvals')
-        );
+
     }
 
     public function test_single_operator_governance_and_recovery_anchor_are_versioned_fail_closed(): void
@@ -130,22 +126,21 @@ final class ProductionDeploymentFoundationTest extends TestCase
         $this->assertTrue($result['static']['production_normal_release_reviewer_hardening_guard']);
         $this->assertFalse(config('release.production_release_enabled'));
         $this->assertFalse(config('release.initial_application_release_bootstrap_enabled'));
-        $this->assertFalse(
-            config('release.external_gates.production_environment_secrets_and_approvals')
-        );
+
         $this->assertFalse($result['production_authorized']);
     }
     public function test_initial_bootstrap_source_authorization_is_revoked_after_successful_inactive_install(): void
     {
         $this->assertFalse(config('release.initial_application_release_bootstrap_enabled'));
-        $this->assertFalse(
-            config('release.external_gates.production_environment_secrets_and_approvals')
-        );
+
         $this->assertFalse(config('release.production_release_enabled'));
 
         $result = app(ReleasePreflightInspector::class)->inspect();
         $this->assertTrue($result['static']['production_initial_bootstrap_source_authorization']);
-        $this->assertFalse($result['external']['production_environment_secrets_and_approvals']);
+        $this->assertSame(
+            config('release.external_gates.production_environment_secrets_and_approvals'),
+            $result['external']['production_environment_secrets_and_approvals']
+        );
         $this->assertFalse($result['external']['production_release_switch']);
         $this->assertFalse($result['external_green']);
         $this->assertFalse($result['production_authorized']);
