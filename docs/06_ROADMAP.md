@@ -1,8 +1,83 @@
 # SRCM — Roadmap maestro
 
 Estado de continuidad: **documento ejecutivo de referencia obligatoria**
-Actualizado: **2026-08-28**
+Actualizado: **2026-09-01**
 Rama de desarrollo: `feature/core-entity`
+
+<!-- P13_CURRENT_CONTINUITY_V1 -->
+## Current P13 checkpoint — P13.0 topology alignment GREEN / P13.A foundation next
+
+<!--
+STRALEON_CANONICAL_PRODUCT_NAME=Straleon
+P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
+P12_2_CLOSURE=GREEN_CLOSED
+P12_2_PROTECTED_MAIN_SHA=9a6a22a4e11449068f68c7b710950f58f95ed711
+P12_2_PROTECTED_MAIN_REVOCATION=GREEN_LIVE_FOUNDATION_V4
+P12_2_CI91_RUN_ID=33550408304
+P12_2_PRODUCTION_RELEASE_STATE=INSTALLED_INACTIVE_CURRENT_ABSENT_SERVICES_INACTIVE
+P13_0_TOPOLOGY_ALIGNMENT=GREEN_CLOSED
+P13_0_ALIGNMENT_MERGE_SHA=34effc77c6d75e0f8a43cae8779a813bad17da3a
+P13_0_ALIGNMENT_PARENT_FEATURE=ca57bc489f450db9395c7fe98f32e37a181915f4
+P13_0_ALIGNMENT_PARENT_MAIN=9a6a22a4e11449068f68c7b710950f58f95ed711
+P13_0_CONFLICT_POLICY=MAIN_WINS_EXACT_THREE_P12_GOVERNANCE_PATHS
+P13_0_CI92_RUN_ID=33559004502
+P13_0_CI92_JOB_ID=100026706572
+P13_0_CI92_STATUS=GREEN_COMPLETED_SUCCESS_ATTEMPT_1
+P13_A_IMPLEMENTATION_STATUS=NOT_IMPLEMENTED
+P13_NEXT_BOUNDARY=P13_A_RELEASE_INTEGRITY_ENVIRONMENT_IDENTITY_AND_FUTURE_AUTOMATION_FOUNDATION_V1
+PRODUCTION_MUTATION_AUTHORIZATION=NO
+-->
+
+P12.2 is formally closed. Protected `main` remains at
+`9a6a22a4e11449068f68c7b710950f58f95ed711`, protected by `quality-gates`,
+with the temporary protected-main inactive-alignment authorization revoked under
+foundation v4. The authorized production release remains **installed inactive**:
+`current` is absent, the services for that stage remain inactive, no production
+database migration was performed by that boundary, and production activation is
+not authorized by this documentation cut.
+
+P13.0 then reconciled the development topology without reopening that consumed
+authorization. `main` was merged into `feature/core-entity` as
+`34effc77c6d75e0f8a43cae8779a813bad17da3a`, with parents
+`ca57bc489f450db9395c7fe98f32e37a181915f4` and
+`9a6a22a4e11449068f68c7b710950f58f95ed711`. The three demonstrated P12
+governance conflicts were resolved by preserving the exact `main` blobs while
+the remaining feature functional history was preserved by the merge.
+
+Post-push verification is closed: **CI92 / run `33559004502` / job
+`100026706572` completed successfully on attempt 1**, including the full test
+suite and the tracked-tree immutability gate. Local/remote feature, protected
+main, `.env` and the canonical database were reconciled without drift.
+
+P13 is now the formal future-foundations phase. Its first implementation
+boundary is **P13.A — Release Integrity, Environment Identity and Future
+Automation**, comprising:
+
+1. **Release Manifest V1** — a release declares identity, contents,
+   prerequisites, permissions, rollback and integrity evidence.
+2. **Environment Identity V1** — sensitive operations must fail when the
+   installation/environment/organization/node identity does not match.
+3. **Migration Contract V1** — database changes declare compatibility,
+   downtime, backup, reversibility and rollback requirements before execution.
+4. **Release State Machine V1** —
+   `BUILT -> VERIFIED -> AUTHORIZED -> INSTALLED_INACTIVE -> READY -> ACTIVE -> SUPERSEDED -> RETIRED`.
+5. **Capability Authorization Contract V1** — sensitive permissions become
+   explicit, scoped, temporary, consumable and auditable instead of ambiguous
+   global booleans.
+
+P13.B — Numerical Integrity & Human Error Prevention and P13.C — Presupuesto /
+Commercial Intent remain subsequent P13 foundations. The canonical Presupuesto
+history still preserves the rule that the original mobile conversation must be
+annexed literally when recovered rather than silently reconstructed.
+
+This master-document alignment records the proven state only. It does **not**
+implement P13.A, dispatch or rerun workflows, touch production, activate
+services, mutate the database, or grant a production capability.
+
+Next exact boundary:
+
+`P13_A_RELEASE_INTEGRITY_ENVIRONMENT_IDENTITY_AND_FUTURE_AUTOMATION_FOUNDATION_V1`.
+
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 checkpoint — P12.2 Snapshot Reference Panel Foundation GREEN
