@@ -73,6 +73,8 @@ final class ReleasePreflightInspector
                 $ciWorkflowBody,
                 'php artisan srcm:release-preflight --ci'
             ),
+            'p13_release_manifest_policy_contract' => $this->releaseManifestPolicyIsPresent(),
+            'p13_environment_identity_policy_contract' => $this->environmentIdentityPolicyIsPresent(),
             'production_deploy_workflow' => $deployWorkflowBody !== '',
             'production_deploy_manual_only' => $this->deploymentWorkflowIsManualOnly($deployWorkflowBody),
             'production_deploy_protected_main_dispatch_identity' =>
@@ -201,6 +203,83 @@ final class ReleasePreflightInspector
             'external_green' => $externalGreen,
             'production_authorized' => $productionAuthorized,
         ];
+    }
+
+    private function releaseManifestPolicyIsPresent(): bool
+    {
+        $policy = config('release.release_manifest');
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return class_exists(ReleaseManifest::class)
+            && ($policy['foundation_version'] ?? null) === 1
+            && ($policy['schema'] ?? null) === ReleaseManifest::SCHEMA
+            && ($policy['sidecar_filename_pattern'] ?? null) === 'srcm-{release_sha}.manifest.json'
+            && ($policy['required_fields'] ?? null) === [
+                'schema',
+                'release_sha',
+                'artifact_sha256',
+                'source_ref',
+                'environment_identity',
+                'environment_fingerprint',
+            ]
+            && ($policy['release_sha_format'] ?? null) === 'lowercase_hex_40'
+            && ($policy['artifact_sha256_format'] ?? null) === 'lowercase_hex_64'
+            && ($policy['source_ref'] ?? null) === 'refs/heads/main'
+            && ($policy['manifest_is_immutable'] ?? null) === true
+            && ($policy['manifest_is_built_before_remote_io'] ?? null) === true
+            && ($policy['manifest_is_sidecar_to_immutable_artifact'] ?? null) === true
+            && ($policy['artifact_digest_embedded_in_manifest'] ?? null) === true
+            && ($policy['manifest_sha256_required'] ?? null) === true
+            && ($policy['manifest_and_artifact_must_be_transferred_together'] ?? null) === true
+            && ($policy['environment_identity_required'] ?? null) === true
+            && ($policy['secrets_forbidden'] ?? null) === true
+            && ($policy['activation_requires_exact_manifest_match'] ?? null) === true
+            && ($policy['executable_integration_status'] ?? null)
+                === 'foundation_only_not_yet_wired'
+            && ($policy['executable_integration_requires_separate_reviewed_cut'] ?? null) === true;
+    }
+
+    private function environmentIdentityPolicyIsPresent(): bool
+    {
+        $policy = config('release.environment_identity');
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return class_exists(EnvironmentIdentity::class)
+            && ($policy['foundation_version'] ?? null) === 1
+            && ($policy['schema'] ?? null) === EnvironmentIdentity::SCHEMA
+            && ($policy['required_fields'] ?? null) === [
+                'schema',
+                'environment_id',
+                'installation_id',
+                'organization_scope',
+                'organization_id',
+                'deployment_generation',
+                'stable_node_name',
+            ]
+            && ($policy['environment_id'] ?? null) === 'production'
+            && ($policy['organization_scope'] ?? null) === EnvironmentIdentity::SCOPE_INSTALLATION
+            && array_key_exists('organization_id', $policy)
+            && $policy['organization_id'] === null
+            && ($policy['stable_node_name'] ?? null) === 'straleon-prod-01'
+            && ($policy['protected_ref'] ?? null) === 'refs/heads/main'
+            && ($policy['identity_file_path'] ?? null)
+                === '/srv/srcm/shared/release/environment-identity.json'
+            && ($policy['installation_id_source'] ?? null)
+                === 'protected_runtime_identity_file'
+            && ($policy['deployment_generation_source'] ?? null)
+                === 'protected_runtime_identity_file'
+            && ($policy['deployment_generation_minimum'] ?? null) === 1
+            && ($policy['identity_file_must_be_outside_release_directories'] ?? null) === true
+            && ($policy['identity_file_must_not_contain_secrets'] ?? null) === true
+            && ($policy['live_target_match_required_before_remote_io'] ?? null) === true
+            && ($policy['organization_scope_must_be_explicit'] ?? null) === true
+            && ($policy['deployment_generation_must_be_monotonic'] ?? null) === true
+            && ($policy['runtime_binding_status'] ?? null) === 'not_yet_provisioned'
+            && ($policy['runtime_binding_requires_separate_reviewed_cut'] ?? null) === true;
     }
 
     private function productionEnvironmentGovernancePolicyIsPresent(): bool

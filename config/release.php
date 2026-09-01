@@ -40,6 +40,85 @@ return [
     */
     'protected_main_inactive_alignment_enabled' => false,
 
+    /*
+    |--------------------------------------------------------------------------
+    | P13.A Release Manifest V1
+    |--------------------------------------------------------------------------
+    |
+    | The canonical manifest binds an exact Git revision and immutable artifact
+    | digest to an explicit environment identity. This cut defines the contract
+    | only; executable build/deploy wiring remains a separate reviewed cut.
+    |
+    */
+    'release_manifest' => [
+        'foundation_version' => 1,
+        'schema' => 'straleon.release-manifest.v1',
+        'sidecar_filename_pattern' => 'srcm-{release_sha}.manifest.json',
+        'required_fields' => [
+            'schema',
+            'release_sha',
+            'artifact_sha256',
+            'source_ref',
+            'environment_identity',
+            'environment_fingerprint',
+        ],
+        'release_sha_format' => 'lowercase_hex_40',
+        'artifact_sha256_format' => 'lowercase_hex_64',
+        'source_ref' => 'refs/heads/main',
+        'manifest_is_immutable' => true,
+        'manifest_is_built_before_remote_io' => true,
+        'manifest_is_sidecar_to_immutable_artifact' => true,
+        'artifact_digest_embedded_in_manifest' => true,
+        'manifest_sha256_required' => true,
+        'manifest_and_artifact_must_be_transferred_together' => true,
+        'environment_identity_required' => true,
+        'secrets_forbidden' => true,
+        'activation_requires_exact_manifest_match' => true,
+        'executable_integration_status' => 'foundation_only_not_yet_wired',
+        'executable_integration_requires_separate_reviewed_cut' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | P13.A Environment Identity V1
+    |--------------------------------------------------------------------------
+    |
+    | Runtime installation identity and deployment generation are deliberately
+    | sourced from protected shared state outside immutable release directories.
+    | No production INSTALLATION_ID or generation is invented by source code.
+    |
+    */
+    'environment_identity' => [
+        'foundation_version' => 1,
+        'schema' => 'straleon.environment-identity.v1',
+        'required_fields' => [
+            'schema',
+            'environment_id',
+            'installation_id',
+            'organization_scope',
+            'organization_id',
+            'deployment_generation',
+            'stable_node_name',
+        ],
+        'environment_id' => 'production',
+        'organization_scope' => 'installation',
+        'organization_id' => null,
+        'stable_node_name' => 'straleon-prod-01',
+        'protected_ref' => 'refs/heads/main',
+        'identity_file_path' => '/srv/srcm/shared/release/environment-identity.json',
+        'installation_id_source' => 'protected_runtime_identity_file',
+        'deployment_generation_source' => 'protected_runtime_identity_file',
+        'deployment_generation_minimum' => 1,
+        'identity_file_must_be_outside_release_directories' => true,
+        'identity_file_must_not_contain_secrets' => true,
+        'live_target_match_required_before_remote_io' => true,
+        'organization_scope_must_be_explicit' => true,
+        'deployment_generation_must_be_monotonic' => true,
+        'runtime_binding_status' => 'not_yet_provisioned',
+        'runtime_binding_requires_separate_reviewed_cut' => true,
+    ],
+
+
     'post_deploy_readiness' => [
         'route_name' => 'api.health.ready',
         'uri' => 'api/health/ready',
