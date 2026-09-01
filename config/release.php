@@ -38,7 +38,7 @@ return [
     | INACTIVE release while current remains absent.
     |
     */
-    'protected_main_inactive_alignment_enabled' => true,
+    'protected_main_inactive_alignment_enabled' => false,
 
     'post_deploy_readiness' => [
         'route_name' => 'api.health.ready',
@@ -120,7 +120,7 @@ return [
         'automatic_database_rollback' => false,
         'automatic_code_symlink_rollback' => true,
         'protected_main_inactive_alignment' => [
-            'foundation_version' => 3,
+            'foundation_version' => 4,
             'mode' => 'protected_main_inactive_alignment',
             'authorization_switch' => 'protected_main_inactive_alignment_enabled',
             'authorized_target_release_sha' => '3378ce249fb69e922ea218e1858e4efe8186e17d',
@@ -130,6 +130,12 @@ return [
             'authorization_commit_must_not_be_installed' => true,
             'target_release_must_remain_fail_closed' => true,
             'revocation_required_after_execution' => true,
+            'authorization_revoked_after_execution' => true,
+            'successful_execution_run_id' => 33414463206,
+            'successful_execution_install_job_id' => 99562174859,
+            'successful_execution_authorization_sha' => '725082eaa23572e1e9a03da2f8f059ddabeab700',
+            'successful_execution_artifact_digest' => 'sha256:efc113d134d2fa3f170c764a52911de7976e6751f02b210f6ba5d0f0fe6c9f96',
+            'successful_execution_state' => 'GREEN_TARGET_INSTALLED_INACTIVE_HISTORICAL_PRESERVED_CURRENT_ABSENT',
             'failed_dispatch_run_id' => 33388095599,
             'failed_dispatch_classification' => 'SETUP_ACTION_RESOLUTION_BEFORE_ANY_WORKFLOW_STEP',
             'failed_dispatch_must_not_be_rerun' => true,
