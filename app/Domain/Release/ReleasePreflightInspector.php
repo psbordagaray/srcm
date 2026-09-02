@@ -481,6 +481,32 @@ final class ReleasePreflightInspector
                 === true
             && ($policy['authentication_or_role_alone_authorizes_numeric_override'] ?? null)
                 === false
+            && isset($policy['check_digit'])
+            && is_array($policy['check_digit'])
+            && interface_exists(\App\Domain\Numerics\CheckDigitAlgorithm::class)
+            && class_exists(\App\Domain\Numerics\LuhnCheckDigit::class)
+            && is_a(
+                \App\Domain\Numerics\LuhnCheckDigit::class,
+                \App\Domain\Numerics\CheckDigitAlgorithm::class,
+                true
+            )
+            && ($policy['check_digit']['foundation_version'] ?? null) === 1
+            && ($policy['check_digit']['interface_class'] ?? null)
+                === \App\Domain\Numerics\CheckDigitAlgorithm::class
+            && ($policy['check_digit']['luhn_class'] ?? null)
+                === \App\Domain\Numerics\LuhnCheckDigit::class
+            && ($policy['check_digit']['luhn_identifier'] ?? null)
+                === \App\Domain\Numerics\LuhnCheckDigit::IDENTIFIER
+            && ($policy['check_digit']['input_policy'] ?? null)
+                === 'non_empty_ascii_digits_only'
+            && ($policy['check_digit']['normalization_allowed'] ?? null) === false
+            && ($policy['check_digit']['silent_repair_allowed'] ?? null) === false
+            && ($policy['check_digit']['mathematical_validity_only'] ?? null) === true
+            && ($policy['check_digit']['entity_validity_inference_allowed'] ?? null) === false
+            && ($policy['check_digit']['runtime_wiring_status'] ?? null)
+                === 'foundation_only_not_yet_wired'
+            && ($policy['check_digit']['runtime_wiring_requires_separate_reviewed_cut'] ?? null)
+                === true
             && ($policy['runtime_calculation_refactor_status'] ?? null)
                 === 'not_in_foundation_cut'
             && ($policy['model_cast_rewiring_status'] ?? null)
