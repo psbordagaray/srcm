@@ -76,6 +76,7 @@ final class ReleasePreflightInspector
             'p13_release_manifest_policy_contract' => $this->releaseManifestPolicyIsPresent(),
             'p13_environment_identity_policy_contract' => $this->environmentIdentityPolicyIsPresent(),
             'p13_migration_contract_policy_contract' => $this->migrationContractPolicyIsPresent(),
+            'p13_release_state_machine_policy_contract' => $this->releaseStateMachinePolicyIsPresent(),
             'production_deploy_workflow' => $deployWorkflowBody !== '',
             'production_deploy_manual_only' => $this->deploymentWorkflowIsManualOnly($deployWorkflowBody),
             'production_deploy_protected_main_dispatch_identity' =>
@@ -337,7 +338,41 @@ final class ReleasePreflightInspector
             && ($policy['runtime_wiring_requires_separate_reviewed_cut'] ?? null) === true;
     }
 
+    private function releaseStateMachinePolicyIsPresent(): bool
+    {
+        $policy = config('release.release_state_machine');
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return enum_exists(ReleaseState::class)
+            && class_exists(ReleaseStateTransition::class)
+            && class_exists(ReleaseStateMachine::class)
+            && ($policy['foundation_version'] ?? null) === 1
+            && ($policy['canonical_states'] ?? null) === ReleaseState::values()
+            && ($policy['transitions'] ?? null) === ReleaseStateMachine::transitionMap()
+            && ($policy['transition_evidence'] ?? null) === ReleaseStateMachine::evidenceMap()
+            && ($policy['illegal_transitions_fail_closed'] ?? null) === true
+            && ($policy['state_progression_is_forward_only'] ?? null) === true
+            && ($policy['current_symlink_switch_does_not_commit_active_state'] ?? null) === true
+            && ($policy['active_requires_post_activation_readiness'] ?? null) === true
+            && ($policy['failed_ready_to_active_transition_keeps_candidate_ready'] ?? null) === true
+            && ($policy['previous_active_remains_active_until_replacement_active_confirmed'] ?? null)
+                === true
+            && ($policy['previous_active_becomes_superseded_only_after_replacement_active_confirmed'] ?? null)
+                === true
+            && ($policy['active_uniqueness_required'] ?? null) === true
+            && ($policy['retirement_requires_superseded_state'] ?? null) === true
+            && ($policy['automatic_database_rollback_is_outside_state_machine'] ?? null) === true
+            && ($policy['runtime_persistence_status'] ?? null)
+                === 'foundation_only_not_yet_wired'
+            && ($policy['runtime_persistence_requires_separate_reviewed_cut'] ?? null) === true
+            && ($policy['deploy_wiring_status'] ?? null) === 'foundation_only_not_yet_wired'
+            && ($policy['deploy_wiring_requires_separate_reviewed_cut'] ?? null) === true;
+    }
+
     private function productionEnvironmentGovernancePolicyIsPresent(): bool
+
     {
         $policy = config('release.deployment.environment_governance');
         if (! is_array($policy)) {

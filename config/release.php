@@ -186,7 +186,39 @@ return [
         'runtime_wiring_requires_separate_reviewed_cut' => true,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | P13.A Release State Machine V1
+    |--------------------------------------------------------------------------
+    |
+    | This foundation formalizes the release lifecycle as a typed, forward-only
+    | state graph with explicit transition evidence. Runtime persistence and
+    | deploy/workflow integration remain separate reviewed cuts.
+    |
+    */
+    'release_state_machine' => [
+        'foundation_version' => 1,
+        'canonical_states' => \App\Domain\Release\ReleaseState::values(),
+        'transitions' => \App\Domain\Release\ReleaseStateMachine::transitionMap(),
+        'transition_evidence' => \App\Domain\Release\ReleaseStateMachine::evidenceMap(),
+        'illegal_transitions_fail_closed' => true,
+        'state_progression_is_forward_only' => true,
+        'current_symlink_switch_does_not_commit_active_state' => true,
+        'active_requires_post_activation_readiness' => true,
+        'failed_ready_to_active_transition_keeps_candidate_ready' => true,
+        'previous_active_remains_active_until_replacement_active_confirmed' => true,
+        'previous_active_becomes_superseded_only_after_replacement_active_confirmed' => true,
+        'active_uniqueness_required' => true,
+        'retirement_requires_superseded_state' => true,
+        'automatic_database_rollback_is_outside_state_machine' => true,
+        'runtime_persistence_status' => 'foundation_only_not_yet_wired',
+        'runtime_persistence_requires_separate_reviewed_cut' => true,
+        'deploy_wiring_status' => 'foundation_only_not_yet_wired',
+        'deploy_wiring_requires_separate_reviewed_cut' => true,
+    ],
+
     'post_deploy_readiness' => [
+
         'route_name' => 'api.health.ready',
         'uri' => 'api/health/ready',
         'method' => 'GET',
