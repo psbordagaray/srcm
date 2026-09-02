@@ -15,7 +15,7 @@ use Tests\TestCase;
 
 final class NumericalRuntimeMoneyBoundaryAdapterFoundationTest extends TestCase
 {
-    public function test_policy_is_present_fail_closed_and_not_runtime_wired(): void
+    public function test_policy_is_present_fail_closed_and_wave_1_runtime_wired(): void
     {
         $policy = config(
             'release.numeric_integrity.money_boundary_adapter'
@@ -55,7 +55,7 @@ final class NumericalRuntimeMoneyBoundaryAdapterFoundationTest extends TestCase
             $policy['wave_1_target'],
         );
         $this->assertSame(
-            'foundation_only_not_yet_wired',
+            'wired_v1_wave_1_closed',
             $policy['runtime_wiring_status'],
         );
 
@@ -217,7 +217,7 @@ final class NumericalRuntimeMoneyBoundaryAdapterFoundationTest extends TestCase
         );
 
         $this->assertSame(
-            'not_in_foundation_cut',
+            'existing_minor_unit_authority_no_runtime_rewrite_required',
             $policy['purchase_money_rewrite_status'],
         );
         $this->assertSame(

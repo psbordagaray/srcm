@@ -540,11 +540,11 @@ final class ReleasePreflightInspector
             && ($policy['wave_1_target'] ?? null)
                 === 'server_side_authoritative_money_boundaries'
             && ($policy['runtime_wiring_status'] ?? null)
-                === 'foundation_only_not_yet_wired'
+                === 'wired_v1_wave_1_closed'
             && ($policy['runtime_wiring_requires_separate_reviewed_cut'] ?? null)
                 === true
             && ($policy['purchase_money_rewrite_status'] ?? null)
-                === 'not_in_foundation_cut'
+                === 'existing_minor_unit_authority_no_runtime_rewrite_required'
             && ($policy['commerce_checkout_rewrite_status'] ?? null)
                 === 'wired_v1_human_parsed_exact_scale_2'
             && ($policy['mercado_pago_rewrite_status'] ?? null)

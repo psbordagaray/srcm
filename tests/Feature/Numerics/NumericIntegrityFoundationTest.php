@@ -13,11 +13,19 @@ use Tests\TestCase;
 
 final class NumericIntegrityFoundationTest extends TestCase
 {
-    public function test_policy_is_versioned_fail_closed_and_not_runtime_wired(): void
+    public function test_policy_is_versioned_fail_closed_and_money_wave_1_closed(): void
     {
         $policy = config('release.numeric_integrity');
 
         $this->assertIsArray($policy);
+        $this->assertSame(
+            'wired_v1_wave_1_closed',
+            $policy['money_boundary_adapter']['runtime_wiring_status'],
+        );
+        $this->assertSame(
+            'existing_minor_unit_authority_no_runtime_rewrite_required',
+            $policy['money_boundary_adapter']['purchase_money_rewrite_status'],
+        );
         $this->assertSame(1, $policy['foundation_version']);
         $this->assertSame(NumericIntegrityContract::SCHEMA, $policy['schema']);
         $this->assertSame(NumericKind::values(), $policy['numeric_kind_values']);
