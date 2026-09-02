@@ -119,6 +119,73 @@ return [
     ],
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | P13.A Migration Contract V1
+    |--------------------------------------------------------------------------
+    |
+    | This foundation binds a release to an exact tracked migration catalog and
+    | explicit compatibility, risk, downtime, destructive-change, data-transform,
+    | backup and rollback declarations. Runtime sidecar construction, transfer and
+    | exact pending-set enforcement remain a separate reviewed integration cut.
+    |
+    */
+    'migration_contract' => [
+        'foundation_version' => 1,
+        'schema' => 'straleon.migration-contract.v1',
+        'sidecar_filename_pattern' => 'srcm-{release_sha}.migration-contract.json',
+        'required_fields' => [
+            'schema',
+            'release_sha',
+            'target_migration_catalog_sha256',
+            'target_migration_count',
+            'database_engine',
+            'compatibility',
+            'risk_class',
+            'maintenance_required',
+            'destructive_change',
+            'data_transform',
+            'verified_backup_required',
+            'restore_verification_required',
+            'previous_release_compatibility_after_migration',
+            'automatic_database_rollback_allowed',
+        ],
+        'catalog_fingerprint_basis' => 'ordered_tracked_migration_path_plus_git_blob_sha',
+        'database_engine' => 'sqlite',
+        'compatibility_values' => [
+            'NO_SCHEMA_CHANGE',
+            'BACKWARD_COMPATIBLE',
+            'MAINTENANCE_REQUIRED',
+            'BREAKING',
+        ],
+        'risk_values' => [
+            'NONE',
+            'LOW',
+            'MEDIUM',
+            'HIGH',
+            'CRITICAL',
+        ],
+        'previous_release_compatibility_values' => [
+            'COMPATIBLE',
+            'INCOMPATIBLE',
+            'UNKNOWN',
+        ],
+        'unknown_previous_release_compatibility_fails_closed' => true,
+        'verified_backup_required_for_database_mutation' => true,
+        'restore_verification_required_for_database_mutation' => true,
+        'automatic_database_rollback_allowed' => false,
+        'destructive_and_data_transform_declaration_required' => true,
+        'target_pending_set_exact_match_required_before_migrate' => true,
+        'release_bound_backup_evidence_required_for_database_mutation' => true,
+        'release_bound_restore_evidence_required_for_database_mutation' => true,
+        'contract_is_immutable' => true,
+        'contract_sha256_required' => true,
+        'release_sha_exact_match_required' => true,
+        'secrets_forbidden' => true,
+        'runtime_wiring_status' => 'foundation_only_not_yet_wired',
+        'runtime_wiring_requires_separate_reviewed_cut' => true,
+    ],
+
     'post_deploy_readiness' => [
         'route_name' => 'api.health.ready',
         'uri' => 'api/health/ready',

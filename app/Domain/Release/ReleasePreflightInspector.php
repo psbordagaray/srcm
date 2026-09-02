@@ -75,6 +75,7 @@ final class ReleasePreflightInspector
             ),
             'p13_release_manifest_policy_contract' => $this->releaseManifestPolicyIsPresent(),
             'p13_environment_identity_policy_contract' => $this->environmentIdentityPolicyIsPresent(),
+            'p13_migration_contract_policy_contract' => $this->migrationContractPolicyIsPresent(),
             'production_deploy_workflow' => $deployWorkflowBody !== '',
             'production_deploy_manual_only' => $this->deploymentWorkflowIsManualOnly($deployWorkflowBody),
             'production_deploy_protected_main_dispatch_identity' =>
@@ -280,6 +281,60 @@ final class ReleasePreflightInspector
             && ($policy['deployment_generation_must_be_monotonic'] ?? null) === true
             && ($policy['runtime_binding_status'] ?? null) === 'not_yet_provisioned'
             && ($policy['runtime_binding_requires_separate_reviewed_cut'] ?? null) === true;
+    }
+
+    private function migrationContractPolicyIsPresent(): bool
+    {
+        $policy = config('release.migration_contract');
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return class_exists(MigrationContract::class)
+            && class_exists(MigrationCatalog::class)
+            && enum_exists(MigrationCompatibility::class)
+            && enum_exists(MigrationRiskClass::class)
+            && ($policy['foundation_version'] ?? null) === 1
+            && ($policy['schema'] ?? null) === MigrationContract::SCHEMA
+            && ($policy['sidecar_filename_pattern'] ?? null)
+                === 'srcm-{release_sha}.migration-contract.json'
+            && ($policy['required_fields'] ?? null) === [
+                'schema',
+                'release_sha',
+                'target_migration_catalog_sha256',
+                'target_migration_count',
+                'database_engine',
+                'compatibility',
+                'risk_class',
+                'maintenance_required',
+                'destructive_change',
+                'data_transform',
+                'verified_backup_required',
+                'restore_verification_required',
+                'previous_release_compatibility_after_migration',
+                'automatic_database_rollback_allowed',
+            ]
+            && ($policy['catalog_fingerprint_basis'] ?? null)
+                === 'ordered_tracked_migration_path_plus_git_blob_sha'
+            && ($policy['database_engine'] ?? null) === MigrationContract::DATABASE_ENGINE_SQLITE
+            && ($policy['compatibility_values'] ?? null) === MigrationCompatibility::values()
+            && ($policy['risk_values'] ?? null) === MigrationRiskClass::values()
+            && ($policy['previous_release_compatibility_values'] ?? null)
+                === MigrationContract::previousReleaseCompatibilityValues()
+            && ($policy['unknown_previous_release_compatibility_fails_closed'] ?? null) === true
+            && ($policy['verified_backup_required_for_database_mutation'] ?? null) === true
+            && ($policy['restore_verification_required_for_database_mutation'] ?? null) === true
+            && ($policy['automatic_database_rollback_allowed'] ?? null) === false
+            && ($policy['destructive_and_data_transform_declaration_required'] ?? null) === true
+            && ($policy['target_pending_set_exact_match_required_before_migrate'] ?? null) === true
+            && ($policy['release_bound_backup_evidence_required_for_database_mutation'] ?? null) === true
+            && ($policy['release_bound_restore_evidence_required_for_database_mutation'] ?? null) === true
+            && ($policy['contract_is_immutable'] ?? null) === true
+            && ($policy['contract_sha256_required'] ?? null) === true
+            && ($policy['release_sha_exact_match_required'] ?? null) === true
+            && ($policy['secrets_forbidden'] ?? null) === true
+            && ($policy['runtime_wiring_status'] ?? null) === 'foundation_only_not_yet_wired'
+            && ($policy['runtime_wiring_requires_separate_reviewed_cut'] ?? null) === true;
     }
 
     private function productionEnvironmentGovernancePolicyIsPresent(): bool
