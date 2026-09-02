@@ -315,7 +315,7 @@ return [
             'runtime_wiring_requires_separate_reviewed_cut' => true,
             'purchase_money_rewrite_status' => 'not_in_foundation_cut',
             'commerce_checkout_rewrite_status' => 'not_in_foundation_cut',
-            'mercado_pago_rewrite_status' => 'not_in_foundation_cut',
+            'mercado_pago_rewrite_status' => 'wired_v1_machine_canonical_exact_scale_2',
             'service_cancellation_request_rewrite_status' => 'not_in_foundation_cut',
             'financial_statement_date_serial_float_status' => 'non_money_float_outside_wave_1',
             'database_schema_change_status' => 'not_in_foundation_cut',

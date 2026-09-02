@@ -548,7 +548,7 @@ final class ReleasePreflightInspector
             && ($policy['commerce_checkout_rewrite_status'] ?? null)
                 === 'not_in_foundation_cut'
             && ($policy['mercado_pago_rewrite_status'] ?? null)
-                === 'not_in_foundation_cut'
+                === 'wired_v1_machine_canonical_exact_scale_2'
             && ($policy['service_cancellation_request_rewrite_status'] ?? null)
                 === 'not_in_foundation_cut'
             && ($policy['financial_statement_date_serial_float_status'] ?? null)

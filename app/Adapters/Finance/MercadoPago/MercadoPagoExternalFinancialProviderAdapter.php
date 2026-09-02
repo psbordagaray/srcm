@@ -4,6 +4,9 @@ namespace App\Adapters\Finance\MercadoPago;
 
 use App\Contracts\Finance\ExternalFinancialProviderAdapter;
 use App\Domain\Finance\ExternalFinancialProviderObservation;
+use App\Domain\Numerics\AuthoritativeNumericInput;
+use App\Domain\Numerics\ExactDecimalLegacyAdapter;
+use App\Domain\Numerics\NumericKind;
 use App\Enums\FinancialMovementDirection;
 use App\Enums\FinancialMovementStatus;
 use DateTimeImmutable;
@@ -197,7 +200,30 @@ final class MercadoPagoExternalFinancialProviderAdapter implements ExternalFinan
             );
         }
 
-        $minor = (int) $minorText;
+        try {
+            $authoritative = AuthoritativeNumericInput::machineCanonical(
+                $text,
+                NumericKind::Money,
+                2,
+            );
+        } catch (\InvalidArgumentException $exception) {
+            throw new DomainException(
+                'Mercado Pago '.$field.' no tiene formato decimal seguro.',
+                previous: $exception,
+            );
+        }
+
+        try {
+            $minor = ExactDecimalLegacyAdapter::toMinorUnit(
+                $authoritative->canonical,
+                2,
+            );
+        } catch (\InvalidArgumentException $exception) {
+            throw new DomainException(
+                'Mercado Pago '.$field.' excede el entero admitido por la plataforma.',
+                previous: $exception,
+            );
+        }
 
         if ((string) $minor !== $minorText && $minor !== 0) {
             throw new DomainException(
