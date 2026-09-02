@@ -550,7 +550,7 @@ final class ReleasePreflightInspector
             && ($policy['mercado_pago_rewrite_status'] ?? null)
                 === 'wired_v1_machine_canonical_exact_scale_2'
             && ($policy['service_cancellation_request_rewrite_status'] ?? null)
-                === 'not_in_foundation_cut'
+                === 'wired_v1_human_parsed_exact_scale_2'
             && ($policy['financial_statement_date_serial_float_status'] ?? null)
                 === 'non_money_float_outside_wave_1'
             && ($policy['database_schema_change_status'] ?? null)

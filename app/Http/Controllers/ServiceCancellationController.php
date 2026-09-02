@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Numerics\ExactDecimalLegacyAdapter;
 use App\Domain\Service\ServiceCancellationManager;
 use App\Domain\Service\ServiceCancellationRequestData;
 use App\Domain\Service\ServiceCancellationResolutionData;
@@ -21,14 +22,11 @@ use App\Models\ServiceCancellationRequest;
 use App\Models\ServiceCancellationResolution;
 use App\Models\ServiceOrder;
 use App\Models\ServiceWorkItem;
-use Brick\Math\BigDecimal;
-use Brick\Math\RoundingMode;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
-use Throwable;
 
 class ServiceCancellationController extends Controller
 {
@@ -208,6 +206,7 @@ class ServiceCancellationController extends Controller
             $currentOrganization
         );
         $validated = $request->validated();
+        $customerCharge = $request->customerChargeAuthoritativeInput();
 
         try {
             $manager->resolve(
@@ -223,10 +222,11 @@ class ServiceCancellationController extends Controller
                     accessoriesSnapshot: $validated['accessories_snapshot'],
                     idempotencyKey: $validated['idempotency_key'],
                     currencyCode: $validated['currency_code'],
-                    customerChargeMinor: filled(
-                        $validated['customer_charge'] ?? null
-                    )
-                        ? $this->minorAmount($validated['customer_charge'])
+                    customerChargeMinor: $customerCharge !== null
+                        ? ExactDecimalLegacyAdapter::toMinorUnit(
+                            $customerCharge->canonical,
+                            2,
+                        )
                         : 0,
                     customerAcceptanceReference: $validated['customer_acceptance_reference'] ?? null,
                     notes: $validated['notes'] ?? null
@@ -389,18 +389,4 @@ class ServiceCancellationController extends Controller
         ]);
     }
 
-    private function minorAmount(string $value): int
-    {
-        try {
-            return (int) (string) BigDecimal::of($value)
-                ->multipliedBy(100)
-                ->toScale(0, RoundingMode::Unnecessary)
-                ->toBigInteger();
-        } catch (Throwable $exception) {
-            throw new DomainException(
-                'El cargo contiene una fracción menor a un centavo.',
-                previous: $exception
-            );
-        }
-    }
 }

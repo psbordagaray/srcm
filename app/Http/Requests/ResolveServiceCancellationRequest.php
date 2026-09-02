@@ -2,15 +2,21 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Numerics\AuthoritativeNumericInput;
+use App\Domain\Numerics\HumanNumericInput;
+use App\Domain\Numerics\NumericKind;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\ServiceCancellationFinancialOutcome;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use InvalidArgumentException;
 
 class ResolveServiceCancellationRequest extends FormRequest
 {
+    private ?string $customerChargeRawInput = null;
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -30,6 +36,9 @@ class ResolveServiceCancellationRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $charge = trim((string) $this->input('customer_charge'));
+        $this->customerChargeRawInput = $charge === ''
+            ? null
+            : $charge;
 
         $this->merge([
             'financial_outcome' => Str::lower(trim(
@@ -104,9 +113,24 @@ class ResolveServiceCancellationRequest extends FormRequest
             $isCharge = $this->input('financial_outcome')
                 === ServiceCancellationFinancialOutcome::CustomerCharge->value;
             $charge = $this->input('customer_charge');
-            $positiveCharge = is_string($charge)
+            $positiveCharge = false;
+
+            if (
+                is_string($charge)
                 && preg_match('/^\d{1,12}(?:\.\d{1,2})?$/', $charge) === 1
-                && (float) $charge > 0;
+            ) {
+                try {
+                    $authoritative = $this->customerChargeAuthoritativeInput();
+                    $positiveCharge = $authoritative !== null
+                        && ! $authoritative->canonical->isZero()
+                        && ! $authoritative->canonical->isNegative();
+                } catch (InvalidArgumentException) {
+                    $validator->errors()->add(
+                        'customer_charge',
+                        'El cargo no tiene un formato numérico canónico válido.'
+                    );
+                }
+            }
 
             if ($isCharge && ! $positiveCharge) {
                 $validator->errors()->add(
@@ -129,6 +153,32 @@ class ResolveServiceCancellationRequest extends FormRequest
                 );
             }
         }];
+    }
+
+    public function customerChargeAuthoritativeInput(): ?AuthoritativeNumericInput
+    {
+        if ($this->customerChargeRawInput === null) {
+            return null;
+        }
+
+        $raw = $this->customerChargeRawInput;
+        $separator = str_contains($raw, ',')
+            ? HumanNumericInput::SEPARATOR_COMMA
+            : (
+                str_contains($raw, '.')
+                    ? HumanNumericInput::SEPARATOR_DOT
+                    : HumanNumericInput::SEPARATOR_NONE
+            );
+
+        return AuthoritativeNumericInput::humanParsed(
+            HumanNumericInput::parse(
+                raw: $raw,
+                kind: NumericKind::Money,
+                decimalSeparator: $separator,
+                maxScale: 2,
+            ),
+            2,
+        );
     }
 
     private function optional(string $value): ?string
