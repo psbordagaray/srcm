@@ -79,6 +79,7 @@ final class ReleasePreflightInspector
             'p13_release_state_machine_policy_contract' => $this->releaseStateMachinePolicyIsPresent(),
             'p13_capability_authorization_policy_contract' => $this->capabilityAuthorizationPolicyIsPresent(),
             'p13_numeric_integrity_policy_contract' => $this->numericIntegrityPolicyIsPresent(),
+            'p13_numeric_money_boundary_adapter_policy_contract' => $this->numericMoneyBoundaryAdapterPolicyIsPresent(),
             'production_deploy_workflow' => $deployWorkflowBody !== '',
             'production_deploy_manual_only' => $this->deploymentWorkflowIsManualOnly($deployWorkflowBody),
             'production_deploy_protected_main_dispatch_identity' =>
@@ -494,6 +495,72 @@ final class ReleasePreflightInspector
                 === 'not_in_foundation_cut'
             && ($policy['runtime_integration_requires_separate_reviewed_cuts'] ?? null)
                 === true;
+    }
+
+    private function numericMoneyBoundaryAdapterPolicyIsPresent(): bool
+    {
+        $policy = config(
+            'release.numeric_integrity.money_boundary_adapter'
+        );
+
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return class_exists(
+            \App\Domain\Numerics\ExactDecimalLegacyAdapter::class
+        )
+            && class_exists(
+                \App\Domain\Numerics\NumericRoundingBoundary::class
+            )
+            && class_exists(
+                \App\Domain\Numerics\AuthoritativeNumericInput::class
+            )
+            && ($policy['foundation_version'] ?? null) === 1
+            && ($policy['legacy_adapter_class'] ?? null)
+                === \App\Domain\Numerics\ExactDecimalLegacyAdapter::class
+            && ($policy['rounding_boundary_class'] ?? null)
+                === \App\Domain\Numerics\NumericRoundingBoundary::class
+            && ($policy['authoritative_input_class'] ?? null)
+                === \App\Domain\Numerics\AuthoritativeNumericInput::class
+            && ($policy['legacy_minor_unit_scale_must_be_explicit'] ?? null)
+                === true
+            && ($policy['legacy_minor_unit_automatic_rewrite_allowed'] ?? null)
+                === false
+            && ($policy['machine_canonical_binary_float_allowed'] ?? null)
+                === false
+            && ($policy['human_input_must_be_preparsed_by_human_numeric_input'] ?? null)
+                === true
+            && ($policy['rounding_boundary_must_be_explicit'] ?? null)
+                === true
+            && ($policy['rounding_scale_must_be_explicit'] ?? null)
+                === true
+            && array_key_exists('money_scale_global_default', $policy)
+            && $policy['money_scale_global_default'] === null
+            && ($policy['wave_1_target'] ?? null)
+                === 'server_side_authoritative_money_boundaries'
+            && ($policy['runtime_wiring_status'] ?? null)
+                === 'foundation_only_not_yet_wired'
+            && ($policy['runtime_wiring_requires_separate_reviewed_cut'] ?? null)
+                === true
+            && ($policy['purchase_money_rewrite_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['commerce_checkout_rewrite_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['mercado_pago_rewrite_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['service_cancellation_request_rewrite_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['financial_statement_date_serial_float_status'] ?? null)
+                === 'non_money_float_outside_wave_1'
+            && ($policy['database_schema_change_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['frontend_rewiring_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['import_rewiring_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['capability_runtime_wiring_status'] ?? null)
+                === 'not_in_foundation_cut';
     }
 
     private function productionEnvironmentGovernancePolicyIsPresent(): bool
