@@ -11,6 +11,8 @@ use App\Domain\Commerce\CommercePaymentData;
 use App\Domain\Commerce\CommerceProductLineData;
 use App\Domain\Commerce\CustomerCreditBalanceReader;
 use App\Domain\Commerce\CustomerCreditExposureReader;
+use App\Domain\Numerics\AuthoritativeNumericInput;
+use App\Domain\Numerics\ExactDecimalLegacyAdapter;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\CommercePaymentMethod;
 use App\Enums\InventoryCondition;
@@ -21,8 +23,6 @@ use App\Models\CommerceSale;
 use App\Models\FinancialAccount;
 use App\Models\InventoryLocation;
 use App\Models\ServiceOrder;
-use Brick\Math\BigDecimal;
-use Brick\Math\RoundingMode;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Database\Eloquent\Builder;
@@ -401,12 +401,17 @@ class CommerceSaleController extends Controller
                         $validated['payments'] ?? []
                     )
                         ->map(
-                            fn (array $payment): CommercePaymentData => new CommercePaymentData(
+                            fn (
+                                array $payment,
+                                int $index
+                            ): CommercePaymentData => new CommercePaymentData(
                                 method: CommercePaymentMethod::from(
                                     $payment['method']
                                 ),
-                                amountMinor: $this->moneyMinor(
-                                    $payment['amount']
+                                amountMinor: $this->requiredMoneyMinor(
+                                    $request->paymentAmountAuthoritativeInput(
+                                        $index
+                                    )
                                 ),
                                 reference: $payment['reference'] ?? null,
                                 notes: $payment['notes'] ?? null,
@@ -436,24 +441,21 @@ class CommerceSaleController extends Controller
                                             'financial_account_id'
                                         ]
                                         : null,
-                                tenderedAmountMinor: filled(
-                                    $payment['tendered_amount'] ?? null
-                                )
-                                    ? $this->moneyMinor(
-                                        $payment['tendered_amount']
+                                tenderedAmountMinor:
+                                    $this->optionalMoneyMinor(
+                                        $request
+                                            ->paymentTenderedAmountAuthoritativeInput(
+                                                $index
+                                            )
                                     )
-                                    : null
                             )
                         )
                         ->values()
                         ->all(),
-                    receivableAmountMinor: filled(
-                        $validated['receivable_amount'] ?? null
-                    )
-                        ? $this->moneyMinor(
-                            $validated['receivable_amount']
-                        )
-                        : null,
+                    receivableAmountMinor:
+                        $this->optionalMoneyMinor(
+                            $request->receivableAmountAuthoritativeInput()
+                        ),
                     receivableDueOn: filled(
                         $validated['receivable_due_on'] ?? null
                     )
@@ -556,13 +558,29 @@ class CommerceSaleController extends Controller
         ]);
     }
 
-    private function moneyMinor(string $value): int
-    {
-        return (int) (string) BigDecimal::of(
-            str_replace(',', '.', trim($value))
-        )
-            ->multipliedBy(100)
-            ->toScale(0, RoundingMode::Unnecessary)
-            ->toBigInteger();
+    private function requiredMoneyMinor(
+        ?AuthoritativeNumericInput $input
+    ): int {
+        if ($input === null) {
+            throw new DomainException(
+                'El importe monetario validado no está disponible.'
+            );
+        }
+
+        return ExactDecimalLegacyAdapter::toMinorUnit(
+            $input->canonical,
+            2,
+        );
+    }
+
+    private function optionalMoneyMinor(
+        ?AuthoritativeNumericInput $input
+    ): ?int {
+        return $input === null
+            ? null
+            : ExactDecimalLegacyAdapter::toMinorUnit(
+                $input->canonical,
+                2,
+            );
     }
 }

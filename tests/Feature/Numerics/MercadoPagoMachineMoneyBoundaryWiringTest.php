@@ -25,7 +25,7 @@ final class MercadoPagoMachineMoneyBoundaryWiringTest extends TestCase
             $policy['purchase_money_rewrite_status'],
         );
         $this->assertSame(
-            'not_in_foundation_cut',
+            'wired_v1_human_parsed_exact_scale_2',
             $policy['commerce_checkout_rewrite_status'],
         );
         $this->assertSame(

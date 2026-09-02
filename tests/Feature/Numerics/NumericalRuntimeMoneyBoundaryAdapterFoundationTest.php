@@ -210,7 +210,7 @@ final class NumericalRuntimeMoneyBoundaryAdapterFoundationTest extends TestCase
         );
     }
 
-    public function test_incremental_runtime_targets_report_mercado_pago_and_service_cancellation_wired_v1(): void
+    public function test_incremental_runtime_targets_report_all_wave_1_money_boundaries_wired_v1(): void
     {
         $policy = config(
             'release.numeric_integrity.money_boundary_adapter'
@@ -221,7 +221,7 @@ final class NumericalRuntimeMoneyBoundaryAdapterFoundationTest extends TestCase
             $policy['purchase_money_rewrite_status'],
         );
         $this->assertSame(
-            'not_in_foundation_cut',
+            'wired_v1_human_parsed_exact_scale_2',
             $policy['commerce_checkout_rewrite_status'],
         );
         $this->assertSame(

@@ -2,6 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Numerics\AuthoritativeNumericInput;
+use App\Domain\Numerics\ExactDecimalLegacyAdapter;
+use App\Domain\Numerics\HumanNumericInput;
+use App\Domain\Numerics\NumericKind;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\CommercePaymentMethod;
 use App\Enums\InventoryCondition;
@@ -10,9 +14,28 @@ use App\Models\ServiceOrder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
+use InvalidArgumentException;
 
 class StoreCommerceSaleRequest extends FormRequest
 {
+    /** @var array<int, string|null> */
+    private array $paymentAmountRawInputs = [];
+
+    /** @var array<int, string|null> */
+    private array $paymentTenderedAmountRawInputs = [];
+
+    private ?string $receivableAmountRawInput = null;
+
+    /** @var array<int, AuthoritativeNumericInput|null> */
+    private array $paymentAmountAuthoritativeInputs = [];
+
+    /** @var array<int, AuthoritativeNumericInput|null> */
+    private array $paymentTenderedAmountAuthoritativeInputs = [];
+
+    private bool $receivableAmountAuthoritativeResolved = false;
+
+    private ?AuthoritativeNumericInput $receivableAmountAuthoritativeInput = null;
+
     public function authorize(): bool
     {
         return $this->user()?->can('record-commerce-sales')
@@ -21,6 +44,14 @@ class StoreCommerceSaleRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $this->paymentAmountRawInputs = [];
+        $this->paymentTenderedAmountRawInputs = [];
+        $this->receivableAmountRawInput = null;
+        $this->paymentAmountAuthoritativeInputs = [];
+        $this->paymentTenderedAmountAuthoritativeInputs = [];
+        $this->receivableAmountAuthoritativeResolved = false;
+        $this->receivableAmountAuthoritativeInput = null;
+
         $productLines = collect(
             (array) $this->input('product_lines', [])
         )
@@ -77,11 +108,15 @@ class StoreCommerceSaleRequest extends FormRequest
                     (string) ($payment['method'] ?? '')
                 )),
                 'amount' => $this->money(
-                    (string) ($payment['amount'] ?? '')
+                    $this->capturePaymentAmountRaw(
+                        (string) ($payment['amount'] ?? '')
+                    )
                 ),
                 'tendered_amount' => $this->optional(
                     $this->money(
-                        (string) ($payment['tendered_amount'] ?? '')
+                        $this->capturePaymentTenderedAmountRaw(
+                            (string) ($payment['tendered_amount'] ?? '')
+                        )
                     )
                 ),
                 'reference' => $this->optional(
@@ -165,9 +200,11 @@ class StoreCommerceSaleRequest extends FormRequest
             ),
             'receivable_amount' => $this->optional(
                 $this->money(
-                    (string) $this->input(
-                        'receivable_amount',
-                        ''
+                    $this->captureReceivableAmountRaw(
+                        (string) $this->input(
+                            'receivable_amount',
+                            ''
+                        )
                     )
                 )
             ),
@@ -406,8 +443,11 @@ class StoreCommerceSaleRequest extends FormRequest
                 );
             }
 
-            $receivableAmount = $this->moneyMinorValue(
-                $this->input('receivable_amount')
+            $receivableAmount = $this->validatedMoneyMinor(
+                $validator,
+                'receivable_amount',
+                fn (): ?AuthoritativeNumericInput =>
+                    $this->receivableAmountAuthoritativeInput()
             );
             $receivableDueOn = $this->input(
                 'receivable_due_on'
@@ -547,6 +587,20 @@ class StoreCommerceSaleRequest extends FormRequest
                 );
 
                 $tendered = $payment['tendered_amount'] ?? null;
+                $appliedMinor = $this->validatedMoneyMinor(
+                    $validator,
+                    "payments.{$index}.amount",
+                    fn (): ?AuthoritativeNumericInput =>
+                        $this->paymentAmountAuthoritativeInput((int) $index)
+                );
+                $tenderedMinor = $this->validatedMoneyMinor(
+                    $validator,
+                    "payments.{$index}.tendered_amount",
+                    fn (): ?AuthoritativeNumericInput =>
+                        $this->paymentTenderedAmountAuthoritativeInput(
+                            (int) $index
+                        )
+                );
 
                 if (
                     $method
@@ -647,13 +701,6 @@ class StoreCommerceSaleRequest extends FormRequest
 
                 if ($method === CommercePaymentMethod::Cash) {
                     if (filled($tendered)) {
-                        $appliedMinor = $this->moneyMinorValue(
-                            $payment['amount'] ?? null
-                        );
-                        $tenderedMinor = $this->moneyMinorValue(
-                            $tendered
-                        );
-
                         if (
                             $appliedMinor !== null
                             && $tenderedMinor !== null
@@ -756,26 +803,149 @@ class StoreCommerceSaleRequest extends FormRequest
         return $value === '' ? null : $value;
     }
 
-    private function moneyMinorValue(mixed $value): ?int
-    {
-        if (! is_string($value) && ! is_numeric($value)) {
-            return null;
+    public function paymentAmountAuthoritativeInput(
+        int $index
+    ): ?AuthoritativeNumericInput {
+        if (array_key_exists(
+            $index,
+            $this->paymentAmountAuthoritativeInputs
+        )) {
+            return $this->paymentAmountAuthoritativeInputs[$index];
         }
 
-        $normalized = str_replace(',', '.', trim((string) $value));
-
-        if (preg_match('/^\d{1,14}(?:\.\d{1,2})?$/D', $normalized) !== 1) {
-            return null;
-        }
-
-        [$whole, $decimal] = array_pad(
-            explode('.', $normalized, 2),
-            2,
-            ''
+        $resolved = $this->authoritativeMoney(
+            $this->paymentAmountRawInputs[$index] ?? null
         );
-        $decimal = str_pad($decimal, 2, '0');
+        $this->paymentAmountAuthoritativeInputs[$index] = $resolved;
 
-        return ((int) $whole * 100) + (int) $decimal;
+        return $resolved;
+    }
+
+    public function paymentTenderedAmountAuthoritativeInput(
+        int $index
+    ): ?AuthoritativeNumericInput {
+        if (array_key_exists(
+            $index,
+            $this->paymentTenderedAmountAuthoritativeInputs
+        )) {
+            return $this->paymentTenderedAmountAuthoritativeInputs[$index];
+        }
+
+        $resolved = $this->authoritativeMoney(
+            $this->paymentTenderedAmountRawInputs[$index] ?? null
+        );
+        $this->paymentTenderedAmountAuthoritativeInputs[$index] = $resolved;
+
+        return $resolved;
+    }
+
+    public function receivableAmountAuthoritativeInput():
+        ?AuthoritativeNumericInput
+    {
+        if ($this->receivableAmountAuthoritativeResolved) {
+            return $this->receivableAmountAuthoritativeInput;
+        }
+
+        $resolved = $this->authoritativeMoney(
+            $this->receivableAmountRawInput
+        );
+        $this->receivableAmountAuthoritativeInput = $resolved;
+        $this->receivableAmountAuthoritativeResolved = true;
+
+        return $resolved;
+    }
+
+    private function capturePaymentAmountRaw(string $value): string
+    {
+        $raw = trim($value);
+        $this->paymentAmountRawInputs[] = $raw === '' ? null : $raw;
+
+        return $value;
+    }
+
+    private function capturePaymentTenderedAmountRaw(
+        string $value
+    ): string {
+        $raw = trim($value);
+        $this->paymentTenderedAmountRawInputs[] =
+            $raw === '' ? null : $raw;
+
+        return $value;
+    }
+
+    private function captureReceivableAmountRaw(string $value): string
+    {
+        $raw = trim($value);
+        $this->receivableAmountRawInput = $raw === '' ? null : $raw;
+
+        return $value;
+    }
+
+    private function authoritativeMoney(
+        ?string $raw
+    ): ?AuthoritativeNumericInput {
+        if ($raw === null) {
+            return null;
+        }
+
+        $separator = str_contains($raw, ',')
+            ? HumanNumericInput::SEPARATOR_COMMA
+            : (
+                str_contains($raw, '.')
+                    ? HumanNumericInput::SEPARATOR_DOT
+                    : HumanNumericInput::SEPARATOR_NONE
+            );
+
+        return AuthoritativeNumericInput::humanParsed(
+            HumanNumericInput::parse(
+                raw: $raw,
+                kind: NumericKind::Money,
+                decimalSeparator: $separator,
+                maxScale: 2,
+            ),
+            2,
+        );
+    }
+
+    /**
+     * @param callable(): ?AuthoritativeNumericInput $resolver
+     */
+    private function validatedMoneyMinor(
+        Validator $validator,
+        string $attribute,
+        callable $resolver,
+    ): ?int {
+        try {
+            $authoritative = $resolver();
+        } catch (InvalidArgumentException) {
+            $validator->errors()->add(
+                $attribute,
+                'El importe debe usar una representación decimal canónica y no ambigua.'
+            );
+
+            return null;
+        }
+
+        if ($authoritative === null) {
+            return null;
+        }
+
+        if (
+            $authoritative->canonical->isZero()
+            || $authoritative->canonical->isNegative()
+        ) {
+            $validator->errors()->add(
+                $attribute,
+                'El importe debe ser positivo.'
+            );
+
+            return null;
+        }
+
+        return ExactDecimalLegacyAdapter::toMinorUnit(
+            $authoritative->canonical,
+            2,
+        );
     }
 
     private function money(string $value): string

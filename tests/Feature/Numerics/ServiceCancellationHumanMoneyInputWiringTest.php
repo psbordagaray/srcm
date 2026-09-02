@@ -12,7 +12,7 @@ use Tests\TestCase;
 
 final class ServiceCancellationHumanMoneyInputWiringTest extends TestCase
 {
-    public function test_policy_and_preflight_report_service_cancellation_human_money_wired_v1(): void
+    public function test_policy_and_preflight_report_human_money_boundaries_wired_v1(): void
     {
         $policy = config(
             'release.numeric_integrity.money_boundary_adapter'
@@ -28,7 +28,7 @@ final class ServiceCancellationHumanMoneyInputWiringTest extends TestCase
             $policy['service_cancellation_request_rewrite_status'],
         );
         $this->assertSame(
-            'not_in_foundation_cut',
+            'wired_v1_human_parsed_exact_scale_2',
             $policy['commerce_checkout_rewrite_status'],
         );
 
