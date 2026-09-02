@@ -507,6 +507,46 @@ final class ReleasePreflightInspector
                 === 'foundation_only_not_yet_wired'
             && ($policy['check_digit']['runtime_wiring_requires_separate_reviewed_cut'] ?? null)
                 === true
+            && isset($policy['discrepancy_framework'])
+            && is_array($policy['discrepancy_framework'])
+            && enum_exists(\App\Domain\Numerics\NumericalDiscrepancyKind::class)
+            && enum_exists(\App\Domain\Numerics\NumericalDiscrepancyConfidence::class)
+            && class_exists(\App\Domain\Numerics\NumericalDiscrepancySignal::class)
+            && interface_exists(\App\Domain\Numerics\NumericalDiscrepancyClassifier::class)
+            && class_exists(\App\Domain\Numerics\NumericalDiscrepancyAnalyzer::class)
+            && class_exists(\App\Domain\Numerics\ModuloNineTranspositionSignalClassifier::class)
+            && ($policy['discrepancy_framework']['foundation_version'] ?? null) === 1
+            && ($policy['discrepancy_framework']['signal_schema'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancySignal::SCHEMA
+            && ($policy['discrepancy_framework']['kind_values'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyKind::values()
+            && ($policy['discrepancy_framework']['confidence_values'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyConfidence::values()
+            && ($policy['discrepancy_framework']['classifier_interface'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyClassifier::class
+            && ($policy['discrepancy_framework']['analyzer_class'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyAnalyzer::class
+            && ($policy['discrepancy_framework']['foundation_classifier_classes'] ?? null)
+                === [\App\Domain\Numerics\ModuloNineTranspositionSignalClassifier::class]
+            && ($policy['discrepancy_framework']['transposition_modulo_nine_is_signal_only'] ?? null) === true
+            && ($policy['discrepancy_framework']['transposition_modulo_nine_is_proof'] ?? null) === false
+            && ($policy['discrepancy_framework']['silent_autocorrection_allowed'] ?? null) === false
+            && ($policy['discrepancy_framework']['classifier_signal_is_not_correction'] ?? null) === true
+            && ($policy['discrepancy_framework']['deterministic_rules_are_authoritative'] ?? null) === true
+            && ($policy['discrepancy_framework']['ai_decision_authority_allowed'] ?? null) === false
+            && ($policy['discrepancy_framework']['ai_explanation_may_summarize_deterministic_evidence'] ?? null) === true
+            && ($policy['discrepancy_framework']['warning_audit_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['decision_audit_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['original_value_audit_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['final_value_audit_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['transposition_by_omission_special_case_status'] ?? null)
+                === 'undefined_no_implementation_exact_spec_required'
+            && ($policy['discrepancy_framework']['transposition_by_omission_implementation_allowed'] ?? null) === false
+            && ($policy['discrepancy_framework']['classifier_pack_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['discrepancy_framework']['runtime_wiring_status'] ?? null)
+                === 'foundation_only_not_yet_wired'
+            && ($policy['discrepancy_framework']['runtime_wiring_requires_separate_reviewed_cut'] ?? null) === true
             && ($policy['runtime_calculation_refactor_status'] ?? null)
                 === 'not_in_foundation_cut'
             && ($policy['model_cast_rewiring_status'] ?? null)
