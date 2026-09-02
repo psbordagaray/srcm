@@ -217,6 +217,51 @@ return [
         'deploy_wiring_requires_separate_reviewed_cut' => true,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | P13.A Capability Authorization Contract V1
+    |--------------------------------------------------------------------------
+    |
+    | Canonical capability authorization is explicit, scope-bound and fail-closed.
+    | Application roles, Laravel Gates and production environment review remain
+    | authority inputs/adapters; runtime rewiring is a separate reviewed cut.
+    |
+    */
+    'capability_authorization' => [
+        'foundation_version' => 1,
+        'schema' => \App\Domain\Authorization\CapabilityAuthorizationContract::SCHEMA,
+        'required_fields' => \App\Domain\Authorization\CapabilityAuthorizationContract::REQUIRED_FIELDS,
+        'capability_identifier_model' => 'namespaced_immutable_value_object',
+        'capability_identifier_pattern' => \App\Domain\Authorization\Capability::PATTERN,
+        'wildcard_capabilities_allowed' => false,
+        'unknown_or_invalid_capability_fails_closed' => true,
+        'scope_values' => \App\Domain\Authorization\CapabilityScope::values(),
+        'scope_must_be_explicit' => true,
+        'principal_values' => \App\Domain\Authorization\CapabilityPrincipal::values(),
+        'anonymous_principal_allowed' => false,
+        'principal_id_required' => true,
+        'principal_secret_material_allowed' => false,
+        'decision_values' => \App\Domain\Authorization\CapabilityDecision::values(),
+        'default_or_missing_decision' => \App\Domain\Authorization\CapabilityDecision::Deny->value,
+        'allow_requires_authorization_source' => true,
+        'allow_requires_evidence_ref' => true,
+        'contract_is_immutable' => true,
+        'contract_sha256_required' => true,
+        'application_user_role_is_authorization_input_not_capability_id' => true,
+        'laravel_gate_is_runtime_adapter_not_contract' => true,
+        'production_environment_review_is_external_authority_not_application_role' => true,
+        'application_admin_role_alone_can_authorize_production' => false,
+        'authentication_and_authorization_are_separate' => true,
+        'global_admin_bypass_allowed' => false,
+        'provider_device_capabilities_are_not_principal_authorization' => true,
+        'runtime_wiring_status' => 'foundation_only_not_yet_wired',
+        'runtime_wiring_requires_separate_reviewed_cut' => true,
+        'user_role_refactor_status' => 'not_in_foundation_cut',
+        'laravel_gate_rewiring_status' => 'not_in_foundation_cut',
+        'production_workflow_wiring_status' => 'not_in_foundation_cut',
+        'deploy_script_wiring_status' => 'not_in_foundation_cut',
+    ],
+
     'post_deploy_readiness' => [
 
         'route_name' => 'api.health.ready',

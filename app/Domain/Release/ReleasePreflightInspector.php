@@ -77,6 +77,7 @@ final class ReleasePreflightInspector
             'p13_environment_identity_policy_contract' => $this->environmentIdentityPolicyIsPresent(),
             'p13_migration_contract_policy_contract' => $this->migrationContractPolicyIsPresent(),
             'p13_release_state_machine_policy_contract' => $this->releaseStateMachinePolicyIsPresent(),
+            'p13_capability_authorization_policy_contract' => $this->capabilityAuthorizationPolicyIsPresent(),
             'production_deploy_workflow' => $deployWorkflowBody !== '',
             'production_deploy_manual_only' => $this->deploymentWorkflowIsManualOnly($deployWorkflowBody),
             'production_deploy_protected_main_dispatch_identity' =>
@@ -369,6 +370,65 @@ final class ReleasePreflightInspector
             && ($policy['runtime_persistence_requires_separate_reviewed_cut'] ?? null) === true
             && ($policy['deploy_wiring_status'] ?? null) === 'foundation_only_not_yet_wired'
             && ($policy['deploy_wiring_requires_separate_reviewed_cut'] ?? null) === true;
+    }
+
+    private function capabilityAuthorizationPolicyIsPresent(): bool
+    {
+        $policy = config('release.capability_authorization');
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return class_exists(\App\Domain\Authorization\Capability::class)
+            && enum_exists(\App\Domain\Authorization\CapabilityScope::class)
+            && enum_exists(\App\Domain\Authorization\CapabilityPrincipal::class)
+            && enum_exists(\App\Domain\Authorization\CapabilityDecision::class)
+            && class_exists(\App\Domain\Authorization\CapabilityAuthorizationContract::class)
+            && ($policy['foundation_version'] ?? null) === 1
+            && ($policy['schema'] ?? null)
+                === \App\Domain\Authorization\CapabilityAuthorizationContract::SCHEMA
+            && ($policy['required_fields'] ?? null)
+                === \App\Domain\Authorization\CapabilityAuthorizationContract::REQUIRED_FIELDS
+            && ($policy['capability_identifier_model'] ?? null)
+                === 'namespaced_immutable_value_object'
+            && ($policy['capability_identifier_pattern'] ?? null)
+                === \App\Domain\Authorization\Capability::PATTERN
+            && ($policy['wildcard_capabilities_allowed'] ?? null) === false
+            && ($policy['unknown_or_invalid_capability_fails_closed'] ?? null) === true
+            && ($policy['scope_values'] ?? null)
+                === \App\Domain\Authorization\CapabilityScope::values()
+            && ($policy['scope_must_be_explicit'] ?? null) === true
+            && ($policy['principal_values'] ?? null)
+                === \App\Domain\Authorization\CapabilityPrincipal::values()
+            && ($policy['anonymous_principal_allowed'] ?? null) === false
+            && ($policy['principal_id_required'] ?? null) === true
+            && ($policy['principal_secret_material_allowed'] ?? null) === false
+            && ($policy['decision_values'] ?? null)
+                === \App\Domain\Authorization\CapabilityDecision::values()
+            && ($policy['default_or_missing_decision'] ?? null)
+                === \App\Domain\Authorization\CapabilityDecision::Deny->value
+            && ($policy['allow_requires_authorization_source'] ?? null) === true
+            && ($policy['allow_requires_evidence_ref'] ?? null) === true
+            && ($policy['contract_is_immutable'] ?? null) === true
+            && ($policy['contract_sha256_required'] ?? null) === true
+            && ($policy['application_user_role_is_authorization_input_not_capability_id'] ?? null)
+                === true
+            && ($policy['laravel_gate_is_runtime_adapter_not_contract'] ?? null) === true
+            && ($policy['production_environment_review_is_external_authority_not_application_role'] ?? null)
+                === true
+            && ($policy['application_admin_role_alone_can_authorize_production'] ?? null)
+                === false
+            && ($policy['authentication_and_authorization_are_separate'] ?? null) === true
+            && ($policy['global_admin_bypass_allowed'] ?? null) === false
+            && ($policy['provider_device_capabilities_are_not_principal_authorization'] ?? null)
+                === true
+            && ($policy['runtime_wiring_status'] ?? null)
+                === 'foundation_only_not_yet_wired'
+            && ($policy['runtime_wiring_requires_separate_reviewed_cut'] ?? null) === true
+            && ($policy['user_role_refactor_status'] ?? null) === 'not_in_foundation_cut'
+            && ($policy['laravel_gate_rewiring_status'] ?? null) === 'not_in_foundation_cut'
+            && ($policy['production_workflow_wiring_status'] ?? null) === 'not_in_foundation_cut'
+            && ($policy['deploy_script_wiring_status'] ?? null) === 'not_in_foundation_cut';
     }
 
     private function productionEnvironmentGovernancePolicyIsPresent(): bool
