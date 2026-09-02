@@ -78,6 +78,7 @@ final class ReleasePreflightInspector
             'p13_migration_contract_policy_contract' => $this->migrationContractPolicyIsPresent(),
             'p13_release_state_machine_policy_contract' => $this->releaseStateMachinePolicyIsPresent(),
             'p13_capability_authorization_policy_contract' => $this->capabilityAuthorizationPolicyIsPresent(),
+            'p13_numeric_integrity_policy_contract' => $this->numericIntegrityPolicyIsPresent(),
             'production_deploy_workflow' => $deployWorkflowBody !== '',
             'production_deploy_manual_only' => $this->deploymentWorkflowIsManualOnly($deployWorkflowBody),
             'production_deploy_protected_main_dispatch_identity' =>
@@ -429,6 +430,70 @@ final class ReleasePreflightInspector
             && ($policy['laravel_gate_rewiring_status'] ?? null) === 'not_in_foundation_cut'
             && ($policy['production_workflow_wiring_status'] ?? null) === 'not_in_foundation_cut'
             && ($policy['deploy_script_wiring_status'] ?? null) === 'not_in_foundation_cut';
+    }
+
+    private function numericIntegrityPolicyIsPresent(): bool
+    {
+        $policy = config('release.numeric_integrity');
+
+        if (! is_array($policy)) {
+            return false;
+        }
+
+        return enum_exists(\App\Domain\Numerics\NumericKind::class)
+            && class_exists(\App\Domain\Numerics\ExactDecimal::class)
+            && enum_exists(\App\Domain\Numerics\NumericRoundingMode::class)
+            && class_exists(\App\Domain\Numerics\NumericIntegrityContract::class)
+            && class_exists(\App\Domain\Numerics\HumanNumericInput::class)
+            && ($policy['foundation_version'] ?? null) === 1
+            && ($policy['schema'] ?? null)
+                === \App\Domain\Numerics\NumericIntegrityContract::SCHEMA
+            && ($policy['numeric_kind_values'] ?? null)
+                === \App\Domain\Numerics\NumericKind::values()
+            && ($policy['canonical_decimal_pattern'] ?? null)
+                === \App\Domain\Numerics\ExactDecimal::PATTERN
+            && ($policy['canonical_decimal_representation'] ?? null)
+                === 'exact_string_value_object'
+            && ($policy['authoritative_financial_binary_float_allowed'] ?? null) === false
+            && ($policy['scientific_notation_allowed'] ?? null) === false
+            && ($policy['human_decimal_separator_values'] ?? null)
+                === \App\Domain\Numerics\HumanNumericInput::SEPARATOR_VALUES
+            && ($policy['ambiguous_human_decimal_input_policy'] ?? null)
+                === 'reject_fail_closed'
+            && ($policy['grouping_separators_allowed'] ?? null) === false
+            && ($policy['silent_truncation_allowed'] ?? null) === false
+            && ($policy['scale_overflow_policy'] ?? null) === 'deny_fail_closed'
+            && ($policy['rounding_mode_values'] ?? null)
+                === \App\Domain\Numerics\NumericRoundingMode::values()
+            && ($policy['rounding_requires_named_mode'] ?? null) === true
+            && ($policy['rounding_requires_defined_boundary'] ?? null) === true
+            && ($policy['intermediate_rounding_allowed'] ?? null) === false
+            && ($policy['money_scale_is_globally_two'] ?? null) === false
+            && ($policy['money_scale_policy'] ?? null) === 'currency_or_domain_specific'
+            && ($policy['quantity_scale_policy'] ?? null) === 'unit_or_domain_specific'
+            && ($policy['count_must_be_exact_integer'] ?? null) === true
+            && ($policy['raw_human_input_preservation_required_for_high_impact_manual_input'] ?? null)
+                === true
+            && ($policy['high_impact_manual_numeric_mutation_requires_reason'] ?? null) === true
+            && ($policy['high_impact_manual_numeric_mutation_requires_evidence'] ?? null) === true
+            && ($policy['high_impact_manual_numeric_mutation_requires_capability_authorization'] ?? null)
+                === true
+            && ($policy['authentication_or_role_alone_authorizes_numeric_override'] ?? null)
+                === false
+            && ($policy['runtime_calculation_refactor_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['model_cast_rewiring_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['database_schema_change_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['frontend_rewiring_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['import_rewiring_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['capability_runtime_wiring_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['runtime_integration_requires_separate_reviewed_cuts'] ?? null)
+                === true;
     }
 
     private function productionEnvironmentGovernancePolicyIsPresent(): bool

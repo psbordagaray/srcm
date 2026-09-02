@@ -262,6 +262,51 @@ return [
         'deploy_script_wiring_status' => 'not_in_foundation_cut',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | P13.B Numerical Integrity & Human Error Prevention V1
+    |--------------------------------------------------------------------------
+    |
+    | Exact numerical meaning is explicit and fail-closed. This foundation
+    | defines canonical decimal/input/rounding policy only; migration of current
+    | calculations, casts, database schema, frontend and imports is separate.
+    |
+    */
+    'numeric_integrity' => [
+        'foundation_version' => 1,
+        'schema' => \App\Domain\Numerics\NumericIntegrityContract::SCHEMA,
+        'numeric_kind_values' => \App\Domain\Numerics\NumericKind::values(),
+        'canonical_decimal_pattern' => \App\Domain\Numerics\ExactDecimal::PATTERN,
+        'canonical_decimal_representation' => 'exact_string_value_object',
+        'authoritative_financial_binary_float_allowed' => false,
+        'scientific_notation_allowed' => false,
+        'human_decimal_separator_values' => \App\Domain\Numerics\HumanNumericInput::SEPARATOR_VALUES,
+        'ambiguous_human_decimal_input_policy' => 'reject_fail_closed',
+        'grouping_separators_allowed' => false,
+        'silent_truncation_allowed' => false,
+        'scale_overflow_policy' => 'deny_fail_closed',
+        'rounding_mode_values' => \App\Domain\Numerics\NumericRoundingMode::values(),
+        'rounding_requires_named_mode' => true,
+        'rounding_requires_defined_boundary' => true,
+        'intermediate_rounding_allowed' => false,
+        'money_scale_is_globally_two' => false,
+        'money_scale_policy' => 'currency_or_domain_specific',
+        'quantity_scale_policy' => 'unit_or_domain_specific',
+        'count_must_be_exact_integer' => true,
+        'raw_human_input_preservation_required_for_high_impact_manual_input' => true,
+        'high_impact_manual_numeric_mutation_requires_reason' => true,
+        'high_impact_manual_numeric_mutation_requires_evidence' => true,
+        'high_impact_manual_numeric_mutation_requires_capability_authorization' => true,
+        'authentication_or_role_alone_authorizes_numeric_override' => false,
+        'runtime_calculation_refactor_status' => 'not_in_foundation_cut',
+        'model_cast_rewiring_status' => 'not_in_foundation_cut',
+        'database_schema_change_status' => 'not_in_foundation_cut',
+        'frontend_rewiring_status' => 'not_in_foundation_cut',
+        'import_rewiring_status' => 'not_in_foundation_cut',
+        'capability_runtime_wiring_status' => 'not_in_foundation_cut',
+        'runtime_integration_requires_separate_reviewed_cuts' => true,
+    ],
+
     'post_deploy_readiness' => [
 
         'route_name' => 'api.health.ready',
