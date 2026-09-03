@@ -22,7 +22,7 @@ final readonly class CommerceSettlementComponentAnalysis
     ];
 
     public const RUNTIME_WIRING_STATUS =
-        'FOUNDATION_ONLY_NOT_MANAGER_WIRED';
+        'MANAGER_ANALYSIS_WIRED_HARD_FAIL_PRESERVED';
 
     /**
      * @param list<array{

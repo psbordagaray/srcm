@@ -5,6 +5,7 @@ namespace Tests\Feature\Numerics;
 use App\Domain\Commerce\CommerceSettlementComponentAnalysis;
 use App\Domain\Commerce\CommerceSettlementComponentAnalyzer;
 use App\Domain\Commerce\CommerceSettlementComponentEvidence;
+use App\Domain\Commerce\CommerceSettlementDiscrepancyException;
 use App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection;
 use App\Domain\Numerics\AdjacentTranspositionClassifier;
 use App\Domain\Numerics\ModuloNineTranspositionSignalClassifier;
@@ -15,7 +16,7 @@ use Tests\TestCase;
 
 final class CommerceSettlementComponentAnalysisFoundationTest extends TestCase
 {
-    public function test_policy_declares_pure_component_analysis_foundation_without_manager_wiring(): void
+    public function test_policy_declares_component_analysis_foundation_with_non_authoritative_manager_wiring(): void
     {
         $policy = config('release.numeric_integrity.discrepancy_framework');
 
@@ -59,8 +60,28 @@ final class CommerceSettlementComponentAnalysisFoundationTest extends TestCase
             $policy['commerce_settlement_component_analysis_authorizes_accept_observed'],
         );
         $this->assertSame(
-            CommerceSettlementComponentAnalysis::RUNTIME_WIRING_STATUS,
+            CommerceSettlementDiscrepancyException::RUNTIME_WIRING_STATUS,
             $policy['commerce_settlement_component_analysis_runtime_wiring_status'],
+        );
+        $this->assertSame(
+            CommerceSettlementDiscrepancyException::SCHEMA,
+            $policy['commerce_settlement_component_analysis_runtime_exception_schema'],
+        );
+        $this->assertSame(
+            CommerceSettlementDiscrepancyException::MESSAGE,
+            $policy['commerce_settlement_component_analysis_runtime_exception_message'],
+        );
+        $this->assertTrue(
+            $policy['commerce_settlement_component_analysis_runtime_hard_fail_preserved'],
+        );
+        $this->assertFalse(
+            $policy['commerce_settlement_component_analysis_runtime_decision_wiring'],
+        );
+        $this->assertFalse(
+            $policy['commerce_settlement_component_analysis_runtime_keep_reference_authorized'],
+        );
+        $this->assertFalse(
+            $policy['commerce_settlement_component_analysis_runtime_accept_observed_authorized'],
         );
 
         $result = app(ReleasePreflightInspector::class)->inspect();
@@ -275,19 +296,19 @@ final class CommerceSettlementComponentAnalysisFoundationTest extends TestCase
         );
     }
 
-    public function test_manager_remains_unwired_and_current_hard_fail_remains_present(): void
+    public function test_manager_runtime_analysis_wiring_preserves_current_hard_fail_contract(): void
     {
         $manager = file_get_contents(
             app_path('Domain/Commerce/CommerceCheckoutManager.php')
         );
 
         $this->assertIsString($manager);
-        $this->assertStringNotContainsString(
-            'CommerceSettlementComponentAnalyzer',
+        $this->assertStringContainsString(
+            'CommerceSettlementComponentAnalyzer $settlementComponentAnalyzer',
             $manager,
         );
-        $this->assertStringNotContainsString(
-            'CommerceSettlementComponentAnalysis',
+        $this->assertStringContainsString(
+            'CommerceSettlementDiscrepancyException::',
             $manager,
         );
         $this->assertStringContainsString(
@@ -295,7 +316,7 @@ final class CommerceSettlementComponentAnalysisFoundationTest extends TestCase
             $manager,
         );
         $this->assertStringContainsString(
-            'Los pagos y el saldo pendiente deben cubrir exactamente el total de la venta.',
+            CommerceSettlementDiscrepancyException::MESSAGE,
             $manager,
         );
     }

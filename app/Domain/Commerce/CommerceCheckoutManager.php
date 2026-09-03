@@ -47,7 +47,8 @@ final class CommerceCheckoutManager
         private readonly CustomerCreditPolicyGuard $creditPolicyGuard,
         private readonly CustomerCreditOverrideRecorder $creditOverrideRecorder,
         private readonly CustomerReceivableInstallmentScheduler $installmentScheduler,
-        private readonly CustomerReceivableRecorder $receivableRecorder
+        private readonly CustomerReceivableRecorder $receivableRecorder,
+        private readonly CommerceSettlementComponentAnalyzer $settlementComponentAnalyzer
     ) {
     }
 
@@ -141,6 +142,21 @@ final class CommerceCheckoutManager
             );
 
             if ($total <= 0 || $settledTotal !== $total) {
+                if (
+                    $total > 0
+                    && $settledTotal > 0
+                    && $settledTotal !== $total
+                ) {
+                    throw CommerceSettlementDiscrepancyException::
+                        fromCheckoutData(
+                            data: $data,
+                            systemTotalMinor: $total,
+                            settledTotalMinor: $settledTotal,
+                            analyzer:
+                                $this->settlementComponentAnalyzer,
+                        );
+                }
+
                 throw new DomainException(
                     'Los pagos y el saldo pendiente deben cubrir exactamente el total de la venta.'
                 );
