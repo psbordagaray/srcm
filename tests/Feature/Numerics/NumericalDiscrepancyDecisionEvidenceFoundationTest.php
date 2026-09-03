@@ -57,11 +57,11 @@ final class NumericalDiscrepancyDecisionEvidenceFoundationTest extends TestCase
             $policy['decision_evidence_runtime_wiring_requires_separate_reviewed_cut'],
         );
         $this->assertSame(
-            'not_in_foundation_cut',
+            'foundation_contract_defined_not_runtime_wired',
             $policy['decision_capability_authorization_wiring_status'],
         );
         $this->assertSame(
-            'not_in_foundation_cut',
+            'audit_payload_foundation_defined_not_runtime_wired',
             $policy['decision_audit_persistence_wiring_status'],
         );
 
@@ -249,11 +249,11 @@ final class NumericalDiscrepancyDecisionEvidenceFoundationTest extends TestCase
             $policy['decision_evidence_runtime_wiring_status'],
         );
         $this->assertSame(
-            'not_in_foundation_cut',
+            'foundation_contract_defined_not_runtime_wired',
             $policy['decision_capability_authorization_wiring_status'],
         );
         $this->assertSame(
-            'not_in_foundation_cut',
+            'audit_payload_foundation_defined_not_runtime_wired',
             $policy['decision_audit_persistence_wiring_status'],
         );
         $this->assertSame(

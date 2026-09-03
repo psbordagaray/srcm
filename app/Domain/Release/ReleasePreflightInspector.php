@@ -516,6 +516,8 @@ final class ReleasePreflightInspector
             && class_exists(\App\Domain\Numerics\NumericalDiscrepancyAnalyzer::class)
             && enum_exists(\App\Domain\Numerics\NumericalDiscrepancyDecision::class)
             && class_exists(\App\Domain\Numerics\NumericalDiscrepancyDecisionEvidence::class)
+            && class_exists(\App\Domain\Numerics\NumericalDiscrepancyOverrideAuthorization::class)
+            && class_exists(\App\Domain\Numerics\NumericalDiscrepancyOverrideAuditEvidence::class)
             && class_exists(\App\Domain\Numerics\ModuloNineTranspositionSignalClassifier::class)
             && class_exists(\App\Domain\Numerics\AdjacentTranspositionClassifier::class)
             && class_exists(\App\Domain\Numerics\DigitOmissionClassifier::class)
@@ -623,8 +625,35 @@ final class ReleasePreflightInspector
             && ($policy['discrepancy_framework']['decision_evidence_runtime_wiring_requires_separate_reviewed_cut'] ?? null)
                 === true
             && ($policy['discrepancy_framework']['decision_capability_authorization_wiring_status'] ?? null)
-                === 'not_in_foundation_cut'
+                === 'foundation_contract_defined_not_runtime_wired'
             && ($policy['discrepancy_framework']['decision_audit_persistence_wiring_status'] ?? null)
+                === 'audit_payload_foundation_defined_not_runtime_wired'
+            && ($policy['discrepancy_framework']['override_authorization_foundation_version'] ?? null) === 1
+            && ($policy['discrepancy_framework']['override_authorization_schema'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyOverrideAuthorization::SCHEMA
+            && ($policy['discrepancy_framework']['override_capability'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyOverrideAuthorization::CAPABILITY
+            && ($policy['discrepancy_framework']['override_authorization_class'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyOverrideAuthorization::class
+            && ($policy['discrepancy_framework']['override_audit_evidence_schema'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyOverrideAuditEvidence::SCHEMA
+            && ($policy['discrepancy_framework']['override_audit_evidence_class'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyOverrideAuditEvidence::class
+            && ($policy['discrepancy_framework']['override_warning_audit_event'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyOverrideAuditEvidence::WARNING_EVENT
+            && ($policy['discrepancy_framework']['override_decision_audit_event'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyOverrideAuditEvidence::DECISION_EVENT
+            && ($policy['discrepancy_framework']['override_requires_capability_allow'] ?? null) === true
+            && ($policy['discrepancy_framework']['override_authorization_source_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['override_authorization_evidence_ref_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['override_authorization_fingerprint_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['override_warning_and_decision_are_separate_audit_events'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['override_audit_payload_preserves_reference_observed_final'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['override_audit_persistence_status'] ?? null)
+                === 'foundation_only_not_yet_wired'
+            && ($policy['discrepancy_framework']['override_business_runtime_wiring_status'] ?? null)
                 === 'not_in_foundation_cut'
             && ($policy['discrepancy_framework']['transposition_by_omission_special_case_status'] ?? null)
                 === 'undefined_no_implementation_exact_spec_required'
