@@ -27,6 +27,7 @@ final readonly class CommerceCheckoutData
         public ?string $customerCreditOverrideReason = null,
         public ?int $receivableInstallmentCount = null,
         public ?CommerceSettlementComponentEvidence $receivableSettlementComponentEvidence = null,
+        public ?CommerceSettlementDiscrepancyDecisionInput $settlementDiscrepancyDecisionInput = null,
     ) {
         foreach ($this->payments as $index => $payment) {
             if (

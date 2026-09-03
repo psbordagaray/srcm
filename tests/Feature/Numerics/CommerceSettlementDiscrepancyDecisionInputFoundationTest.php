@@ -78,7 +78,7 @@ final class CommerceSettlementDiscrepancyDecisionInputFoundationTest extends Tes
                 'commerce_settlement_decision_input_controller_runtime_wired'
             ],
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy[
                 'commerce_settlement_decision_input_checkout_data_runtime_wired'
             ],
@@ -173,7 +173,7 @@ final class CommerceSettlementDiscrepancyDecisionInputFoundationTest extends Tes
         $this->assertSame($max, $input->reason);
     }
 
-    public function test_accept_observed_and_all_runtime_transport_remain_blocked(): void
+    public function test_accept_observed_and_downstream_runtime_transport_remain_blocked(): void
     {
         $this->assertFalse(
             method_exists(
@@ -194,7 +194,6 @@ final class CommerceSettlementDiscrepancyDecisionInputFoundationTest extends Tes
 
         $paths = [
             app_path('Domain/Commerce/CommerceCheckoutManager.php'),
-            app_path('Domain/Commerce/CommerceCheckoutData.php'),
             app_path('Http/Requests/StoreCommerceSaleRequest.php'),
             app_path('Http/Controllers/CommerceSaleController.php'),
         ];

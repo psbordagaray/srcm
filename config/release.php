@@ -409,7 +409,7 @@ return [
             'commerce_settlement_decision_input_audit_persistence' => false,
             'commerce_settlement_decision_input_request_runtime_wired' => false,
             'commerce_settlement_decision_input_controller_runtime_wired' => false,
-            'commerce_settlement_decision_input_checkout_data_runtime_wired' => false,
+            'commerce_settlement_decision_input_checkout_data_runtime_wired' => true,
             'commerce_settlement_decision_input_manager_runtime_wired' => false,
             'commerce_settlement_decision_input_runtime_wiring_status' => \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput::RUNTIME_WIRING_STATUS,
             'commerce_settlement_aggregate_decision_evidence_foundation_version' => \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionEvidence::FOUNDATION_VERSION,
