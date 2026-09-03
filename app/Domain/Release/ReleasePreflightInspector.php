@@ -519,6 +519,7 @@ final class ReleasePreflightInspector
             && class_exists(\App\Domain\Numerics\NumericalDiscrepancyOverrideAuthorization::class)
             && class_exists(\App\Domain\Numerics\NumericalDiscrepancyOverrideAuditEvidence::class)
             && class_exists(\App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionSemantics::class)
+            && class_exists(\App\Domain\Commerce\CommerceSettlementComponentEvidence::class)
             && class_exists(\App\Domain\Numerics\ModuloNineTranspositionSignalClassifier::class)
             && class_exists(\App\Domain\Numerics\AdjacentTranspositionClassifier::class)
             && class_exists(\App\Domain\Numerics\DigitOmissionClassifier::class)
@@ -684,6 +685,36 @@ final class ReleasePreflightInspector
                 === false
             && ($policy['discrepancy_framework']['commerce_settlement_runtime_wiring_status'] ?? null)
                 === \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionSemantics::RUNTIME_WIRING_STATUS
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_foundation_version'] ?? null)
+                === 1
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_schema'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementComponentEvidence::SCHEMA
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_class'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementComponentEvidence::class
+            && ($policy['discrepancy_framework']['commerce_settlement_component_types'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementComponentEvidence::COMPONENT_TYPES
+            && ($policy['discrepancy_framework']['commerce_settlement_payment_component_id_pattern'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementComponentEvidence::PAYMENT_COMPONENT_ID_PATTERN
+            && ($policy['discrepancy_framework']['commerce_settlement_receivable_component_id'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementComponentEvidence::RECEIVABLE_COMPONENT_ID
+            && ($policy['discrepancy_framework']['commerce_settlement_raw_human_input_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['commerce_settlement_original_canonical_value_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['commerce_settlement_minor_value_consistency_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['commerce_settlement_conditional_residual_formula'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementComponentEvidence::CONDITIONAL_RESIDUAL_FORMULA
+            && ($policy['discrepancy_framework']['commerce_settlement_conditional_residual_is_independent_fact'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_conditional_residual_assumption'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementComponentEvidence::CONDITIONAL_RESIDUAL_ASSUMPTION
+            && ($policy['discrepancy_framework']['commerce_settlement_multiple_component_candidates_may_coexist'] ?? null) === true
+            && ($policy['discrepancy_framework']['commerce_settlement_component_priority_or_automatic_winner_allowed'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_component_analysis_proves_cause'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_automatic_field_correction_allowed'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_field_level_explicit_review_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['commerce_settlement_tendered_amount_is_settlement_component'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_runtime_wiring_status'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementComponentEvidence::RUNTIME_WIRING_STATUS
+            && ($policy['discrepancy_framework']['commerce_settlement_component_analysis_input_selection_status'] ?? null)
+                === 'not_in_foundation_cut'
             && ($policy['discrepancy_framework']['service_cancellation_reference_mapping_status'] ?? null)
                 === 'deferred_until_independent_reference_defined'
             && ($policy['discrepancy_framework']['transposition_by_omission_special_case_status'] ?? null)
