@@ -74,7 +74,7 @@ final class CommerceSettlementComponentAnalysisFoundationTest extends TestCase
         $this->assertTrue(
             $policy['commerce_settlement_component_analysis_runtime_hard_fail_preserved'],
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy['commerce_settlement_component_analysis_runtime_decision_wiring'],
         );
         $this->assertFalse(

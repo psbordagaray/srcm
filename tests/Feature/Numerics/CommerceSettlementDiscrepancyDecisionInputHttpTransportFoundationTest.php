@@ -25,7 +25,7 @@ final class CommerceSettlementDiscrepancyDecisionInputHttpTransportFoundationTes
         $this->assertTrue(
             $policy['commerce_settlement_decision_input_checkout_data_runtime_wired'],
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy['commerce_settlement_decision_input_manager_runtime_wired'],
         );
         $this->assertFalse(
@@ -132,7 +132,7 @@ final class CommerceSettlementDiscrepancyDecisionInputHttpTransportFoundationTes
         );
     }
 
-    public function test_controller_transports_typed_accessor_and_manager_remains_opaque(): void
+    public function test_controller_transports_typed_accessor_and_manager_consumes_downstream_only(): void
     {
         $controller = file_get_contents(
             app_path('Http/Controllers/CommerceSaleController.php')
@@ -151,11 +151,11 @@ final class CommerceSettlementDiscrepancyDecisionInputHttpTransportFoundationTes
             '$request->settlementDiscrepancyDecisionInput()',
             $controller,
         );
-        $this->assertStringNotContainsString(
-            'CommerceSettlementDiscrepancyDecisionInput',
+        $this->assertStringContainsString(
+            'CommerceSettlementDiscrepancyDecisionException',
             $manager,
         );
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             'settlementDiscrepancyDecisionInput',
             $manager,
         );

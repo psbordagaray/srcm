@@ -147,14 +147,30 @@ final class CommerceCheckoutManager
                     && $settledTotal > 0
                     && $settledTotal !== $total
                 ) {
-                    throw CommerceSettlementDiscrepancyException::
-                        fromCheckoutData(
-                            data: $data,
-                            systemTotalMinor: $total,
-                            settledTotalMinor: $settledTotal,
-                            analyzer:
-                                $this->settlementComponentAnalyzer,
-                        );
+                    $runtimeEvidence =
+                        CommerceSettlementDiscrepancyException::
+                            fromCheckoutData(
+                                data: $data,
+                                systemTotalMinor: $total,
+                                settledTotalMinor: $settledTotal,
+                                analyzer:
+                                    $this->settlementComponentAnalyzer,
+                            );
+
+                    if (
+                        $data->settlementDiscrepancyDecisionInput
+                            !== null
+                    ) {
+                        throw CommerceSettlementDiscrepancyDecisionException::
+                            fromInput(
+                                runtimeEvidence: $runtimeEvidence,
+                                input:
+                                    $data
+                                        ->settlementDiscrepancyDecisionInput,
+                            );
+                    }
+
+                    throw $runtimeEvidence;
                 }
 
                 throw new DomainException(

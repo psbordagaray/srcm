@@ -12,7 +12,7 @@ use Tests\TestCase;
 
 final class CommerceSettlementDiscrepancyDecisionEvidenceFoundationTest extends TestCase
 {
-    public function test_policy_declares_commerce_aggregate_decision_evidence_foundation_without_runtime_wiring(): void
+    public function test_policy_declares_commerce_aggregate_decision_evidence_manager_runtime_wiring_without_business_effect(): void
     {
         $policy = config('release.numeric_integrity.discrepancy_framework');
 
@@ -68,6 +68,11 @@ final class CommerceSettlementDiscrepancyDecisionEvidenceFoundationTest extends 
         $this->assertFalse(
             $policy[
                 'commerce_settlement_aggregate_decision_audit_persistence'
+            ],
+        );
+        $this->assertTrue(
+            $policy[
+                'commerce_settlement_aggregate_decision_manager_runtime_wired'
             ],
         );
         $this->assertSame(
@@ -141,7 +146,7 @@ final class CommerceSettlementDiscrepancyDecisionEvidenceFoundationTest extends 
         $this->assertFalse($array['system_total_rewrite_authorized']);
         $this->assertFalse($array['override_authorization_required']);
         $this->assertFalse($array['persists_audit']);
-        $this->assertFalse($array['manager_runtime_wired']);
+        $this->assertTrue($array['manager_runtime_wired']);
         $this->assertFalse($array['controller_runtime_wired']);
 
         $this->assertTrue(
@@ -208,8 +213,12 @@ final class CommerceSettlementDiscrepancyDecisionEvidenceFoundationTest extends 
 
         $this->assertIsString($manager);
         $this->assertIsString($controller);
-        $this->assertStringNotContainsString(
-            'CommerceSettlementDiscrepancyDecisionEvidence',
+        $this->assertStringContainsString(
+            'CommerceSettlementDiscrepancyDecisionException',
+            $manager,
+        );
+        $this->assertStringContainsString(
+            'settlementDiscrepancyDecisionInput',
             $manager,
         );
         $this->assertStringNotContainsString(

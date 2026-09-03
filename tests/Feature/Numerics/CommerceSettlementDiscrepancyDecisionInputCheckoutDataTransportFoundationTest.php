@@ -29,7 +29,7 @@ final class CommerceSettlementDiscrepancyDecisionInputCheckoutDataTransportFound
                 'commerce_settlement_decision_input_controller_runtime_wired'
             ],
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy[
                 'commerce_settlement_decision_input_manager_runtime_wired'
             ],
@@ -86,7 +86,7 @@ final class CommerceSettlementDiscrepancyDecisionInputCheckoutDataTransportFound
         $this->assertNull($data->settlementDiscrepancyDecisionInput);
     }
 
-    public function test_manager_remains_opaque_to_decision_input(): void
+    public function test_manager_consumes_carried_input_only_at_runtime_mismatch_boundary(): void
     {
         $paths = [
             app_path('Domain/Commerce/CommerceCheckoutManager.php'),
@@ -96,11 +96,11 @@ final class CommerceSettlementDiscrepancyDecisionInputCheckoutDataTransportFound
             $source = file_get_contents($path);
 
             $this->assertIsString($source);
-            $this->assertStringNotContainsString(
-                'CommerceSettlementDiscrepancyDecisionInput',
+            $this->assertStringContainsString(
+                'CommerceSettlementDiscrepancyDecisionException',
                 $source,
             );
-            $this->assertStringNotContainsString(
+            $this->assertStringContainsString(
                 'settlementDiscrepancyDecisionInput',
                 $source,
             );

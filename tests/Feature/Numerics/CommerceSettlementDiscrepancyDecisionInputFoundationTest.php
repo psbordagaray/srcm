@@ -83,7 +83,7 @@ final class CommerceSettlementDiscrepancyDecisionInputFoundationTest extends Tes
                 'commerce_settlement_decision_input_checkout_data_runtime_wired'
             ],
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy[
                 'commerce_settlement_decision_input_manager_runtime_wired'
             ],
@@ -173,7 +173,7 @@ final class CommerceSettlementDiscrepancyDecisionInputFoundationTest extends Tes
         $this->assertSame($max, $input->reason);
     }
 
-    public function test_accept_observed_and_downstream_runtime_transport_remain_blocked(): void
+    public function test_accept_observed_and_business_effects_remain_blocked(): void
     {
         $this->assertFalse(
             method_exists(
@@ -192,18 +192,22 @@ final class CommerceSettlementDiscrepancyDecisionInputFoundationTest extends Tes
                 BLOCKED_DECISION_VALUES,
         );
 
-        $paths = [
-            app_path('Domain/Commerce/CommerceCheckoutManager.php'),
-        ];
+        $manager = file_get_contents(
+            app_path('Domain/Commerce/CommerceCheckoutManager.php')
+        );
 
-        foreach ($paths as $path) {
-            $source = file_get_contents($path);
-
-            $this->assertIsString($source);
-            $this->assertStringNotContainsString(
-                'CommerceSettlementDiscrepancyDecisionInput',
-                $source,
-            );
-        }
+        $this->assertIsString($manager);
+        $this->assertStringContainsString(
+            'settlementDiscrepancyDecisionInput',
+            $manager,
+        );
+        $this->assertStringContainsString(
+            'CommerceSettlementDiscrepancyDecisionException',
+            $manager,
+        );
+        $this->assertStringNotContainsString(
+            'ACCEPT_OBSERVED',
+            $manager,
+        );
     }
 }

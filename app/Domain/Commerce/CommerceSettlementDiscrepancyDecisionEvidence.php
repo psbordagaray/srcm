@@ -25,7 +25,7 @@ final readonly class CommerceSettlementDiscrepancyDecisionEvidence
     ];
 
     public const RUNTIME_WIRING_STATUS =
-        'FOUNDATION_ONLY_NOT_RUNTIME_WIRED';
+        'MANAGER_DECISION_EVIDENCE_BINDING_WIRED_HARD_FAIL_PRESERVED';
 
     private function __construct(
         public CommerceSettlementDiscrepancyException $runtimeEvidence,
@@ -113,7 +113,7 @@ final readonly class CommerceSettlementDiscrepancyDecisionEvidence
             'system_total_rewrite_authorized' => false,
             'override_authorization_required' => false,
             'persists_audit' => false,
-            'manager_runtime_wired' => false,
+            'manager_runtime_wired' => true,
             'controller_runtime_wired' => false,
         ];
     }

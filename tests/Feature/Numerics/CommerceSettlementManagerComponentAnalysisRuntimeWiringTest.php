@@ -215,6 +215,14 @@ final class CommerceSettlementManagerComponentAnalysisRuntimeWiringTest extends 
             $manager,
         );
         $this->assertStringContainsString(
+            'CommerceSettlementDiscrepancyDecisionException::',
+            $manager,
+        );
+        $this->assertStringContainsString(
+            'settlementDiscrepancyDecisionInput',
+            $manager,
+        );
+        $this->assertStringContainsString(
             'if ($total <= 0 || $settledTotal !== $total) {',
             $manager,
         );
@@ -280,7 +288,7 @@ final class CommerceSettlementManagerComponentAnalysisRuntimeWiringTest extends 
                 'commerce_settlement_component_analysis_runtime_audit_persistence'
             ],
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy[
                 'commerce_settlement_component_analysis_runtime_decision_wiring'
             ],
