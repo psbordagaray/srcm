@@ -519,6 +519,7 @@ final class ReleasePreflightInspector
             && class_exists(\App\Domain\Numerics\NumericalDiscrepancyOverrideAuthorization::class)
             && class_exists(\App\Domain\Numerics\NumericalDiscrepancyOverrideAuditEvidence::class)
             && class_exists(\App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionSemantics::class)
+            && class_exists(\App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput::class)
             && class_exists(\App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionEvidence::class)
             && class_exists(\App\Domain\Commerce\CommerceSettlementComponentEvidence::class)
             && class_exists(\App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::class)
@@ -690,6 +691,48 @@ final class ReleasePreflightInspector
                 === false
             && ($policy['discrepancy_framework']['commerce_settlement_runtime_wiring_status'] ?? null)
                 === \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionSemantics::RUNTIME_WIRING_STATUS
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_foundation_version'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput::FOUNDATION_VERSION
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_schema'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput::SCHEMA
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_class'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput::class
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_authorized_values'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput::AUTHORIZED_DECISION_VALUES
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_blocked_values'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput::BLOCKED_DECISION_VALUES
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_reason_required'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_reason_trimmed'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_reason_max_bytes'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput::REASON_MAX_BYTES
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_control_characters_allowed'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_explicit_decision'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_is_decision_evidence'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_requires_runtime_discrepancy_evidence'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_business_mutation_authorized'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_keep_reference_allows_sale_confirmation'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_override_authorization_required'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_audit_persistence'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_request_runtime_wired'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_controller_runtime_wired'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_checkout_data_runtime_wired'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_manager_runtime_wired'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_decision_input_runtime_wiring_status'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput::RUNTIME_WIRING_STATUS
             && ($policy['discrepancy_framework']['commerce_settlement_aggregate_decision_evidence_foundation_version'] ?? null)
                 === \App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionEvidence::FOUNDATION_VERSION
             && ($policy['discrepancy_framework']['commerce_settlement_aggregate_decision_evidence_schema'] ?? null)
