@@ -514,6 +514,8 @@ final class ReleasePreflightInspector
             && class_exists(\App\Domain\Numerics\NumericalDiscrepancySignal::class)
             && interface_exists(\App\Domain\Numerics\NumericalDiscrepancyClassifier::class)
             && class_exists(\App\Domain\Numerics\NumericalDiscrepancyAnalyzer::class)
+            && enum_exists(\App\Domain\Numerics\NumericalDiscrepancyDecision::class)
+            && class_exists(\App\Domain\Numerics\NumericalDiscrepancyDecisionEvidence::class)
             && class_exists(\App\Domain\Numerics\ModuloNineTranspositionSignalClassifier::class)
             && class_exists(\App\Domain\Numerics\AdjacentTranspositionClassifier::class)
             && class_exists(\App\Domain\Numerics\DigitOmissionClassifier::class)
@@ -593,6 +595,37 @@ final class ReleasePreflightInspector
             && ($policy['discrepancy_framework']['decision_audit_required'] ?? null) === true
             && ($policy['discrepancy_framework']['original_value_audit_required'] ?? null) === true
             && ($policy['discrepancy_framework']['final_value_audit_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['decision_evidence_foundation_version'] ?? null) === 1
+            && ($policy['discrepancy_framework']['decision_evidence_schema'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyDecisionEvidence::SCHEMA
+            && ($policy['discrepancy_framework']['decision_evidence_class'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyDecisionEvidence::class
+            && ($policy['discrepancy_framework']['decision_values'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyDecision::values()
+            && ($policy['discrepancy_framework']['decision_warning_code'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyDecisionEvidence::WARNING_CODE
+            && ($policy['discrepancy_framework']['decision_requires_explicit_reason'] ?? null) === true
+            && ($policy['discrepancy_framework']['decision_requires_at_least_one_signal'] ?? null) === true
+            && ($policy['discrepancy_framework']['decision_signals_must_match_reference_observed'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['decision_signal_rule_ids_must_be_unique'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['decision_signal_order_is_deterministic'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['decision_original_value_equals_reference_value'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['decision_final_value_must_match_explicit_choice'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['decision_normalization_allowed'] ?? null) === false
+            && ($policy['discrepancy_framework']['decision_silent_correction_allowed'] ?? null) === false
+            && ($policy['discrepancy_framework']['decision_evidence_runtime_wiring_status'] ?? null)
+                === 'foundation_only_not_yet_wired'
+            && ($policy['discrepancy_framework']['decision_evidence_runtime_wiring_requires_separate_reviewed_cut'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['decision_capability_authorization_wiring_status'] ?? null)
+                === 'not_in_foundation_cut'
+            && ($policy['discrepancy_framework']['decision_audit_persistence_wiring_status'] ?? null)
+                === 'not_in_foundation_cut'
             && ($policy['discrepancy_framework']['transposition_by_omission_special_case_status'] ?? null)
                 === 'undefined_no_implementation_exact_spec_required'
             && ($policy['discrepancy_framework']['transposition_by_omission_implementation_allowed'] ?? null) === false
