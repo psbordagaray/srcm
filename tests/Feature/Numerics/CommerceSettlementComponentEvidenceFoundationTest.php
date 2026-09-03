@@ -47,7 +47,7 @@ final class CommerceSettlementComponentEvidenceFoundationTest extends TestCase
             $policy['commerce_settlement_component_evidence_runtime_wiring_status'],
         );
         $this->assertSame(
-            'not_in_foundation_cut',
+            \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::INPUT_SELECTION_STATUS,
             $policy['commerce_settlement_component_analysis_input_selection_status'],
         );
         $this->assertFalse(

@@ -520,6 +520,7 @@ final class ReleasePreflightInspector
             && class_exists(\App\Domain\Numerics\NumericalDiscrepancyOverrideAuditEvidence::class)
             && class_exists(\App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionSemantics::class)
             && class_exists(\App\Domain\Commerce\CommerceSettlementComponentEvidence::class)
+            && class_exists(\App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::class)
             && class_exists(\App\Domain\Numerics\ModuloNineTranspositionSignalClassifier::class)
             && class_exists(\App\Domain\Numerics\AdjacentTranspositionClassifier::class)
             && class_exists(\App\Domain\Numerics\DigitOmissionClassifier::class)
@@ -713,8 +714,37 @@ final class ReleasePreflightInspector
             && ($policy['discrepancy_framework']['commerce_settlement_tendered_amount_is_settlement_component'] ?? null) === false
             && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_runtime_wiring_status'] ?? null)
                 === \App\Domain\Commerce\CommerceSettlementComponentEvidence::RUNTIME_WIRING_STATUS
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_foundation_version'] ?? null)
+                === 1
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_schema'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::SCHEMA
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_class'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::class
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_types'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::PROJECTION_TYPES
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_scale'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::MONEY_SCALE
+            && ($policy['discrepancy_framework']['commerce_settlement_digit_structural_projection_derivation'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::DIGIT_STRUCTURAL_DERIVATION
+            && ($policy['discrepancy_framework']['commerce_settlement_digit_structural_projection_classifier_ids'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::DIGIT_STRUCTURAL_CLASSIFIER_IDS
+            && ($policy['discrepancy_framework']['commerce_settlement_separator_projection_derivation'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::SEPARATOR_DERIVATION
+            && ($policy['discrepancy_framework']['commerce_settlement_separator_projection_classifier_ids'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::SEPARATOR_CLASSIFIER_IDS
+            && ($policy['discrepancy_framework']['commerce_settlement_separator_projection_integer_raw_eligible'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_separator_projection_preserves_observed_raw'] ?? null) === true
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_classifier_subset_required'] ?? null) === true
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_run_all_classifiers'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_derived_view_only'] ?? null) === true
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_source_normalization'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_source_replacement'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_authorizes_correction'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_proves_human_cause'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_runtime_wiring_status'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::RUNTIME_WIRING_STATUS
             && ($policy['discrepancy_framework']['commerce_settlement_component_analysis_input_selection_status'] ?? null)
-                === 'not_in_foundation_cut'
+                === \App\Domain\Commerce\CommerceSettlementMoneyAnalysisProjection::INPUT_SELECTION_STATUS
             && ($policy['discrepancy_framework']['service_cancellation_reference_mapping_status'] ?? null)
                 === 'deferred_until_independent_reference_defined'
             && ($policy['discrepancy_framework']['transposition_by_omission_special_case_status'] ?? null)
