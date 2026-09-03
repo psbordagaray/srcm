@@ -714,6 +714,33 @@ final class ReleasePreflightInspector
             && ($policy['discrepancy_framework']['commerce_settlement_tendered_amount_is_settlement_component'] ?? null) === false
             && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_runtime_wiring_status'] ?? null)
                 === \App\Domain\Commerce\CommerceSettlementComponentEvidence::RUNTIME_WIRING_STATUS
+            && class_exists(\App\Domain\Commerce\CommercePaymentData::class)
+            && class_exists(\App\Domain\Commerce\CommerceCheckoutData::class)
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_foundation_version'] ?? null)
+                === 1
+            && ($policy['discrepancy_framework']['commerce_settlement_payment_evidence_transport_carrier_class'] ?? null)
+                === \App\Domain\Commerce\CommercePaymentData::class
+            && ($policy['discrepancy_framework']['commerce_settlement_payment_evidence_transport_field'] ?? null)
+                === 'settlementComponentEvidence'
+            && ($policy['discrepancy_framework']['commerce_settlement_receivable_evidence_transport_carrier_class'] ?? null)
+                === \App\Domain\Commerce\CommerceCheckoutData::class
+            && ($policy['discrepancy_framework']['commerce_settlement_receivable_evidence_transport_field'] ?? null)
+                === 'receivableSettlementComponentEvidence'
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_source'] ?? null)
+                === 'StoreCommerceSaleRequest.AuthoritativeNumericInput'
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_creation_boundary'] ?? null)
+                === 'CommerceSaleController_before_loss_to_minor_only'
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_residual_policy'] ?? null)
+                === 'controller_constructed_residual_null'
+            && ($policy['discrepancy_framework']['commerce_settlement_tendered_amount_transported_as_component_evidence'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_in_normalized_business_payload'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_in_business_fingerprint'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_changes_settlement_decision'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_invokes_analyzer'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_persists_audit'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_authorizes_override'] ?? null) === false
+            && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_transport_runtime_status'] ?? null)
+                === 'foundation_carrier_wired_manager_analysis_not_wired'
             && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_foundation_version'] ?? null)
                 === 1
             && ($policy['discrepancy_framework']['commerce_settlement_money_analysis_projection_schema'] ?? null)

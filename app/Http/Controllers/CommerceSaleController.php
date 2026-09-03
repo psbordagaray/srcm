@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Domain\Commerce\CommerceCheckoutData;
 use App\Domain\Commerce\CommerceCheckoutManager;
 use App\Domain\Commerce\CommerceSalePolicyGuard;
+use App\Domain\Commerce\CommerceSettlementComponentEvidence;
 use App\Domain\Commerce\OrganizationProductPriceReader;
 use App\Domain\Finance\CashRegisterSessionManager;
 use App\Domain\Commerce\CommercePaymentData;
@@ -447,6 +448,13 @@ class CommerceSaleController extends Controller
                                             ->paymentTenderedAmountAuthoritativeInput(
                                                 $index
                                             )
+                                    ),
+                                settlementComponentEvidence:
+                                    $this->paymentSettlementComponentEvidence(
+                                        $index,
+                                        $request->paymentAmountAuthoritativeInput(
+                                            $index
+                                        )
                                     )
                             )
                         )
@@ -487,7 +495,11 @@ class CommerceSaleController extends Controller
                             ? (int) $validated[
                                 'receivable_installment_count'
                             ]
-                            : null
+                            : null,
+                    receivableSettlementComponentEvidence:
+                        $this->receivableSettlementComponentEvidence(
+                            $request->receivableAmountAuthoritativeInput()
+                        )
                 ),
                 $request->user()
             );
@@ -556,6 +568,44 @@ class CommerceSaleController extends Controller
         return view('commerce-sales.show', [
             'sale' => $commerceSale,
         ]);
+    }
+
+    private function paymentSettlementComponentEvidence(
+        int $index,
+        ?AuthoritativeNumericInput $input
+    ): CommerceSettlementComponentEvidence {
+        if ($input === null || $input->rawHumanInput === null) {
+            throw new DomainException(
+                'La evidencia original del importe de pago no está disponible.'
+            );
+        }
+
+        return CommerceSettlementComponentEvidence::payment(
+            index: $index,
+            rawHumanInput: $input->rawHumanInput,
+            originalCanonicalValue: $input->canonical->value,
+            minorValue: $this->requiredMoneyMinor($input),
+        );
+    }
+
+    private function receivableSettlementComponentEvidence(
+        ?AuthoritativeNumericInput $input
+    ): ?CommerceSettlementComponentEvidence {
+        if ($input === null) {
+            return null;
+        }
+
+        if ($input->rawHumanInput === null) {
+            throw new DomainException(
+                'La evidencia original del saldo pendiente no está disponible.'
+            );
+        }
+
+        return CommerceSettlementComponentEvidence::receivable(
+            rawHumanInput: $input->rawHumanInput,
+            originalCanonicalValue: $input->canonical->value,
+            minorValue: $this->requiredMoneyMinor($input),
+        );
     }
 
     private function requiredMoneyMinor(

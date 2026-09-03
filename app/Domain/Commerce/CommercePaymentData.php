@@ -4,6 +4,7 @@ namespace App\Domain\Commerce;
 
 use App\Enums\CommercePaymentMethod;
 use DateTimeInterface;
+use InvalidArgumentException;
 
 final readonly class CommercePaymentData
 {
@@ -22,7 +23,24 @@ final readonly class CommercePaymentData
         public ?string $authorizationCode = null,
         public ?string $providerStatus = null,
         public ?int $financialAccountId = null,
-        public ?int $tenderedAmountMinor = null
+        public ?int $tenderedAmountMinor = null,
+        public ?CommerceSettlementComponentEvidence $settlementComponentEvidence = null,
     ) {
+        if ($this->settlementComponentEvidence === null) {
+            return;
+        }
+
+        $evidence = $this->settlementComponentEvidence;
+
+        if (
+            $evidence->componentType
+                !== CommerceSettlementComponentEvidence::TYPE_PAYMENT_AMOUNT
+            || $evidence->minorValue !== $this->amountMinor
+            || $evidence->hasConditionalResidualCandidate()
+        ) {
+            throw new InvalidArgumentException(
+                'Commerce payment settlement component transport evidence is inconsistent.'
+            );
+        }
     }
 }

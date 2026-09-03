@@ -223,12 +223,33 @@ final class CommerceSettlementComponentEvidenceFoundationTest extends TestCase
         $this->assertIsString($controller);
         $this->assertIsString($request);
 
-        foreach ([$manager, $controller, $request] as $runtimeSource) {
+        foreach ([$manager, $request] as $runtimeSource) {
             $this->assertStringNotContainsString(
                 'CommerceSettlementComponentEvidence',
                 $runtimeSource,
             );
         }
+
+        $this->assertStringContainsString(
+            'CommerceSettlementComponentEvidence',
+            $controller,
+        );
+        $this->assertStringContainsString(
+            'settlementComponentEvidence:',
+            $controller,
+        );
+        $this->assertStringContainsString(
+            'receivableSettlementComponentEvidence:',
+            $controller,
+        );
+        $this->assertStringNotContainsString(
+            'CommerceSettlementMoneyAnalysisProjection',
+            $controller,
+        );
+        $this->assertStringNotContainsString(
+            'NumericalDiscrepancyAnalyzer',
+            $controller,
+        );
 
         $this->assertSame(
             'BLOCKED',
