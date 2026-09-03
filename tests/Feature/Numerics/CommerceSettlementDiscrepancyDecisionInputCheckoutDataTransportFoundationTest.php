@@ -19,12 +19,12 @@ final class CommerceSettlementDiscrepancyDecisionInputCheckoutDataTransportFound
                 'commerce_settlement_decision_input_checkout_data_runtime_wired'
             ],
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy[
                 'commerce_settlement_decision_input_request_runtime_wired'
             ],
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy[
                 'commerce_settlement_decision_input_controller_runtime_wired'
             ],
@@ -86,11 +86,9 @@ final class CommerceSettlementDiscrepancyDecisionInputCheckoutDataTransportFound
         $this->assertNull($data->settlementDiscrepancyDecisionInput);
     }
 
-    public function test_request_controller_and_manager_remain_opaque_to_decision_input(): void
+    public function test_manager_remains_opaque_to_decision_input(): void
     {
         $paths = [
-            app_path('Http/Requests/StoreCommerceSaleRequest.php'),
-            app_path('Http/Controllers/CommerceSaleController.php'),
             app_path('Domain/Commerce/CommerceCheckoutManager.php'),
         ];
 

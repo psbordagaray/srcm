@@ -724,9 +724,9 @@ final class ReleasePreflightInspector
             && ($policy['discrepancy_framework']['commerce_settlement_decision_input_audit_persistence'] ?? null)
                 === false
             && ($policy['discrepancy_framework']['commerce_settlement_decision_input_request_runtime_wired'] ?? null)
-                === false
+                === true
             && ($policy['discrepancy_framework']['commerce_settlement_decision_input_controller_runtime_wired'] ?? null)
-                === false
+                === true
             && ($policy['discrepancy_framework']['commerce_settlement_decision_input_checkout_data_runtime_wired'] ?? null)
                 === true
             && ($policy['discrepancy_framework']['commerce_settlement_decision_input_manager_runtime_wired'] ?? null)

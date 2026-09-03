@@ -68,12 +68,12 @@ final class CommerceSettlementDiscrepancyDecisionInputFoundationTest extends Tes
                 'commerce_settlement_decision_input_keep_reference_allows_sale_confirmation'
             ],
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy[
                 'commerce_settlement_decision_input_request_runtime_wired'
             ],
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy[
                 'commerce_settlement_decision_input_controller_runtime_wired'
             ],
@@ -194,8 +194,6 @@ final class CommerceSettlementDiscrepancyDecisionInputFoundationTest extends Tes
 
         $paths = [
             app_path('Domain/Commerce/CommerceCheckoutManager.php'),
-            app_path('Http/Requests/StoreCommerceSaleRequest.php'),
-            app_path('Http/Controllers/CommerceSaleController.php'),
         ];
 
         foreach ($paths as $path) {

@@ -499,7 +499,9 @@ class CommerceSaleController extends Controller
                     receivableSettlementComponentEvidence:
                         $this->receivableSettlementComponentEvidence(
                             $request->receivableAmountAuthoritativeInput()
-                        )
+                        ),
+                    settlementDiscrepancyDecisionInput:
+                        $request->settlementDiscrepancyDecisionInput()
                 ),
                 $request->user()
             );

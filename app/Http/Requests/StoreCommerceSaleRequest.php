@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput;
 use App\Domain\Numerics\AuthoritativeNumericInput;
 use App\Domain\Numerics\ExactDecimalLegacyAdapter;
 use App\Domain\Numerics\HumanNumericInput;
@@ -342,6 +343,21 @@ class StoreCommerceSaleRequest extends FormRequest
                 'string',
                 'max:2000',
             ],
+            'settlement_discrepancy_decision' => [
+                'nullable',
+                'string',
+                'required_with:settlement_discrepancy_reason',
+                Rule::in(
+                    CommerceSettlementDiscrepancyDecisionInput::
+                        AUTHORIZED_DECISION_VALUES
+                ),
+            ],
+            'settlement_discrepancy_reason' => [
+                'nullable',
+                'string',
+                'required_with:settlement_discrepancy_decision',
+                'max:2048',
+            ],
             'payments.*.method' => [
                 'required',
                 Rule::enum(CommercePaymentMethod::class),
@@ -460,6 +476,24 @@ class StoreCommerceSaleRequest extends FormRequest
                 'payments',
                 []
             );
+
+            if (
+                ! $validator->errors()->has(
+                    'settlement_discrepancy_decision'
+                )
+                && ! $validator->errors()->has(
+                    'settlement_discrepancy_reason'
+                )
+            ) {
+                try {
+                    $this->settlementDiscrepancyDecisionInput();
+                } catch (InvalidArgumentException $exception) {
+                    $validator->errors()->add(
+                        'settlement_discrepancy_reason',
+                        $exception->getMessage()
+                    );
+                }
+            }
 
             if (
                 $payments === []
@@ -801,6 +835,33 @@ class StoreCommerceSaleRequest extends FormRequest
         $value = trim($value);
 
         return $value === '' ? null : $value;
+    }
+
+    public function settlementDiscrepancyDecisionInput():
+        ?CommerceSettlementDiscrepancyDecisionInput
+    {
+        $decision = $this->input(
+            'settlement_discrepancy_decision'
+        );
+        $reason = $this->input(
+            'settlement_discrepancy_reason'
+        );
+
+        if ($decision === null && $reason === null) {
+            return null;
+        }
+
+        if (
+            $decision !== 'KEEP_REFERENCE'
+            || ! is_string($reason)
+        ) {
+            throw new InvalidArgumentException(
+                'Commerce settlement decision input currently supports KEEP_REFERENCE only with an explicit reason.'
+            );
+        }
+
+        return CommerceSettlementDiscrepancyDecisionInput::
+            keepReference($reason);
     }
 
     public function paymentAmountAuthoritativeInput(
