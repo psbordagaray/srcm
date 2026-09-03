@@ -7,6 +7,21 @@ use UnexpectedValueException;
 
 final readonly class NumericalDiscrepancyAnalyzer
 {
+    /** @var list<class-string<NumericalDiscrepancyClassifier>> */
+    public const FOUNDATION_CLASSIFIERS = [
+        ModuloNineTranspositionSignalClassifier::class,
+    ];
+
+    /** @var list<class-string<NumericalDiscrepancyClassifier>> */
+    public const CLASSIFIER_PACK_V1 = [
+        AdjacentTranspositionClassifier::class,
+        DigitOmissionClassifier::class,
+        DigitDuplicationClassifier::class,
+        SeparatorMisplacementClassifier::class,
+        DigitSubstitutionClassifier::class,
+        ModuloNineTranspositionSignalClassifier::class,
+    ];
+
     /** @var list<NumericalDiscrepancyClassifier> */
     public array $classifiers;
 
@@ -44,6 +59,18 @@ final readonly class NumericalDiscrepancyAnalyzer
     public static function foundation(): self
     {
         return new self([
+            new ModuloNineTranspositionSignalClassifier(),
+        ]);
+    }
+
+    public static function classifierPackV1(): self
+    {
+        return new self([
+            new AdjacentTranspositionClassifier(),
+            new DigitOmissionClassifier(),
+            new DigitDuplicationClassifier(),
+            new SeparatorMisplacementClassifier(),
+            new DigitSubstitutionClassifier(),
             new ModuloNineTranspositionSignalClassifier(),
         ]);
     }

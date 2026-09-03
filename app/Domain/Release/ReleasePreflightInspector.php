@@ -515,6 +515,36 @@ final class ReleasePreflightInspector
             && interface_exists(\App\Domain\Numerics\NumericalDiscrepancyClassifier::class)
             && class_exists(\App\Domain\Numerics\NumericalDiscrepancyAnalyzer::class)
             && class_exists(\App\Domain\Numerics\ModuloNineTranspositionSignalClassifier::class)
+            && class_exists(\App\Domain\Numerics\AdjacentTranspositionClassifier::class)
+            && class_exists(\App\Domain\Numerics\DigitOmissionClassifier::class)
+            && class_exists(\App\Domain\Numerics\DigitDuplicationClassifier::class)
+            && class_exists(\App\Domain\Numerics\SeparatorMisplacementClassifier::class)
+            && class_exists(\App\Domain\Numerics\DigitSubstitutionClassifier::class)
+            && is_a(
+                \App\Domain\Numerics\AdjacentTranspositionClassifier::class,
+                \App\Domain\Numerics\NumericalDiscrepancyClassifier::class,
+                true
+            )
+            && is_a(
+                \App\Domain\Numerics\DigitOmissionClassifier::class,
+                \App\Domain\Numerics\NumericalDiscrepancyClassifier::class,
+                true
+            )
+            && is_a(
+                \App\Domain\Numerics\DigitDuplicationClassifier::class,
+                \App\Domain\Numerics\NumericalDiscrepancyClassifier::class,
+                true
+            )
+            && is_a(
+                \App\Domain\Numerics\SeparatorMisplacementClassifier::class,
+                \App\Domain\Numerics\NumericalDiscrepancyClassifier::class,
+                true
+            )
+            && is_a(
+                \App\Domain\Numerics\DigitSubstitutionClassifier::class,
+                \App\Domain\Numerics\NumericalDiscrepancyClassifier::class,
+                true
+            )
             && ($policy['discrepancy_framework']['foundation_version'] ?? null) === 1
             && ($policy['discrepancy_framework']['signal_schema'] ?? null)
                 === \App\Domain\Numerics\NumericalDiscrepancySignal::SCHEMA
@@ -527,7 +557,31 @@ final class ReleasePreflightInspector
             && ($policy['discrepancy_framework']['analyzer_class'] ?? null)
                 === \App\Domain\Numerics\NumericalDiscrepancyAnalyzer::class
             && ($policy['discrepancy_framework']['foundation_classifier_classes'] ?? null)
-                === [\App\Domain\Numerics\ModuloNineTranspositionSignalClassifier::class]
+                === \App\Domain\Numerics\NumericalDiscrepancyAnalyzer::FOUNDATION_CLASSIFIERS
+            && ($policy['discrepancy_framework']['classifier_pack_version'] ?? null) === 1
+            && ($policy['discrepancy_framework']['classifier_pack_classes'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyAnalyzer::CLASSIFIER_PACK_V1
+            && ($policy['discrepancy_framework']['classifier_pack_status'] ?? null)
+                === 'implemented_v1_not_runtime_wired'
+            && ($policy['discrepancy_framework']['classifier_pack_runtime_wiring_requires_separate_reviewed_cut'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['multiple_signals_may_coexist'] ?? null) === true
+            && ($policy['discrepancy_framework']['signal_priority_or_autocorrection_winner_allowed'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['structural_match_is_not_human_cause_proof'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['unique_structural_match_confidence'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyConfidence::High->value
+            && ($policy['discrepancy_framework']['ambiguous_single_edit_match_confidence'] ?? null)
+                === \App\Domain\Numerics\NumericalDiscrepancyConfidence::Medium->value
+            && ($policy['discrepancy_framework']['separator_misplacement_requires_same_separator_symbol'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['separator_misplacement_requires_same_digit_sequence'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['generic_omission_classifier_must_not_infer_special_case'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['modulo_nine_classifier_order'] ?? null)
+                === 'after_structural_classifiers'
             && ($policy['discrepancy_framework']['transposition_modulo_nine_is_signal_only'] ?? null) === true
             && ($policy['discrepancy_framework']['transposition_modulo_nine_is_proof'] ?? null) === false
             && ($policy['discrepancy_framework']['silent_autocorrection_allowed'] ?? null) === false
@@ -542,8 +596,6 @@ final class ReleasePreflightInspector
             && ($policy['discrepancy_framework']['transposition_by_omission_special_case_status'] ?? null)
                 === 'undefined_no_implementation_exact_spec_required'
             && ($policy['discrepancy_framework']['transposition_by_omission_implementation_allowed'] ?? null) === false
-            && ($policy['discrepancy_framework']['classifier_pack_status'] ?? null)
-                === 'not_in_foundation_cut'
             && ($policy['discrepancy_framework']['runtime_wiring_status'] ?? null)
                 === 'foundation_only_not_yet_wired'
             && ($policy['discrepancy_framework']['runtime_wiring_requires_separate_reviewed_cut'] ?? null) === true

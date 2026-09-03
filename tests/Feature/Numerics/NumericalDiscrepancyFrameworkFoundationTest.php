@@ -2,12 +2,17 @@
 
 namespace Tests\Feature\Numerics;
 
+use App\Domain\Numerics\AdjacentTranspositionClassifier;
+use App\Domain\Numerics\DigitDuplicationClassifier;
+use App\Domain\Numerics\DigitOmissionClassifier;
+use App\Domain\Numerics\DigitSubstitutionClassifier;
 use App\Domain\Numerics\ModuloNineTranspositionSignalClassifier;
 use App\Domain\Numerics\NumericalDiscrepancyAnalyzer;
 use App\Domain\Numerics\NumericalDiscrepancyClassifier;
 use App\Domain\Numerics\NumericalDiscrepancyConfidence;
 use App\Domain\Numerics\NumericalDiscrepancyKind;
 use App\Domain\Numerics\NumericalDiscrepancySignal;
+use App\Domain\Numerics\SeparatorMisplacementClassifier;
 use App\Domain\Release\ReleasePreflightInspector;
 use InvalidArgumentException;
 use Tests\TestCase;
@@ -40,9 +45,50 @@ final class NumericalDiscrepancyFrameworkFoundationTest extends TestCase
             NumericalDiscrepancyAnalyzer::class,
             $policy['analyzer_class'],
         );
-        $this->assertSame([
-            ModuloNineTranspositionSignalClassifier::class,
-        ], $policy['foundation_classifier_classes']);
+        $this->assertSame(
+            NumericalDiscrepancyAnalyzer::FOUNDATION_CLASSIFIERS,
+            $policy['foundation_classifier_classes'],
+        );
+        $this->assertSame(1, $policy['classifier_pack_version']);
+        $this->assertSame(
+            NumericalDiscrepancyAnalyzer::CLASSIFIER_PACK_V1,
+            $policy['classifier_pack_classes'],
+        );
+        $this->assertSame(
+            'implemented_v1_not_runtime_wired',
+            $policy['classifier_pack_status'],
+        );
+        $this->assertTrue(
+            $policy['classifier_pack_runtime_wiring_requires_separate_reviewed_cut'],
+        );
+        $this->assertTrue($policy['multiple_signals_may_coexist']);
+        $this->assertFalse(
+            $policy['signal_priority_or_autocorrection_winner_allowed'],
+        );
+        $this->assertTrue(
+            $policy['structural_match_is_not_human_cause_proof'],
+        );
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::High->value,
+            $policy['unique_structural_match_confidence'],
+        );
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::Medium->value,
+            $policy['ambiguous_single_edit_match_confidence'],
+        );
+        $this->assertTrue(
+            $policy['separator_misplacement_requires_same_separator_symbol'],
+        );
+        $this->assertTrue(
+            $policy['separator_misplacement_requires_same_digit_sequence'],
+        );
+        $this->assertTrue(
+            $policy['generic_omission_classifier_must_not_infer_special_case'],
+        );
+        $this->assertSame(
+            'after_structural_classifiers',
+            $policy['modulo_nine_classifier_order'],
+        );
         $this->assertTrue(
             $policy['transposition_modulo_nine_is_signal_only'],
         );
@@ -66,10 +112,6 @@ final class NumericalDiscrepancyFrameworkFoundationTest extends TestCase
         );
         $this->assertFalse(
             $policy['transposition_by_omission_implementation_allowed'],
-        );
-        $this->assertSame(
-            'not_in_foundation_cut',
-            $policy['classifier_pack_status'],
         );
         $this->assertSame(
             'foundation_only_not_yet_wired',
@@ -170,15 +212,194 @@ final class NumericalDiscrepancyFrameworkFoundationTest extends TestCase
         }
     }
 
-    public function test_analyzer_is_extensible_deterministic_and_preserves_both_values(): void
+    public function test_adjacent_transposition_is_high_confidence_structural_match_not_cause_proof(): void
     {
-        $analyzer = NumericalDiscrepancyAnalyzer::foundation();
+        $classifier = new AdjacentTranspositionClassifier();
 
-        $signals = $analyzer->analyze('12345', '12435');
+        $signal = $classifier->classify('12345', '12435');
+
+        $this->assertNotNull($signal);
+        $this->assertSame(
+            NumericalDiscrepancyKind::AdjacentTransposition,
+            $signal->kind,
+        );
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::High,
+            $signal->confidence,
+        );
+        $this->assertSame(2, $signal->evidence['first_index']);
+        $this->assertSame(3, $signal->evidence['second_index']);
+        $this->assertFalse($signal->evidence['human_cause_proven']);
+
+        foreach ([
+            ['1234', '1234'],
+            ['1234', '1325'],
+            ['1123', '1123'],
+            ['12A4', '124A'],
+        ] as [$reference, $observed]) {
+            $this->assertNull(
+                $classifier->classify($reference, $observed),
+            );
+        }
+    }
+
+    public function test_digit_omission_reports_unique_and_ambiguous_structural_matches_without_special_case_inference(): void
+    {
+        $classifier = new DigitOmissionClassifier();
+
+        $unique = $classifier->classify('12345', '1235');
+
+        $this->assertNotNull($unique);
+        $this->assertSame(
+            NumericalDiscrepancyKind::DigitOmission,
+            $unique->kind,
+        );
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::High,
+            $unique->confidence,
+        );
+        $this->assertSame(1, $unique->evidence['candidate_count']);
+        $this->assertSame(3, $unique->evidence['first_candidate_index']);
+        $this->assertSame('4', $unique->evidence['omitted_digit']);
+        $this->assertFalse($unique->evidence['special_case_inferred']);
+
+        $ambiguous = $classifier->classify('1223', '123');
+
+        $this->assertNotNull($ambiguous);
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::Medium,
+            $ambiguous->confidence,
+        );
+        $this->assertSame(2, $ambiguous->evidence['candidate_count']);
+
+        $this->assertNull($classifier->classify('1234', '1245'));
+        $this->assertSame(
+            'undefined_no_implementation_exact_spec_required',
+            config(
+                'release.numeric_integrity.discrepancy_framework.transposition_by_omission_special_case_status'
+            ),
+        );
+    }
+
+    public function test_digit_duplication_reports_unique_and_ambiguous_source_matches(): void
+    {
+        $classifier = new DigitDuplicationClassifier();
+
+        $unique = $classifier->classify('1234', '12234');
+
+        $this->assertNotNull($unique);
+        $this->assertSame(
+            NumericalDiscrepancyKind::DigitDuplication,
+            $unique->kind,
+        );
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::High,
+            $unique->confidence,
+        );
+        $this->assertSame(1, $unique->evidence['candidate_count']);
+        $this->assertSame(1, $unique->evidence['first_source_index']);
+        $this->assertSame('2', $unique->evidence['duplicated_digit']);
+
+        $ambiguous = $classifier->classify('1223', '12223');
+
+        $this->assertNotNull($ambiguous);
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::Medium,
+            $ambiguous->confidence,
+        );
+        $this->assertSame(2, $ambiguous->evidence['candidate_count']);
+
+        $this->assertNull($classifier->classify('1234', '12934'));
+    }
+
+    public function test_separator_misplacement_requires_same_separator_symbol_and_digit_sequence(): void
+    {
+        $classifier = new SeparatorMisplacementClassifier();
+
+        $signal = $classifier->classify('12.34', '1.234');
+
+        $this->assertNotNull($signal);
+        $this->assertSame(
+            NumericalDiscrepancyKind::SeparatorMisplacement,
+            $signal->kind,
+        );
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::High,
+            $signal->confidence,
+        );
+        $this->assertSame('.', $signal->evidence['separator']);
+        $this->assertSame(2, $signal->evidence['reference_separator_index']);
+        $this->assertSame(1, $signal->evidence['observed_separator_index']);
+        $this->assertTrue($signal->evidence['same_digit_sequence']);
+
+        $this->assertNull($classifier->classify('12.34', '12,34'));
+        $this->assertNull($classifier->classify('12.34', '12.35'));
+        $this->assertNull($classifier->classify('1234', '12.34'));
+    }
+
+    public function test_digit_substitution_requires_exactly_one_different_ascii_digit(): void
+    {
+        $classifier = new DigitSubstitutionClassifier();
+
+        $signal = $classifier->classify('1234', '1294');
+
+        $this->assertNotNull($signal);
+        $this->assertSame(
+            NumericalDiscrepancyKind::DigitSubstitution,
+            $signal->kind,
+        );
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::High,
+            $signal->confidence,
+        );
+        $this->assertSame(2, $signal->evidence['difference_index']);
+        $this->assertSame('3', $signal->evidence['reference_digit']);
+        $this->assertSame('9', $signal->evidence['observed_digit']);
+
+        $this->assertNull($classifier->classify('1234', '1295'));
+        $this->assertNull($classifier->classify('1234', '123'));
+        $this->assertNull($classifier->classify('12A4', '1294'));
+    }
+
+    public function test_classifier_pack_order_is_deterministic_and_multiple_signals_may_coexist(): void
+    {
+        $this->assertSame([
+            AdjacentTranspositionClassifier::class,
+            DigitOmissionClassifier::class,
+            DigitDuplicationClassifier::class,
+            SeparatorMisplacementClassifier::class,
+            DigitSubstitutionClassifier::class,
+            ModuloNineTranspositionSignalClassifier::class,
+        ], NumericalDiscrepancyAnalyzer::CLASSIFIER_PACK_V1);
+
+        $signals = NumericalDiscrepancyAnalyzer::classifierPackV1()
+            ->analyze('12345', '12435');
+
+        $this->assertCount(2, $signals);
+        $this->assertSame(
+            NumericalDiscrepancyKind::AdjacentTransposition,
+            $signals[0]->kind,
+        );
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::High,
+            $signals[0]->confidence,
+        );
+        $this->assertSame(
+            NumericalDiscrepancyKind::TranspositionModuloNineSignal,
+            $signals[1]->kind,
+        );
+        $this->assertSame(
+            NumericalDiscrepancyConfidence::Low,
+            $signals[1]->confidence,
+        );
+    }
+
+    public function test_foundation_analyzer_remains_backward_compatible_with_modulo_nine_only(): void
+    {
+        $signals = NumericalDiscrepancyAnalyzer::foundation()
+            ->analyze('12345', '12435');
 
         $this->assertCount(1, $signals);
-        $this->assertSame('12345', $signals[0]->referenceValue);
-        $this->assertSame('12435', $signals[0]->observedValue);
         $this->assertSame(
             ModuloNineTranspositionSignalClassifier::IDENTIFIER,
             $signals[0]->ruleId,
