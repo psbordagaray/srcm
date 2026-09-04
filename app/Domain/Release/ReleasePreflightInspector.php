@@ -529,6 +529,10 @@ final class ReleasePreflightInspector
             && class_exists(\App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionException::class)
             && class_exists(\App\Domain\Commerce\CommerceSettlementReviewRecorder::class)
             && class_exists(\App\Models\CommerceSettlementReview::class)
+            && class_exists(\App\Domain\Commerce\CommerceSettlementReviewResolutionData::class)
+            && class_exists(\App\Domain\Commerce\CommerceSettlementReviewResolutionManager::class)
+            && class_exists(\App\Models\CommerceSettlementReviewResolution::class)
+            && enum_exists(\App\Enums\CommerceSettlementReviewResolutionOutcome::class)
             && class_exists(\App\Domain\Numerics\ModuloNineTranspositionSignalClassifier::class)
             && class_exists(\App\Domain\Numerics\AdjacentTranspositionClassifier::class)
             && class_exists(\App\Domain\Numerics\DigitOmissionClassifier::class)
@@ -846,6 +850,50 @@ final class ReleasePreflightInspector
                 === true
             && ($policy['discrepancy_framework']['commerce_settlement_review_persistence_audit_full_evidence_duplicated'] ?? null)
                 === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_foundation_version'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementReviewResolutionManager::FOUNDATION_VERSION
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_manager_class'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementReviewResolutionManager::class
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_data_class'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementReviewResolutionData::class
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_model_class'] ?? null)
+                === \App\Models\CommerceSettlementReviewResolution::class
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_outcome_enum_class'] ?? null)
+                === \App\Enums\CommerceSettlementReviewResolutionOutcome::class
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_outcome_values'] ?? null)
+                === \App\Enums\CommerceSettlementReviewResolutionOutcome::values()
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_cardinality'] ?? null)
+                === 'one_final_resolution_per_review'
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_storage'] ?? null)
+                === 'separate_append_only_immutable_record'
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_capability'] ?? null)
+                === 'canResolveCommerceSettlementReview'
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_admin_only'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_audit_event'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementReviewResolutionManager::AUDIT_EVENT
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_audit_atomic_with_create'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_identical_retry_idempotent'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_conflict_fails_closed'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_second_final_fails_closed'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_sale_creation_authorized'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_payment_rewrite_authorized'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_receivable_rewrite_authorized'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_business_mutation_authorized'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_accept_observed_authorized'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_runtime_controller_route_ui'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_foundation_status'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementReviewResolutionManager::FOUNDATION_STATUS
             && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_foundation_version'] ?? null)
                 === 1
             && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_schema'] ?? null)

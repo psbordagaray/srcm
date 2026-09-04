@@ -9,6 +9,7 @@ use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class CommerceSettlementReview extends Model
@@ -77,6 +78,14 @@ class CommerceSettlementReview extends Model
         return $this->belongsTo(
             User::class,
             'requested_by_user_id'
+        );
+    }
+
+    public function resolution(): HasOne
+    {
+        return $this->hasOne(
+            CommerceSettlementReviewResolution::class,
+            'commerce_settlement_review_id'
         );
     }
 
