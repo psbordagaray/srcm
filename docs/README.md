@@ -1,82 +1,91 @@
 # SRCM Full — Puerta de entrada y continuidad maestra
 
 Estado: **vinculante para recuperación de contexto**
-Actualizado: **2026-09-01**
+Actualizado: **2026-09-04**
 
-<!-- P13_CURRENT_CONTINUITY_V1 -->
-## Current P13 checkpoint — P13.0 topology alignment GREEN / P13.A foundation next
+<!-- P13_CURRENT_CONTINUITY_V2 -->
+## Current P13 checkpoint - P13.B Numerical Integrity GREEN through Settlement Review Resolution Admin UI / PR #17 reconciled
 
 <!--
 STRALEON_CANONICAL_PRODUCT_NAME=Straleon
 P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
-P12_2_CLOSURE=GREEN_CLOSED
-P12_2_PROTECTED_MAIN_SHA=9a6a22a4e11449068f68c7b710950f58f95ed711
-P12_2_PROTECTED_MAIN_REVOCATION=GREEN_LIVE_FOUNDATION_V4
-P12_2_CI91_RUN_ID=33550408304
-P12_2_PRODUCTION_RELEASE_STATE=INSTALLED_INACTIVE_CURRENT_ABSENT_SERVICES_INACTIVE
-P13_0_TOPOLOGY_ALIGNMENT=GREEN_CLOSED
-P13_0_ALIGNMENT_MERGE_SHA=34effc77c6d75e0f8a43cae8779a813bad17da3a
-P13_0_ALIGNMENT_PARENT_FEATURE=ca57bc489f450db9395c7fe98f32e37a181915f4
-P13_0_ALIGNMENT_PARENT_MAIN=9a6a22a4e11449068f68c7b710950f58f95ed711
-P13_0_CONFLICT_POLICY=MAIN_WINS_EXACT_THREE_P12_GOVERNANCE_PATHS
-P13_0_CI92_RUN_ID=33559004502
-P13_0_CI92_JOB_ID=100026706572
-P13_0_CI92_STATUS=GREEN_COMPLETED_SUCCESS_ATTEMPT_1
-P13_A_IMPLEMENTATION_STATUS=NOT_IMPLEMENTED
-P13_NEXT_BOUNDARY=P13_A_RELEASE_INTEGRITY_ENVIRONMENT_IDENTITY_AND_FUTURE_AUTOMATION_FOUNDATION_V1
+P13_CURRENT_SUBPHASE=P13_B_NUMERICAL_INTEGRITY_AND_HUMAN_ERROR_PREVENTION
+P13_B_STATUS=ACTIVE_CURRENT
+P13_B_PUBLISHED_HEAD=aab6fb8f4a55297b14a5bfde76ed0de475573bc5
+P13_B_PUBLISHED_PARENT=25b8e0f531154e79f6813211dfd67403e15ab0b3
+P13_B_CI128_STATUS=FAILED_STALE_FOUNDATION_EXPECTATION_DIAGNOSED_AND_CORRECTED
+P13_B_CI129_RUN_ID=33920788791
+P13_B_CI129_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI129_HEAD=aab6fb8f4a55297b14a5bfde76ed0de475573bc5
+P13_B_MONEY_BOUNDARY_WAVE_1=GREEN_CLOSED
+P13_B_DISCREPANCY_FRAMEWORK=GREEN_PUBLISHED
+P13_B_SETTLEMENT_COMPONENT_ANALYSIS=GREEN_PUBLISHED
+P13_B_SETTLEMENT_DECISION_INPUT=GREEN_PUBLISHED
+P13_B_SETTLEMENT_REVIEW_PERSISTENCE=GREEN_PUBLISHED
+P13_B_SETTLEMENT_REVIEW_RESOLUTION_FOUNDATION=GREEN_PUBLISHED
+P13_B_SETTLEMENT_REVIEW_RESOLUTION_HTTP_TRANSPORT=GREEN_PUBLISHED
+P13_B_SETTLEMENT_REVIEW_RESOLUTION_ADMIN_UI=GREEN_PUBLISHED
+P13_B_PR17_NUMBER=17
+P13_B_PR17_STATE=SOURCE_DRAFT_NOT_DIRECTLY_MERGED
+P13_B_PR17_SOURCE_HEAD=a474a721302f446dc2e92542720a9eeb446f33f5
+P13_B_PR17_AMENDMENT_150=INCORPORATED_AS_BINDING_ROADMAP_INPUT
+P13_B_PR17_AMENDMENT_151=INCORPORATED_AS_BINDING_ROADMAP_INPUT
+P13_B_PR17_AMENDMENT_152=INCORPORATED_AS_BINDING_ROADMAP_INPUT
+P13_B_STOREFRONT_FIRST_CLASS=ROADMAP_BINDING_NOT_IMPLEMENTED_BY_THIS_DOC_CUT
+P13_B_COMMERCIAL_HARDWARE_FIRST_CLASS=ROADMAP_BINDING_NOT_IMPLEMENTED_BY_THIS_DOC_CUT
+P13_B_COMMERCIAL_AVAILABILITY_ENGINE=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
+P13_B_UNITS_PRESENTATIONS_FRACTIONAL_CONTAINERS=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
+P13_B_VARIABLE_QUANTITY_FULFILLMENT=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
+P13_B_FULFILLMENT_PREFERENCES=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
+P13_B_TRANSFORMATION_YIELD_TRACEABILITY=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
+P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
+P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REQUIRES_FUTURE_RECON
+P13_B_MULTIRRUBRO_VALIDATION=MANDATORY
+P13_C_STATUS=NOT_OPENED
+P13_NEXT_BOUNDARY=P13_B_NEXT_FRONTIER_RECON_AFTER_MASTER_SYNC_V1
 PRODUCTION_MUTATION_AUTHORIZATION=NO
 -->
 
-P12.2 is formally closed. Protected `main` remains at
-`9a6a22a4e11449068f68c7b710950f58f95ed711`, protected by `quality-gates`,
-with the temporary protected-main inactive-alignment authorization revoked under
-foundation v4. The authorized production release remains **installed inactive**:
-`current` is absent, the services for that stage remain inactive, no production
-database migration was performed by that boundary, and production activation is
-not authorized by this documentation cut.
+P13.B is the active technical frontier. The published development HEAD is
+`aab6fb8f4a55297b14a5bfde76ed0de475573bc5`, after the one-line Foundation expectation repair that
+resolved the deterministic CI128 failure. Natural CI129 then completed GREEN on that
+exact SHA, including the full-suite quality gate. CI128 must not be rerun.
 
-P13.0 then reconciled the development topology without reopening that consumed
-authorization. `main` was merged into `feature/core-entity` as
-`34effc77c6d75e0f8a43cae8779a813bad17da3a`, with parents
-`ca57bc489f450db9395c7fe98f32e37a181915f4` and
-`9a6a22a4e11449068f68c7b710950f58f95ed711`. The three demonstrated P12
-governance conflicts were resolved by preserving the exact `main` blobs while
-the remaining feature functional history was preserved by the merge.
+The current published P13.B chain already includes the closed Money Boundary Wave 1,
+check-digit and discrepancy foundations, settlement component analysis and decision
+evidence/input boundaries, settlement-review persistence after checkout rollback, and
+the Settlement Review Resolution foundation, HTTP transport and Administrative UI.
+The Administrative UI remains evidence/resolution-only: it does not itself execute
+business outcomes, retry checkout, create a sale, finalize payment or open P13.C.
 
-Post-push verification is closed: **CI92 / run `33559004502` / job
-`100026706572` completed successfully on attempt 1**, including the full test
-suite and the tracked-tree immutability gate. Local/remote feature, protected
-main, `.env` and the canonical database were reconciled without drift.
+This documentation synchronization also reconciles the product architecture prepared
+in draft PR #17 onto the current technical HEAD without directly merging its stale-base
+branch. The three source documents incorporated in this cut are:
 
-P13 is now the formal future-foundations phase. Its first implementation
-boundary is **P13.A — Release Integrity, Environment Identity and Future
-Automation**, comprising:
+- `docs/150_ROADMAP_AMENDMENT_STRALEON_STOREFRONT_MULTIRUBRO_PHYSICAL_COMMERCE_V1.md`;
+- `docs/151_ROADMAP_AMENDMENT_TALLER_MECANICO_AUTOPARTES_SERVICE_SCOPE_EVOLUTION_V1.md`;
+- `docs/152_ROADMAP_AMENDMENT_SERVICE_SCOPE_EVOLUTION_CROSS_VERTICAL_V1.md`.
 
-1. **Release Manifest V1** — a release declares identity, contents,
-   prerequisites, permissions, rollback and integrity evidence.
-2. **Environment Identity V1** — sensitive operations must fail when the
-   installation/environment/organization/node identity does not match.
-3. **Migration Contract V1** — database changes declare compatibility,
-   downtime, backup, reversibility and rollback requirements before execution.
-4. **Release State Machine V1** —
-   `BUILT -> VERIFIED -> AUTHORIZED -> INSTALLED_INACTIVE -> READY -> ACTIVE -> SUPERSEDED -> RETIRED`.
-5. **Capability Authorization Contract V1** — sensitive permissions become
-   explicit, scoped, temporary, consumable and auditable instead of ambiguous
-   global booleans.
+Their product decisions are binding roadmap inputs, not claims of implementation.
+Storefront/Web Commerce and commercial hardware are first-class Straleon surfaces;
+publishability remains distinct from existence/sellability; Commercial Availability
+must derive promiseable availability from the same operational truth; units,
+presentations and fractional physical containers remain distinct; variable-quantity
+fulfillment, tolerances/substitutions, transformation and yield, traceability,
+cold-chain/logistics custody and configurable business profiles are cross-cutting
+capabilities; and Service Scope Evolution is cross-vertical across SULU, Taller
+Mecanico + Autopartes and future technical-service businesses.
 
-P13.B — Numerical Integrity & Human Error Prevention and P13.C — Presupuesto /
-Commercial Intent remain subsequent P13 foundations. The canonical Presupuesto
-history still preserves the rule that the original mobile conversation must be
-annexed literally when recovered rather than silently reconstructed.
-
-This master-document alignment records the proven state only. It does **not**
-implement P13.A, dispatch or rerun workflows, touch production, activate
-services, mutate the database, or grant a production capability.
+These amendments preserve the architectural rule: one Straleon Core, one operational
+truth, multiple surfaces. They do not authorize functional code, migrations, database
+mutation, production change or P13.C advancement.
 
 Next exact boundary:
 
-`P13_A_RELEASE_INTEGRITY_ENVIRONMENT_IDENTITY_AND_FUTURE_AUTOMATION_FOUNDATION_V1`.
+`P13_B_NEXT_FRONTIER_RECON_AFTER_MASTER_SYNC_V1`.
 
+That boundary is read-only. It must inspect the current P13.B code together with the
+three reconciled product amendments before selecting the next functional cut.
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 checkpoint — P12.2 Snapshot Reference Panel Foundation GREEN
