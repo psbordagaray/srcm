@@ -492,7 +492,7 @@ final class CommerceSettlementReviewResolutionFoundationTest extends TestCase
                 'commerce_settlement_review_resolution_accept_observed_authorized'
             ]
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy[
                 'commerce_settlement_review_resolution_runtime_controller_route_ui'
             ]
