@@ -2,7 +2,6 @@
 
 namespace App\Domain\Commerce;
 
-use App\Domain\Inventory\InventoryAvailabilityReader;
 use App\Domain\Inventory\InventoryQuantity;
 use App\Domain\Tenancy\CurrentOrganization;
 use App\Enums\InventoryCondition;
@@ -15,7 +14,7 @@ final class CommerceSalePolicyGuard
 {
     public function __construct(
         private readonly CurrentOrganization $currentOrganization,
-        private readonly InventoryAvailabilityReader $availability
+        private readonly CommercialAvailabilityReader $availability
     ) {
     }
 
@@ -100,7 +99,7 @@ final class CommerceSalePolicyGuard
                     && $position->condition->value
                         === $row['condition']
             );
-            $available = $position?->availableQuantity
+            $available = $position?->commercialAvailableQuantity
                 ?? '0.000000';
 
             if (! InventoryQuantity::isNegative(
@@ -158,9 +157,9 @@ final class CommerceSalePolicyGuard
                 $position->inventoryLocationId,
                 $position->condition->value
             )] = [
-                'quantity' => $position->availableQuantity,
+                'quantity' => $position->commercialAvailableQuantity,
                 'display' => $this->formatQuantity(
-                    $position->availableQuantity,
+                    $position->commercialAvailableQuantity,
                     $position->quantityScale
                 ),
                 'location' => $position->locationName,
