@@ -378,6 +378,8 @@ class AppServiceProvider extends ServiceProvider
                 'canViewCustomerAccount',
             'record-customer-collections' =>
                 'canRecordCustomerCollections',
+            'resolve-commerce-settlement-review' =>
+                'canResolveCommerceSettlementReview',
             'view-commerce-post-sale' =>
                 'canViewCommercePostSaleRequests',
             'record-commerce-post-sale' =>

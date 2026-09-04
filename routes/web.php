@@ -5,6 +5,7 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CatalogProductController;
 use App\Http\Controllers\CashRegisterController;
 use App\Http\Controllers\CommerceSaleController;
+use App\Http\Controllers\CommerceSettlementReviewResolutionController;
 use App\Http\Controllers\CommercePostSaleController;
 use App\Http\Controllers\CommercePostSaleReceiptController;
 use App\Http\Controllers\CommercePostSaleResolutionController;
@@ -964,6 +965,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
                         [CommerceSaleController::class, 'store']
                     )->name('commerce-sales.store');
                 });
+
+            Route::post(
+                'commerce/settlement-reviews/{commerceSettlementReview:public_id}/resolutions',
+                [
+                    CommerceSettlementReviewResolutionController::class,
+                    'store',
+                ]
+            )
+                ->middleware(
+                    'can:resolve-commerce-settlement-review'
+                )
+                ->whereUuid('commerceSettlementReview')
+                ->name(
+                    'commerce-settlement-reviews.resolutions.store'
+                );
 
             Route::put(
                 'products/{product}/commercial-price',

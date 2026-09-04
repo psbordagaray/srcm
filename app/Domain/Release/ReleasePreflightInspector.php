@@ -892,6 +892,28 @@ final class ReleasePreflightInspector
                 === false
             && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_runtime_controller_route_ui'] ?? null)
                 === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_transport_foundation_version'] ?? null)
+                === 1
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_request_class'] ?? null)
+                === \App\Http\Requests\StoreCommerceSettlementReviewResolution::class
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_controller_class'] ?? null)
+                === \App\Http\Controllers\CommerceSettlementReviewResolutionController::class
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_gate'] ?? null)
+                === 'resolve-commerce-settlement-review'
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_route'] ?? null)
+                === 'commerce-settlement-reviews.resolutions.store'
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_store_wired'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_ui_view_wired'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_outcome_execution_wired'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_retry_execution_wired'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_business_mutation_authorized'] ?? null)
+                === false
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_accept_observed_authorized'] ?? null)
+                === false
             && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_foundation_status'] ?? null)
                 === \App\Domain\Commerce\CommerceSettlementReviewResolutionManager::FOUNDATION_STATUS
             && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_foundation_version'] ?? null)
