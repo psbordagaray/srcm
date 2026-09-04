@@ -891,7 +891,13 @@ final class ReleasePreflightInspector
             && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_accept_observed_authorized'] ?? null)
                 === false
             && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_runtime_controller_route_ui'] ?? null)
-                === false
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_admin_ui_foundation_version'] ?? null)
+                === 1
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_admin_ui_route'] ?? null)
+                === 'commerce-settlement-reviews.resolutions.create'
+            && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_admin_ui_view'] ?? null)
+                === 'commerce-settlement-reviews.resolution-create'
             && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_transport_foundation_version'] ?? null)
                 === 1
             && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_request_class'] ?? null)
@@ -905,7 +911,7 @@ final class ReleasePreflightInspector
             && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_store_wired'] ?? null)
                 === true
             && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_ui_view_wired'] ?? null)
-                === false
+                === true
             && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_outcome_execution_wired'] ?? null)
                 === false
             && ($policy['discrepancy_framework']['commerce_settlement_review_resolution_http_retry_execution_wired'] ?? null)

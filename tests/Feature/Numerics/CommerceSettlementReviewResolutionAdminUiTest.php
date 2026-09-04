@@ -6,6 +6,7 @@ use App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionException;
 use App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionInput;
 use App\Domain\Commerce\CommerceSettlementDiscrepancyException;
 use App\Domain\Commerce\CommerceSettlementReviewRecorder;
+use App\Domain\Commerce\CommerceSettlementReviewResolutionData;
 use App\Domain\Commerce\CommerceSettlementReviewResolutionManager;
 use App\Domain\Release\ReleasePreflightInspector;
 use App\Enums\CommerceSettlementReviewResolutionOutcome;
@@ -24,7 +25,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
-final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
+final class CommerceSettlementReviewResolutionAdminUiTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -35,7 +36,7 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
         $this->seed(DatabaseSeeder::class);
     }
 
-    public function test_admin_http_post_records_resolution_without_business_effect(): void
+    public function test_admin_get_unresolved_ui_is_read_only_and_reuses_store_route(): void
     {
         $organization = $this->defaultOrganization();
         $admin = $this->actor(
@@ -47,52 +48,75 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
         $review = $this->review(
             $organization,
             $admin,
-            'http-resolution:review:001'
+            'admin-ui:review:unresolved:001'
         );
-        $originalReason = $review->reason;
+
         $salesBefore = CommerceSale::query()->count();
         $paymentsBefore = CommercePayment::query()->count();
-        $receivablesBefore =
-            CustomerReceivable::query()->count();
+        $receivablesBefore = CustomerReceivable::query()->count();
+        $resolutionsBefore =
+            CommerceSettlementReviewResolution::query()->count();
+        $resolutionAuditsBefore = AuditLog::query()
+            ->where(
+                'event',
+                CommerceSettlementReviewResolutionManager::AUDIT_EVENT
+            )
+            ->count();
 
-        $response = $this
-            ->from('/commerce/sales/create')
-            ->post(
+        $response = $this->get(
+            route(
+                'commerce-settlement-reviews.resolutions.create',
+                $review
+            )
+        );
+
+        $response
+            ->assertOk()
+            ->assertSee('Resolución administrativa')
+            ->assertSee((string) $review->system_total_minor)
+            ->assertSee((string) $review->settled_total_minor)
+            ->assertSee((string) $review->final_value_minor)
+            ->assertSee($review->reason)
+            ->assertSee($review->warning_code)
+            ->assertSee(
+                CommerceSettlementReviewResolutionOutcome::
+                    RetryWithReferenceSettlement->value,
+                false
+            )
+            ->assertSee(
+                CommerceSettlementReviewResolutionOutcome::
+                    AbandonCheckout->value,
+                false
+            )
+            ->assertDontSee('accept_observed', false)
+            ->assertSee(
                 route(
                     'commerce-settlement-reviews.resolutions.store',
                     $review
                 ),
-                $this->payload(
-                    'http-resolution:final:001'
-                )
+                false
+            )
+            ->assertSee('name="idempotency_key"', false)
+            ->assertSee(
+                'data-settlement-review-resolution-form="true"',
+                false
             );
 
-        $response
-            ->assertRedirect('/commerce/sales/create')
-            ->assertSessionHas('success')
-            ->assertSessionHasNoErrors();
-
-        $this->assertDatabaseCount(
-            'commerce_settlement_review_resolutions',
-            1
+        $idempotencyKey = $response->viewData(
+            'idempotencyKey'
         );
 
-        $resolution =
-            CommerceSettlementReviewResolution::query()
-                ->sole();
+        $this->assertIsString($idempotencyKey);
+        $this->assertMatchesRegularExpression(
+            '/\Aui:commerce-settlement-review-resolution:'.
+            '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-'.
+            '[89ab][0-9a-f]{3}-[0-9a-f]{12}\z/',
+            $idempotencyKey
+        );
 
-        $this->assertSame(
-            $review->id,
-            $resolution->commerce_settlement_review_id
-        );
-        $this->assertSame(
-            CommerceSettlementReviewResolutionOutcome::
-                RetryWithReferenceSettlement,
-            $resolution->outcome
-        );
-        $this->assertSame(
-            $originalReason,
-            $review->refresh()->reason
+        $this->assertCount(
+            2,
+            CommerceSettlementReviewResolutionOutcome::cases()
         );
         $this->assertSame(
             $salesBefore,
@@ -107,18 +131,21 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
             CustomerReceivable::query()->count()
         );
         $this->assertSame(
-            1,
+            $resolutionsBefore,
+            CommerceSettlementReviewResolution::query()->count()
+        );
+        $this->assertSame(
+            $resolutionAuditsBefore,
             AuditLog::query()
                 ->where(
                     'event',
-                    CommerceSettlementReviewResolutionManager::
-                        AUDIT_EVENT
+                    CommerceSettlementReviewResolutionManager::AUDIT_EVENT
                 )
                 ->count()
         );
     }
 
-    public function test_http_retry_is_idempotent_and_conflict_fails_closed(): void
+    public function test_resolved_ui_shows_immutable_evidence_without_second_form(): void
     {
         $organization = $this->defaultOrganization();
         $admin = $this->actor(
@@ -130,76 +157,70 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
         $review = $this->review(
             $organization,
             $admin,
-            'http-resolution:review:idempotency-001'
+            'admin-ui:review:resolved:001'
         );
-        $key = 'http-resolution:idempotent:001';
-        $payload = $this->payload($key);
 
-        $this->from('/commerce/sales/create')
-            ->post(
-                route(
-                    'commerce-settlement-reviews.resolutions.store',
-                    $review
-                ),
-                $payload
+        $resolution = app(
+            CommerceSettlementReviewResolutionManager::class
+        )->resolve(
+            new CommerceSettlementReviewResolutionData(
+                commerceSettlementReviewId: $review->id,
+                outcome:
+                    CommerceSettlementReviewResolutionOutcome::
+                        AbandonCheckout,
+                reason:
+                    'Administrative decision abandons this checkout safely.',
+                notes:
+                    'Recorded by the administrative UI focal.',
+                idempotencyKey:
+                    'admin-ui:resolved:resolution:001'
+            ),
+            $admin
+        );
+
+        $resolutionCountBefore =
+            CommerceSettlementReviewResolution::query()->count();
+        $auditCountBefore = AuditLog::query()
+            ->where(
+                'event',
+                CommerceSettlementReviewResolutionManager::AUDIT_EVENT
             )
-            ->assertRedirect('/commerce/sales/create')
-            ->assertSessionHasNoErrors();
+            ->count();
 
-        $this->from('/commerce/sales/create')
-            ->post(
-                route(
-                    'commerce-settlement-reviews.resolutions.store',
-                    $review
-                ),
-                $payload
+        $response = $this->get(
+            route(
+                'commerce-settlement-reviews.resolutions.create',
+                $review
             )
-            ->assertRedirect('/commerce/sales/create')
-            ->assertSessionHasNoErrors();
+        );
 
-        $this->assertDatabaseCount(
-            'commerce_settlement_review_resolutions',
-            1
+        $response
+            ->assertOk()
+            ->assertSee('Resolución registrada')
+            ->assertSee($resolution->public_id)
+            ->assertSee($resolution->outcome->value, false)
+            ->assertSee($resolution->reason)
+            ->assertSee((string) $resolution->notes)
+            ->assertDontSee(
+                'data-settlement-review-resolution-form',
+                false
+            )
+            ->assertDontSee('name="idempotency_key"', false);
+
+        $this->assertNull(
+            $response->viewData('idempotencyKey')
+        );
+
+        $this->assertSame(
+            $resolutionCountBefore,
+            CommerceSettlementReviewResolution::query()->count()
         );
         $this->assertSame(
-            1,
+            $auditCountBefore,
             AuditLog::query()
                 ->where(
                     'event',
-                    CommerceSettlementReviewResolutionManager::
-                        AUDIT_EVENT
-                )
-                ->count()
-        );
-
-        $conflicting = $payload;
-        $conflicting['reason'] =
-            'A conflicting HTTP resolution reason using the same key.';
-
-        $this->from('/commerce/sales/create')
-            ->post(
-                route(
-                    'commerce-settlement-reviews.resolutions.store',
-                    $review
-                ),
-                $conflicting
-            )
-            ->assertRedirect('/commerce/sales/create')
-            ->assertSessionHasErrors(
-                'settlement_review_resolution'
-            );
-
-        $this->assertDatabaseCount(
-            'commerce_settlement_review_resolutions',
-            1
-        );
-        $this->assertSame(
-            1,
-            AuditLog::query()
-                ->where(
-                    'event',
-                    CommerceSettlementReviewResolutionManager::
-                        AUDIT_EVENT
+                    CommerceSettlementReviewResolutionManager::AUDIT_EVENT
                 )
                 ->count()
         );
@@ -217,7 +238,7 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
         $review = $this->review(
             $organization,
             $admin,
-            'http-resolution:review:authorization-001'
+            'admin-ui:review:authorization:001'
         );
 
         $operator = $this->actor(
@@ -226,34 +247,29 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
         );
         $this->actingAs($operator);
 
-        $this->post(
+        $this->get(
             route(
-                'commerce-settlement-reviews.resolutions.store',
+                'commerce-settlement-reviews.resolutions.create',
                 $review
-            ),
-            $this->payload(
-                'http-resolution:operator-denied:001'
             )
         )->assertForbidden();
 
         $other = Organization::query()->create([
-            'name' => 'HTTP Resolution Other',
-            'slug' => 'http-resolution-other',
+            'name' => 'Admin UI Other',
+            'slug' => 'admin-ui-other',
             'active' => true,
         ]);
+
         $foreignAdmin = $this->actor(
             $other,
             UserRole::Admin
         );
         $this->actingAs($foreignAdmin);
 
-        $this->post(
+        $this->get(
             route(
-                'commerce-settlement-reviews.resolutions.store',
+                'commerce-settlement-reviews.resolutions.create',
                 $review
-            ),
-            $this->payload(
-                'http-resolution:foreign-denied:001'
             )
         )->assertNotFound();
 
@@ -263,44 +279,7 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
         );
     }
 
-    public function test_accept_observed_is_rejected_by_enum_validation(): void
-    {
-        $organization = $this->defaultOrganization();
-        $admin = $this->actor(
-            $organization,
-            UserRole::Admin
-        );
-        $this->actingAs($admin);
-
-        $review = $this->review(
-            $organization,
-            $admin,
-            'http-resolution:review:accept-observed-001'
-        );
-
-        $payload = $this->payload(
-            'http-resolution:accept-observed:001'
-        );
-        $payload['outcome'] = 'accept_observed';
-
-        $this->from('/commerce/sales/create')
-            ->post(
-                route(
-                    'commerce-settlement-reviews.resolutions.store',
-                    $review
-                ),
-                $payload
-            )
-            ->assertRedirect('/commerce/sales/create')
-            ->assertSessionHasErrors('outcome');
-
-        $this->assertDatabaseCount(
-            'commerce_settlement_review_resolutions',
-            0
-        );
-    }
-
-    public function test_gate_route_preflight_and_immutable_boundaries_are_exact(): void
+    public function test_create_route_release_metadata_and_immutable_boundaries_are_exact(): void
     {
         $policy = config(
             'release.numeric_integrity.discrepancy_framework'
@@ -310,41 +289,34 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
         $this->assertSame(
             1,
             $policy[
-                'commerce_settlement_review_resolution_http_transport_foundation_version'
+                'commerce_settlement_review_resolution_admin_ui_foundation_version'
             ]
         );
         $this->assertSame(
-            \App\Http\Requests\StoreCommerceSettlementReviewResolution::class,
+            'commerce-settlement-reviews.resolutions.create',
             $policy[
-                'commerce_settlement_review_resolution_http_request_class'
+                'commerce_settlement_review_resolution_admin_ui_route'
             ]
         );
         $this->assertSame(
-            \App\Http\Controllers\CommerceSettlementReviewResolutionController::class,
+            'commerce-settlement-reviews.resolution-create',
             $policy[
-                'commerce_settlement_review_resolution_http_controller_class'
-            ]
-        );
-        $this->assertSame(
-            'resolve-commerce-settlement-review',
-            $policy[
-                'commerce_settlement_review_resolution_http_gate'
-            ]
-        );
-        $this->assertSame(
-            'commerce-settlement-reviews.resolutions.store',
-            $policy[
-                'commerce_settlement_review_resolution_http_route'
-            ]
-        );
-        $this->assertTrue(
-            $policy[
-                'commerce_settlement_review_resolution_http_store_wired'
+                'commerce_settlement_review_resolution_admin_ui_view'
             ]
         );
         $this->assertTrue(
             $policy[
                 'commerce_settlement_review_resolution_http_ui_view_wired'
+            ]
+        );
+        $this->assertTrue(
+            $policy[
+                'commerce_settlement_review_resolution_runtime_controller_route_ui'
+            ]
+        );
+        $this->assertTrue(
+            $policy[
+                'commerce_settlement_review_resolution_http_store_wired'
             ]
         );
         $this->assertFalse(
@@ -367,30 +339,39 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
                 'commerce_settlement_review_resolution_http_accept_observed_authorized'
             ]
         );
-        $this->assertTrue(
-            $policy[
-                'commerce_settlement_review_resolution_runtime_controller_route_ui'
-            ]
-        );
 
-        $route = Route::getRoutes()->getByName(
+        $createRoute = Route::getRoutes()->getByName(
+            'commerce-settlement-reviews.resolutions.create'
+        );
+        $storeRoute = Route::getRoutes()->getByName(
             'commerce-settlement-reviews.resolutions.store'
         );
 
-        $this->assertNotNull($route);
-        $this->assertSame(['POST'], $route->methods());
+        $this->assertNotNull($createRoute);
+        $this->assertNotNull($storeRoute);
         $this->assertSame(
-            'commerce/settlement-reviews/{commerceSettlementReview}/resolutions',
-            $route->uri()
+            ['GET', 'HEAD'],
+            $createRoute->methods()
         );
-        $this->assertTrue(
-            Route::has(
-                'commerce-settlement-reviews.resolutions.create'
-            )
+        $this->assertSame(
+            'commerce/settlement-reviews/{commerceSettlementReview}/resolutions/create',
+            $createRoute->uri()
         );
         $this->assertContains(
             'can:resolve-commerce-settlement-review',
-            $route->gatherMiddleware()
+            $createRoute->gatherMiddleware()
+        );
+        $this->assertArrayHasKey(
+            'commerceSettlementReview',
+            $createRoute->wheres
+        );
+        $this->assertSame(
+            ['POST'],
+            $storeRoute->methods()
+        );
+        $this->assertSame(
+            'commerce/settlement-reviews/{commerceSettlementReview}/resolutions',
+            $storeRoute->uri()
         );
 
         $this->assertTrue(
@@ -401,11 +382,29 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
         );
 
         $this->assertSame(
+            'b42257f5294b1e0ab49bf0dd1f333d763a09c2609db1aac89165cb1711811e9a',
+            hash_file(
+                'sha256',
+                app_path(
+                    'Http/Requests/StoreCommerceSettlementReviewResolution.php'
+                )
+            )
+        );
+        $this->assertSame(
             '437088b4a452eadf693de4d786f146c5c64299b696829f4dee7ad8401882a7e9',
             hash_file(
                 'sha256',
                 app_path(
                     'Domain/Commerce/CommerceSettlementReviewResolutionManager.php'
+                )
+            )
+        );
+        $this->assertSame(
+            '7fc82b48a34c21b3b688d020653ca2f1c99559b2a61cdab421f48844120df851',
+            hash_file(
+                'sha256',
+                app_path(
+                    'Domain/Commerce/CommerceSettlementReviewResolutionData.php'
                 )
             )
         );
@@ -425,6 +424,22 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
                 app_path(
                     'Enums/CommerceSettlementReviewResolutionOutcome.php'
                 )
+            )
+        );
+        $this->assertSame(
+            '4f185e50cfc1ab73a9c830ce793e13a5a84ceccbb5b6b88076c7e3957103d095',
+            hash_file(
+                'sha256',
+                app_path(
+                    'Models/CommerceSettlementReview.php'
+                )
+            )
+        );
+        $this->assertSame(
+            'daaf2d61c9b5cb9a8d5c2ff17c00ae97ea4004bad5ab38c2972e4eca22c616ff',
+            hash_file(
+                'sha256',
+                app_path('Enums/UserRole.php')
             )
         );
         $this->assertSame(
@@ -451,6 +466,14 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
         );
 
         $this->assertIsString($controller);
+        $this->assertStringContainsString(
+            "view(\n            'commerce-settlement-reviews.resolution-create'",
+            $controller
+        );
+        $this->assertStringContainsString(
+            "'ui:commerce-settlement-review-resolution:'",
+            $controller
+        );
 
         foreach ([
             'CommerceCheckoutManager',
@@ -464,23 +487,6 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
                 $controller
             );
         }
-    }
-
-    /**
-     * @return array<string, string|null>
-     */
-    private function payload(string $key): array
-    {
-        return [
-            'outcome' =>
-                CommerceSettlementReviewResolutionOutcome::
-                    RetryWithReferenceSettlement->value,
-            'reason' =>
-                'Retry settlement using the preserved system reference total.',
-            'notes' =>
-                'HTTP transport records disposition only.',
-            'idempotency_key' => $key,
-        ];
     }
 
     private function review(
@@ -515,7 +521,7 @@ final class CommerceSettlementReviewResolutionHttpTransportTest extends TestCase
                 ),
             input:
                 CommerceSettlementDiscrepancyDecisionInput::keepReference(
-                    'Preserve system total for HTTP resolution transport.'
+                    'Preserve system total for administrative UI resolution.'
                 ),
         );
     }

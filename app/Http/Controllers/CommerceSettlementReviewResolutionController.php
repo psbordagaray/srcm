@@ -10,9 +10,47 @@ use App\Http\Requests\StoreCommerceSettlementReviewResolution;
 use App\Models\CommerceSettlementReview;
 use DomainException;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class CommerceSettlementReviewResolutionController extends Controller
 {
+    public function create(
+        Request $request,
+        CommerceSettlementReview $commerceSettlementReview,
+        CurrentOrganization $currentOrganization
+    ): View {
+        $organizationId = $currentOrganization->id(
+            $request->user()
+        );
+
+        abort_unless(
+            (int) $commerceSettlementReview->organization_id
+                === $organizationId,
+            404
+        );
+
+        $commerceSettlementReview->load([
+            'requestedBy',
+            'resolution.resolvedBy',
+        ]);
+
+        return view(
+            'commerce-settlement-reviews.resolution-create',
+            [
+                'review' => $commerceSettlementReview,
+                'outcomes' =>
+                    CommerceSettlementReviewResolutionOutcome::cases(),
+                'idempotencyKey' =>
+                    $commerceSettlementReview->resolution === null
+                        ? 'ui:commerce-settlement-review-resolution:'
+                            .Str::uuid()
+                        : null,
+            ]
+        );
+    }
+
     public function store(
         StoreCommerceSettlementReviewResolution $request,
         CommerceSettlementReview $commerceSettlementReview,

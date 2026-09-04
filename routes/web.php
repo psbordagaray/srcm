@@ -966,6 +966,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
                     )->name('commerce-sales.store');
                 });
 
+            Route::get(
+                'commerce/settlement-reviews/{commerceSettlementReview:public_id}/resolutions/create',
+                [
+                    CommerceSettlementReviewResolutionController::class,
+                    'create',
+                ]
+            )
+                ->middleware(
+                    'can:resolve-commerce-settlement-review'
+                )
+                ->whereUuid('commerceSettlementReview')
+                ->name(
+                    'commerce-settlement-reviews.resolutions.create'
+                );
+
             Route::post(
                 'commerce/settlement-reviews/{commerceSettlementReview:public_id}/resolutions',
                 [
