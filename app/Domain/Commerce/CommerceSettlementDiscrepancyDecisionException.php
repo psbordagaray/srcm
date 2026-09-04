@@ -17,7 +17,7 @@ final class CommerceSettlementDiscrepancyDecisionException extends DomainExcepti
         CommerceSettlementDiscrepancyException::MESSAGE;
 
     public const RUNTIME_WIRING_STATUS =
-        'MANAGER_DECISION_EVIDENCE_BINDING_WIRED_HARD_FAIL_PRESERVED';
+        'MANAGER_DECISION_EXCEPTION_AND_CONTROLLER_REVIEW_PERSISTENCE_WIRED_HARD_FAIL_PRESERVED';
 
     private function __construct(
         public readonly CommerceSettlementDiscrepancyException $runtimeEvidence,
@@ -91,7 +91,7 @@ final class CommerceSettlementDiscrepancyDecisionException extends DomainExcepti
             'automatic_correction' => false,
             'business_mutation_authorized' => false,
             'persists_audit' => false,
-            'controller_special_handling' => false,
+            'controller_special_handling' => true,
         ];
     }
 }

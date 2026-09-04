@@ -77,7 +77,7 @@ final class CommerceSettlementDiscrepancyDecisionInputManagerRuntimeBindingTest 
         $this->assertFalse($array['automatic_correction']);
         $this->assertFalse($array['business_mutation_authorized']);
         $this->assertFalse($array['persists_audit']);
-        $this->assertFalse($array['controller_special_handling']);
+        $this->assertTrue($array['controller_special_handling']);
     }
 
     public function test_manager_preserves_existing_no_input_exception_and_only_binds_positive_mismatch_input(): void
@@ -204,6 +204,11 @@ final class CommerceSettlementDiscrepancyDecisionInputManagerRuntimeBindingTest 
                 'commerce_settlement_decision_runtime_audit_persistence'
             ],
         );
+        $this->assertTrue(
+            $policy[
+                'commerce_settlement_decision_runtime_controller_special_handling'
+            ],
+        );
 
         $result = app(ReleasePreflightInspector::class)->inspect();
 
@@ -213,7 +218,7 @@ final class CommerceSettlementDiscrepancyDecisionInputManagerRuntimeBindingTest 
         $this->assertFalse($result['production_authorized']);
     }
 
-    public function test_accept_observed_and_controller_special_handling_remain_blocked(): void
+    public function test_accept_observed_remains_blocked_and_controller_persists_review_only(): void
     {
         $this->assertFalse(
             method_exists(
@@ -234,12 +239,22 @@ final class CommerceSettlementDiscrepancyDecisionInputManagerRuntimeBindingTest 
 
         $this->assertIsString($controller);
         $this->assertStringContainsString(
+            'catch (CommerceSettlementDiscrepancyDecisionException $exception)',
+            $controller,
+        );
+        $this->assertStringContainsString(
+            'CommerceSettlementReviewRecorder',
+            $controller,
+        );
+        $this->assertStringContainsString(
             'catch (DomainException $exception)',
             $controller,
         );
         $this->assertStringNotContainsString(
-            'CommerceSettlementDiscrepancyDecisionException',
-            $controller,
+            'CommerceSettlementReviewRecorder',
+            file_get_contents(
+                app_path('Domain/Commerce/CommerceCheckoutManager.php')
+            ),
         );
     }
 

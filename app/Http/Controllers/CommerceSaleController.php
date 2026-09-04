@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Domain\Commerce\CommerceCheckoutData;
 use App\Domain\Commerce\CommerceCheckoutManager;
+use App\Domain\Commerce\CommerceSettlementDiscrepancyDecisionException;
+use App\Domain\Commerce\CommerceSettlementReviewRecorder;
 use App\Domain\Commerce\CommerceSalePolicyGuard;
 use App\Domain\Commerce\CommerceSettlementComponentEvidence;
 use App\Domain\Commerce\OrganizationProductPriceReader;
@@ -376,11 +378,16 @@ class CommerceSaleController extends Controller
     public function store(
         StoreCommerceSaleRequest $request,
         CommerceCheckoutManager $manager,
-        CommerceSalePolicyGuard $salePolicy
+        CommerceSalePolicyGuard $salePolicy,
+        CurrentOrganization $currentOrganization,
+        CommerceSettlementReviewRecorder $settlementReviewRecorder
     ): RedirectResponse {
         $validated = $request->validated();
         $validatedProductLines =
             $validated['product_lines'] ?? [];
+        $organizationId = $currentOrganization->id(
+            $request->user()
+        );
 
         try {
             $stockShortage = $salePolicy->stockShortageMessage(
@@ -505,6 +512,26 @@ class CommerceSaleController extends Controller
                 ),
                 $request->user()
             );
+        } catch (CommerceSettlementDiscrepancyDecisionException $exception) {
+            try {
+                $settlementReviewRecorder->record(
+                    exception: $exception,
+                    checkoutIdempotencyKey:
+                        $validated['idempotency_key'],
+                    organizationId: $organizationId,
+                    actor: $request->user(),
+                );
+
+                $message = $exception->getMessage();
+            } catch (DomainException $reviewException) {
+                $message = $reviewException->getMessage();
+            }
+
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'commerce' => $message,
+                ]);
         } catch (DomainException $exception) {
             $message = $exception->getMessage();
 

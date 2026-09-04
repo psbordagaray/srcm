@@ -147,7 +147,7 @@ final class CommerceSettlementDiscrepancyDecisionEvidenceFoundationTest extends 
         $this->assertFalse($array['override_authorization_required']);
         $this->assertFalse($array['persists_audit']);
         $this->assertTrue($array['manager_runtime_wired']);
-        $this->assertFalse($array['controller_runtime_wired']);
+        $this->assertTrue($array['controller_runtime_wired']);
 
         $this->assertTrue(
             $this->genericDecisionEvidenceRequiresAtLeastOneSignal(),

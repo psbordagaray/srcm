@@ -15,7 +15,7 @@ final class CommerceSettlementReviewRecorder
     public const FOUNDATION_VERSION = 1;
 
     public const RUNTIME_WIRING_STATUS =
-        'FOUNDATION_ONLY_NOT_RUNTIME_WIRED';
+        'CONTROLLER_POST_ROLLBACK_REVIEW_PERSISTENCE_WIRED_HARD_FAIL_PRESERVED';
 
     public function record(
         CommerceSettlementDiscrepancyDecisionException $exception,

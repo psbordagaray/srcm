@@ -265,7 +265,7 @@ final class CommerceSettlementReviewPersistenceFoundationTest extends TestCase
         );
     }
 
-    public function test_foundation_is_not_runtime_wired_and_hard_fail_remains(): void
+    public function test_foundation_is_controller_runtime_wired_and_hard_fail_remains(): void
     {
         $manager = file_get_contents(
             app_path(
@@ -281,7 +281,7 @@ final class CommerceSettlementReviewPersistenceFoundationTest extends TestCase
         $this->assertIsString($manager);
         $this->assertIsString($controller);
         $this->assertSame(
-            'FOUNDATION_ONLY_NOT_RUNTIME_WIRED',
+            'CONTROLLER_POST_ROLLBACK_REVIEW_PERSISTENCE_WIRED_HARD_FAIL_PRESERVED',
             CommerceSettlementReviewRecorder::
                 RUNTIME_WIRING_STATUS
         );
@@ -289,8 +289,12 @@ final class CommerceSettlementReviewPersistenceFoundationTest extends TestCase
             'CommerceSettlementReviewRecorder',
             $manager
         );
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             'CommerceSettlementReviewRecorder',
+            $controller
+        );
+        $this->assertStringContainsString(
+            'catch (CommerceSettlementDiscrepancyDecisionException $exception)',
             $controller
         );
         $this->assertStringContainsString(
