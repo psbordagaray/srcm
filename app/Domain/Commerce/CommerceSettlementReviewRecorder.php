@@ -2,12 +2,14 @@
 
 namespace App\Domain\Commerce;
 
+use App\Domain\Audit\AuditRecorder;
 use App\Domain\Numerics\NumericalDiscrepancyDecision;
 use App\Models\CommerceSettlementReview;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use JsonException;
 
 final class CommerceSettlementReviewRecorder
@@ -16,6 +18,17 @@ final class CommerceSettlementReviewRecorder
 
     public const RUNTIME_WIRING_STATUS =
         'CONTROLLER_POST_ROLLBACK_REVIEW_PERSISTENCE_WIRED_HARD_FAIL_PRESERVED';
+
+    public const AUDIT_EVENT =
+        'commerce_settlement_review.created';
+
+    public const AUDIT_WIRING_STATUS =
+        'RECORDER_ATOMIC_EXACTLY_ONCE_AUDIT_WIRED';
+
+    public function __construct(
+        private readonly AuditRecorder $auditRecorder,
+    ) {
+    }
 
     public function record(
         CommerceSettlementDiscrepancyDecisionException $exception,
@@ -76,30 +89,71 @@ final class CommerceSettlementReviewRecorder
         $now = CarbonImmutable::now();
 
         try {
-            return CommerceSettlementReview::query()->create([
-                'organization_id' => $organizationId,
-                'checkout_idempotency_key' =>
-                    $checkoutIdempotencyKey,
-                'review_fingerprint' => $fingerprint,
-                'system_total_minor' =>
-                    $exception->runtimeEvidence->systemTotalMinor,
-                'settled_total_minor' =>
-                    $exception->runtimeEvidence->settledTotalMinor,
-                'decision' =>
-                    $exception->decisionEvidence->decision->value,
-                'final_value_minor' =>
-                    $exception->decisionEvidence->finalValueMinor,
-                'reason' =>
-                    $exception->decisionEvidence->reason,
-                'warning_code' =>
-                    CommerceSettlementDiscrepancyDecisionEvidence::
-                        WARNING_CODE,
-                'runtime_evidence_snapshot' => $runtime,
-                'decision_evidence_snapshot' => $decision,
-                'requested_by_user_id' => $actor->id,
-                'requested_at' => $now,
-                'created_at' => $now,
-            ])->refresh();
+            return DB::transaction(function () use (
+                $organizationId,
+                $checkoutIdempotencyKey,
+                $fingerprint,
+                $exception,
+                $runtime,
+                $decision,
+                $actor,
+                $now,
+            ): CommerceSettlementReview {
+                $existing =
+                    CommerceSettlementReview::query()
+                        ->forOrganization($organizationId)
+                        ->where(
+                            'checkout_idempotency_key',
+                            $checkoutIdempotencyKey
+                        )
+                        ->first();
+
+                if ($existing) {
+                    return $this->reconcileExisting(
+                        $existing,
+                        $fingerprint
+                    );
+                }
+
+                $review =
+                    CommerceSettlementReview::query()->create([
+                        'organization_id' => $organizationId,
+                        'checkout_idempotency_key' =>
+                            $checkoutIdempotencyKey,
+                        'review_fingerprint' => $fingerprint,
+                        'system_total_minor' =>
+                            $exception->runtimeEvidence->
+                                systemTotalMinor,
+                        'settled_total_minor' =>
+                            $exception->runtimeEvidence->
+                                settledTotalMinor,
+                        'decision' =>
+                            $exception->decisionEvidence->
+                                decision->value,
+                        'final_value_minor' =>
+                            $exception->decisionEvidence->
+                                finalValueMinor,
+                        'reason' =>
+                            $exception->decisionEvidence->reason,
+                        'warning_code' =>
+                            CommerceSettlementDiscrepancyDecisionEvidence::
+                                WARNING_CODE,
+                        'runtime_evidence_snapshot' => $runtime,
+                        'decision_evidence_snapshot' => $decision,
+                        'requested_by_user_id' => $actor->id,
+                        'requested_at' => $now,
+                        'created_at' => $now,
+                    ])->refresh();
+
+                $this->auditRecorder->record(
+                    model: $review,
+                    event: self::AUDIT_EVENT,
+                    oldValues: null,
+                    newValues: $this->auditValues($review),
+                );
+
+                return $review;
+            });
         } catch (QueryException $queryException) {
             $existing = CommerceSettlementReview::query()
                 ->forOrganization($organizationId)
@@ -118,6 +172,33 @@ final class CommerceSettlementReviewRecorder
                 $fingerprint
             );
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function auditValues(
+        CommerceSettlementReview $review,
+    ): array {
+        return [
+            'public_id' => (string) $review->public_id,
+            'checkout_idempotency_key' =>
+                (string) $review->checkout_idempotency_key,
+            'review_fingerprint' =>
+                (string) $review->review_fingerprint,
+            'system_total_minor' =>
+                (int) $review->system_total_minor,
+            'settled_total_minor' =>
+                (int) $review->settled_total_minor,
+            'decision' => (string) $review->decision,
+            'final_value_minor' =>
+                (int) $review->final_value_minor,
+            'warning_code' =>
+                (string) $review->warning_code,
+            'requested_by_user_id' =>
+                (int) $review->requested_by_user_id,
+            'requested_at' => $review->requested_at,
+        ];
     }
 
     private function reconcileExisting(

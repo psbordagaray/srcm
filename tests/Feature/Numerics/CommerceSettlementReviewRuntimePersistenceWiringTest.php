@@ -17,6 +17,7 @@ use App\Enums\FinancialAccountType;
 use App\Enums\InventoryCondition;
 use App\Enums\InventoryMovementType;
 use App\Enums\UserRole;
+use App\Models\AuditLog;
 use App\Models\CatalogProduct;
 use App\Models\CommerceSettlementReview;
 use App\Models\FinancialAccount;
@@ -62,6 +63,15 @@ final class CommerceSettlementReviewRuntimePersistenceWiringTest extends TestCas
         $this->assertDatabaseCount('commerce_sales', 0);
         $this->assertDatabaseCount('commerce_payments', 0);
         $this->assertDatabaseCount('commerce_settlement_reviews', 1);
+        $this->assertSame(
+            1,
+            AuditLog::query()
+                ->where(
+                    'event',
+                    CommerceSettlementReviewRecorder::AUDIT_EVENT
+                )
+                ->count()
+        );
 
         $review = CommerceSettlementReview::query()->sole();
 
@@ -130,6 +140,15 @@ final class CommerceSettlementReviewRuntimePersistenceWiringTest extends TestCas
 
         $this->assertDatabaseCount('commerce_settlement_reviews', 1);
         $this->assertDatabaseCount('commerce_sales', 0);
+        $this->assertSame(
+            1,
+            AuditLog::query()
+                ->where(
+                    'event',
+                    CommerceSettlementReviewRecorder::AUDIT_EVENT
+                )
+                ->count()
+        );
     }
 
     public function test_mismatch_without_decision_does_not_persist_review_and_balanced_checkout_does_not_create_review(): void
@@ -148,6 +167,15 @@ final class CommerceSettlementReviewRuntimePersistenceWiringTest extends TestCas
 
         $this->assertDatabaseCount('commerce_settlement_reviews', 0);
         $this->assertDatabaseCount('commerce_sales', 0);
+        $this->assertSame(
+            0,
+            AuditLog::query()
+                ->where(
+                    'event',
+                    CommerceSettlementReviewRecorder::AUDIT_EVENT
+                )
+                ->count()
+        );
 
         $balanced = $this->basePayload($fixture);
         $balanced['idempotency_key'] =
@@ -160,6 +188,15 @@ final class CommerceSettlementReviewRuntimePersistenceWiringTest extends TestCas
 
         $this->assertDatabaseCount('commerce_settlement_reviews', 0);
         $this->assertDatabaseCount('commerce_sales', 1);
+        $this->assertSame(
+            0,
+            AuditLog::query()
+                ->where(
+                    'event',
+                    CommerceSettlementReviewRecorder::AUDIT_EVENT
+                )
+                ->count()
+        );
     }
 
     public function test_controller_metadata_preflight_and_manager_boundary_are_coherent(): void
@@ -239,9 +276,41 @@ final class CommerceSettlementReviewRuntimePersistenceWiringTest extends TestCas
                 'commerce_settlement_review_persistence_business_mutation_authorized'
             ]
         );
-        $this->assertFalse(
+        $this->assertTrue(
             $policy[
                 'commerce_settlement_review_persistence_audit_persistence'
+            ]
+        );
+        $this->assertSame(
+            CommerceSettlementReviewRecorder::AUDIT_EVENT,
+            $policy[
+                'commerce_settlement_review_persistence_audit_event'
+            ]
+        );
+        $this->assertSame(
+            CommerceSettlementReviewRecorder::AUDIT_WIRING_STATUS,
+            $policy[
+                'commerce_settlement_review_persistence_audit_wiring_status'
+            ]
+        );
+        $this->assertTrue(
+            $policy[
+                'commerce_settlement_review_persistence_audit_exactly_once'
+            ]
+        );
+        $this->assertTrue(
+            $policy[
+                'commerce_settlement_review_persistence_audit_atomic_with_review_create'
+            ]
+        );
+        $this->assertTrue(
+            $policy[
+                'commerce_settlement_review_persistence_audit_failure_rolls_back_review'
+            ]
+        );
+        $this->assertFalse(
+            $policy[
+                'commerce_settlement_review_persistence_audit_full_evidence_duplicated'
             ]
         );
 

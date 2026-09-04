@@ -833,6 +833,18 @@ final class ReleasePreflightInspector
             && ($policy['discrepancy_framework']['commerce_settlement_review_persistence_business_mutation_authorized'] ?? null)
                 === false
             && ($policy['discrepancy_framework']['commerce_settlement_review_persistence_audit_persistence'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_persistence_audit_event'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementReviewRecorder::AUDIT_EVENT
+            && ($policy['discrepancy_framework']['commerce_settlement_review_persistence_audit_wiring_status'] ?? null)
+                === \App\Domain\Commerce\CommerceSettlementReviewRecorder::AUDIT_WIRING_STATUS
+            && ($policy['discrepancy_framework']['commerce_settlement_review_persistence_audit_exactly_once'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_persistence_audit_atomic_with_review_create'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_persistence_audit_failure_rolls_back_review'] ?? null)
+                === true
+            && ($policy['discrepancy_framework']['commerce_settlement_review_persistence_audit_full_evidence_duplicated'] ?? null)
                 === false
             && ($policy['discrepancy_framework']['commerce_settlement_component_evidence_foundation_version'] ?? null)
                 === 1
