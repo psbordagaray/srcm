@@ -337,6 +337,11 @@ final class InventoryMovementConfirmer
 
             $lockedMovement->setRelation('lines', $lines);
 
+            $this->guardFractionalContainerTraceability(
+                $lockedMovement,
+                $lines
+            );
+
             $this->projector->apply($lockedMovement);
             $this->negativeRegularizer->apply(
                 [$lockedMovement],
@@ -645,6 +650,184 @@ final class InventoryMovementConfirmer
     /**
      * @param Collection<int, InventoryMovementLine> $lines
      */
+    /**
+     * @param Collection<int, InventoryMovementLine> $lines
+     */
+    private function guardFractionalContainerTraceability(
+        InventoryMovement $movement,
+        Collection $lines
+    ): void {
+        if ($movement->type !== InventoryMovementType::Issue) {
+            return;
+        }
+
+        $products = CatalogProduct::query()
+            ->whereIn(
+                'id',
+                $lines->pluck('catalog_product_id')->unique()
+            )
+            ->get()
+            ->keyBy('id');
+
+        foreach ($lines as $line) {
+            $product = $products->get(
+                $line->catalog_product_id
+            );
+
+            if (
+                ! $product
+                || ! $product->allowsFractionalQuantity()
+                || $line->source_location_id === null
+                || (string) $line->entered_unit_code
+                    !== (string) $line->base_unit_code
+                || ! InventoryQuantity::equal(
+                    $line->conversion_factor,
+                    '1'
+                )
+            ) {
+                continue;
+            }
+
+            $hasRegisteredContainer = DB::table(
+                'fractional_containers'
+            )
+                ->where(
+                    'organization_id',
+                    $movement->organization_id
+                )
+                ->where(
+                    'catalog_product_id',
+                    $line->catalog_product_id
+                )
+                ->where(
+                    'inventory_location_id',
+                    $line->source_location_id
+                )
+                ->where(
+                    'condition',
+                    $line->condition->value
+                )
+                ->where(
+                    'base_unit_code',
+                    $line->base_unit_code
+                )
+                ->exists();
+
+            if (! $hasRegisteredContainer) {
+                continue;
+            }
+
+            $history = DB::table(
+                'fractional_container_consumptions'
+            )
+                ->where(
+                    'organization_id',
+                    $movement->organization_id
+                )
+                ->where(
+                    'inventory_movement_line_id',
+                    $line->id
+                )
+                ->orderBy('sequence')
+                ->get();
+
+            if ($history->isEmpty()) {
+                throw new DomainException(
+                    'La salida fraccionada posee contenedores '
+                    .'registrados y requiere trazabilidad física '
+                    .'antes de confirmarse.'
+                );
+            }
+
+            $total = InventoryQuantity::signed('0');
+            $expectedSequence = 1;
+
+            foreach ($history as $record) {
+                $containerMatches = DB::table(
+                    'fractional_containers'
+                )
+                    ->where(
+                        'id',
+                        $record->fractional_container_id
+                    )
+                    ->where(
+                        'organization_id',
+                        $movement->organization_id
+                    )
+                    ->where(
+                        'catalog_product_id',
+                        $line->catalog_product_id
+                    )
+                    ->where(
+                        'inventory_location_id',
+                        $line->source_location_id
+                    )
+                    ->where(
+                        'condition',
+                        $line->condition->value
+                    )
+                    ->where(
+                        'base_unit_code',
+                        $line->base_unit_code
+                    )
+                    ->exists();
+
+                if (
+                    ! $containerMatches
+                    || (int) $record->sequence
+                        !== $expectedSequence
+                    || (string) $record->policy
+                        !== 'agotar_contenedor_abierto'
+                    || (string) $record->base_unit_code
+                        !== (string) $line->base_unit_code
+                ) {
+                    throw new DomainException(
+                        'La trazabilidad fraccionada no coincide '
+                        .'con la línea que intenta confirmarse.'
+                    );
+                }
+
+                $consumed = InventoryQuantity::positive(
+                    $record->consumed_base_quantity
+                );
+                $expectedAfter = InventoryQuantity::subtract(
+                    $record->remaining_before,
+                    $consumed
+                );
+
+                if (
+                    ! InventoryQuantity::equal(
+                        $expectedAfter,
+                        $record->remaining_after
+                    )
+                ) {
+                    throw new DomainException(
+                        'La trazabilidad fraccionada contiene '
+                        .'aritmética inconsistente.'
+                    );
+                }
+
+                $total = InventoryQuantity::add(
+                    $total,
+                    $consumed
+                );
+                $expectedSequence++;
+            }
+
+            if (
+                ! InventoryQuantity::equal(
+                    $total,
+                    $line->base_quantity
+                )
+            ) {
+                throw new DomainException(
+                    'La trazabilidad fraccionada no cubre '
+                    .'exactamente la cantidad de la línea.'
+                );
+            }
+        }
+    }
+
     private function validateLines(
         InventoryMovement $movement,
         Collection $lines
