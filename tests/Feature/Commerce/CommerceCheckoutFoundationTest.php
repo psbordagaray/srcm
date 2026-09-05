@@ -4,6 +4,7 @@ namespace Tests\Feature\Commerce;
 
 use App\Domain\Commerce\CommerceCheckoutData;
 use App\Domain\Commerce\CommerceCheckoutManager;
+use App\Domain\Commerce\InventoryReservationManager;
 use App\Domain\Commerce\CommercePaymentData;
 use App\Domain\Commerce\CommerceProductLineData;
 use App\Domain\Inventory\InventoryMovementConfirmer;
@@ -338,7 +339,32 @@ class CommerceCheckoutFoundationTest extends TestCase
         $this->assertDatabaseCount('commerce_payments', 0);
     }
 
-    public function test_database_guards_reject_commercial_tampering(): void
+    public function test_active_reservation_blocks_direct_checkout_until_release(): void
+    {
+        $organization = $this->organization();
+        $actor = $this->user($organization, UserRole::Operator);
+        $customer = $this->party($organization, 'Cliente reservado');
+        $location = $this->location($organization);
+        $product = $this->product('Producto reservado checkout', 'RES-CHECKOUT');
+        $this->seedStock($actor, $product, $location, '2');
+        $reservation = app(InventoryReservationManager::class)->reserve(
+            $product->id,$location->id,InventoryCondition::New,'2',null,'reservation:checkout:block',$actor
+        );
+        $data = new CommerceCheckoutData(
+            currencyCode: 'ARS',
+            idempotencyKey: 'commerce:checkout:reserved-block',
+            payments: [new CommercePaymentData(CommercePaymentMethod::DigitalWallet,900000,'RESERVED-CHECKOUT')],
+            productLines: [new CommerceProductLineData($product->id,$location->id,InventoryCondition::New,'1',900000)],
+            customerBusinessPartyId: $customer->id
+        );
+        $this->assertDomainFailure(fn () => app(CommerceCheckoutManager::class)->checkout($data, $actor));
+        $this->assertDatabaseCount('commerce_sales', 0);
+        app(InventoryReservationManager::class)->release($reservation,'Reserva liberada para venta normal.',$actor);
+        $sale = app(CommerceCheckoutManager::class)->checkout($data, $actor);
+        $this->assertSame(CommerceSaleStatus::Confirmed, $sale->status);
+        $this->assertSame($organization->id, $sale->organization_id);
+        $this->assertDatabaseCount('commerce_sales', 1);
+    }    public function test_database_guards_reject_commercial_tampering(): void
     {
         [$organization, $actor, $order, $customer] =
             $this->deliveredOrder('database');

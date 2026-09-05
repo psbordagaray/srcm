@@ -5,15 +5,15 @@ Actualizado: **2026-09-04**
 Rama de desarrollo: `feature/core-entity`
 
 <!-- P13_CURRENT_CONTINUITY_V2 -->
-## Current P13 checkpoint - P13.B Numerical Integrity GREEN through Settlement Review Resolution Admin UI / PR #17 reconciled
+## Current P13 checkpoint - P13.B Numerical Integrity through Commercial Availability / Reservation Foundation local
 
 <!--
 STRALEON_CANONICAL_PRODUCT_NAME=Straleon
 P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
 P13_CURRENT_SUBPHASE=P13_B_NUMERICAL_INTEGRITY_AND_HUMAN_ERROR_PREVENTION
 P13_B_STATUS=ACTIVE_CURRENT
-P13_B_PUBLISHED_HEAD=aab6fb8f4a55297b14a5bfde76ed0de475573bc5
-P13_B_PUBLISHED_PARENT=25b8e0f531154e79f6813211dfd67403e15ab0b3
+P13_B_PUBLISHED_HEAD=3fd3c21b2ee708d27ee147030f4c34e9713da4e5
+P13_B_PUBLISHED_PARENT=2414f380f3a88b994e05039315c90427919757fe
 P13_B_CI128_STATUS=FAILED_STALE_FOUNDATION_EXPECTATION_DIAGNOSED_AND_CORRECTED
 P13_B_CI129_RUN_ID=33920788791
 P13_B_CI129_STATUS=GREEN_COMPLETED_SUCCESS
@@ -21,6 +21,10 @@ P13_B_CI129_HEAD=aab6fb8f4a55297b14a5bfde76ed0de475573bc5
 P13_B_MASTER_SYNC_HEAD=2414f380f3a88b994e05039315c90427919757fe
 P13_B_CI130_RUN_ID=33924849226
 P13_B_CI130_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_COMMERCIAL_AVAILABILITY_PUBLISHED_HEAD=3fd3c21b2ee708d27ee147030f4c34e9713da4e5
+P13_B_CI131_RUN_ID=33935895471
+P13_B_CI131_JOB_ID=101223651544
+P13_B_CI131_STATUS=GREEN_COMPLETED_SUCCESS
 P13_B_MONEY_BOUNDARY_WAVE_1=GREEN_CLOSED
 P13_B_DISCREPANCY_FRAMEWORK=GREEN_PUBLISHED
 P13_B_SETTLEMENT_COMPONENT_ANALYSIS=GREEN_PUBLISHED
@@ -37,7 +41,8 @@ P13_B_PR17_AMENDMENT_151=INCORPORATED_AS_BINDING_ROADMAP_INPUT
 P13_B_PR17_AMENDMENT_152=INCORPORATED_AS_BINDING_ROADMAP_INPUT
 P13_B_STOREFRONT_FIRST_CLASS=ROADMAP_BINDING_NOT_IMPLEMENTED_BY_THIS_DOC_CUT
 P13_B_COMMERCIAL_HARDWARE_FIRST_CLASS=ROADMAP_BINDING_NOT_IMPLEMENTED_BY_THIS_DOC_CUT
-P13_B_COMMERCIAL_AVAILABILITY_ENGINE=FOUNDATION_V1_IMPLEMENTED_LOCAL_GREEN_PENDING_CHECKPOINT
+P13_B_COMMERCIAL_AVAILABILITY_ENGINE=FOUNDATION_V1_PUBLISHED_CI131_GREEN
+P13_B_INVENTORY_RESERVATION=FOUNDATION_V1_IMPLEMENTED_LOCAL_GREEN_PENDING_CHECKPOINT
 P13_B_UNITS_PRESENTATIONS_FRACTIONAL_CONTAINERS=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
 P13_B_VARIABLE_QUANTITY_FULFILLMENT=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
 P13_B_FULFILLMENT_PREFERENCES=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
@@ -46,14 +51,14 @@ P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
 P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REQUIRES_FUTURE_RECON
 P13_B_MULTIRRUBRO_VALIDATION=MANDATORY
 P13_C_STATUS=NOT_OPENED
-P13_NEXT_BOUNDARY=P13_B_COMMERCIAL_AVAILABILITY_FOUNDATION_V1_CHECKPOINT
+P13_NEXT_BOUNDARY=P13_B_INVENTORY_RESERVATION_FOUNDATION_V1_CHECKPOINT
 PRODUCTION_MUTATION_AUTHORIZATION=NO
 -->
 
 P13.B is the active technical frontier. The published development HEAD is
-`aab6fb8f4a55297b14a5bfde76ed0de475573bc5`, after the one-line Foundation expectation repair that
-resolved the deterministic CI128 failure. Natural CI129 then completed GREEN on that
-exact SHA, including the full-suite quality gate. CI128 must not be rerun.
+`3fd3c21b2ee708d27ee147030f4c34e9713da4e5`, containing Commercial Availability Foundation V1.
+Natural CI131 (`33935895471`, job `101223651544`) completed GREEN on that exact SHA,
+including the full suite and tracked-tree-unchanged gate. CI128 must not be rerun.
 
 The current published P13.B chain already includes the closed Money Boundary Wave 1,
 check-digit and discrepancy foundations, settlement component analysis and decision
@@ -84,16 +89,16 @@ These amendments preserve the architectural rule: one Straleon Core, one operati
 truth, multiple surfaces. They do not authorize functional code, migrations, database
 mutation, production change or P13.C advancement.
 
-Commercial Availability Foundation V1 is now implemented locally and focal-GREEN.
-It introduces a Commerce-owned derived projection over physical inventory, preserves
-the inventory ledger/balance authority and the final atomic negative-stock guard,
-and rewires the existing Commerce sale precheck to consume commercial availability.
-This foundation creates no parallel stock, reservation, hold, channel, publishability,
-Storefront or backorder/preorder persistence.
+Commercial Availability Foundation V1 is published and CI131 GREEN on
+`3fd3c21b2ee708d27ee147030f4c34e9713da4e5`. It remains a derived projection over physical inventory.
+
+Inventory Reservation Foundation V1 is now implemented locally and focal-GREEN. Active, unexpired reservations reduce promiseable quantity without mutating physical stock. Release and expiry restore commercial availability. Reservation creation serializes on organization plus balance locks; ordinary checkout revalidates non-reserved availability inside its transaction. Binding checkout to consume its own reservation remains deferred.
+
+This cut does not open holds, channel policy, publishability, Storefront, protected minimums, preorder/backorder or P13.C.
 
 Next exact boundary:
 
-`P13_B_COMMERCIAL_AVAILABILITY_FOUNDATION_V1_CHECKPOINT`.
+`P13_B_INVENTORY_RESERVATION_FOUNDATION_V1_CHECKPOINT`.
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 checkpoint — P12.2 Snapshot Reference Panel Foundation GREEN

@@ -5,6 +5,7 @@ namespace App\Domain\Commerce;
 use App\Domain\Finance\CashLedgerRecorder;
 use App\Domain\Finance\CashRegisterSessionManager;
 use App\Domain\Inventory\InventoryMovementConfirmer;
+use App\Domain\Inventory\InventoryQuantity;
 use App\Domain\Inventory\InventoryMovementCreator;
 use App\Domain\Inventory\InventoryMovementDraftData;
 use App\Domain\Inventory\InventoryMovementLineData;
@@ -40,6 +41,7 @@ final class CommerceCheckoutManager
     public function __construct(
         private readonly InventoryMovementCreator $movementCreator,
         private readonly InventoryMovementConfirmer $movementConfirmer,
+        private readonly CommercialAvailabilityReader $commercialAvailability,
         private readonly OrganizationProductPriceReader $prices,
         private readonly CashRegisterSessionManager $cashSessions,
         private readonly CashLedgerRecorder $cashLedger,
@@ -87,6 +89,11 @@ final class CommerceCheckoutManager
                     'inventoryMovement.lines',
                 ]);
             }
+
+            $this->guardCommercialProductAvailability(
+                $normalized['product_lines'],
+                $actor
+            );
 
             $cashSession = $this->guardOperationalCashPayments(
                 $normalized['payments'],
@@ -456,6 +463,37 @@ final class CommerceCheckoutManager
     }
 
     /**
+     * Reservation Foundation V1 blocks ordinary checkout from consuming
+     * quantity promised by any effective reservation. Own-reservation
+     * consumption remains a future bounded cut.
+     * @param list<array<string, mixed>> $lines
+     */
+    private function guardCommercialProductAvailability(array $lines, User $actor): void
+    {
+        if ($lines === []) { return; }
+        $positions = $this->commercialAvailability->positions($actor);
+        $requested = [];
+        foreach ($lines as $line) {
+            $condition = $line['condition'] instanceof \App\Enums\InventoryCondition
+                ? $line['condition']->value : (string) $line['condition'];
+            $key = implode(':', [$line['catalog_product_id'],$line['source_location_id'],$condition]);
+            $quantity = InventoryQuantity::positive((string) $line['quantity']);
+            $requested[$key] = isset($requested[$key])
+                ? InventoryQuantity::add($requested[$key], $quantity) : $quantity;
+        }
+        foreach ($requested as $key => $quantity) {
+            [$productId,$locationId,$condition] = explode(':', $key, 3);
+            $position = $positions->first(fn (CommercialAvailabilityPosition $position): bool =>
+                $position->catalogProductId === (int) $productId
+                && $position->inventoryLocationId === (int) $locationId
+                && $position->condition->value === $condition
+            );
+            $available = $position?->commercialAvailableQuantity ?? InventoryQuantity::signed('0');
+            if (InventoryQuantity::isNegative(InventoryQuantity::subtract($available, $quantity))) {
+                throw new DomainException('La venta supera la disponibilidad comercial no reservada.');
+            }
+        }
+    }    /**
      * @return array{
      *     order: ServiceOrder,
      *     delivery_id: int,
