@@ -451,7 +451,7 @@ final class CommerceSettlementReviewResolutionAdminUiTest extends TestCase
             )
         );
         $this->assertSame(
-            'eb9e31c9c2155f568bdff14696261d4b6b335adf',
+            '6d746dde938d26270ce3d0bcc87ceb34445a1755',
             $this->gitBlobSha1(
                 app_path(
                     'Domain/Commerce/CommerceCheckoutManager.php'
@@ -571,8 +571,10 @@ final class CommerceSettlementReviewResolutionAdminUiTest extends TestCase
 
         $this->assertIsString($content);
 
+        $canonicalContent = str_replace("\r\n", "\n", $content);
+
         return sha1(
-            'blob '.strlen($content)."\0".$content
+            'blob '.strlen($canonicalContent)."\0".$canonicalContent
         );
     }
 }
