@@ -124,6 +124,14 @@ class CatalogProduct extends Model
         );
     }
 
+    public function productPresentations(): HasMany
+    {
+        return $this->hasMany(
+            ProductPresentation::class,
+            'catalog_product_id'
+        );
+    }
+
     public function baseUnit(): InventoryBaseUnit
     {
         return InventoryBaseUnit::tryFrom(
