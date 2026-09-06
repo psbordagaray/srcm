@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Domain\Inventory\InventoryQuantity;
 use App\Enums\FractionalContainerState;
 use App\Enums\InventoryCondition;
+use App\Enums\InventoryMovementStatus;
+use App\Enums\InventoryMovementType;
 use App\Models\Concerns\BelongsToOrganization;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +22,7 @@ class FractionalContainer extends Model
         'catalog_product_id',
         'product_presentation_id',
         'inventory_location_id',
+        'received_inventory_movement_line_id',
         'container_code',
         'condition',
         'state',
@@ -97,6 +100,14 @@ class FractionalContainer extends Model
         return $this->belongsTo(
             InventoryLocation::class,
             'inventory_location_id'
+        );
+    }
+
+    public function receiptLine(): BelongsTo
+    {
+        return $this->belongsTo(
+            InventoryMovementLine::class,
+            'received_inventory_movement_line_id'
         );
     }
 
@@ -184,6 +195,69 @@ class FractionalContainer extends Model
             throw new DomainException(
                 'Un contenedor nuevo debe iniciar con su saldo físico completo.'
             );
+        }
+
+        if ($this->received_inventory_movement_line_id !== null) {
+            $receiptLine = InventoryMovementLine::query()
+                ->whereKey(
+                    $this->received_inventory_movement_line_id
+                )
+                ->where(
+                    'organization_id',
+                    $this->organization_id
+                )
+                ->where(
+                    'catalog_product_id',
+                    $this->catalog_product_id
+                )
+                ->where(
+                    'destination_location_id',
+                    $this->inventory_location_id
+                )
+                ->whereNull('source_location_id')
+                ->where(
+                    'condition',
+                    $this->condition->value
+                )
+                ->where(
+                    'base_unit_code',
+                    $this->base_unit_code
+                )
+                ->first();
+
+            if (! $receiptLine) {
+                throw new DomainException(
+                    'La procedencia del contenedor no coincide con '
+                    .'la línea de recepción física.'
+                );
+            }
+
+            $receiptMovement = $receiptLine->movement()->first();
+
+            if (
+                ! $receiptMovement
+                || $receiptMovement->type
+                    !== InventoryMovementType::Receipt
+                || $receiptMovement->status
+                    !== InventoryMovementStatus::Confirmed
+            ) {
+                throw new DomainException(
+                    'La procedencia física requiere una recepción '
+                    .'confirmada del ledger.'
+                );
+            }
+
+            if (
+                ! InventoryQuantity::lessThanOrEqual(
+                    $quantity,
+                    $receiptLine->base_quantity
+                )
+            ) {
+                throw new DomainException(
+                    'El contenedor no puede exceder la cantidad '
+                    .'base de su línea de recepción.'
+                );
+            }
         }
 
         if ($this->state !== FractionalContainerState::Sealed) {
