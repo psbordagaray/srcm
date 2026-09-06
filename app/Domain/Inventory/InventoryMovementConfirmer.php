@@ -2,6 +2,7 @@
 
 namespace App\Domain\Inventory;
 
+use App\Enums\FractionalContainerConsumptionPolicy;
 use App\Enums\InventoryMovementStatus;
 use App\Enums\InventoryMovementType;
 use App\Enums\InventoryNegativeOverrideStatus;
@@ -741,8 +742,14 @@ final class InventoryMovementConfirmer
 
             $total = InventoryQuantity::signed('0');
             $expectedSequence = 1;
+            $recognizedPolicy = null;
 
             foreach ($history as $record) {
+                $recordPolicy =
+                    FractionalContainerConsumptionPolicy::tryFrom(
+                        (string) $record->policy
+                    );
+
                 $containerMatches = DB::table(
                     'fractional_containers'
                 )
@@ -776,8 +783,11 @@ final class InventoryMovementConfirmer
                     ! $containerMatches
                     || (int) $record->sequence
                         !== $expectedSequence
-                    || (string) $record->policy
-                        !== 'agotar_contenedor_abierto'
+                    || $recordPolicy === null
+                    || (
+                        $recognizedPolicy !== null
+                        && $recordPolicy !== $recognizedPolicy
+                    )
                     || (string) $record->base_unit_code
                         !== (string) $line->base_unit_code
                 ) {
@@ -786,6 +796,8 @@ final class InventoryMovementConfirmer
                         .'con la línea que intenta confirmarse.'
                     );
                 }
+
+                $recognizedPolicy ??= $recordPolicy;
 
                 $consumed = InventoryQuantity::positive(
                     $record->consumed_base_quantity

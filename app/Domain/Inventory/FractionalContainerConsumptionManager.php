@@ -23,11 +23,15 @@ final class FractionalContainerConsumptionManager
     ) {
     }
 
+    /**
+     * @param array<int, list<int|string>> $manualContainerSelection
+     */
     public function confirm(
         InventoryMovement|int $movement,
         User $actor,
         FractionalContainerConsumptionPolicy $policy =
-            FractionalContainerConsumptionPolicy::ExhaustOpenContainer
+            FractionalContainerConsumptionPolicy::ExhaustOpenContainer,
+        array $manualContainerSelection = []
     ): InventoryMovement {
         $movementId = $movement instanceof InventoryMovement
             ? (int) $movement->getKey()
@@ -36,7 +40,8 @@ final class FractionalContainerConsumptionManager
         return DB::transaction(function () use (
             $movementId,
             $actor,
-            $policy
+            $policy,
+            $manualContainerSelection
         ): InventoryMovement {
             $organizationId = InventoryMovement::query()
                 ->whereKey($movementId)
@@ -87,6 +92,12 @@ final class FractionalContainerConsumptionManager
                 );
             }
 
+            $normalizedSelection = $this->normalizeManualSelection(
+                $lines,
+                $policy,
+                $manualContainerSelection
+            );
+
             if (
                 $lockedMovement->status
                     === InventoryMovementStatus::Confirmed
@@ -99,7 +110,8 @@ final class FractionalContainerConsumptionManager
                 $this->assertCompletedTraceability(
                     $lockedMovement,
                     $lines,
-                    $policy
+                    $policy,
+                    $normalizedSelection
                 );
 
                 return $confirmed;
@@ -133,7 +145,8 @@ final class FractionalContainerConsumptionManager
                 $this->allocateLine(
                     $lockedMovement,
                     $line,
-                    $policy
+                    $policy,
+                    $normalizedSelection[(int) $line->id] ?? []
                 );
             }
 
@@ -197,20 +210,118 @@ final class FractionalContainerConsumptionManager
         }
     }
 
+    /**
+     * @param Collection<int, InventoryMovementLine> $lines
+     * @param array<int, list<int|string>> $manualSelection
+     * @return array<int, list<int>>
+     */
+    private function normalizeManualSelection(
+        Collection $lines,
+        FractionalContainerConsumptionPolicy $policy,
+        array $manualSelection
+    ): array {
+        if (
+            $policy
+                !== FractionalContainerConsumptionPolicy::ManualSelection
+        ) {
+            if ($manualSelection !== []) {
+                throw new DomainException(
+                    'Sólo la política de selección manual acepta '
+                    .'contenedores explícitos.'
+                );
+            }
+
+            return [];
+        }
+
+        $lineIds = $lines
+            ->pluck('id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        $lineIdSet = array_fill_keys($lineIds, true);
+        $normalized = [];
+
+        foreach ($manualSelection as $lineId => $containerIds) {
+            if (
+                (! is_int($lineId) && ! ctype_digit((string) $lineId))
+                || ! is_array($containerIds)
+                || ! array_is_list($containerIds)
+            ) {
+                throw new DomainException(
+                    'La selección manual debe mapear cada línea '
+                    .'a una lista ordenada de contenedores.'
+                );
+            }
+
+            $normalizedLineId = (int) $lineId;
+
+            if (! isset($lineIdSet[$normalizedLineId])) {
+                throw new DomainException(
+                    'La selección manual contiene una línea '
+                    .'que no pertenece al movimiento.'
+                );
+            }
+
+            if ($containerIds === []) {
+                throw new DomainException(
+                    'Cada línea requiere al menos un contenedor '
+                    .'seleccionado explícitamente.'
+                );
+            }
+
+            $seen = [];
+            $normalizedIds = [];
+
+            foreach ($containerIds as $containerId) {
+                if (
+                    (! is_int($containerId)
+                        && ! ctype_digit((string) $containerId))
+                    || (int) $containerId <= 0
+                ) {
+                    throw new DomainException(
+                        'La selección manual contiene un identificador '
+                        .'de contenedor inválido.'
+                    );
+                }
+
+                $normalizedId = (int) $containerId;
+
+                if (isset($seen[$normalizedId])) {
+                    throw new DomainException(
+                        'Un contenedor no puede repetirse dentro '
+                        .'de la selección de una misma línea.'
+                    );
+                }
+
+                $seen[$normalizedId] = true;
+                $normalizedIds[] = $normalizedId;
+            }
+
+            $normalized[$normalizedLineId] = $normalizedIds;
+        }
+
+        foreach ($lineIds as $lineId) {
+            if (! isset($normalized[$lineId])) {
+                throw new DomainException(
+                    'La política de selección manual requiere '
+                    .'una selección explícita para cada línea.'
+                );
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param list<int> $manualContainerIds
+     */
     private function allocateLine(
         InventoryMovement $movement,
         InventoryMovementLine $line,
-        FractionalContainerConsumptionPolicy $policy
+        FractionalContainerConsumptionPolicy $policy,
+        array $manualContainerIds = []
     ): void {
-        if (
-            $policy
-                !== FractionalContainerConsumptionPolicy::ExhaustOpenContainer
-        ) {
-            throw new DomainException(
-                'La política solicitada no está implementada en V1.'
-            );
-        }
-
         $product = CatalogProduct::query()
             ->whereKey($line->catalog_product_id)
             ->where('active', true)
@@ -254,39 +365,19 @@ final class FractionalContainerConsumptionManager
             'La cantidad fraccionada'
         );
 
-        $containers = FractionalContainer::query()
-            ->forOrganization((int) $movement->organization_id)
-            ->where(
-                'catalog_product_id',
-                $line->catalog_product_id
-            )
-            ->where(
-                'inventory_location_id',
-                $line->source_location_id
-            )
-            ->where(
-                'condition',
-                $line->condition->value
-            )
-            ->where(
-                'base_unit_code',
-                $line->base_unit_code
-            )
-            ->whereIn(
-                'state',
-                [
-                    FractionalContainerState::Open->value,
-                    FractionalContainerState::Sealed->value,
-                ]
-            )
-            ->where('remaining_base_quantity', '>', 0)
-            ->orderByRaw(
-                'CASE WHEN state = ? THEN 0 ELSE 1 END',
-                [FractionalContainerState::Open->value]
-            )
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->get();
+        $containers = match ($policy) {
+            FractionalContainerConsumptionPolicy::ExhaustOpenContainer =>
+                $this->eligibleContainersForExhaustOpen(
+                    $movement,
+                    $line
+                ),
+            FractionalContainerConsumptionPolicy::ManualSelection =>
+                $this->eligibleContainersForManualSelection(
+                    $movement,
+                    $line,
+                    $manualContainerIds
+                ),
+        };
 
         if ($containers->isEmpty()) {
             throw new DomainException(
@@ -311,8 +402,8 @@ final class FractionalContainerConsumptionManager
             )
         ) {
             throw new DomainException(
-                'Los contenedores trazables no alcanzan para '
-                .'la cantidad solicitada.'
+                'Los contenedores seleccionados y trazables '
+                .'no alcanzan para la cantidad solicitada.'
             );
         }
 
@@ -398,12 +489,151 @@ final class FractionalContainerConsumptionManager
     }
 
     /**
+     * @return Collection<int, FractionalContainer>
+     */
+    private function eligibleContainersForExhaustOpen(
+        InventoryMovement $movement,
+        InventoryMovementLine $line
+    ): Collection {
+        return FractionalContainer::query()
+            ->forOrganization((int) $movement->organization_id)
+            ->where(
+                'catalog_product_id',
+                $line->catalog_product_id
+            )
+            ->where(
+                'inventory_location_id',
+                $line->source_location_id
+            )
+            ->where(
+                'condition',
+                $line->condition->value
+            )
+            ->where(
+                'base_unit_code',
+                $line->base_unit_code
+            )
+            ->whereIn(
+                'state',
+                [
+                    FractionalContainerState::Open->value,
+                    FractionalContainerState::Sealed->value,
+                ]
+            )
+            ->where('remaining_base_quantity', '>', 0)
+            ->orderByRaw(
+                'CASE WHEN state = ? THEN 0 ELSE 1 END',
+                [FractionalContainerState::Open->value]
+            )
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    /**
+     * Locks by canonical id order to reduce deadlock risk, then restores
+     * the operator-requested order for physical consumption.
+     *
+     * @param list<int> $containerIds
+     * @return Collection<int, FractionalContainer>
+     */
+    private function eligibleContainersForManualSelection(
+        InventoryMovement $movement,
+        InventoryMovementLine $line,
+        array $containerIds
+    ): Collection {
+        if ($containerIds === []) {
+            throw new DomainException(
+                'La selección manual requiere contenedores explícitos.'
+            );
+        }
+
+        $locked = FractionalContainer::query()
+            ->forOrganization((int) $movement->organization_id)
+            ->whereIn('id', $containerIds)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        if ($locked->count() !== count($containerIds)) {
+            throw new DomainException(
+                'Algún contenedor seleccionado no pertenece '
+                .'a la organización activa.'
+            );
+        }
+
+        $ordered = collect();
+
+        foreach ($containerIds as $containerId) {
+            $container = $locked->get($containerId);
+
+            if (! $container instanceof FractionalContainer) {
+                throw new DomainException(
+                    'No pudo resolverse un contenedor seleccionado.'
+                );
+            }
+
+            $this->guardManualContainerForLine(
+                $container,
+                $line
+            );
+
+            $ordered->push($container);
+        }
+
+        return $ordered;
+    }
+
+    private function guardManualContainerForLine(
+        FractionalContainer $container,
+        InventoryMovementLine $line
+    ): void {
+        if (
+            (int) $container->catalog_product_id
+                !== (int) $line->catalog_product_id
+            || (int) $container->inventory_location_id
+                !== (int) $line->source_location_id
+            || $container->condition !== $line->condition
+            || (string) $container->base_unit_code
+                !== (string) $line->base_unit_code
+        ) {
+            throw new DomainException(
+                'El contenedor seleccionado no coincide con producto, '
+                .'ubicación, condición y unidad base de la línea.'
+            );
+        }
+
+        if (
+            ! in_array(
+                $container->state,
+                [
+                    FractionalContainerState::Open,
+                    FractionalContainerState::Sealed,
+                ],
+                true
+            )
+            || InventoryQuantity::equal(
+                $container->remaining_base_quantity,
+                '0'
+            )
+        ) {
+            throw new DomainException(
+                'El contenedor seleccionado no está en un estado '
+                .'consumible con saldo positivo.'
+            );
+        }
+    }
+
+    /**
      * @param Collection<int, InventoryMovementLine> $lines
+     * @param array<int, list<int>> $manualSelection
      */
     private function assertCompletedTraceability(
         InventoryMovement $movement,
         Collection $lines,
-        FractionalContainerConsumptionPolicy $policy
+        FractionalContainerConsumptionPolicy $policy,
+        array $manualSelection = []
     ): void {
         foreach ($lines as $line) {
             $history = DB::table(
@@ -429,6 +659,7 @@ final class FractionalContainerConsumptionManager
 
             $total = InventoryQuantity::signed('0');
             $expectedSequence = 1;
+            $usedContainerIds = [];
 
             foreach ($history as $record) {
                 if (
@@ -463,6 +694,8 @@ final class FractionalContainerConsumptionManager
                     );
                 }
 
+                $usedContainerIds[] =
+                    (int) $record->fractional_container_id;
                 $total = InventoryQuantity::add(
                     $total,
                     $consumed
@@ -480,6 +713,25 @@ final class FractionalContainerConsumptionManager
                     'El historial fraccionado existente '
                     .'no cubre exactamente la línea confirmada.'
                 );
+            }
+
+            if (
+                $policy
+                    === FractionalContainerConsumptionPolicy::ManualSelection
+            ) {
+                $selected = $manualSelection[(int) $line->id] ?? [];
+                $usedPrefix = array_slice(
+                    $selected,
+                    0,
+                    count($usedContainerIds)
+                );
+
+                if ($usedPrefix !== $usedContainerIds) {
+                    throw new DomainException(
+                        'La selección manual no reproduce el orden '
+                        .'de contenedores del historial confirmado.'
+                    );
+                }
             }
         }
     }
