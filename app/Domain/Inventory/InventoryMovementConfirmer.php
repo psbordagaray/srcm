@@ -3,6 +3,7 @@
 namespace App\Domain\Inventory;
 
 use App\Enums\FractionalContainerConsumptionPolicy;
+use App\Enums\FractionalContainerState;
 use App\Enums\InventoryMovementStatus;
 use App\Enums\InventoryMovementType;
 use App\Enums\InventoryNegativeOverrideStatus;
@@ -837,9 +838,201 @@ final class InventoryMovementConfirmer
                     .'exactamente la cantidad de la línea.'
                 );
             }
+            if (
+                $recognizedPolicy
+                    === FractionalContainerConsumptionPolicy::Fifo
+            ) {
+                $this->guardFifoTraceabilityOrder(
+                    $movement,
+                    $line,
+                    $history
+                );
+            }
         }
     }
 
+    /**
+     * Reconstructs the pre-consumption FIFO candidate set. Containers
+     * already mutated by the domain manager are reintroduced from history
+     * using remaining_before, so the generic confirmer cannot be bypassed
+     * by forging a recognized FIFO history in a non-FIFO order.
+     *
+     * @param Collection<int, object> $history
+     */
+    private function guardFifoTraceabilityOrder(
+        InventoryMovement $movement,
+        InventoryMovementLine $line,
+        Collection $history
+    ): void {
+        $historyByContainer = $history->keyBy(
+            static fn ($record): int =>
+                (int) $record->fractional_container_id
+        );
+
+        if ($historyByContainer->count() !== $history->count()) {
+            throw new DomainException(
+                'La trazabilidad FIFO no admite un contenedor '
+                .'repetido dentro de la misma línea.'
+            );
+        }
+
+        $historyIds = $history
+            ->pluck('fractional_container_id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        $candidates = DB::table(
+            'fractional_containers as fifo_container'
+        )
+            ->join(
+                'inventory_movement_lines as fifo_receipt_line',
+                'fifo_receipt_line.id',
+                '=',
+                'fifo_container.received_inventory_movement_line_id'
+            )
+            ->join(
+                'inventory_movements as fifo_receipt_movement',
+                'fifo_receipt_movement.id',
+                '=',
+                'fifo_receipt_line.inventory_movement_id'
+            )
+            ->where(
+                'fifo_container.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fifo_container.catalog_product_id',
+                $line->catalog_product_id
+            )
+            ->where(
+                'fifo_container.inventory_location_id',
+                $line->source_location_id
+            )
+            ->where(
+                'fifo_container.condition',
+                $line->condition->value
+            )
+            ->where(
+                'fifo_container.base_unit_code',
+                $line->base_unit_code
+            )
+            ->whereNotNull(
+                'fifo_container.received_inventory_movement_line_id'
+            )
+            ->where(function ($query) use ($historyIds): void {
+                $query
+                    ->where(function ($stateQuery): void {
+                        $stateQuery
+                            ->whereIn(
+                                'fifo_container.state',
+                                [
+                                    FractionalContainerState::Open->value,
+                                    FractionalContainerState::Sealed->value,
+                                ]
+                            )
+                            ->where(
+                                'fifo_container.remaining_base_quantity',
+                                '>',
+                                0
+                            );
+                    })
+                    ->orWhereIn(
+                        'fifo_container.id',
+                        $historyIds
+                    );
+            })
+            ->where(
+                'fifo_receipt_line.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fifo_receipt_movement.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fifo_receipt_movement.type',
+                InventoryMovementType::Receipt->value
+            )
+            ->where(
+                'fifo_receipt_movement.status',
+                InventoryMovementStatus::Confirmed->value
+            )
+            ->whereNull(
+                'fifo_receipt_line.source_location_id'
+            )
+            ->where(
+                'fifo_receipt_line.destination_location_id',
+                $line->source_location_id
+            )
+            ->where(
+                'fifo_receipt_line.catalog_product_id',
+                $line->catalog_product_id
+            )
+            ->where(
+                'fifo_receipt_line.condition',
+                $line->condition->value
+            )
+            ->where(
+                'fifo_receipt_line.base_unit_code',
+                $line->base_unit_code
+            )
+            ->orderBy(
+                'fifo_receipt_movement.effective_at'
+            )
+            ->orderBy('fifo_receipt_movement.id')
+            ->orderBy('fifo_receipt_line.sequence')
+            ->orderBy('fifo_container.id')
+            ->get([
+                'fifo_container.id',
+                'fifo_container.remaining_base_quantity',
+            ]);
+
+        $pending = InventoryQuantity::positive(
+            $line->base_quantity
+        );
+        $expectedIds = [];
+
+        foreach ($candidates as $candidate) {
+            if (InventoryQuantity::equal($pending, '0')) {
+                break;
+            }
+
+            $containerId = (int) $candidate->id;
+            $historyRecord =
+                $historyByContainer->get($containerId);
+
+            $capacityBefore = $historyRecord
+                ? InventoryQuantity::positive(
+                    $historyRecord->remaining_before
+                )
+                : InventoryQuantity::positive(
+                    $candidate->remaining_base_quantity
+                );
+
+            $expectedIds[] = $containerId;
+            $pending = InventoryQuantity::subtract(
+                $pending,
+                InventoryQuantity::minimum(
+                    $pending,
+                    $capacityBefore
+                )
+            );
+        }
+
+        if (! InventoryQuantity::equal($pending, '0')) {
+            throw new DomainException(
+                'La trazabilidad FIFO no puede reconstruir '
+                .'capacidad física suficiente con procedencia.'
+            );
+        }
+
+        if ($expectedIds !== $historyIds) {
+            throw new DomainException(
+                'La trazabilidad FIFO no respeta la cronología '
+                .'autoritativa de recepción.'
+            );
+        }
+    }
     private function validateLines(
         InventoryMovement $movement,
         Collection $lines

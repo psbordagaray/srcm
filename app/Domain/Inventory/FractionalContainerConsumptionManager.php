@@ -371,6 +371,11 @@ final class FractionalContainerConsumptionManager
                     $movement,
                     $line
                 ),
+            FractionalContainerConsumptionPolicy::Fifo =>
+                $this->eligibleContainersForFifo(
+                    $movement,
+                    $line
+                ),
             FractionalContainerConsumptionPolicy::ManualSelection =>
                 $this->eligibleContainersForManualSelection(
                     $movement,
@@ -530,6 +535,180 @@ final class FractionalContainerConsumptionManager
             ->get();
     }
 
+    /**
+     * FIFO is receipt-chronology first. Container state does not outrank
+     * the confirmed physical receipt chronology. Legacy containers without
+     * receipt provenance are intentionally ineligible.
+     *
+     * @return Collection<int, FractionalContainer>
+     */
+    private function eligibleContainersForFifo(
+        InventoryMovement $movement,
+        InventoryMovementLine $line
+    ): Collection {
+        $locked = FractionalContainer::query()
+            ->forOrganization((int) $movement->organization_id)
+            ->where(
+                'catalog_product_id',
+                $line->catalog_product_id
+            )
+            ->where(
+                'inventory_location_id',
+                $line->source_location_id
+            )
+            ->where(
+                'condition',
+                $line->condition->value
+            )
+            ->where(
+                'base_unit_code',
+                $line->base_unit_code
+            )
+            ->whereNotNull(
+                'received_inventory_movement_line_id'
+            )
+            ->whereIn(
+                'state',
+                [
+                    FractionalContainerState::Open->value,
+                    FractionalContainerState::Sealed->value,
+                ]
+            )
+            ->where('remaining_base_quantity', '>', 0)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        if ($locked->isEmpty()) {
+            return collect();
+        }
+
+        $orderedIds = $this->fifoOrderedContainerIdsForLine(
+            $movement,
+            $line,
+            $locked->keys()
+                ->map(static fn ($id): int => (int) $id)
+                ->all()
+        );
+
+        return collect($orderedIds)
+            ->map(
+                static fn (int $containerId) =>
+                    $locked->get($containerId)
+            )
+            ->values();
+    }
+
+    /**
+     * @param list<int> $containerIds
+     * @return list<int>
+     */
+    private function fifoOrderedContainerIdsForLine(
+        InventoryMovement $movement,
+        InventoryMovementLine $line,
+        array $containerIds
+    ): array {
+        if ($containerIds === []) {
+            return [];
+        }
+
+        $orderedIds = DB::table(
+            'fractional_containers as fifo_container'
+        )
+            ->join(
+                'inventory_movement_lines as fifo_receipt_line',
+                'fifo_receipt_line.id',
+                '=',
+                'fifo_container.received_inventory_movement_line_id'
+            )
+            ->join(
+                'inventory_movements as fifo_receipt_movement',
+                'fifo_receipt_movement.id',
+                '=',
+                'fifo_receipt_line.inventory_movement_id'
+            )
+            ->whereIn('fifo_container.id', $containerIds)
+            ->where(
+                'fifo_container.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fifo_receipt_line.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fifo_receipt_movement.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fifo_receipt_movement.type',
+                InventoryMovementType::Receipt->value
+            )
+            ->where(
+                'fifo_receipt_movement.status',
+                InventoryMovementStatus::Confirmed->value
+            )
+            ->whereNull(
+                'fifo_receipt_line.source_location_id'
+            )
+            ->where(
+                'fifo_receipt_line.destination_location_id',
+                $line->source_location_id
+            )
+            ->where(
+                'fifo_receipt_line.catalog_product_id',
+                $line->catalog_product_id
+            )
+            ->where(
+                'fifo_receipt_line.condition',
+                $line->condition->value
+            )
+            ->where(
+                'fifo_receipt_line.base_unit_code',
+                $line->base_unit_code
+            )
+            ->orderBy(
+                'fifo_receipt_movement.effective_at'
+            )
+            ->orderBy('fifo_receipt_movement.id')
+            ->orderBy('fifo_receipt_line.sequence')
+            ->orderBy('fifo_container.id')
+            ->pluck('fifo_container.id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        if (count($orderedIds) !== count($containerIds)) {
+            throw new DomainException(
+                'FIFO requiere procedencia completa desde una '
+                .'recepción confirmada compatible con la línea.'
+            );
+        }
+
+        return $orderedIds;
+    }
+
+    /**
+     * @param list<int> $usedContainerIds
+     */
+    private function assertFifoHistoryOrder(
+        InventoryMovement $movement,
+        InventoryMovementLine $line,
+        array $usedContainerIds
+    ): void {
+        $canonical = $this->fifoOrderedContainerIdsForLine(
+            $movement,
+            $line,
+            $usedContainerIds
+        );
+
+        if ($canonical !== $usedContainerIds) {
+            throw new DomainException(
+                'El historial FIFO no conserva la cronología '
+                .'autoritativa de recepción.'
+            );
+        }
+    }
     /**
      * Locks by canonical id order to reduce deadlock risk, then restores
      * the operator-requested order for physical consumption.
@@ -732,6 +911,16 @@ final class FractionalContainerConsumptionManager
                         .'de contenedores del historial confirmado.'
                     );
                 }
+            }
+            if (
+                $policy
+                    === FractionalContainerConsumptionPolicy::Fifo
+            ) {
+                $this->assertFifoHistoryOrder(
+                    $movement,
+                    $line,
+                    $usedContainerIds
+                );
             }
         }
     }
