@@ -327,6 +327,16 @@ enum UserRole: string
         return $this === self::Admin;
     }
 
+    public function canAuthorizeFractionalContainerOpening(): bool
+    {
+        return $this === self::Admin;
+    }
+
+    public function canOpenFractionalContainer(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
     public function canViewInventory(): bool
     {
         return true;
