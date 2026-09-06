@@ -436,7 +436,7 @@ final class CommerceSettlementReviewResolutionAdminUiTest extends TestCase
             )
         );
         $this->assertSame(
-            'daaf2d61c9b5cb9a8d5c2ff17c00ae97ea4004bad5ab38c2972e4eca22c616ff',
+            '6316503f4195e9a48cabc9ce82f2362f6ca810c09f195c94e344d30aadf036bc',
             hash_file(
                 'sha256',
                 app_path('Enums/UserRole.php')
