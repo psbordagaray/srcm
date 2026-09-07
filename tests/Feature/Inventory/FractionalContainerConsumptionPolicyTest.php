@@ -10,6 +10,7 @@ use App\Domain\Inventory\InventoryQuantity;
 use App\Enums\FractionalContainerConsumptionPolicy;
 use App\Enums\FractionalContainerState;
 use App\Enums\InventoryCondition;
+use App\Enums\InventoryLocationType;
 use App\Enums\InventoryMovementStatus;
 use App\Enums\InventoryMovementType;
 use App\Enums\UserRole;
@@ -784,11 +785,23 @@ class FractionalContainerConsumptionPolicyTest extends TestCase
         $organization = $this->organization();
         $actor = $this->actor($organization);
         $product = $this->product($sku);
-        $location = InventoryLocation::query()
+        $warehouse = InventoryLocation::query()
             ->where('organization_id', $organization->id)
+            ->where(
+                'type',
+                InventoryLocationType::Warehouse->value
+            )
             ->where('active', true)
             ->orderBy('id')
             ->firstOrFail();
+
+        $location = InventoryLocation::query()->create([
+            'organization_id' => $organization->id,
+            'parent_id' => $warehouse->id,
+            'name' => 'Preparación '.$sku,
+            'type' => InventoryLocationType::Preparation,
+            'active' => true,
+        ]);
 
         if ($authorizeOpening) {
             $this->authorizeOpening(

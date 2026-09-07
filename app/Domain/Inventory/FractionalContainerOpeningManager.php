@@ -4,6 +4,7 @@ namespace App\Domain\Inventory;
 
 use App\Enums\FractionalContainerState;
 use App\Enums\InventoryCondition;
+use App\Enums\InventoryLocationType;
 use App\Models\CatalogProduct;
 use App\Models\FractionalContainer;
 use App\Models\FractionalContainerOpeningAuthorization;
@@ -263,6 +264,21 @@ final class FractionalContainerOpeningManager
             $inventoryLocationId,
             $condition
         ): ?FractionalContainerOpeningAuthorization {
+            $location = InventoryLocation::query()
+                ->whereKey($inventoryLocationId)
+                ->where('organization_id', $organizationId)
+                ->where('active', true)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                ! $location
+                || $location->type
+                    !== InventoryLocationType::Preparation
+            ) {
+                return null;
+            }
+
             $now = CarbonImmutable::now('UTC');
 
             $authorizations =
@@ -414,6 +430,27 @@ final class FractionalContainerOpeningManager
                 }
 
                 return $orderedReplay;
+            }
+
+            $location = InventoryLocation::query()
+                ->whereKey($authorization->inventory_location_id)
+                ->where(
+                    'organization_id',
+                    $authorization->organization_id
+                )
+                ->where('active', true)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                ! $location
+                || $location->type
+                    !== InventoryLocationType::Preparation
+            ) {
+                throw new DomainException(
+                    'La autorización sólo puede ejecutar aperturas '
+                    .'en una ubicación activa de preparación.'
+                );
             }
 
             if ($authorization->revoked_at !== null) {
@@ -744,6 +781,16 @@ final class FractionalContainerOpeningManager
             throw new DomainException(
                 'La ubicación de apertura no pertenece '
                 .'a la organización activa.'
+            );
+        }
+
+        if (
+            $location->type
+                !== InventoryLocationType::Preparation
+        ) {
+            throw new DomainException(
+                'La autorización de apertura sólo puede emitirse '
+                .'sobre una ubicación activa de preparación.'
             );
         }
     }

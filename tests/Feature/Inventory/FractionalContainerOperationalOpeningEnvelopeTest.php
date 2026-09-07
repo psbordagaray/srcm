@@ -7,6 +7,7 @@ use App\Domain\Inventory\FractionalContainerOpeningManager;
 use App\Domain\Inventory\InventoryQuantity;
 use App\Enums\FractionalContainerState;
 use App\Enums\InventoryCondition;
+use App\Enums\InventoryLocationType;
 use App\Enums\UserRole;
 use App\Models\CatalogProduct;
 use App\Models\FractionalContainer;
@@ -613,6 +614,112 @@ class FractionalContainerOperationalOpeningEnvelopeTest extends TestCase
         );
     }
 
+    public function test_authorization_rejects_non_preparation_location_without_mutation(): void
+    {
+        $organization = Organization::query()
+            ->where('slug', 'sulu-tv')
+            ->firstOrFail();
+
+        $admin = $this->actor(
+            $organization,
+            UserRole::Admin
+        );
+        $product = $this->product(
+            'OPEN-ENV-NON-PREPARATION'
+        );
+
+        $warehouse = InventoryLocation::query()
+            ->where('organization_id', $organization->id)
+            ->where(
+                'type',
+                InventoryLocationType::Warehouse->value
+            )
+            ->where('active', true)
+            ->orderBy('id')
+            ->firstOrFail();
+
+        $manager = app(
+            FractionalContainerOpeningManager::class
+        );
+
+        $this->assertDomainRejected(
+            fn () => $manager->authorize(
+                $organization->id,
+                $product->id,
+                $warehouse->id,
+                InventoryCondition::New,
+                $admin,
+                'opening-auth:non-preparation',
+                CarbonImmutable::now()->subMinute(),
+                CarbonImmutable::now()->addHours(2),
+                2
+            )
+        );
+
+        $this->assertDatabaseCount(
+            'fractional_container_opening_authorizations',
+            0
+        );
+    }
+
+    public function test_existing_authorization_cannot_open_after_location_leaves_preparation(): void
+    {
+        [$organization, $admin, $product, $location] =
+            $this->scenario('OPEN-ENV-PREPARATION-DRIFT');
+
+        $operator = $this->actor(
+            $organization,
+            UserRole::Operator
+        );
+
+        [$container] = $this->containers(
+            $organization,
+            $product,
+            $location,
+            ['OPEN-PREPARATION-DRIFT-A']
+        );
+
+        $manager = app(
+            FractionalContainerOpeningManager::class
+        );
+
+        $authorization = $manager->authorize(
+            $organization->id,
+            $product->id,
+            $location->id,
+            InventoryCondition::New,
+            $admin,
+            'opening-auth:preparation-drift',
+            CarbonImmutable::now()->subMinute(),
+            CarbonImmutable::now()->addHours(2),
+            2
+        );
+
+        $location->forceFill([
+            'type' => InventoryLocationType::Warehouse,
+        ])->save();
+
+        $this->assertDomainRejected(
+            fn () => $manager->openBatch(
+                $authorization,
+                $operator,
+                [$container->id],
+                'opening-batch:preparation-drift'
+            )
+        );
+
+        $container->refresh();
+
+        $this->assertSame(
+            FractionalContainerState::Sealed,
+            $container->state
+        );
+        $this->assertDatabaseCount(
+            'fractional_container_opening_events',
+            0
+        );
+    }
+
     /**
      * @return array{
      *     Organization,
@@ -633,11 +740,23 @@ class FractionalContainerOperationalOpeningEnvelopeTest extends TestCase
         );
         $product = $this->product($sku);
 
-        $location = InventoryLocation::query()
+        $warehouse = InventoryLocation::query()
             ->where('organization_id', $organization->id)
+            ->where(
+                'type',
+                InventoryLocationType::Warehouse->value
+            )
             ->where('active', true)
             ->orderBy('id')
             ->firstOrFail();
+
+        $location = InventoryLocation::query()->create([
+            'organization_id' => $organization->id,
+            'parent_id' => $warehouse->id,
+            'name' => 'Preparación '.$sku,
+            'type' => InventoryLocationType::Preparation,
+            'active' => true,
+        ]);
 
         return [
             $organization,

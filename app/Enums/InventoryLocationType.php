@@ -9,6 +9,7 @@ enum InventoryLocationType: string
     case Sector = 'sector';
     case Shelf = 'shelf';
     case Position = 'position';
+    case Preparation = 'preparation';
     case Receiving = 'receiving';
 
     public function label(): string
@@ -19,6 +20,7 @@ enum InventoryLocationType: string
             self::Sector => 'Sector',
             self::Shelf => 'Estantería',
             self::Position => 'Posición',
+            self::Preparation => 'Preparación',
             self::Receiving => 'Recepción',
         };
     }
