@@ -84,6 +84,31 @@ final class StraleonRunnerGuard
         return $records;
     }
 
+    public static function assertWindowsShellSafeGitRevision(
+        string $revision
+    ): void {
+        if ($revision === '') {
+            throw new RuntimeException(
+                'Git revision must not be empty.'
+            );
+        }
+
+        if (preg_match('/[\^&|<>()%!]/', $revision) === 1) {
+            throw new RuntimeException(
+                'Shell-sensitive Git revision forbidden on Windows: '
+                .$revision
+            );
+        }
+    }
+
+    public static function firstParentRevision(
+        string $revision = 'HEAD'
+    ): string {
+        self::assertWindowsShellSafeGitRevision($revision);
+
+        return $revision.'~1';
+    }
+
     public static function assertExactPaths(
         array $actual,
         array $expected,
@@ -138,6 +163,26 @@ final class StraleonRunnerGuard
 
         if ($normalized !== "one\ntwo\nthree\n") {
             throw new RuntimeException('Repository text normalization failed.');
+        }
+
+        if (self::firstParentRevision('HEAD') !== 'HEAD~1') {
+            throw new RuntimeException(
+                'Safe first-parent revision construction failed.'
+            );
+        }
+
+        try {
+            self::assertWindowsShellSafeGitRevision('HEAD^');
+            throw new RuntimeException(
+                'Caret-based Git revision was not rejected.'
+            );
+        } catch (RuntimeException $exception) {
+            if (
+                $exception->getMessage()
+                === 'Caret-based Git revision was not rejected.'
+            ) {
+                throw $exception;
+            }
         }
 
         echo 'STRALEON_RUNNER_GUARD_SELF_TEST=GREEN'.PHP_EOL;

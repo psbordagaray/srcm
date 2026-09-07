@@ -31,6 +31,17 @@ Before generating or executing any repository mutation, read:
 - Normalize only line separators before splitting Git output.
 - Use `tools/StraleonRunnerGuard.php` for path parsing, porcelain parsing, LF normalization and exact-scope assertions.
 
+## Windows command-shell contract
+
+PHP `exec()` / `shell_exec()` on the primary Windows workstation pass command strings through `cmd.exe`.
+
+- Never use `HEAD^`, `<rev>^`, `^!`, `^{commit}` or another caret-based Git revision expression inside a shell command string.
+- In `cmd.exe`, `^` is an escape metacharacter and may be removed before Git receives the argument.
+- Use `HEAD~1` for the first parent, or an exact full SHA.
+- Prefer shell-free argv/process APIs when a command needs shell-sensitive syntax.
+- Treat `^ & | < > ( ) % !` as shell-sensitive unless intentionally and correctly escaped.
+- Verification of a just-created commit must use `HEAD~1` or the exact pre-commit SHA, never `HEAD^`.
+
 ## Runner contract
 
 Every mutation runner must have:

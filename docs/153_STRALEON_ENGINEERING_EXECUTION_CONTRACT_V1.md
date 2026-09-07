@@ -124,6 +124,50 @@ Never compare raw multiline output when the intended contract is a set of paths.
 
 ---
 
+## 3.3 Windows command-shell metacharacters
+
+The primary development workstation is Windows. PHP `exec()` / `shell_exec()` command strings are interpreted by `cmd.exe` before the child program receives them.
+
+Therefore Git revision syntax that contains a caret is unsafe inside those shell strings.
+
+Forbidden examples:
+
+```text
+git rev-parse HEAD^
+git rev-parse <sha>^
+git show HEAD^{commit}
+```
+
+In `cmd.exe`, `^` is an escape metacharacter. A runner can therefore believe it asked Git for a parent while Git actually receives a different argument.
+
+Required alternatives:
+
+```text
+git rev-parse HEAD~1
+git rev-parse <exact-full-sha>~1
+```
+
+For post-commit verification, the preferred contract is even stronger:
+
+```text
+PRE_COMMIT_HEAD=<exact sha captured before commit>
+POST_COMMIT_PARENT=$(git rev-parse HEAD~1)
+POST_COMMIT_PARENT must equal PRE_COMMIT_HEAD
+```
+
+Permanent rules:
+
+- never use caret-based Git revision expressions in Windows shell command strings;
+- use `~1` for first-parent resolution;
+- use exact full SHAs whenever possible;
+- treat `^ & | < > ( ) % !` as shell-sensitive characters;
+- when shell-sensitive syntax is truly needed, prefer a shell-free process/argv API rather than string concatenation;
+- do not diagnose a Git-history anomaly until the actual commit graph has been inspected independently of the potentially broken shell expression.
+
+This rule exists because a false `Commit parent mismatch` was produced on 2026-09-07 when `git rev-parse HEAD^` was executed through a Windows PHP runner. The actual local commit graph was correct; the shell expression was not.
+
+---
+
 ## 4. Reusable machine guard
 
 All new PHP development runners should use:
