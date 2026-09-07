@@ -4,6 +4,7 @@ namespace Tests\Feature\Inventory;
 
 use App\Domain\Inventory\FractionalContainerConsumptionManager;
 use App\Domain\Inventory\FractionalContainerManager;
+use App\Domain\Inventory\FractionalContainerOpeningManager;
 use App\Domain\Inventory\InventoryMovementConfirmer;
 use App\Domain\Inventory\InventoryQuantity;
 use App\Enums\FractionalContainerConsumptionPolicy;
@@ -745,7 +746,37 @@ class FractionalContainerFifoPolicyTest extends TestCase
             ->orderBy('id')
             ->firstOrFail();
 
+        $this->authorizeOpening(
+            $organization,
+            $actor,
+            $product,
+            $location
+        );
+
         return [$organization, $actor, $product, $location];
+    }
+
+    private function authorizeOpening(
+        Organization $organization,
+        User $actor,
+        CatalogProduct $product,
+        InventoryLocation $location
+    ): void {
+        app(FractionalContainerOpeningManager::class)->authorize(
+            organizationId: $organization->id,
+            catalogProductId: $product->id,
+            inventoryLocationId: $location->id,
+            condition: InventoryCondition::New,
+            authorizer: $actor,
+            idempotencyKey: 'test-opening-'.hash(
+                'sha256',
+                (string) $product->sku
+            ),
+            validFrom: now()->subMinute(),
+            validUntil: now()->addHour(),
+            maxConcurrentOpenContainers: 10,
+            maxNewOpenings: 10
+        );
     }
 
     private function actor(Organization $organization): User

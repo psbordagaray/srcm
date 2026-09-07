@@ -245,6 +245,69 @@ final class FractionalContainerOpeningManager
     }
 
     /**
+     * Resolves and locks the single active opening envelope for a
+     * consumption scope before consumption locks physical containers.
+     * A null result means the scope has no active authorization; consuming
+     * already-open containers remains valid, while a later sealed target
+     * must fail closed.
+     */
+    public function activeAuthorizationForConsumption(
+        int $organizationId,
+        int $catalogProductId,
+        int $inventoryLocationId,
+        InventoryCondition $condition
+    ): ?FractionalContainerOpeningAuthorization {
+        return DB::transaction(function () use (
+            $organizationId,
+            $catalogProductId,
+            $inventoryLocationId,
+            $condition
+        ): ?FractionalContainerOpeningAuthorization {
+            $now = CarbonImmutable::now('UTC');
+
+            $authorizations =
+                FractionalContainerOpeningAuthorization::query()
+                    ->where('organization_id', $organizationId)
+                    ->where('catalog_product_id', $catalogProductId)
+                    ->where(
+                        'inventory_location_id',
+                        $inventoryLocationId
+                    )
+                    ->where('condition', $condition->value)
+                    ->whereNull('revoked_at')
+                    ->where('valid_from', '<=', $now)
+                    ->where('valid_until', '>', $now)
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get();
+
+            if ($authorizations->count() > 1) {
+                throw new DomainException(
+                    'El alcance de consumo posee mas de una '
+                    .'autorizacion de apertura vigente.'
+                );
+            }
+
+            $authorization = $authorizations->first();
+
+            if ($authorization === null) {
+                return null;
+            }
+
+            if (
+                ! $authorization
+                instanceof FractionalContainerOpeningAuthorization
+            ) {
+                throw new DomainException(
+                    'No pudo resolverse la autorizacion de apertura.'
+                );
+            }
+
+            return $authorization;
+        }, 3);
+    }
+
+    /**
      * @param list<int|string> $containerIds
      * @return Collection<int, FractionalContainerOpeningEvent>
      */

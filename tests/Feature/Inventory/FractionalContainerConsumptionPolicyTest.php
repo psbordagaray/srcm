@@ -4,6 +4,7 @@ namespace Tests\Feature\Inventory;
 
 use App\Domain\Inventory\FractionalContainerConsumptionManager;
 use App\Domain\Inventory\FractionalContainerManager;
+use App\Domain\Inventory\FractionalContainerOpeningManager;
 use App\Domain\Inventory\InventoryMovementConfirmer;
 use App\Domain\Inventory\InventoryQuantity;
 use App\Enums\FractionalContainerConsumptionPolicy;
@@ -39,6 +40,171 @@ class FractionalContainerConsumptionPolicyTest extends TestCase
         parent::setUp();
 
         $this->seed(DatabaseSeeder::class);
+    }
+
+    public function test_sealed_container_requires_active_opening_authorization_without_partial_mutation(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario(
+                'FC-CONSUME-OPEN-AUTH-MISSING',
+                authorizeOpening: false
+            );
+
+        $this->receive(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            '20'
+        );
+
+        [$container] = $this->containers(
+            $organization,
+            $product,
+            $location,
+            second: false
+        );
+
+        $issue = $this->issue(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            '5'
+        );
+
+        $this->assertDomainRejected(
+            fn () => app(
+                FractionalContainerConsumptionManager::class
+            )->confirm($issue, $actor)
+        );
+
+        $container->refresh();
+
+        $this->assertSame(
+            FractionalContainerState::Sealed,
+            $container->state
+        );
+        $this->assertTrue(
+            InventoryQuantity::equal(
+                '20',
+                $container->remaining_base_quantity
+            )
+        );
+        $this->assertDatabaseCount(
+            'fractional_container_opening_events',
+            0
+        );
+        $this->assertDatabaseCount(
+            'fractional_container_consumptions',
+            0
+        );
+        $this->assertSame(
+            InventoryMovementStatus::Draft,
+            $issue->refresh()->status
+        );
+        $this->assertSame(
+            '20.000000',
+            $this->balance($product, $location)->quantity
+        );
+    }
+
+    public function test_authorized_sealed_consumption_records_opening_before_consumption(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-CONSUME-OPEN-AUTHORIZED');
+
+        $this->receive(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            '20'
+        );
+
+        [$container] = $this->containers(
+            $organization,
+            $product,
+            $location,
+            second: false
+        );
+
+        $issue = $this->issue(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            '5'
+        );
+        $line = $issue->lines->firstOrFail();
+
+        app(FractionalContainerConsumptionManager::class)
+            ->confirm($issue, $actor);
+
+        $opening = DB::table(
+            'fractional_container_opening_events'
+        )
+            ->where('fractional_container_id', $container->id)
+            ->first();
+        $history = DB::table(
+            'fractional_container_consumptions'
+        )
+            ->where('inventory_movement_line_id', $line->id)
+            ->first();
+
+        $this->assertNotNull($opening);
+        $this->assertNotNull($history);
+        $this->assertSame(
+            FractionalContainerState::Sealed->value,
+            (string) $opening->state_before
+        );
+        $this->assertSame(
+            FractionalContainerState::Open->value,
+            (string) $opening->state_after
+        );
+        $this->assertTrue(
+            InventoryQuantity::equal(
+                $opening->remaining_before,
+                $opening->remaining_after
+            )
+        );
+        $this->assertTrue(
+            InventoryQuantity::equal(
+                '20',
+                $opening->remaining_before
+            )
+        );
+        $this->assertSame(
+            FractionalContainerState::Open->value,
+            (string) $history->state_before
+        );
+        $this->assertSame(
+            FractionalContainerState::Open->value,
+            (string) $history->state_after
+        );
+        $this->assertTrue(
+            InventoryQuantity::equal(
+                '15',
+                $history->remaining_after
+            )
+        );
+
+        $container->refresh();
+
+        $this->assertSame(
+            FractionalContainerState::Open,
+            $container->state
+        );
+        $this->assertTrue(
+            InventoryQuantity::equal(
+                '15',
+                $container->remaining_base_quantity
+            )
+        );
+        $this->assertSame(
+            '15.000000',
+            $this->balance($product, $location)->quantity
+        );
     }
 
     public function test_open_container_is_exhausted_before_next_sealed_container(): void
@@ -610,7 +776,10 @@ class FractionalContainerConsumptionPolicyTest extends TestCase
      *     InventoryLocation
      * }
      */
-    private function scenario(string $sku): array
+    private function scenario(
+        string $sku,
+        bool $authorizeOpening = true
+    ): array
     {
         $organization = $this->organization();
         $actor = $this->actor($organization);
@@ -621,7 +790,39 @@ class FractionalContainerConsumptionPolicyTest extends TestCase
             ->orderBy('id')
             ->firstOrFail();
 
+        if ($authorizeOpening) {
+            $this->authorizeOpening(
+                $organization,
+                $actor,
+                $product,
+                $location
+            );
+        }
+
         return [$organization, $actor, $product, $location];
+    }
+
+    private function authorizeOpening(
+        Organization $organization,
+        User $actor,
+        CatalogProduct $product,
+        InventoryLocation $location
+    ): void {
+        app(FractionalContainerOpeningManager::class)->authorize(
+            organizationId: $organization->id,
+            catalogProductId: $product->id,
+            inventoryLocationId: $location->id,
+            condition: InventoryCondition::New,
+            authorizer: $actor,
+            idempotencyKey: 'test-opening-'.hash(
+                'sha256',
+                (string) $product->sku
+            ),
+            validFrom: now()->subMinute(),
+            validUntil: now()->addHour(),
+            maxConcurrentOpenContainers: 10,
+            maxNewOpenings: 10
+        );
     }
 
     private function organization(): Organization

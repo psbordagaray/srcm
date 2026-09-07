@@ -19,7 +19,8 @@ use Illuminate\Support\Facades\DB;
 final class FractionalContainerConsumptionManager
 {
     public function __construct(
-        private readonly InventoryMovementConfirmer $confirmer
+        private readonly InventoryMovementConfirmer $confirmer,
+        private readonly FractionalContainerOpeningManager $openingManager
     ) {
     }
 
@@ -145,6 +146,7 @@ final class FractionalContainerConsumptionManager
                 $this->allocateLine(
                     $lockedMovement,
                     $line,
+                    $actor,
                     $policy,
                     $normalizedSelection[(int) $line->id] ?? []
                 );
@@ -319,6 +321,7 @@ final class FractionalContainerConsumptionManager
     private function allocateLine(
         InventoryMovement $movement,
         InventoryMovementLine $line,
+        User $actor,
         FractionalContainerConsumptionPolicy $policy,
         array $manualContainerIds = []
     ): void {
@@ -364,6 +367,14 @@ final class FractionalContainerConsumptionManager
             (int) $product->quantity_scale,
             'La cantidad fraccionada'
         );
+
+        $openingAuthorization =
+            $this->openingManager->activeAuthorizationForConsumption(
+                (int) $movement->organization_id,
+                (int) $line->catalog_product_id,
+                (int) $line->source_location_id,
+                $line->condition
+            );
 
         $containers = match ($policy) {
             FractionalContainerConsumptionPolicy::ExhaustOpenContainer =>
@@ -420,6 +431,35 @@ final class FractionalContainerConsumptionManager
         foreach ($containers as $container) {
             if (InventoryQuantity::equal($pending, '0')) {
                 break;
+            }
+
+            if ($container->state === FractionalContainerState::Sealed) {
+                if ($openingAuthorization === null) {
+                    throw new DomainException(
+                        'El consumo de un contenedor sellado requiere '
+                        .'una autorizacion operativa de apertura vigente.'
+                    );
+                }
+
+                $this->openingManager->openBatch(
+                    $openingAuthorization,
+                    $actor,
+                    [(int) $container->id],
+                    $this->openingIdempotencyKey(
+                        $movement,
+                        $line,
+                        $policy
+                    )
+                );
+
+                $container->refresh();
+            }
+
+            if ($container->state !== FractionalContainerState::Open) {
+                throw new DomainException(
+                    'El consumo fraccionado solo puede descontar '
+                    .'desde un contenedor operacionalmente abierto.'
+                );
             }
 
             $remainingBefore = InventoryQuantity::positive(
@@ -491,6 +531,20 @@ final class FractionalContainerConsumptionManager
                 .'la cantidad solicitada.'
             );
         }
+    }
+
+    private function openingIdempotencyKey(
+        InventoryMovement $movement,
+        InventoryMovementLine $line,
+        FractionalContainerConsumptionPolicy $policy
+    ): string {
+        return hash(
+            'sha256',
+            'fractional-consumption-opening'
+                .'|movement:'.$movement->id
+                .'|line:'.$line->id
+                .'|policy:'.$policy->value
+        );
     }
 
     /**

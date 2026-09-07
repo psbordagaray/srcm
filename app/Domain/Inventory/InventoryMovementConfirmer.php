@@ -800,6 +800,30 @@ final class InventoryMovementConfirmer
 
                 $recognizedPolicy ??= $recordPolicy;
 
+                $stateBefore = FractionalContainerState::tryFrom(
+                    (string) $record->state_before
+                );
+                $stateAfter = FractionalContainerState::tryFrom(
+                    (string) $record->state_after
+                );
+
+                if (
+                    $stateBefore !== FractionalContainerState::Open
+                    || ! in_array(
+                        $stateAfter,
+                        [
+                            FractionalContainerState::Open,
+                            FractionalContainerState::Exhausted,
+                        ],
+                        true
+                    )
+                ) {
+                    throw new DomainException(
+                        'La trazabilidad de consumo no puede sustituir '
+                        .'el evento autorizado de apertura.'
+                    );
+                }
+
                 $consumed = InventoryQuantity::positive(
                     $record->consumed_base_quantity
                 );
