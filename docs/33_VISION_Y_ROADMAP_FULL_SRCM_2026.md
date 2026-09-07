@@ -1,110 +1,119 @@
 # SRCM — Visión y Roadmap Full 2026
 
 Estado: **North Star / contrato de dirección y continuidad**
-Fecha: **2026-09-05**
+Fecha: **2026-09-07**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 
 <!-- P13_CURRENT_CONTINUITY_V2 -->
-## Current P13 checkpoint - P13.B Numerical Integrity through Commercial Availability / Inventory Reservation published CI133
+## Current P13 checkpoint — P13.B Physical Commerce through Quantity Tolerance; Fulfillment Preferences RECON GREEN
 
 <!--
 STRALEON_CANONICAL_PRODUCT_NAME=Straleon
 P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
 P13_CURRENT_SUBPHASE=P13_B_NUMERICAL_INTEGRITY_AND_HUMAN_ERROR_PREVENTION
 P13_B_STATUS=ACTIVE_CURRENT
-P13_B_PUBLISHED_HEAD=db06b51a9a5a24fc1147da68cd1f9d196f339d3d
-P13_B_PUBLISHED_PARENT=17769487691b38ab30bf4ec11b8bffdfb680db29
-P13_B_CI128_STATUS=FAILED_STALE_FOUNDATION_EXPECTATION_DIAGNOSED_AND_CORRECTED
-P13_B_CI129_RUN_ID=33920788791
-P13_B_CI129_STATUS=GREEN_COMPLETED_SUCCESS
-P13_B_CI129_HEAD=aab6fb8f4a55297b14a5bfde76ed0de475573bc5
-P13_B_MASTER_SYNC_HEAD=2414f380f3a88b994e05039315c90427919757fe
-P13_B_CI130_RUN_ID=33924849226
-P13_B_CI130_STATUS=GREEN_COMPLETED_SUCCESS
-P13_B_COMMERCIAL_AVAILABILITY_PUBLISHED_HEAD=3fd3c21b2ee708d27ee147030f4c34e9713da4e5
-P13_B_CI131_RUN_ID=33935895471
-P13_B_CI131_JOB_ID=101223651544
-P13_B_CI131_STATUS=GREEN_COMPLETED_SUCCESS
-P13_B_INVENTORY_RESERVATION_PUBLISHED_HEAD=17769487691b38ab30bf4ec11b8bffdfb680db29
-P13_B_CI133_RUN_ID=33980379591
-P13_B_CI133_JOB_ID=101344432238
-P13_B_CI133_STATUS=GREEN_COMPLETED_SUCCESS
-P13_B_CI133_HEAD=db06b51a9a5a24fc1147da68cd1f9d196f339d3d
-P13_B_CI132_REMEDIATION=RESOLVED_BY_DB06_CI133_GREEN
+P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=681b1fd40948cdffa059e2a7c03fb597251b8a49
+P13_B_FUNCTIONAL_HEAD=567c01ba72bdfa5c10fa1b05f4006f4a6c0758d0
+P13_B_FUNCTIONAL_PARENT=7327c711eedc21ef51dab109dca8e69856670221
+P13_B_CI150_RUN_ID=34147170379
+P13_B_CI150_JOB_ID=101821596657
+P13_B_CI150_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI150_HEAD=567c01ba72bdfa5c10fa1b05f4006f4a6c0758d0
+P13_B_ENGINEERING_EXECUTION_CONTRACT=V1_PUBLISHED_AND_WINDOWS_HARDENED
+P13_B_ENGINEERING_EXECUTION_CONTRACT_INSTALL_HEAD=6f1afe856632110feec4da418b328c6bea023cf7
+P13_B_ENGINEERING_EXECUTION_CONTRACT_HEAD=681b1fd40948cdffa059e2a7c03fb597251b8a49
+P13_B_CI151_RUN_ID=34154981415
+P13_B_CI151_JOB_ID=101844822201
+P13_B_CI151_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI151_HEAD=681b1fd40948cdffa059e2a7c03fb597251b8a49
 P13_B_MONEY_BOUNDARY_WAVE_1=GREEN_CLOSED
 P13_B_DISCREPANCY_FRAMEWORK=GREEN_PUBLISHED
-P13_B_SETTLEMENT_COMPONENT_ANALYSIS=GREEN_PUBLISHED
-P13_B_SETTLEMENT_DECISION_INPUT=GREEN_PUBLISHED
-P13_B_SETTLEMENT_REVIEW_PERSISTENCE=GREEN_PUBLISHED
 P13_B_SETTLEMENT_REVIEW_RESOLUTION_FOUNDATION=GREEN_PUBLISHED
 P13_B_SETTLEMENT_REVIEW_RESOLUTION_HTTP_TRANSPORT=GREEN_PUBLISHED
 P13_B_SETTLEMENT_REVIEW_RESOLUTION_ADMIN_UI=GREEN_PUBLISHED
-P13_B_PR17_NUMBER=17
-P13_B_PR17_STATE=SOURCE_DRAFT_NOT_DIRECTLY_MERGED
-P13_B_PR17_SOURCE_HEAD=a474a721302f446dc2e92542720a9eeb446f33f5
 P13_B_PR17_AMENDMENT_150=INCORPORATED_AS_BINDING_ROADMAP_INPUT
 P13_B_PR17_AMENDMENT_151=INCORPORATED_AS_BINDING_ROADMAP_INPUT
 P13_B_PR17_AMENDMENT_152=INCORPORATED_AS_BINDING_ROADMAP_INPUT
-P13_B_STOREFRONT_FIRST_CLASS=ROADMAP_BINDING_NOT_IMPLEMENTED_BY_THIS_DOC_CUT
-P13_B_COMMERCIAL_HARDWARE_FIRST_CLASS=ROADMAP_BINDING_NOT_IMPLEMENTED_BY_THIS_DOC_CUT
-P13_B_COMMERCIAL_AVAILABILITY_ENGINE=FOUNDATION_V1_PUBLISHED_CI131_GREEN
-P13_B_INVENTORY_RESERVATION=FOUNDATION_V1_PUBLISHED_CI133_GREEN
-P13_B_UNITS_PRESENTATIONS_FRACTIONAL_CONTAINERS=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
-P13_B_VARIABLE_QUANTITY_FULFILLMENT=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
-P13_B_FULFILLMENT_PREFERENCES=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
+P13_B_COMMERCIAL_AVAILABILITY_ENGINE=FOUNDATION_V1_PUBLISHED
+P13_B_INVENTORY_RESERVATION=FOUNDATION_V1_PUBLISHED
+P13_B_UNITS_PRESENTATIONS_FRACTIONAL_CONTAINERS=IMPLEMENTED_PUBLISHED
+P13_B_FRACTIONAL_OPENING_CONSUMPTION_ENFORCEMENT=PUBLISHED
+P13_B_FRACTIONAL_PREPARATION_LOCATION_BOUNDARY=PUBLISHED
+P13_B_FRACTIONAL_EXPIRATION_PROVENANCE=PUBLISHED
+P13_B_FRACTIONAL_CONSUMPTION_POLICIES=OPEN_CONTAINER_FIRST_FIFO_FEFO_MANUAL_PUBLISHED
+P13_B_VARIABLE_QUANTITY_FULFILLMENT=FOUNDATION_V1_PUBLISHED
+P13_B_VARIABLE_QUANTITY_FULFILLMENT_HEAD=7327c711eedc21ef51dab109dca8e69856670221
+P13_B_CI149_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_QUANTITY_TOLERANCE=V1_PUBLISHED
+P13_B_QUANTITY_TOLERANCE_HEAD=567c01ba72bdfa5c10fa1b05f4006f4a6c0758d0
+P13_B_FULFILLMENT_PREFERENCES_RECON_V1=GREEN_READ_ONLY
+P13_B_FULFILLMENT_PREFERENCES_RECON_V1_RESULT_SHA256=adedead3af63d627c32436160b62f622b4f10e87eca4262c344fa7fbf5fd37f5
+P13_B_FULFILLMENT_PREFERENCES=FOUNDATION_V1_NEXT
 P13_B_TRANSFORMATION_YIELD_TRACEABILITY=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
 P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
 P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REQUIRES_FUTURE_RECON
 P13_B_MULTIRRUBRO_VALIDATION=MANDATORY
 P13_C_STATUS=NOT_OPENED
-P13_NEXT_BOUNDARY=P13_B_UNITS_PRESENTATIONS_FRACTIONAL_CONTAINERS_RECON_V1
+P13_NEXT_BOUNDARY=P13_B_FULFILLMENT_PREFERENCES_FOUNDATION_V1
 PRODUCTION_MUTATION_AUTHORIZATION=NO
 -->
 
-P13.B is the active technical frontier. The published development HEAD is
-`db06b51a9a5a24fc1147da68cd1f9d196f339d3d`, containing the published Inventory Reservation Foundation V1 chain plus the EOL-stable settlement-resolution test remediation.
-Natural CI133 (`33980379591`, job `101344432238`) completed GREEN on that exact SHA,
-including the full suite and tracked-tree-unchanged gate. CI132 remediation is closed by `db06b51a9a5a24fc1147da68cd1f9d196f339d3d`; CI128 must not be rerun.
+P13.B remains the active technical frontier.
 
-The current published P13.B chain already includes the closed Money Boundary Wave 1,
-check-digit and discrepancy foundations, settlement component analysis and decision
-evidence/input boundaries, settlement-review persistence after checkout rollback, and
-the Settlement Review Resolution foundation, HTTP transport and Administrative UI.
-The Administrative UI remains evidence/resolution-only: it does not itself execute
-business outcomes, retry checkout, create a sale, finalize payment or open P13.C.
+The latest published functional commerce checkpoint is
+`567c01ba72bdfa5c10fa1b05f4006f4a6c0758d0` —
+`feat(commerce): add variable quantity reservation tolerance`, parent
+`7327c711eedc21ef51dab109dca8e69856670221`. Natural CI150
+(`34147170379`, job `101821596657`) completed GREEN on that exact SHA.
 
-This documentation synchronization also reconciles the product architecture prepared
-in draft PR #17 onto the current technical HEAD without directly merging its stale-base
-branch. The three source documents incorporated in this cut are:
+The current branch head before this master synchronization is
+`681b1fd40948cdffa059e2a7c03fb597251b8a49` —
+`fix(dev): harden Windows Git revision handling`. Natural CI151
+(`34154981415`, job `101844822201`) completed GREEN on that exact SHA,
+including release preflight, production asset build, full test suite and
+tracked-tree-unchanged.
 
-- `docs/150_ROADMAP_AMENDMENT_STRALEON_STOREFRONT_MULTIRUBRO_PHYSICAL_COMMERCE_V1.md`;
-- `docs/151_ROADMAP_AMENDMENT_TALLER_MECANICO_AUTOPARTES_SERVICE_SCOPE_EVOLUTION_V1.md`;
-- `docs/152_ROADMAP_AMENDMENT_SERVICE_SCOPE_EVOLUTION_CROSS_VERTICAL_V1.md`.
+The repository execution contract is now binding through `.gitattributes`,
+`.editorconfig`, `AGENTS.md`,
+`docs/153_STRALEON_ENGINEERING_EXECUTION_CONTRACT_V1.md` and
+`tools/StraleonRunnerGuard.php`. Repository text is UTF-8 without BOM, LF-only,
+with final newline; generated runners must preserve Git porcelain semantics,
+use exact branch/HEAD/blob/scope gates, and avoid caret-based Git revision
+syntax through Windows `cmd.exe`.
 
-Their product decisions are binding roadmap inputs, not claims of implementation.
-Storefront/Web Commerce and commercial hardware are first-class Straleon surfaces;
-publishability remains distinct from existence/sellability; Commercial Availability
-must derive promiseable availability from the same operational truth; units,
-presentations and fractional physical containers remain distinct; variable-quantity
-fulfillment, tolerances/substitutions, transformation and yield, traceability,
-cold-chain/logistics custody and configurable business profiles are cross-cutting
-capabilities; and Service Scope Evolution is cross-vertical across SULU, Taller
-Mecanico + Autopartes and future technical-service businesses.
+The published P13.B physical-commerce chain now includes Commercial Availability,
+Inventory Reservation, Units / Presentations, Fractional Containers, fractional
+opening/consumption enforcement, preparation-location boundary, expiration
+provenance, open-container-first/FIFO/FEFO/manual consumption policies, Variable
+Quantity Fulfillment and Variable Quantity Reservation Tolerance.
 
-These amendments preserve the architectural rule: one Straleon Core, one operational
-truth, multiple surfaces. They do not authorize functional code, migrations, database
-mutation, production change or P13.C advancement.
+Quantity Tolerance V1 preserves requested quantity as commercial intent while
+allowing an explicit fulfillment envelope. When a maximum is present, Commercial
+Availability holds the maximum promiseable quantity, preventing tolerated excess
+from being promised elsewhere. Linked variable-quantity fulfillment must remain
+inside the reservation envelope. Unit products remain ineligible and no-tolerance
+reservations preserve the legacy idempotency fingerprint.
 
-Commercial Availability Foundation V1 is published and CI131 GREEN on
-`3fd3c21b2ee708d27ee147030f4c34e9713da4e5`. It remains a derived projection over physical inventory.
+`P13_B_FULFILLMENT_PREFERENCES_RECON_V1` is GREEN read-only, result SHA-256
+`adedead3af63d627c32436160b62f622b4f10e87eca4262c344fa7fbf5fd37f5`.
 
-Inventory Reservation Foundation V1 is published. The functional reservation commit is `17769487691b38ab30bf4ec11b8bffdfb680db29`; the current published branch HEAD is the test-only remediation `db06b51a9a5a24fc1147da68cd1f9d196f339d3d`, confirmed GREEN by natural CI133. Active, unexpired reservations reduce promiseable quantity without mutating physical stock. Release and expiry restore commercial availability. Reservation creation serializes on organization plus balance locks; ordinary checkout revalidates non-reserved availability inside its transaction. Binding checkout to consume its own reservation remains deferred.
+Amendment 150 remains binding: fulfillment preferences are commercial-intent
+evidence and must survive picking/preparation. Quantity-within-tolerance is already
+represented by the tolerance boundary and must not become a second conflicting
+quantity authority. Preference intent may cover another-brand permission,
+equivalent-product permission, exact/no-substitution intent, consultation through an
+authorized channel, and an unavailable-line fallback. Recording those preferences
+must remain distinct from selecting an alternative product, sending a WhatsApp
+message, cancelling an order line, mutating inventory, or finalizing money.
 
-This cut does not open holds, channel policy, publishability, Storefront, protected minimums, preorder/backorder or P13.C.
+The next source cut is therefore the Fulfillment Preferences Foundation V1. It must
+establish durable intent evidence without prematurely implementing substitution
+resolution, communications delivery, Storefront order runtime, final
+variable-quantity pricing, Transformation & Yield, P13.C or production mutation.
 
 Next exact boundary:
 
-`P13_B_UNITS_PRESENTATIONS_FRACTIONAL_CONTAINERS_RECON_V1`.
+`P13_B_FULFILLMENT_PREFERENCES_FOUNDATION_V1`.
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 continuity — P12.2 Snapshot Reference Panel Foundation published
