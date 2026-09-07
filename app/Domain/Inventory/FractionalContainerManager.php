@@ -193,7 +193,8 @@ final class FractionalContainerManager
         int $receiptLineId,
         string $containerCode,
         mixed $originalBaseQuantity,
-        ?int $productPresentationId = null
+        ?int $productPresentationId = null,
+        ?string $expiresOn = null
     ): FractionalContainer {
         $normalizedCode =
             FractionalContainer::normalizeContainerCode(
@@ -206,12 +207,15 @@ final class FractionalContainerManager
             );
         }
 
+        $normalizedExpiresOn = $this->normalizeExpiresOn($expiresOn);
+
         return DB::transaction(function () use (
             $receiptLineId,
             $containerCode,
             $normalizedCode,
             $originalBaseQuantity,
-            $productPresentationId
+            $productPresentationId,
+            $normalizedExpiresOn
         ): FractionalContainer {
             $identity = InventoryMovementLine::query()
                 ->whereKey($receiptLineId)
@@ -421,6 +425,21 @@ final class FractionalContainerManager
                     && (int) $existing
                         ->received_inventory_movement_line_id
                         === (int) $line->id
+                    && (
+                        $existing->expires_on === null
+                            ? $normalizedExpiresOn === null
+                            : $normalizedExpiresOn !== null
+                                && $existing->expires_on->format('Y-m-d')
+                                    === $normalizedExpiresOn
+                    )
+                    && (
+                        $existing->expiration_receipt_line_id === null
+                            ? $normalizedExpiresOn === null
+                            : $normalizedExpiresOn !== null
+                                && (int) $existing
+                                    ->expiration_receipt_line_id
+                                    === (int) $line->id
+                    )
                     && $existing->condition === $line->condition
                     && InventoryQuantity::equal(
                         $existing->original_base_quantity,
@@ -484,6 +503,11 @@ final class FractionalContainerManager
                 'inventory_location_id' => $location->id,
                 'received_inventory_movement_line_id' =>
                     $line->id,
+                'expires_on' => $normalizedExpiresOn,
+                'expiration_receipt_line_id' =>
+                    $normalizedExpiresOn === null
+                        ? null
+                        : $line->id,
                 'container_code' => $containerCode,
                 'condition' => $line->condition,
                 'state' => FractionalContainerState::Sealed,
@@ -495,4 +519,36 @@ final class FractionalContainerManager
             ])->refresh();
         }, 3);
     }
-}
+
+    private function normalizeExpiresOn(?string $expiresOn): ?string
+    {
+        if ($expiresOn === null) {
+            return null;
+        }
+
+        $value = trim($expiresOn);
+
+        if (
+            preg_match(
+                '/\A(\d{4})-(\d{2})-(\d{2})\z/',
+                $value,
+                $parts
+            ) !== 1
+            || ! checkdate(
+                (int) $parts[2],
+                (int) $parts[3],
+                (int) $parts[1]
+            )
+        ) {
+            throw new DomainException(
+                'La fecha de vencimiento debe ser una fecha calendario YYYY-MM-DD.'
+            );
+        }
+
+        return sprintf(
+            '%04d-%02d-%02d',
+            (int) $parts[1],
+            (int) $parts[2],
+            (int) $parts[3]
+        );
+    }}

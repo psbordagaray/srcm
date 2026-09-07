@@ -23,6 +23,8 @@ class FractionalContainer extends Model
         'product_presentation_id',
         'inventory_location_id',
         'received_inventory_movement_line_id',
+        'expires_on',
+        'expiration_receipt_line_id',
         'container_code',
         'condition',
         'state',
@@ -57,6 +59,7 @@ class FractionalContainer extends Model
         return [
             'condition' => InventoryCondition::class,
             'state' => FractionalContainerState::class,
+            'expires_on' => 'date:Y-m-d',
             'original_base_quantity' => 'decimal:6',
             'remaining_base_quantity' => 'decimal:6',
             'base_quantity_scale' => 'integer',
@@ -109,6 +112,34 @@ class FractionalContainer extends Model
             InventoryMovementLine::class,
             'received_inventory_movement_line_id'
         );
+    }
+
+    public function expirationReceiptLine(): BelongsTo
+    {
+        return $this->belongsTo(
+            InventoryMovementLine::class,
+            'expiration_receipt_line_id'
+        );
+    }
+
+    public function hasAuthoritativeExpirationProvenance(): bool
+    {
+        return $this->expires_on !== null
+            && $this->expiration_receipt_line_id !== null
+            && $this->received_inventory_movement_line_id !== null
+            && (int) $this->expiration_receipt_line_id
+                === (int) $this->received_inventory_movement_line_id;
+    }
+
+    public function authoritativeExpiresOn(): string
+    {
+        if (! $this->hasAuthoritativeExpirationProvenance()) {
+            throw new DomainException(
+                'El contenedor no tiene procedencia autoritativa de vencimiento.'
+            );
+        }
+
+        return $this->expires_on->format('Y-m-d');
     }
 
     public function isSealed(): bool
@@ -258,6 +289,30 @@ class FractionalContainer extends Model
                     .'base de su línea de recepción.'
                 );
             }
+        }
+
+        $hasExpiresOn = $this->expires_on !== null;
+        $hasExpirationReceiptLine =
+            $this->expiration_receipt_line_id !== null;
+
+        if ($hasExpiresOn !== $hasExpirationReceiptLine) {
+            throw new DomainException(
+                'La fecha de vencimiento requiere su procedencia de recepción.'
+            );
+        }
+
+        if (
+            $hasExpiresOn
+            && (
+                $this->received_inventory_movement_line_id === null
+                || (int) $this->expiration_receipt_line_id
+                    !== (int) $this->received_inventory_movement_line_id
+            )
+        ) {
+            throw new DomainException(
+                'La procedencia del vencimiento debe coincidir con '
+                .'la recepción física del contenedor.'
+            );
         }
 
         if ($this->state !== FractionalContainerState::Sealed) {

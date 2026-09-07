@@ -378,6 +378,258 @@ class FractionalContainerReceiptProvenanceTest extends TestCase
         $this->assertDatabaseCount('fractional_containers', 0);
     }
 
+    public function test_records_authoritative_expiration_provenance_from_confirmed_receipt(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-EXPIRATION-PROVENANCE');
+
+        $line = $this->confirmedInboundLine(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            InventoryMovementType::Receipt,
+            '20'
+        );
+
+        $container = app(FractionalContainerManager::class)
+            ->registerFromReceiptLine(
+                $line->id,
+                'DRUM-EXP-001',
+                '20',
+                null,
+                '2027-05-31'
+            );
+
+        $this->assertTrue(
+            $container->hasAuthoritativeExpirationProvenance()
+        );
+        $this->assertSame(
+            '2027-05-31',
+            $container->authoritativeExpiresOn()
+        );
+        $this->assertSame(
+            '2027-05-31',
+            $container->expires_on->format('Y-m-d')
+        );
+        $this->assertSame(
+            (int) $line->id,
+            (int) $container->expiration_receipt_line_id
+        );
+        $this->assertSame(
+            (int) $line->id,
+            (int) $container->expirationReceiptLine->id
+        );
+    }
+
+    public function test_expiration_provenance_replay_is_exact_and_conflicts_fail_closed(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-EXPIRATION-REPLAY');
+
+        $line = $this->confirmedInboundLine(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            InventoryMovementType::Receipt,
+            '20'
+        );
+
+        $manager = app(FractionalContainerManager::class);
+
+        $first = $manager->registerFromReceiptLine(
+            $line->id,
+            'DRUM-EXP-REPLAY',
+            '20',
+            null,
+            '2027-05-31'
+        );
+
+        $replay = $manager->registerFromReceiptLine(
+            $line->id,
+            ' drum-exp-replay ',
+            '20.000',
+            null,
+            '2027-05-31'
+        );
+
+        $this->assertSame($first->id, $replay->id);
+        $this->assertDatabaseCount('fractional_containers', 1);
+
+        $this->assertDomainRejected(
+            fn () => $manager->registerFromReceiptLine(
+                $line->id,
+                'DRUM-EXP-REPLAY',
+                '20',
+                null,
+                '2027-06-01'
+            )
+        );
+
+        $this->assertDomainRejected(
+            fn () => $manager->registerFromReceiptLine(
+                $line->id,
+                'DRUM-EXP-REPLAY',
+                '20'
+            )
+        );
+
+        $this->assertSame(
+            '2027-05-31',
+            $first->refresh()->authoritativeExpiresOn()
+        );
+        $this->assertDatabaseCount('fractional_containers', 1);
+    }
+
+    public function test_missing_expiration_evidence_fails_closed_for_legacy_and_receipt_containers(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-EXPIRATION-MISSING');
+
+        $legacy = app(FractionalContainerManager::class)->register(
+            $organization->id,
+            $product->id,
+            $location->id,
+            'DRUM-EXP-LEGACY',
+            '10'
+        );
+
+        $line = $this->confirmedInboundLine(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            InventoryMovementType::Receipt,
+            '10'
+        );
+
+        $receiptWithoutExpiration = app(FractionalContainerManager::class)
+            ->registerFromReceiptLine(
+                $line->id,
+                'DRUM-EXP-UNKNOWN',
+                '10'
+            );
+
+        $this->assertFalse(
+            $legacy->hasAuthoritativeExpirationProvenance()
+        );
+        $this->assertFalse(
+            $receiptWithoutExpiration
+                ->hasAuthoritativeExpirationProvenance()
+        );
+
+        $this->assertDomainRejected(
+            fn () => $legacy->authoritativeExpiresOn()
+        );
+        $this->assertDomainRejected(
+            fn () => $receiptWithoutExpiration
+                ->authoritativeExpiresOn()
+        );
+    }
+
+    public function test_expiration_provenance_is_immutable_and_invalid_dates_are_rejected(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-EXPIRATION-IMMUTABLE');
+
+        $line = $this->confirmedInboundLine(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            InventoryMovementType::Receipt,
+            '20'
+        );
+
+        $manager = app(FractionalContainerManager::class);
+
+        $container = $manager->registerFromReceiptLine(
+            $line->id,
+            'DRUM-EXP-IMMUTABLE',
+            '20',
+            null,
+            '2027-05-31'
+        );
+
+        $this->assertDomainRejected(
+            fn () => $container->update([
+                'expires_on' => '2027-06-01',
+            ])
+        );
+        $this->assertDomainRejected(
+            fn () => $container->update([
+                'expiration_receipt_line_id' => null,
+            ])
+        );
+
+        $this->assertSame(
+            '2027-05-31',
+            $container->refresh()->authoritativeExpiresOn()
+        );
+
+        $this->assertDomainRejected(
+            fn () => $manager->registerFromReceiptLine(
+                $line->id,
+                'DRUM-EXP-BAD-DATE',
+                '1',
+                null,
+                '2027-02-30'
+            )
+        );
+        $this->assertDatabaseMissing(
+            'fractional_containers',
+            ['normalized_container_code' => 'drumexpbaddate']
+        );
+    }
+
+    public function test_model_rejects_forged_expiration_provenance_binding(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-EXPIRATION-FORGED');
+
+        $firstLine = $this->confirmedInboundLine(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            InventoryMovementType::Receipt,
+            '20'
+        );
+        $secondLine = $this->confirmedInboundLine(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            InventoryMovementType::Receipt,
+            '20'
+        );
+
+        $this->assertDomainRejected(
+            fn () => FractionalContainer::query()->create([
+                'organization_id' => $organization->id,
+                'catalog_product_id' => $product->id,
+                'inventory_location_id' => $location->id,
+                'received_inventory_movement_line_id' =>
+                    $firstLine->id,
+                'expires_on' => '2027-05-31',
+                'expiration_receipt_line_id' =>
+                    $secondLine->id,
+                'container_code' => 'DRUM-EXP-FORGED',
+                'condition' => InventoryCondition::New,
+                'state' => FractionalContainerState::Sealed,
+                'original_base_quantity' => '20',
+                'remaining_base_quantity' => '20',
+                'base_unit_code' => 'l',
+                'base_quantity_scale' => 3,
+            ])
+        );
+
+        $this->assertDatabaseMissing(
+            'fractional_containers',
+            ['normalized_container_code' => 'drumexpforged']
+        );
+    }
     /**
      * @return array{
      *     Organization,
