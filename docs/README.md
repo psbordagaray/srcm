@@ -4,20 +4,25 @@ Estado: **vinculante para recuperación de contexto**
 Actualizado: **2026-09-07**
 
 <!-- P13_CURRENT_CONTINUITY_V2 -->
-## Current P13 checkpoint — P13.B Physical Commerce through Quantity Tolerance; Fulfillment Preferences RECON GREEN
+## Current P13 checkpoint — P13.B Physical Commerce through Fulfillment Preferences Foundation V1 published CI153
 
 <!--
 STRALEON_CANONICAL_PRODUCT_NAME=Straleon
 P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
 P13_CURRENT_SUBPHASE=P13_B_NUMERICAL_INTEGRITY_AND_HUMAN_ERROR_PREVENTION
 P13_B_STATUS=ACTIVE_CURRENT
-P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=681b1fd40948cdffa059e2a7c03fb597251b8a49
-P13_B_FUNCTIONAL_HEAD=567c01ba72bdfa5c10fa1b05f4006f4a6c0758d0
-P13_B_FUNCTIONAL_PARENT=7327c711eedc21ef51dab109dca8e69856670221
-P13_B_CI150_RUN_ID=34147170379
-P13_B_CI150_JOB_ID=101821596657
-P13_B_CI150_STATUS=GREEN_COMPLETED_SUCCESS
-P13_B_CI150_HEAD=567c01ba72bdfa5c10fa1b05f4006f4a6c0758d0
+P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=63f5c61e13c6c4be0250d1ff7f2ebc2c42595116
+P13_B_PREVIOUS_MASTER_SYNC_HEAD=04cffcdc43120a136cd2a7ab7cc8e30172cc86d7
+P13_B_CI152_RUN_ID=34155965883
+P13_B_CI152_JOB_ID=101847739747
+P13_B_CI152_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI152_HEAD=04cffcdc43120a136cd2a7ab7cc8e30172cc86d7
+P13_B_FUNCTIONAL_HEAD=63f5c61e13c6c4be0250d1ff7f2ebc2c42595116
+P13_B_FUNCTIONAL_PARENT=04cffcdc43120a136cd2a7ab7cc8e30172cc86d7
+P13_B_CI153_RUN_ID=34158251695
+P13_B_CI153_JOB_ID=101854462021
+P13_B_CI153_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI153_HEAD=63f5c61e13c6c4be0250d1ff7f2ebc2c42595116
 P13_B_ENGINEERING_EXECUTION_CONTRACT=V1_PUBLISHED_AND_WINDOWS_HARDENED
 P13_B_ENGINEERING_EXECUTION_CONTRACT_INSTALL_HEAD=6f1afe856632110feec4da418b328c6bea023cf7
 P13_B_ENGINEERING_EXECUTION_CONTRACT_HEAD=681b1fd40948cdffa059e2a7c03fb597251b8a49
@@ -47,72 +52,63 @@ P13_B_QUANTITY_TOLERANCE=V1_PUBLISHED
 P13_B_QUANTITY_TOLERANCE_HEAD=567c01ba72bdfa5c10fa1b05f4006f4a6c0758d0
 P13_B_FULFILLMENT_PREFERENCES_RECON_V1=GREEN_READ_ONLY
 P13_B_FULFILLMENT_PREFERENCES_RECON_V1_RESULT_SHA256=adedead3af63d627c32436160b62f622b4f10e87eca4262c344fa7fbf5fd37f5
-P13_B_FULFILLMENT_PREFERENCES=FOUNDATION_V1_NEXT
-P13_B_TRANSFORMATION_YIELD_TRACEABILITY=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
+P13_B_FULFILLMENT_PREFERENCES=FOUNDATION_V1_PUBLISHED
+P13_B_FULFILLMENT_PREFERENCES_HEAD=63f5c61e13c6c4be0250d1ff7f2ebc2c42595116
+P13_B_FULFILLMENT_PREFERENCES_TEST_EVIDENCE=5_PASSED_22_ASSERTIONS
+P13_B_TRANSFORMATION_YIELD_TRACEABILITY=NEXT_RECON
 P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
 P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REQUIRES_FUTURE_RECON
 P13_B_MULTIRRUBRO_VALIDATION=MANDATORY
 P13_C_STATUS=NOT_OPENED
-P13_NEXT_BOUNDARY=P13_B_FULFILLMENT_PREFERENCES_FOUNDATION_V1
+P13_NEXT_BOUNDARY=P13_B_TRANSFORMATION_YIELD_TRACEABILITY_RECON_V1
 PRODUCTION_MUTATION_AUTHORIZATION=NO
 -->
 
 P13.B remains the active technical frontier.
 
+The previous continuity checkpoint is
+`04cffcdc43120a136cd2a7ab7cc8e30172cc86d7` —
+`docs(continuity): sync P13B through fulfillment preferences recon`.
+Natural CI152 (`34155965883`, job `101847739747`) completed GREEN on that
+exact SHA.
+
 The latest published functional commerce checkpoint is
-`567c01ba72bdfa5c10fa1b05f4006f4a6c0758d0` —
-`feat(commerce): add variable quantity reservation tolerance`, parent
-`7327c711eedc21ef51dab109dca8e69856670221`. Natural CI150
-(`34147170379`, job `101821596657`) completed GREEN on that exact SHA.
-
-The current branch head before this master synchronization is
-`681b1fd40948cdffa059e2a7c03fb597251b8a49` —
-`fix(dev): harden Windows Git revision handling`. Natural CI151
-(`34154981415`, job `101844822201`) completed GREEN on that exact SHA,
-including release preflight, production asset build, full test suite and
-tracked-tree-unchanged.
-
-The repository execution contract is now binding through `.gitattributes`,
-`.editorconfig`, `AGENTS.md`,
-`docs/153_STRALEON_ENGINEERING_EXECUTION_CONTRACT_V1.md` and
-`tools/StraleonRunnerGuard.php`. Repository text is UTF-8 without BOM, LF-only,
-with final newline; generated runners must preserve Git porcelain semantics,
-use exact branch/HEAD/blob/scope gates, and avoid caret-based Git revision
-syntax through Windows `cmd.exe`.
+`63f5c61e13c6c4be0250d1ff7f2ebc2c42595116` —
+`feat(commerce): add fulfillment preferences foundation`, parent
+`04cffcdc43120a136cd2a7ab7cc8e30172cc86d7`. Natural CI153
+(`34158251695`, job `101854462021`) completed GREEN on that exact SHA,
+including dependency/install gates, offline snapshot contract tests, whitespace
+gate, release preflight, production asset build, Vite manifest verification,
+the full test suite and tracked-tree-unchanged.
 
 The published P13.B physical-commerce chain now includes Commercial Availability,
 Inventory Reservation, Units / Presentations, Fractional Containers, fractional
 opening/consumption enforcement, preparation-location boundary, expiration
 provenance, open-container-first/FIFO/FEFO/manual consumption policies, Variable
-Quantity Fulfillment and Variable Quantity Reservation Tolerance.
+Quantity Fulfillment, Variable Quantity Reservation Tolerance and Fulfillment
+Preferences Foundation V1.
 
-Quantity Tolerance V1 preserves requested quantity as commercial intent while
-allowing an explicit fulfillment envelope. When a maximum is present, Commercial
-Availability holds the maximum promiseable quantity, preventing tolerated excess
-from being promised elsewhere. Linked variable-quantity fulfillment must remain
-inside the reservation envelope. Unit products remain ineligible and no-tolerance
-reservations preserve the legacy idempotency fingerprint.
+Fulfillment Preferences Foundation V1 records durable, immutable and idempotent
+commercial-intent evidence linked to an Inventory Reservation. It can preserve
+another-brand permission, equivalent-product permission, exact/no-substitution
+intent, consultation through an authorized channel and unavailable-line fallback.
+It does not duplicate Quantity Tolerance authority and does not itself select a
+replacement product, send communications, cancel an order line, mutate inventory,
+or finalize money. Focal evidence is GREEN: 5 tests / 22 assertions.
 
-`P13_B_FULFILLMENT_PREFERENCES_RECON_V1` is GREEN read-only, result SHA-256
-`adedead3af63d627c32436160b62f622b4f10e87eca4262c344fa7fbf5fd37f5`.
-
-Amendment 150 remains binding: fulfillment preferences are commercial-intent
-evidence and must survive picking/preparation. Quantity-within-tolerance is already
-represented by the tolerance boundary and must not become a second conflicting
-quantity authority. Preference intent may cover another-brand permission,
-equivalent-product permission, exact/no-substitution intent, consultation through an
-authorized channel, and an unavailable-line fallback. Recording those preferences
-must remain distinct from selecting an alternative product, sending a WhatsApp
-message, cancelling an order line, mutating inventory, or finalizing money.
-
-The next source cut is therefore the Fulfillment Preferences Foundation V1. It must
-establish durable intent evidence without prematurely implementing substitution
-resolution, communications delivery, Storefront order runtime, final
-variable-quantity pricing, Transformation & Yield, P13.C or production mutation.
+Amendment 150 remains binding. Its capability sequence places Fulfillment
+Preferences / Substitutions before Transformation & Yield Ledger. The next cut is
+therefore a read-only Transformation / Yield / Traceability RECON. It must inspect
+the current inventory ledger, movements, lots, fractional provenance, locations,
+reservations and fulfillment evidence before defining how physical inputs become
+outputs, subproducts and waste without silent stock rewrites. It must also preserve
+organization boundaries, exact provenance, idempotency and future forward/backward
+traceability, without implementing production, analytics, cost allocation, cold
+chain, P13.C or production mutation.
 
 Next exact boundary:
 
-`P13_B_FULFILLMENT_PREFERENCES_FOUNDATION_V1`.
+`P13_B_TRANSFORMATION_YIELD_TRACEABILITY_RECON_V1`.
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 checkpoint — P12.2 Snapshot Reference Panel Foundation GREEN
