@@ -112,6 +112,14 @@ class InventoryMovementLine extends Model
         );
     }
 
+    public function transformationLineage(): HasOne
+    {
+        return $this->hasOne(
+            InventoryTransformationLineage::class,
+            'inventory_movement_line_id'
+        );
+    }
+
     private function guardOrganization(): void
     {
         if (

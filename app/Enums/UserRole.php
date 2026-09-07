@@ -413,6 +413,11 @@ enum UserRole: string
         return $this === self::Admin;
     }
 
+    public function canRecordInventoryTransformation(): bool
+    {
+        return $this !== self::Viewer;
+    }
+
     public function canDraftInventoryMovement(
         InventoryMovementType $type
     ): bool {
@@ -425,6 +430,9 @@ enum UserRole: string
             InventoryMovementType::InitialBalance,
             InventoryMovementType::PositiveAdjustment,
             InventoryMovementType::NegativeAdjustment => $this->canAdjustInventory(),
+            InventoryMovementType::TransformationInput,
+            InventoryMovementType::TransformationOutput =>
+                $this->canRecordInventoryTransformation(),
             InventoryMovementType::Reversal => false,
         };
     }

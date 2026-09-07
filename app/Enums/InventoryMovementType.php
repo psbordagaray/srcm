@@ -12,6 +12,8 @@ enum InventoryMovementType: string
     case SupplierReturn = 'supplier_return';
     case PositiveAdjustment = 'positive_adjustment';
     case NegativeAdjustment = 'negative_adjustment';
+    case TransformationInput = 'transformation_input';
+    case TransformationOutput = 'transformation_output';
     case Reversal = 'reversal';
 
     public function label(): string
@@ -25,6 +27,8 @@ enum InventoryMovementType: string
             self::SupplierReturn => 'Devolución a proveedor',
             self::PositiveAdjustment => 'Ajuste positivo',
             self::NegativeAdjustment => 'Ajuste negativo',
+            self::TransformationInput => 'Entrada de transformación',
+            self::TransformationOutput => 'Salida de transformación',
             self::Reversal => 'Reverso',
         };
     }
@@ -36,6 +40,7 @@ enum InventoryMovementType: string
             self::Transfer,
             self::SupplierReturn,
             self::NegativeAdjustment,
+            self::TransformationInput,
             self::Reversal => true,
             default => false,
         };
@@ -49,6 +54,7 @@ enum InventoryMovementType: string
             self::Transfer,
             self::CustomerReturn,
             self::PositiveAdjustment,
+            self::TransformationOutput,
             self::Reversal => true,
             default => false,
         };
@@ -60,7 +66,8 @@ enum InventoryMovementType: string
             self::Issue,
             self::Transfer,
             self::SupplierReturn,
-            self::NegativeAdjustment => true,
+            self::NegativeAdjustment,
+            self::TransformationInput => true,
             default => false,
         };
     }
@@ -72,7 +79,8 @@ enum InventoryMovementType: string
             self::Receipt,
             self::Transfer,
             self::CustomerReturn,
-            self::PositiveAdjustment => true,
+            self::PositiveAdjustment,
+            self::TransformationOutput => true,
             default => false,
         };
     }

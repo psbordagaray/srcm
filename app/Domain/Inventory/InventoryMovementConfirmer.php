@@ -659,7 +659,16 @@ final class InventoryMovementConfirmer
         InventoryMovement $movement,
         Collection $lines
     ): void {
-        if ($movement->type !== InventoryMovementType::Issue) {
+        if (
+            ! in_array(
+                $movement->type,
+                [
+                    InventoryMovementType::Issue,
+                    InventoryMovementType::TransformationInput,
+                ],
+                true
+            )
+        ) {
             return;
         }
 
