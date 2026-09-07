@@ -387,6 +387,11 @@ final class FractionalContainerConsumptionManager
                     $movement,
                     $line
                 ),
+            FractionalContainerConsumptionPolicy::Fefo =>
+                $this->eligibleContainersForFefo(
+                    $movement,
+                    $line
+                ),
             FractionalContainerConsumptionPolicy::ManualSelection =>
                 $this->eligibleContainersForManualSelection(
                     $movement,
@@ -763,6 +768,198 @@ final class FractionalContainerConsumptionManager
             );
         }
     }
+
+    /**
+     * FEFO is authoritative expiration first. Receipt chronology is only
+     * a deterministic tie-breaker. Missing expiration evidence is excluded.
+     *
+     * @return Collection<int, FractionalContainer>
+     */
+    private function eligibleContainersForFefo(
+        InventoryMovement $movement,
+        InventoryMovementLine $line
+    ): Collection {
+        $locked = FractionalContainer::query()
+            ->forOrganization((int) $movement->organization_id)
+            ->where(
+                'catalog_product_id',
+                $line->catalog_product_id
+            )
+            ->where(
+                'inventory_location_id',
+                $line->source_location_id
+            )
+            ->where(
+                'condition',
+                $line->condition->value
+            )
+            ->where(
+                'base_unit_code',
+                $line->base_unit_code
+            )
+            ->whereNotNull(
+                'received_inventory_movement_line_id'
+            )
+            ->whereNotNull('expires_on')
+            ->whereNotNull('expiration_receipt_line_id')
+            ->whereColumn(
+                'expiration_receipt_line_id',
+                'received_inventory_movement_line_id'
+            )
+            ->whereIn(
+                'state',
+                [
+                    FractionalContainerState::Open->value,
+                    FractionalContainerState::Sealed->value,
+                ]
+            )
+            ->where('remaining_base_quantity', '>', 0)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('id');
+
+        if ($locked->isEmpty()) {
+            return collect();
+        }
+
+        $orderedIds = $this->fefoOrderedContainerIdsForLine(
+            $movement,
+            $line,
+            $locked->keys()
+                ->map(static fn ($id): int => (int) $id)
+                ->all()
+        );
+
+        return collect($orderedIds)
+            ->map(
+                static fn (int $containerId) =>
+                    $locked->get($containerId)
+            )
+            ->values();
+    }
+
+    /**
+     * @param list<int> $containerIds
+     * @return list<int>
+     */
+    private function fefoOrderedContainerIdsForLine(
+        InventoryMovement $movement,
+        InventoryMovementLine $line,
+        array $containerIds
+    ): array {
+        if ($containerIds === []) {
+            return [];
+        }
+
+        $orderedIds = DB::table(
+            'fractional_containers as fefo_container'
+        )
+            ->join(
+                'inventory_movement_lines as fefo_receipt_line',
+                'fefo_receipt_line.id',
+                '=',
+                'fefo_container.expiration_receipt_line_id'
+            )
+            ->join(
+                'inventory_movements as fefo_receipt_movement',
+                'fefo_receipt_movement.id',
+                '=',
+                'fefo_receipt_line.inventory_movement_id'
+            )
+            ->whereIn('fefo_container.id', $containerIds)
+            ->where(
+                'fefo_container.organization_id',
+                $movement->organization_id
+            )
+            ->whereNotNull('fefo_container.expires_on')
+            ->whereNotNull(
+                'fefo_container.received_inventory_movement_line_id'
+            )
+            ->whereNotNull(
+                'fefo_container.expiration_receipt_line_id'
+            )
+            ->whereColumn(
+                'fefo_container.expiration_receipt_line_id',
+                'fefo_container.received_inventory_movement_line_id'
+            )
+            ->where(
+                'fefo_receipt_line.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fefo_receipt_movement.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fefo_receipt_movement.type',
+                InventoryMovementType::Receipt->value
+            )
+            ->where(
+                'fefo_receipt_movement.status',
+                InventoryMovementStatus::Confirmed->value
+            )
+            ->whereNull(
+                'fefo_receipt_line.source_location_id'
+            )
+            ->where(
+                'fefo_receipt_line.destination_location_id',
+                $line->source_location_id
+            )
+            ->where(
+                'fefo_receipt_line.catalog_product_id',
+                $line->catalog_product_id
+            )
+            ->where(
+                'fefo_receipt_line.condition',
+                $line->condition->value
+            )
+            ->where(
+                'fefo_receipt_line.base_unit_code',
+                $line->base_unit_code
+            )
+            ->orderBy('fefo_container.expires_on')
+            ->orderBy(
+                'fefo_receipt_movement.effective_at'
+            )
+            ->orderBy('fefo_receipt_movement.id')
+            ->orderBy('fefo_receipt_line.sequence')
+            ->orderBy('fefo_container.id')
+            ->pluck('fefo_container.id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        if (count($orderedIds) !== count($containerIds)) {
+            throw new DomainException(
+                'FEFO requiere vencimiento y procedencia completa '
+                .'desde una recepción confirmada compatible.'
+            );
+        }
+
+        return $orderedIds;
+    }
+
+    /**
+     * @param list<int> $usedContainerIds
+     */
+    private function assertFefoHistoryOrder(
+        InventoryMovement $movement,
+        InventoryMovementLine $line,
+        array $usedContainerIds
+    ): void {
+        $canonical = $this->fefoOrderedContainerIdsForLine(
+            $movement,
+            $line,
+            $usedContainerIds
+        );
+
+        if ($canonical !== $usedContainerIds) {
+            throw new DomainException(
+                'El historial FEFO no conserva el orden '
+                .'autoritativo de vencimiento.'
+            );
+        }
+    }
     /**
      * Locks by canonical id order to reduce deadlock risk, then restores
      * the operator-requested order for physical consumption.
@@ -971,6 +1168,16 @@ final class FractionalContainerConsumptionManager
                     === FractionalContainerConsumptionPolicy::Fifo
             ) {
                 $this->assertFifoHistoryOrder(
+                    $movement,
+                    $line,
+                    $usedContainerIds
+                );
+            }
+            if (
+                $policy
+                    === FractionalContainerConsumptionPolicy::Fefo
+            ) {
+                $this->assertFefoHistoryOrder(
                     $movement,
                     $line,
                     $usedContainerIds

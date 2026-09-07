@@ -872,6 +872,16 @@ final class InventoryMovementConfirmer
                     $history
                 );
             }
+            if (
+                $recognizedPolicy
+                    === FractionalContainerConsumptionPolicy::Fefo
+            ) {
+                $this->guardFefoTraceabilityOrder(
+                    $movement,
+                    $line,
+                    $history
+                );
+            }
         }
     }
 
@@ -1054,6 +1064,197 @@ final class InventoryMovementConfirmer
             throw new DomainException(
                 'La trazabilidad FIFO no respeta la cronología '
                 .'autoritativa de recepción.'
+            );
+        }
+    }
+
+    /**
+     * Reconstructs the pre-consumption FEFO candidate set so direct generic
+     * confirmation cannot forge a recognized FEFO history out of order.
+     *
+     * @param Collection<int, object> $history
+     */
+    private function guardFefoTraceabilityOrder(
+        InventoryMovement $movement,
+        InventoryMovementLine $line,
+        Collection $history
+    ): void {
+        $historyByContainer = $history->keyBy(
+            static fn ($record): int =>
+                (int) $record->fractional_container_id
+        );
+
+        if ($historyByContainer->count() !== $history->count()) {
+            throw new DomainException(
+                'La trazabilidad FEFO no admite un contenedor '
+                .'repetido dentro de la misma línea.'
+            );
+        }
+
+        $historyIds = $history
+            ->pluck('fractional_container_id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        $candidates = DB::table(
+            'fractional_containers as fefo_container'
+        )
+            ->join(
+                'inventory_movement_lines as fefo_receipt_line',
+                'fefo_receipt_line.id',
+                '=',
+                'fefo_container.expiration_receipt_line_id'
+            )
+            ->join(
+                'inventory_movements as fefo_receipt_movement',
+                'fefo_receipt_movement.id',
+                '=',
+                'fefo_receipt_line.inventory_movement_id'
+            )
+            ->where(
+                'fefo_container.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fefo_container.catalog_product_id',
+                $line->catalog_product_id
+            )
+            ->where(
+                'fefo_container.inventory_location_id',
+                $line->source_location_id
+            )
+            ->where(
+                'fefo_container.condition',
+                $line->condition->value
+            )
+            ->where(
+                'fefo_container.base_unit_code',
+                $line->base_unit_code
+            )
+            ->whereNotNull('fefo_container.expires_on')
+            ->whereNotNull(
+                'fefo_container.received_inventory_movement_line_id'
+            )
+            ->whereNotNull(
+                'fefo_container.expiration_receipt_line_id'
+            )
+            ->whereColumn(
+                'fefo_container.expiration_receipt_line_id',
+                'fefo_container.received_inventory_movement_line_id'
+            )
+            ->where(function ($query) use ($historyIds): void {
+                $query
+                    ->where(function ($stateQuery): void {
+                        $stateQuery
+                            ->whereIn(
+                                'fefo_container.state',
+                                [
+                                    FractionalContainerState::Open->value,
+                                    FractionalContainerState::Sealed->value,
+                                ]
+                            )
+                            ->where(
+                                'fefo_container.remaining_base_quantity',
+                                '>',
+                                0
+                            );
+                    })
+                    ->orWhereIn(
+                        'fefo_container.id',
+                        $historyIds
+                    );
+            })
+            ->where(
+                'fefo_receipt_line.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fefo_receipt_movement.organization_id',
+                $movement->organization_id
+            )
+            ->where(
+                'fefo_receipt_movement.type',
+                InventoryMovementType::Receipt->value
+            )
+            ->where(
+                'fefo_receipt_movement.status',
+                InventoryMovementStatus::Confirmed->value
+            )
+            ->whereNull(
+                'fefo_receipt_line.source_location_id'
+            )
+            ->where(
+                'fefo_receipt_line.destination_location_id',
+                $line->source_location_id
+            )
+            ->where(
+                'fefo_receipt_line.catalog_product_id',
+                $line->catalog_product_id
+            )
+            ->where(
+                'fefo_receipt_line.condition',
+                $line->condition->value
+            )
+            ->where(
+                'fefo_receipt_line.base_unit_code',
+                $line->base_unit_code
+            )
+            ->orderBy('fefo_container.expires_on')
+            ->orderBy(
+                'fefo_receipt_movement.effective_at'
+            )
+            ->orderBy('fefo_receipt_movement.id')
+            ->orderBy('fefo_receipt_line.sequence')
+            ->orderBy('fefo_container.id')
+            ->get([
+                'fefo_container.id',
+                'fefo_container.remaining_base_quantity',
+            ]);
+
+        $pending = InventoryQuantity::positive(
+            $line->base_quantity
+        );
+        $expectedIds = [];
+
+        foreach ($candidates as $candidate) {
+            if (InventoryQuantity::equal($pending, '0')) {
+                break;
+            }
+
+            $containerId = (int) $candidate->id;
+            $historyRecord =
+                $historyByContainer->get($containerId);
+
+            $capacityBefore = $historyRecord
+                ? InventoryQuantity::positive(
+                    $historyRecord->remaining_before
+                )
+                : InventoryQuantity::positive(
+                    $candidate->remaining_base_quantity
+                );
+
+            $expectedIds[] = $containerId;
+            $pending = InventoryQuantity::subtract(
+                $pending,
+                InventoryQuantity::minimum(
+                    $pending,
+                    $capacityBefore
+                )
+            );
+        }
+
+        if (! InventoryQuantity::equal($pending, '0')) {
+            throw new DomainException(
+                'La trazabilidad FEFO no puede reconstruir '
+                .'capacidad física suficiente con vencimiento '
+                .'y procedencia autoritativos.'
+            );
+        }
+
+        if ($expectedIds !== $historyIds) {
+            throw new DomainException(
+                'La trazabilidad FEFO no respeta el orden '
+                .'autoritativo de vencimiento.'
             );
         }
     }

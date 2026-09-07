@@ -7,6 +7,7 @@ enum FractionalContainerConsumptionPolicy: string
     case ExhaustOpenContainer = 'agotar_contenedor_abierto';
     case ManualSelection = 'seleccion_manual';
     case Fifo = 'fifo';
+    case Fefo = 'fefo';
 
     public function label(): string
     {
@@ -14,6 +15,7 @@ enum FractionalContainerConsumptionPolicy: string
             self::ExhaustOpenContainer => 'Agotar contenedor abierto',
             self::ManualSelection => 'Selección manual',
             self::Fifo => 'FIFO',
+            self::Fefo => 'FEFO',
         };
     }
 }

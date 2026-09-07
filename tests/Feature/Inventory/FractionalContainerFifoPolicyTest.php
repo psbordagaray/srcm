@@ -724,6 +724,449 @@ class FractionalContainerFifoPolicyTest extends TestCase
         $this->assertCount(1, $this->history($line));
     }
 
+
+    public function test_fefo_consumes_earliest_expiration_before_receipt_chronology(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-FEFO-EXPIRATION');
+
+        $oldLine = $this->confirmedReceiptLines(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            ['20'],
+            '2026-01-10T12:00:00Z'
+        )[0];
+
+        $newLine = $this->confirmedReceiptLines(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            ['20'],
+            '2026-02-10T12:00:00Z'
+        )[0];
+
+        $manager = app(FractionalContainerManager::class);
+
+        $laterExpiry = $manager->registerFromReceiptLine(
+            $oldLine->id,
+            'FEFO-LATER-EXPIRY',
+            '20',
+            null,
+            '2027-12-31'
+        );
+
+        $earlierExpiry = $manager->registerFromReceiptLine(
+            $newLine->id,
+            'FEFO-EARLIER-EXPIRY',
+            '20',
+            null,
+            '2027-06-30'
+        );
+
+        $issue = $this->issue(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            '5'
+        );
+        $line = $issue->lines->firstOrFail();
+
+        app(FractionalContainerConsumptionManager::class)
+            ->confirm(
+                $issue,
+                $actor,
+                FractionalContainerConsumptionPolicy::Fefo
+            );
+
+        $this->assertSame(
+            FractionalContainerState::Sealed,
+            $laterExpiry->refresh()->state
+        );
+        $this->assertTrue(
+            InventoryQuantity::equal(
+                $laterExpiry->remaining_base_quantity,
+                '20'
+            )
+        );
+        $this->assertSame(
+            FractionalContainerState::Open,
+            $earlierExpiry->refresh()->state
+        );
+        $this->assertTrue(
+            InventoryQuantity::equal(
+                $earlierExpiry->remaining_base_quantity,
+                '15'
+            )
+        );
+
+        $history = $this->history($line);
+
+        $this->assertCount(1, $history);
+        $this->assertSame(
+            (int) $earlierExpiry->id,
+            (int) $history[0]->fractional_container_id
+        );
+        $this->assertSame(
+            FractionalContainerConsumptionPolicy::Fefo->value,
+            (string) $history[0]->policy
+        );
+    }
+
+    public function test_fefo_ties_same_expiration_by_receipt_chronology(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-FEFO-TIE');
+
+        $oldLine = $this->confirmedReceiptLines(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            ['20'],
+            '2026-03-01T10:00:00Z'
+        )[0];
+
+        $newLine = $this->confirmedReceiptLines(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            ['20'],
+            '2026-04-01T10:00:00Z'
+        )[0];
+
+        $manager = app(FractionalContainerManager::class);
+
+        $newer = $manager->registerFromReceiptLine(
+            $newLine->id,
+            'FEFO-TIE-NEWER-LOW-ID',
+            '20',
+            null,
+            '2027-08-31'
+        );
+
+        $older = $manager->registerFromReceiptLine(
+            $oldLine->id,
+            'FEFO-TIE-OLDER-HIGH-ID',
+            '20',
+            null,
+            '2027-08-31'
+        );
+
+        $this->assertGreaterThan($newer->id, $older->id);
+
+        $issue = $this->issue(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            '5'
+        );
+        $line = $issue->lines->firstOrFail();
+
+        app(FractionalContainerConsumptionManager::class)
+            ->confirm(
+                $issue,
+                $actor,
+                FractionalContainerConsumptionPolicy::Fefo
+            );
+
+        $history = $this->history($line);
+
+        $this->assertSame(
+            (int) $older->id,
+            (int) $history[0]->fractional_container_id
+        );
+    }
+
+    public function test_fefo_missing_expiration_evidence_fails_atomically_when_capacity_is_insufficient(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-FEFO-MISSING');
+
+        [$datedLine, $unknownLine] = $this->confirmedReceiptLines(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            ['10', '20'],
+            '2026-05-01T10:00:00Z'
+        );
+
+        $manager = app(FractionalContainerManager::class);
+
+        $dated = $manager->registerFromReceiptLine(
+            $datedLine->id,
+            'FEFO-DATED-10',
+            '10',
+            null,
+            '2027-05-31'
+        );
+
+        $unknown = $manager->registerFromReceiptLine(
+            $unknownLine->id,
+            'FEFO-UNKNOWN-20',
+            '20'
+        );
+
+        $this->assertTrue(
+            $dated->hasAuthoritativeExpirationProvenance()
+        );
+        $this->assertFalse(
+            $unknown->hasAuthoritativeExpirationProvenance()
+        );
+
+        $issue = $this->issue(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            '15'
+        );
+
+        $this->assertDomainRejected(
+            fn () => app(
+                FractionalContainerConsumptionManager::class
+            )->confirm(
+                $issue,
+                $actor,
+                FractionalContainerConsumptionPolicy::Fefo
+            )
+        );
+
+        $this->assertSame(
+            FractionalContainerState::Sealed,
+            $dated->refresh()->state
+        );
+        $this->assertSame(
+            FractionalContainerState::Sealed,
+            $unknown->refresh()->state
+        );
+        $this->assertDatabaseCount(
+            'fractional_container_consumptions',
+            0
+        );
+        $this->assertSame(
+            InventoryMovementStatus::Draft,
+            $issue->refresh()->status
+        );
+    }
+
+    public function test_fefo_replay_is_idempotent_and_policy_mismatch_fails_closed(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-FEFO-REPLAY');
+
+        $firstLine = $this->confirmedReceiptLines(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            ['20'],
+            '2026-06-01T10:00:00Z'
+        )[0];
+
+        $secondLine = $this->confirmedReceiptLines(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            ['20'],
+            '2026-06-02T10:00:00Z'
+        )[0];
+
+        $manager = app(FractionalContainerManager::class);
+
+        $earlier = $manager->registerFromReceiptLine(
+            $firstLine->id,
+            'FEFO-REPLAY-EARLY',
+            '20',
+            null,
+            '2027-07-01'
+        );
+
+        $later = $manager->registerFromReceiptLine(
+            $secondLine->id,
+            'FEFO-REPLAY-LATE',
+            '20',
+            null,
+            '2027-08-01'
+        );
+
+        $issue = $this->issue(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            '25'
+        );
+        $line = $issue->lines->firstOrFail();
+
+        $consumption = app(
+            FractionalContainerConsumptionManager::class
+        );
+
+        $first = $consumption->confirm(
+            $issue,
+            $actor,
+            FractionalContainerConsumptionPolicy::Fefo
+        );
+        $second = $consumption->confirm(
+            $issue,
+            $actor,
+            FractionalContainerConsumptionPolicy::Fefo
+        );
+
+        $this->assertSame(
+            InventoryMovementStatus::Confirmed,
+            $first->status
+        );
+        $this->assertSame(
+            InventoryMovementStatus::Confirmed,
+            $second->status
+        );
+        $this->assertCount(2, $this->history($line));
+
+        $this->assertSame(
+            FractionalContainerState::Exhausted,
+            $earlier->refresh()->state
+        );
+        $this->assertSame(
+            FractionalContainerState::Open,
+            $later->refresh()->state
+        );
+
+        $this->assertDomainRejected(
+            fn () => $consumption->confirm(
+                $issue,
+                $actor,
+                FractionalContainerConsumptionPolicy::Fifo
+            )
+        );
+
+        $this->assertCount(2, $this->history($line));
+    }
+
+    public function test_generic_confirmer_rejects_forged_fefo_history_that_skips_earliest_expiration(): void
+    {
+        [$organization, $actor, $product, $location] =
+            $this->scenario('FC-FEFO-DIRECT-BYPASS');
+
+        $oldLine = $this->confirmedReceiptLines(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            ['20'],
+            '2026-07-01T10:00:00Z'
+        )[0];
+
+        $newLine = $this->confirmedReceiptLines(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            ['20'],
+            '2026-07-02T10:00:00Z'
+        )[0];
+
+        $manager = app(FractionalContainerManager::class);
+
+        $laterExpiry = $manager->registerFromReceiptLine(
+            $oldLine->id,
+            'FEFO-BYPASS-LATER',
+            '20',
+            null,
+            '2027-12-31'
+        );
+
+        $earlierExpiry = $manager->registerFromReceiptLine(
+            $newLine->id,
+            'FEFO-BYPASS-EARLIER',
+            '20',
+            null,
+            '2027-05-31'
+        );
+
+        $authorization = app(
+            FractionalContainerOpeningManager::class
+        )->activeAuthorizationForConsumption(
+            $organization->id,
+            $product->id,
+            $location->id,
+            InventoryCondition::New
+        );
+
+        $this->assertNotNull($authorization);
+
+        app(FractionalContainerOpeningManager::class)->openBatch(
+            $authorization,
+            $actor,
+            [$laterExpiry->id],
+            'fefo-bypass-open:'.Str::uuid()
+        );
+
+        $this->assertSame(
+            FractionalContainerState::Open,
+            $laterExpiry->refresh()->state
+        );
+
+        $issue = $this->issue(
+            $organization,
+            $actor,
+            $product,
+            $location,
+            '5'
+        );
+        $line = $issue->lines->firstOrFail();
+
+        DB::table('fractional_container_consumptions')
+            ->insert([
+                'organization_id' => $organization->id,
+                'inventory_movement_line_id' => $line->id,
+                'fractional_container_id' => $laterExpiry->id,
+                'sequence' => 1,
+                'policy' =>
+                    FractionalContainerConsumptionPolicy::Fefo->value,
+                'consumed_base_quantity' => '5',
+                'base_unit_code' => 'l',
+                'state_before' =>
+                    FractionalContainerState::Open->value,
+                'state_after' =>
+                    FractionalContainerState::Open->value,
+                'remaining_before' => '20',
+                'remaining_after' => '15',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        $this->assertDomainRejected(
+            fn () => app(
+                InventoryMovementConfirmer::class
+            )->confirm(
+                $issue,
+                $actor
+            )
+        );
+
+        $this->assertSame(
+            InventoryMovementStatus::Draft,
+            $issue->refresh()->status
+        );
+        $this->assertSame(
+            FractionalContainerState::Sealed,
+            $earlierExpiry->refresh()->state
+        );
+        $this->assertSame(
+            FractionalContainerState::Open,
+            $laterExpiry->refresh()->state
+        );
+        $this->assertCount(1, $this->history($line));
+    }
     /**
      * @return array{
      *     Organization,
