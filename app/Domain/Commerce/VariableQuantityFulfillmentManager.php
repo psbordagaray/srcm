@@ -32,18 +32,25 @@ final class VariableQuantityFulfillmentManager
             InventoryQuantity::SCALE,
             'La cantidad solicitada'
         );
+
         $measuredQuantity = InventoryQuantity::positive(
             $measuredQuantity,
             InventoryQuantity::SCALE,
             'La cantidad medida'
         );
+
         $acceptedQuantity = InventoryQuantity::positive(
             $acceptedQuantity,
             InventoryQuantity::SCALE,
             'La cantidad aceptada'
         );
 
-        if (! InventoryQuantity::equal($measuredQuantity, $acceptedQuantity)) {
+        if (
+            ! InventoryQuantity::equal(
+                $measuredQuantity,
+                $acceptedQuantity
+            )
+        ) {
             throw new DomainException(
                 'La cantidad aceptada debe coincidir exactamente con la medición física registrada.'
             );
@@ -51,13 +58,17 @@ final class VariableQuantityFulfillmentManager
 
         $idempotencyKey = trim($idempotencyKey);
 
-        if ($idempotencyKey === '' || mb_strlen($idempotencyKey) > 90) {
+        if (
+            $idempotencyKey === ''
+            || mb_strlen($idempotencyKey) > 90
+        ) {
             throw new DomainException(
                 'La clave de idempotencia del fulfillment no es válida.'
             );
         }
 
         $organizationId = $this->organizationId($actor);
+
         $fingerprint = $this->fingerprint(
             $catalogProductId,
             $inventoryLocationId,
@@ -91,7 +102,12 @@ final class VariableQuantityFulfillmentManager
                 ->first();
 
             if ($existing) {
-                if (! hash_equals($existing->fingerprint, $fingerprint)) {
+                if (
+                    ! hash_equals(
+                        $existing->fingerprint,
+                        $fingerprint
+                    )
+                ) {
                     throw new DomainException(
                         'La clave de idempotencia del fulfillment ya fue usada con otros datos.'
                     );
@@ -106,16 +122,22 @@ final class VariableQuantityFulfillmentManager
                 ->lockForUpdate()
                 ->first();
 
-            if (! $product || ! $product->allowsFractionalQuantity()) {
+            if (
+                ! $product
+                || ! $product->allowsFractionalQuantity()
+            ) {
                 throw new DomainException(
                     'El fulfillment de cantidad variable requiere un producto fraccionable activo.'
                 );
             }
 
             foreach ([
-                'La cantidad solicitada' => $requestedQuantity,
-                'La cantidad medida' => $measuredQuantity,
-                'La cantidad aceptada' => $acceptedQuantity,
+                'La cantidad solicitada' =>
+                    $requestedQuantity,
+                'La cantidad medida' =>
+                    $measuredQuantity,
+                'La cantidad aceptada' =>
+                    $acceptedQuantity,
             ] as $label => $quantity) {
                 InventoryQuantity::assertFitsScale(
                     $quantity,
@@ -140,55 +162,95 @@ final class VariableQuantityFulfillmentManager
             if ($inventoryReservationId !== null) {
                 $reservation = InventoryReservation::query()
                     ->whereKey($inventoryReservationId)
-                    ->where('organization_id', $organizationId)
+                    ->where(
+                        'organization_id',
+                        $organizationId
+                    )
                     ->lockForUpdate()
                     ->first();
 
-                if (! $reservation || ! $reservation->isEffective()) {
+                if (
+                    ! $reservation
+                    || ! $reservation->isEffective()
+                ) {
                     throw new DomainException(
                         'La reserva vinculada debe existir y permanecer efectiva.'
                     );
                 }
 
                 if (
-                    (int) $reservation->catalog_product_id !== $catalogProductId
-                    || (int) $reservation->inventory_location_id !== $inventoryLocationId
-                    || $reservation->condition !== $condition
-                    || (string) $reservation->base_unit_code !== (string) $product->base_unit_code
+                    (int) $reservation->catalog_product_id
+                        !== $catalogProductId
+                    || (int) $reservation
+                        ->inventory_location_id
+                        !== $inventoryLocationId
+                    || $reservation->condition
+                        !== $condition
+                    || (string) $reservation
+                        ->base_unit_code
+                        !== (string) $product->base_unit_code
                 ) {
                     throw new DomainException(
                         'La reserva vinculada no coincide con la posición física del fulfillment.'
                     );
                 }
 
-                if (! InventoryQuantity::equal($reservation->quantity, $requestedQuantity)) {
+                if (
+                    ! InventoryQuantity::equal(
+                        $reservation->quantity,
+                        $requestedQuantity
+                    )
+                ) {
                     throw new DomainException(
                         'La cantidad solicitada debe coincidir con la intención reservada.'
                     );
                 }
+
+                if (
+                    $reservation->hasFulfillmentTolerance()
+                    && ! $reservation
+                        ->allowsFulfillmentQuantity(
+                            $acceptedQuantity
+                        )
+                ) {
+                    throw new DomainException(
+                        'La cantidad medida esta fuera de la tolerancia autorizada por la reserva.'
+                    );
+                }
             }
 
-            return VariableQuantityFulfillment::query()->create([
-                'organization_id' => $organizationId,
-                'public_id' => (string) Str::uuid(),
-                'inventory_reservation_id' => $inventoryReservationId,
-                'catalog_product_id' => $catalogProductId,
-                'inventory_location_id' => $inventoryLocationId,
-                'condition' => $condition,
-                'requested_quantity' => $requestedQuantity,
-                'measured_quantity' => $measuredQuantity,
-                'accepted_quantity' => $acceptedQuantity,
-                'base_unit_code' => $product->base_unit_code,
-                'created_by_user_id' => $actor->id,
-                'idempotency_key' => $idempotencyKey,
-                'fingerprint' => $fingerprint,
-            ])->refresh();
+            return VariableQuantityFulfillment::query()
+                ->create([
+                    'organization_id' => $organizationId,
+                    'public_id' => (string) Str::uuid(),
+                    'inventory_reservation_id' =>
+                        $inventoryReservationId,
+                    'catalog_product_id' =>
+                        $catalogProductId,
+                    'inventory_location_id' =>
+                        $inventoryLocationId,
+                    'condition' => $condition,
+                    'requested_quantity' =>
+                        $requestedQuantity,
+                    'measured_quantity' =>
+                        $measuredQuantity,
+                    'accepted_quantity' =>
+                        $acceptedQuantity,
+                    'base_unit_code' =>
+                        $product->base_unit_code,
+                    'created_by_user_id' => $actor->id,
+                    'idempotency_key' =>
+                        $idempotencyKey,
+                    'fingerprint' => $fingerprint,
+                ])
+                ->refresh();
         }, 3);
     }
 
     private function organizationId(User $actor): int
     {
-        $organizationId = (int) $actor->current_organization_id;
+        $organizationId =
+            (int) $actor->current_organization_id;
 
         if ($organizationId <= 0) {
             throw new DomainException(
@@ -199,8 +261,9 @@ final class VariableQuantityFulfillmentManager
         return $organizationId;
     }
 
-    private function lockOrganization(int $organizationId): void
-    {
+    private function lockOrganization(
+        int $organizationId
+    ): void {
         if (
             ! DB::table('organizations')
                 ->where('id', $organizationId)
@@ -214,8 +277,10 @@ final class VariableQuantityFulfillmentManager
         }
     }
 
-    private function guardActor(int $organizationId, User $actor): void
-    {
+    private function guardActor(
+        int $organizationId,
+        User $actor
+    ): void {
         $membership = OrganizationMembership::query()
             ->where('organization_id', $organizationId)
             ->where('user_id', $actor->id)
@@ -223,7 +288,9 @@ final class VariableQuantityFulfillmentManager
             ->lockForUpdate()
             ->first();
 
-        if (! $membership?->role->canRecordCommerceSale()) {
+        if (
+            ! $membership?->role->canRecordCommerceSale()
+        ) {
             throw new DomainException(
                 'El usuario no puede registrar fulfillment comercial.'
             );
@@ -239,14 +306,19 @@ final class VariableQuantityFulfillmentManager
         string $acceptedQuantity,
         ?int $inventoryReservationId
     ): string {
-        return hash('sha256', implode('|', [
-            $catalogProductId,
-            $inventoryLocationId,
-            $condition->value,
-            $requestedQuantity,
-            $measuredQuantity,
-            $acceptedQuantity,
-            $inventoryReservationId === null ? '' : (string) $inventoryReservationId,
-        ]));
+        return hash(
+            'sha256',
+            implode('|', [
+                $catalogProductId,
+                $inventoryLocationId,
+                $condition->value,
+                $requestedQuantity,
+                $measuredQuantity,
+                $acceptedQuantity,
+                $inventoryReservationId === null
+                    ? ''
+                    : (string) $inventoryReservationId,
+            ])
+        );
     }
 }
