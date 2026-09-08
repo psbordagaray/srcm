@@ -347,11 +347,23 @@ class InventoryLedgerFoundationTest extends TestCase
 
     public function test_closed_vocabulary_contains_required_types_and_conditions(): void
     {
-        $this->assertSame(9, count(InventoryMovementType::cases()));
+        $this->assertSame(11, count(InventoryMovementType::cases()));
         $this->assertSame(3, count(InventoryMovementStatus::cases()));
         $this->assertSame(5, count(InventoryCondition::cases()));
         $this->assertTrue(InventoryMovementType::Transfer->requiresSource());
         $this->assertTrue(InventoryMovementType::Transfer->requiresDestination());
+        $this->assertTrue(
+            InventoryMovementType::TransformationInput->requiresSource()
+        );
+        $this->assertFalse(
+            InventoryMovementType::TransformationInput->requiresDestination()
+        );
+        $this->assertFalse(
+            InventoryMovementType::TransformationOutput->requiresSource()
+        );
+        $this->assertTrue(
+            InventoryMovementType::TransformationOutput->requiresDestination()
+        );
     }
 
     private function organization(): Organization
