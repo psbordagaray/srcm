@@ -6,6 +6,7 @@ use App\Enums\ProductSchemaStatus;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ProductSchemaVersion extends Model
 {
@@ -149,6 +150,14 @@ class ProductSchemaVersion extends Model
         return $this->belongsTo(
             ProductDefinition::class,
             'product_definition_id'
+        );
+    }
+
+    public function attributeBindings(): HasMany
+    {
+        return $this->hasMany(
+            AttributeBinding::class,
+            'product_schema_version_id'
         );
     }
 }

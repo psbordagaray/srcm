@@ -2,8 +2,16 @@
 
 namespace App\Domain\Catalog;
 
+use App\Enums\AttributeDefinitionStatus;
+use App\Enums\AttributeValueScope;
+use App\Enums\AttributeValueType;
+use App\Enums\MeasurementDimensionStatus;
+use App\Enums\MeasurementUnitStatus;
 use App\Enums\ProductDefinitionStatus;
 use App\Enums\ProductSchemaStatus;
+use App\Models\AttributeDefinition;
+use App\Models\MeasurementDimension;
+use App\Models\MeasurementUnit;
 use App\Models\ProductDefinition;
 use App\Models\ProductSchemaVersion;
 use DomainException;
@@ -37,6 +45,24 @@ class ProductSchemaVersionManager
                 );
             }
 
+            $published = ProductSchemaVersion::query()
+                ->where(
+                    'product_definition_id',
+                    $lockedDefinition->id
+                )
+                ->where(
+                    'status',
+                    ProductSchemaStatus::Published->value
+                )
+                ->lockForUpdate()
+                ->get();
+
+            if ($published->count() > 1) {
+                throw new DomainException(
+                    'La definición posee múltiples schemas publicados.'
+                );
+            }
+
             $maxVersion = ProductSchemaVersion::query()
                 ->where(
                     'product_definition_id',
@@ -44,12 +70,44 @@ class ProductSchemaVersionManager
                 )
                 ->max('version');
 
-            return ProductSchemaVersion::query()->create([
+            $draft = ProductSchemaVersion::query()->create([
                 'product_definition_id' => $lockedDefinition->id,
                 'version' => ((int) $maxVersion) + 1,
                 'status' => ProductSchemaStatus::Draft,
                 'change_summary' => $changeSummary,
             ]);
+
+            if ($published->isEmpty()) {
+                return $draft->fresh();
+            }
+
+            $source = $published->first();
+
+            $bindings = DB::table('catalog_attribute_bindings')
+                ->where(
+                    'product_schema_version_id',
+                    $source->id
+                )
+                ->lockForUpdate()
+                ->get();
+
+            $now = now();
+
+            foreach ($bindings as $binding) {
+                DB::table('catalog_attribute_bindings')->insert([
+                    'product_schema_version_id' => $draft->id,
+                    'attribute_definition_id' =>
+                        $binding->attribute_definition_id,
+                    'value_type' => $binding->value_type,
+                    'value_scope' => $binding->value_scope,
+                    'measurement_unit_id' =>
+                        $binding->measurement_unit_id,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
+            return $draft->fresh();
         });
     }
 
@@ -103,6 +161,8 @@ class ProductSchemaVersionManager
                     'Sólo un draft puede publicarse.'
                 );
             }
+
+            $this->validateBindingsForPublication($locked);
 
             $published = ProductSchemaVersion::query()
                 ->where(
@@ -189,6 +249,95 @@ class ProductSchemaVersionManager
 
             return $locked->fresh();
         });
+    }
+
+    private function validateBindingsForPublication(
+        ProductSchemaVersion $schema
+    ): void {
+        $bindings = DB::table('catalog_attribute_bindings')
+            ->where(
+                'product_schema_version_id',
+                $schema->id
+            )
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($bindings as $binding) {
+            $attribute = AttributeDefinition::query()
+                ->whereKey($binding->attribute_definition_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                ! $attribute
+                || $attribute->status
+                    !== AttributeDefinitionStatus::Active
+            ) {
+                throw new DomainException(
+                    'Publicar el schema requiere definiciones de atributo activas.'
+                );
+            }
+
+            $type = AttributeValueType::tryFrom(
+                (string) $binding->value_type
+            );
+
+            $scope = AttributeValueScope::tryFrom(
+                (string) $binding->value_scope
+            );
+
+            if (! $type || ! $scope) {
+                throw new DomainException(
+                    'El schema contiene un binding fuera del contrato CSF-2.'
+                );
+            }
+
+            if ($type !== AttributeValueType::Measurement) {
+                if ($binding->measurement_unit_id !== null) {
+                    throw new DomainException(
+                        'Un binding no measurement no puede declarar unidad de medida.'
+                    );
+                }
+
+                continue;
+            }
+
+            if ($binding->measurement_unit_id === null) {
+                throw new DomainException(
+                    'Un binding measurement requiere unidad de medida.'
+                );
+            }
+
+            $unit = MeasurementUnit::query()
+                ->whereKey($binding->measurement_unit_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                ! $unit
+                || $unit->status
+                    !== MeasurementUnitStatus::Active
+            ) {
+                throw new DomainException(
+                    'Publicar un binding measurement requiere una unidad activa.'
+                );
+            }
+
+            $dimension = MeasurementDimension::query()
+                ->whereKey($unit->measurement_dimension_id)
+                ->lockForUpdate()
+                ->first();
+
+            if (
+                ! $dimension
+                || $dimension->status
+                    !== MeasurementDimensionStatus::Active
+            ) {
+                throw new DomainException(
+                    'Publicar un binding measurement requiere una dimensión activa.'
+                );
+            }
+        }
     }
 
     private function lockDefinition(

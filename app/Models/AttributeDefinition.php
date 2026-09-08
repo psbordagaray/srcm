@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\AttributeDefinitionStatus;
 use DomainException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AttributeDefinition extends Model
 {
@@ -67,5 +68,13 @@ class AttributeDefinition extends Model
         return [
             'status' => AttributeDefinitionStatus::class,
         ];
+    }
+
+    public function attributeBindings(): HasMany
+    {
+        return $this->hasMany(
+            AttributeBinding::class,
+            'attribute_definition_id'
+        );
     }
 }
