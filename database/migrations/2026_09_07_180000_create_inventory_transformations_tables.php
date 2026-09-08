@@ -80,10 +80,6 @@ return new class extends Migration
                     ],
                     'itl_direction_sequence_unique'
                 );
-                $table->index(
-                    ['organization_id', 'inventory_transformation_id'],
-                    'itl_org_transformation_index'
-                );
             }
         );
     }
