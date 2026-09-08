@@ -4,17 +4,17 @@ Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-09-08**
 Rama de desarrollo: `feature/core-entity`
 
-<!-- P13_CURRENT_CONTINUITY_V3 -->
-## Current P13 checkpoint — P13.B Transformation / Yield / Traceability Foundation V1 published; repaired baseline CI158 GREEN
+<!-- P13_CURRENT_CONTINUITY_V4 -->
+## Current P13 checkpoint — P13.B Catalog Semantic Foundation CSF-1 published; CI161 GREEN
 
 <!--
 STRALEON_CANONICAL_PRODUCT_NAME=Straleon
 P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
 P13_CURRENT_SUBPHASE=P13_B_NUMERICAL_INTEGRITY_AND_HUMAN_ERROR_PREVENTION
 P13_B_STATUS=ACTIVE_CURRENT
-P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=b34c3847608ab8e2db8e88ea81927af634441848
-P13_B_BASELINE_TREE=f2279027721ff98881a8aa5a09ebdb7daf6ffec2
-P13_B_PREVIOUS_MASTER_SYNC_HEAD=04cffcdc43120a136cd2a7ab7cc8e30172cc86d7
+P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=a7bc15f85e287bf42d0889b0346bd59fbf81720e
+P13_B_BASELINE_TREE=fb833eebfa651a9f444978951682117e89870c8d
+P13_B_PREVIOUS_MASTER_SYNC_HEAD=f0547bc4a88f88ea7cd719ced69744e602605001
 P13_B_ENGINEERING_EXECUTION_CONTRACT=V1_PUBLISHED_AND_BINDING
 P13_B_ARCHITECTURE_CONVERGENCE=V1_PUBLISHED_AND_BINDING
 P13_B_ARCHITECTURE_CONVERGENCE_HEAD=74d3258f9af752635e39cf351753368cdfaeab9d
@@ -46,90 +46,102 @@ P13_B_CI157_OPERATIONAL_STATUS=SUPERSEDED_BY_REPAIRED_BASELINE_AND_CI158
 P13_B_BASELINE_CONTRACT_REPAIR=TEST_ONLY_PUBLISHED
 P13_B_BASELINE_CONTRACT_REPAIR_HEAD=b34c3847608ab8e2db8e88ea81927af634441848
 P13_B_BASELINE_CONTRACT_REPAIR_SCOPE=2_TEST_FILES_NO_PRODUCTIVE_SOURCE
-P13_B_LOCAL_FULL_SUITE_EVIDENCE=1445_TESTS_11038_ASSERTIONS_GREEN
 P13_B_CI158_RUN_ID=34250399977
 P13_B_CI158_JOB_ID=102143071829
 P13_B_CI158_STATUS=GREEN_COMPLETED_SUCCESS
-P13_B_CI158_FULL_TEST_SUITE=GREEN
-P13_B_CI158_TRACKED_TREE_UNCHANGED=GREEN
-P13_B_CATALOG_SEMANTIC_FOUNDATION=ARCHITECTURE_DESIGNED_NOT_YET_PUBLISHED
-P13_B_CSF_DOCUMENT_NUMBERS=157_ADR_158_CSF1_CONTRACT_RESERVED
+P13_B_MASTER_CONTINUITY_SYNC_HEAD=f0547bc4a88f88ea7cd719ced69744e602605001
+P13_B_CI159_RUN_ID=34266420722
+P13_B_CI159_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CATALOG_SEMANTIC_FOUNDATION_ADR=157_PUBLISHED_AND_BINDING
+P13_B_CSF1_IMPLEMENTATION_CONTRACT=158_PUBLISHED_AND_BINDING
+P13_B_CSF_CANONICALIZATION_HEAD=fe567322f7c94f51eeca0bd6901464470e9b92f5
+P13_B_CI160_RUN_ID=34267982985
+P13_B_CI160_JOB_ID=102202090206
+P13_B_CI160_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CSF1_SEMANTIC_REGISTRY_FOUNDATION=GREEN_PUBLISHED
+P13_B_CSF1_HEAD=a7bc15f85e287bf42d0889b0346bd59fbf81720e
+P13_B_CSF1_PARENT=fe567322f7c94f51eeca0bd6901464470e9b92f5
+P13_B_CSF1_IMPLEMENTATION_SCOPE=16_PHP_FILES
+P13_B_CSF1_LOCAL_FULL_SUITE_EVIDENCE=1478_TESTS_11124_ASSERTIONS_GREEN
+P13_B_CI161_RUN_ID=34269745608
+P13_B_CI161_JOB_ID=102208015550
+P13_B_CI161_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI161_FULL_TEST_SUITE=GREEN
+P13_B_CI161_TRACKED_TREE_UNCHANGED=GREEN
 P13_B_CSF_EXECUTION_LANE=HORIZONTAL_CATALOG_FOUNDATION_WITHOUT_OPENING_P13_C
 P13_B_CSF_PRODUCT_DEFINITION_BOUNDARY=SEMANTIC_TYPE_NOT_OBJECT_MASTER_NOT_TECHNICAL_MODEL_NOT_CATALOG_PRODUCT
+P13_B_CSF1_CATALOGPRODUCT_ASSIGNMENT=NO
+P13_B_CSF1_ATTRIBUTE_BINDING=NO
+P13_B_CSF1_ATTRIBUTE_VALUES=NO
+P13_B_CSF1_CAPABILITIES=NO
+P13_B_CSF1_VARIANTS=NO
+P13_B_CSF2_RUNTIME_AUTHORIZATION=NO_RECON_FIRST
 P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_MULTIRRUBRO_VALIDATION=MANDATORY
 P13_C_STATUS=NOT_OPENED
-P13_NEXT_BOUNDARY=P13_B_CATALOG_SEMANTIC_FOUNDATION_CANONICALIZATION_V1
+P13_NEXT_BOUNDARY=P13_B_CSF2_ATTRIBUTE_TYPING_MEASUREMENT_BINDING_RECON_V1
 PRODUCTION_MUTATION_AUTHORIZATION=NO
 -->
 
-P13.B remains the active technical program. This continuity block supersedes the
-older Fulfillment Preferences / CI153 checkpoint narrative as the current P13
-entry point; older historical sections remain preserved below.
+P13.B remains the active technical program. Catalog Semantic Foundation is now
+canonical through CSF-1 without opening P13.C or replacing the later Storage /
+Cold Chain, Logistics Custody, Service, Storefront or Network boundaries already
+required by the roadmap.
 
-The convergence architecture checkpoint
-`74d3258f9af752635e39cf351753368cdfaeab9d` installed the binding cross-domain
-architecture pack, including the Single-Truth Principle, Storefront / Network
-compatibility boundaries and the Transformation / Yield / Traceability domain
-design. Those documents remain additive to — and bounded by — these masters.
+The convergence and physical-commerce chain remains intact: Transformation /
+Yield / Traceability Foundation V1 was published at
+`63d8ed724995819a261ccca3a75087901a7ea595`, its redundant lineage index was
+removed at `0baba18796e4ec82ca00822e94c937b3b4300b70`, and the stale-contract
+baseline was repaired at `b34c3847608ab8e2db8e88ea81927af634441848`.
+CI158 restored a fully GREEN operational baseline.
 
-Transformation / Yield / Traceability Foundation V1 was then published at
-`63d8ed724995819a261ccca3a75087901a7ea595`
-(`feat(inventory): add transformation yield traceability foundation`). The
-foundation keeps confirmed `InventoryMovement` as physical-stock authority while
-recording immutable, organization-scoped transformation lineage against exact
-confirmed movement lines. Transformation input/output movement semantics,
-idempotency, locking and provenance remain separate from yield analytics, recipes,
-cost allocation, Storefront and Network publication.
+The three continuity masters were then synchronized at
+`f0547bc4a88f88ea7cd719ced69744e602605001`; natural CI159 completed GREEN.
+Catalog Semantic Foundation was canonicalized next through
+`docs/157_ADR_CATALOG_SEMANTIC_FOUNDATION.md` and
+`docs/158_CSF_1_SEMANTIC_REGISTRY_FOUNDATION_CONTRACT.md`, published together at
+`fe567322f7c94f51eeca0bd6901464470e9b92f5`. Natural CI160 completed GREEN.
 
-The follow-up checkpoint
-`0baba18796e4ec82ca00822e94c937b3b4300b70`
-(`fix(inventory): remove redundant transformation lineage index`) removed one
-redundant migration index without changing the Transformation authority model.
-Natural CI157 (`34175647940`, job `101904370025`) failed only at `Full test suite`.
-The exact failing test is intentionally not asserted here because that forensic
-detail was not recovered as canonical evidence.
+CSF-1 Semantic Registry Foundation was then implemented and published at
+`a7bc15f85e287bf42d0889b0346bd59fbf81720e`
+(`feat(catalog): add semantic registry foundation`). Its exact runtime/source
+surface is intentionally limited to three global registries and their lifecycle
+contracts:
 
-The repaired baseline checkpoint is
-`b34c3847608ab8e2db8e88ea81927af634441848` —
-`test(baseline): align stale inventory and settlement contracts`. That commit
-changed exactly two test contracts and no productive source: the Inventory Ledger
-closed-vocabulary expectation was aligned with the two published Transformation
-movement types, and the Settlement Admin UI contract hash was aligned with the
-already-published `UserRole` artifact. Local full-suite evidence before publication
-was GREEN at 1445 tests / 11038 assertions.
+1. `ProductDefinition`;
+2. `ProductSchemaVersion`;
+3. `AttributeDefinition`.
 
-Natural CI158 (`34250399977`, job `102143071829`) completed GREEN on the exact
-`b34c3847...` SHA. Dependency/install gates, offline snapshot contracts, whitespace,
-release preflight, production asset build, Vite verification, `Full test suite`
-and `Tracked tree must remain unchanged` all completed successfully. CI157 is
-therefore retained as historical failed evidence but is not the operational
-baseline for new development.
+The implementation adds 16 PHP files: three enums, three models, four Catalog
+domain classes, three migrations and three focused tests. Local implementation
+evidence was GREEN at 1478 tests / 11124 assertions before checkpointing.
 
-The next architectural boundary is **Catalog Semantic Foundation (CSF)**.
-This is a horizontal Catalog foundation inside the still-active P13.B program;
-it does not open P13.C and it does not cancel the later Storage / Cold Chain,
-Logistics Custody, Service or Storefront boundaries already required by the
-roadmap. Its purpose is to let Straleon represent product-specific semantics and
-capabilities without turning Catalog into a universal form or forcing advanced
-configuration on products that do not need it.
+Natural CI161 (`34269745608`, job `102208015550`) completed GREEN on the exact
+`a7bc15f8...` SHA. `Full test suite` and `Tracked tree must remain unchanged`
+both completed successfully.
 
-Before CSF runtime work, repository documents `157` and `158` are reserved for:
-1. the canonical Catalog Semantic Foundation ADR; and
-2. the exact CSF-1 Semantic Registry Foundation implementation contract.
+The semantic authority boundary remains binding:
 
-That ADR must preserve the Knowledge boundary explicitly:
-`ProductDefinition` answers what semantic kind of product something is; it is not
-a second Object Master, `TechnicalModel`, `CatalogProduct`, category taxonomy or
-inventory identity. CSF-1 remains registry-only and must not advance attribute
-bindings/values, product assignment, capabilities, variants, Storefront, Network,
-contextual UI or AI extraction.
+- `ProductDefinition` = semantic kind;
+- `TechnicalModel` / Knowledge = universal technical identity and relations;
+- `CatalogProduct` = merchant-facing catalog record;
+- `ProductCategory` = commercial/navigation taxonomy;
+- Inventory = physical facts.
 
-Next exact boundary:
+CSF-1 did **not** assign ProductDefinition to CatalogProduct and did not introduce
+attribute typing, measurement semantics, AttributeBinding, dynamic values,
+capabilities, variants, organization overlays, contextual UI, Storefront/Network
+runtime projection or AI extraction.
 
-`P13_B_CATALOG_SEMANTIC_FOUNDATION_CANONICALIZATION_V1`.
+The next boundary is therefore design/recon, not implementation:
 
+`P13_B_CSF2_ATTRIBUTE_TYPING_MEASUREMENT_BINDING_RECON_V1`.
+
+That RECON must reconcile the exact attribute type algebra, exact decimal and
+measurement semantics, units/dimensions, valid value scopes and AttributeBinding
+constraints with Straleon's existing numerical/unit foundations before any CSF-2
+runtime is authorized.
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 checkpoint — P12.2 Snapshot Reference Panel Foundation GREEN
 
