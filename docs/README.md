@@ -1,43 +1,28 @@
 # SRCM Full — Puerta de entrada y continuidad maestra
 
 Estado: **vinculante para recuperación de contexto**
-Actualizado: **2026-09-07**
+Actualizado: **2026-09-08**
 
-<!-- P13_CURRENT_CONTINUITY_V2 -->
-## Current P13 checkpoint — P13.B Physical Commerce through Fulfillment Preferences Foundation V1 published CI153
+<!-- P13_CURRENT_CONTINUITY_V3 -->
+## Current P13 checkpoint — P13.B Transformation / Yield / Traceability Foundation V1 published; repaired baseline CI158 GREEN
 
 <!--
 STRALEON_CANONICAL_PRODUCT_NAME=Straleon
 P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
 P13_CURRENT_SUBPHASE=P13_B_NUMERICAL_INTEGRITY_AND_HUMAN_ERROR_PREVENTION
 P13_B_STATUS=ACTIVE_CURRENT
-P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=63f5c61e13c6c4be0250d1ff7f2ebc2c42595116
+P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=b34c3847608ab8e2db8e88ea81927af634441848
+P13_B_BASELINE_TREE=f2279027721ff98881a8aa5a09ebdb7daf6ffec2
 P13_B_PREVIOUS_MASTER_SYNC_HEAD=04cffcdc43120a136cd2a7ab7cc8e30172cc86d7
-P13_B_CI152_RUN_ID=34155965883
-P13_B_CI152_JOB_ID=101847739747
-P13_B_CI152_STATUS=GREEN_COMPLETED_SUCCESS
-P13_B_CI152_HEAD=04cffcdc43120a136cd2a7ab7cc8e30172cc86d7
-P13_B_FUNCTIONAL_HEAD=63f5c61e13c6c4be0250d1ff7f2ebc2c42595116
-P13_B_FUNCTIONAL_PARENT=04cffcdc43120a136cd2a7ab7cc8e30172cc86d7
-P13_B_CI153_RUN_ID=34158251695
-P13_B_CI153_JOB_ID=101854462021
-P13_B_CI153_STATUS=GREEN_COMPLETED_SUCCESS
-P13_B_CI153_HEAD=63f5c61e13c6c4be0250d1ff7f2ebc2c42595116
-P13_B_ENGINEERING_EXECUTION_CONTRACT=V1_PUBLISHED_AND_WINDOWS_HARDENED
-P13_B_ENGINEERING_EXECUTION_CONTRACT_INSTALL_HEAD=6f1afe856632110feec4da418b328c6bea023cf7
-P13_B_ENGINEERING_EXECUTION_CONTRACT_HEAD=681b1fd40948cdffa059e2a7c03fb597251b8a49
-P13_B_CI151_RUN_ID=34154981415
-P13_B_CI151_JOB_ID=101844822201
-P13_B_CI151_STATUS=GREEN_COMPLETED_SUCCESS
-P13_B_CI151_HEAD=681b1fd40948cdffa059e2a7c03fb597251b8a49
+P13_B_ENGINEERING_EXECUTION_CONTRACT=V1_PUBLISHED_AND_BINDING
+P13_B_ARCHITECTURE_CONVERGENCE=V1_PUBLISHED_AND_BINDING
+P13_B_ARCHITECTURE_CONVERGENCE_HEAD=74d3258f9af752635e39cf351753368cdfaeab9d
+P13_B_STOREFRONT_NETWORK_COMPATIBILITY_PACK=V1_PUBLISHED_AND_BINDING
 P13_B_MONEY_BOUNDARY_WAVE_1=GREEN_CLOSED
 P13_B_DISCREPANCY_FRAMEWORK=GREEN_PUBLISHED
 P13_B_SETTLEMENT_REVIEW_RESOLUTION_FOUNDATION=GREEN_PUBLISHED
 P13_B_SETTLEMENT_REVIEW_RESOLUTION_HTTP_TRANSPORT=GREEN_PUBLISHED
 P13_B_SETTLEMENT_REVIEW_RESOLUTION_ADMIN_UI=GREEN_PUBLISHED
-P13_B_PR17_AMENDMENT_150=INCORPORATED_AS_BINDING_ROADMAP_INPUT
-P13_B_PR17_AMENDMENT_151=INCORPORATED_AS_BINDING_ROADMAP_INPUT
-P13_B_PR17_AMENDMENT_152=INCORPORATED_AS_BINDING_ROADMAP_INPUT
 P13_B_COMMERCIAL_AVAILABILITY_ENGINE=FOUNDATION_V1_PUBLISHED
 P13_B_INVENTORY_RESERVATION=FOUNDATION_V1_PUBLISHED
 P13_B_UNITS_PRESENTATIONS_FRACTIONAL_CONTAINERS=IMPLEMENTED_PUBLISHED
@@ -46,69 +31,103 @@ P13_B_FRACTIONAL_PREPARATION_LOCATION_BOUNDARY=PUBLISHED
 P13_B_FRACTIONAL_EXPIRATION_PROVENANCE=PUBLISHED
 P13_B_FRACTIONAL_CONSUMPTION_POLICIES=OPEN_CONTAINER_FIRST_FIFO_FEFO_MANUAL_PUBLISHED
 P13_B_VARIABLE_QUANTITY_FULFILLMENT=FOUNDATION_V1_PUBLISHED
-P13_B_VARIABLE_QUANTITY_FULFILLMENT_HEAD=7327c711eedc21ef51dab109dca8e69856670221
-P13_B_CI149_STATUS=GREEN_COMPLETED_SUCCESS
 P13_B_QUANTITY_TOLERANCE=V1_PUBLISHED
-P13_B_QUANTITY_TOLERANCE_HEAD=567c01ba72bdfa5c10fa1b05f4006f4a6c0758d0
-P13_B_FULFILLMENT_PREFERENCES_RECON_V1=GREEN_READ_ONLY
-P13_B_FULFILLMENT_PREFERENCES_RECON_V1_RESULT_SHA256=adedead3af63d627c32436160b62f622b4f10e87eca4262c344fa7fbf5fd37f5
 P13_B_FULFILLMENT_PREFERENCES=FOUNDATION_V1_PUBLISHED
-P13_B_FULFILLMENT_PREFERENCES_HEAD=63f5c61e13c6c4be0250d1ff7f2ebc2c42595116
-P13_B_FULFILLMENT_PREFERENCES_TEST_EVIDENCE=5_PASSED_22_ASSERTIONS
-P13_B_TRANSFORMATION_YIELD_TRACEABILITY=NEXT_RECON
-P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REQUIRES_FUTURE_RECON
-P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REQUIRES_FUTURE_RECON
+P13_B_TRANSFORMATION_YIELD_TRACEABILITY_ARCHITECTURE=V1_PUBLISHED_AND_BINDING
+P13_B_TRANSFORMATION_YIELD_TRACEABILITY_FOUNDATION=V1_PUBLISHED
+P13_B_TRANSFORMATION_YIELD_TRACEABILITY_HEAD=63d8ed724995819a261ccca3a75087901a7ea595
+P13_B_TRANSFORMATION_REDUNDANT_INDEX_FIX_HEAD=0baba18796e4ec82ca00822e94c937b3b4300b70
+P13_B_CI157_RUN_ID=34175647940
+P13_B_CI157_JOB_ID=101904370025
+P13_B_CI157_STATUS=FAIL_FULL_TEST_SUITE
+P13_B_CI157_FORENSIC_DETAIL=EXACT_FAILING_TEST_NOT_CANONICALLY_ASSERTED
+P13_B_CI157_OPERATIONAL_STATUS=SUPERSEDED_BY_REPAIRED_BASELINE_AND_CI158
+P13_B_BASELINE_CONTRACT_REPAIR=TEST_ONLY_PUBLISHED
+P13_B_BASELINE_CONTRACT_REPAIR_HEAD=b34c3847608ab8e2db8e88ea81927af634441848
+P13_B_BASELINE_CONTRACT_REPAIR_SCOPE=2_TEST_FILES_NO_PRODUCTIVE_SOURCE
+P13_B_LOCAL_FULL_SUITE_EVIDENCE=1445_TESTS_11038_ASSERTIONS_GREEN
+P13_B_CI158_RUN_ID=34250399977
+P13_B_CI158_JOB_ID=102143071829
+P13_B_CI158_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI158_FULL_TEST_SUITE=GREEN
+P13_B_CI158_TRACKED_TREE_UNCHANGED=GREEN
+P13_B_CATALOG_SEMANTIC_FOUNDATION=ARCHITECTURE_DESIGNED_NOT_YET_PUBLISHED
+P13_B_CSF_DOCUMENT_NUMBERS=157_ADR_158_CSF1_CONTRACT_RESERVED
+P13_B_CSF_EXECUTION_LANE=HORIZONTAL_CATALOG_FOUNDATION_WITHOUT_OPENING_P13_C
+P13_B_CSF_PRODUCT_DEFINITION_BOUNDARY=SEMANTIC_TYPE_NOT_OBJECT_MASTER_NOT_TECHNICAL_MODEL_NOT_CATALOG_PRODUCT
+P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REMAINS_FUTURE
+P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_MULTIRRUBRO_VALIDATION=MANDATORY
 P13_C_STATUS=NOT_OPENED
-P13_NEXT_BOUNDARY=P13_B_TRANSFORMATION_YIELD_TRACEABILITY_RECON_V1
+P13_NEXT_BOUNDARY=P13_B_CATALOG_SEMANTIC_FOUNDATION_CANONICALIZATION_V1
 PRODUCTION_MUTATION_AUTHORIZATION=NO
 -->
 
-P13.B remains the active technical frontier.
+P13.B remains the active technical program. This continuity block supersedes the
+older Fulfillment Preferences / CI153 checkpoint narrative as the current P13
+entry point; older historical sections remain preserved below.
 
-The previous continuity checkpoint is
-`04cffcdc43120a136cd2a7ab7cc8e30172cc86d7` —
-`docs(continuity): sync P13B through fulfillment preferences recon`.
-Natural CI152 (`34155965883`, job `101847739747`) completed GREEN on that
-exact SHA.
+The convergence architecture checkpoint
+`74d3258f9af752635e39cf351753368cdfaeab9d` installed the binding cross-domain
+architecture pack, including the Single-Truth Principle, Storefront / Network
+compatibility boundaries and the Transformation / Yield / Traceability domain
+design. Those documents remain additive to — and bounded by — these masters.
 
-The latest published functional commerce checkpoint is
-`63f5c61e13c6c4be0250d1ff7f2ebc2c42595116` —
-`feat(commerce): add fulfillment preferences foundation`, parent
-`04cffcdc43120a136cd2a7ab7cc8e30172cc86d7`. Natural CI153
-(`34158251695`, job `101854462021`) completed GREEN on that exact SHA,
-including dependency/install gates, offline snapshot contract tests, whitespace
-gate, release preflight, production asset build, Vite manifest verification,
-the full test suite and tracked-tree-unchanged.
+Transformation / Yield / Traceability Foundation V1 was then published at
+`63d8ed724995819a261ccca3a75087901a7ea595`
+(`feat(inventory): add transformation yield traceability foundation`). The
+foundation keeps confirmed `InventoryMovement` as physical-stock authority while
+recording immutable, organization-scoped transformation lineage against exact
+confirmed movement lines. Transformation input/output movement semantics,
+idempotency, locking and provenance remain separate from yield analytics, recipes,
+cost allocation, Storefront and Network publication.
 
-The published P13.B physical-commerce chain now includes Commercial Availability,
-Inventory Reservation, Units / Presentations, Fractional Containers, fractional
-opening/consumption enforcement, preparation-location boundary, expiration
-provenance, open-container-first/FIFO/FEFO/manual consumption policies, Variable
-Quantity Fulfillment, Variable Quantity Reservation Tolerance and Fulfillment
-Preferences Foundation V1.
+The follow-up checkpoint
+`0baba18796e4ec82ca00822e94c937b3b4300b70`
+(`fix(inventory): remove redundant transformation lineage index`) removed one
+redundant migration index without changing the Transformation authority model.
+Natural CI157 (`34175647940`, job `101904370025`) failed only at `Full test suite`.
+The exact failing test is intentionally not asserted here because that forensic
+detail was not recovered as canonical evidence.
 
-Fulfillment Preferences Foundation V1 records durable, immutable and idempotent
-commercial-intent evidence linked to an Inventory Reservation. It can preserve
-another-brand permission, equivalent-product permission, exact/no-substitution
-intent, consultation through an authorized channel and unavailable-line fallback.
-It does not duplicate Quantity Tolerance authority and does not itself select a
-replacement product, send communications, cancel an order line, mutate inventory,
-or finalize money. Focal evidence is GREEN: 5 tests / 22 assertions.
+The repaired baseline checkpoint is
+`b34c3847608ab8e2db8e88ea81927af634441848` —
+`test(baseline): align stale inventory and settlement contracts`. That commit
+changed exactly two test contracts and no productive source: the Inventory Ledger
+closed-vocabulary expectation was aligned with the two published Transformation
+movement types, and the Settlement Admin UI contract hash was aligned with the
+already-published `UserRole` artifact. Local full-suite evidence before publication
+was GREEN at 1445 tests / 11038 assertions.
 
-Amendment 150 remains binding. Its capability sequence places Fulfillment
-Preferences / Substitutions before Transformation & Yield Ledger. The next cut is
-therefore a read-only Transformation / Yield / Traceability RECON. It must inspect
-the current inventory ledger, movements, lots, fractional provenance, locations,
-reservations and fulfillment evidence before defining how physical inputs become
-outputs, subproducts and waste without silent stock rewrites. It must also preserve
-organization boundaries, exact provenance, idempotency and future forward/backward
-traceability, without implementing production, analytics, cost allocation, cold
-chain, P13.C or production mutation.
+Natural CI158 (`34250399977`, job `102143071829`) completed GREEN on the exact
+`b34c3847...` SHA. Dependency/install gates, offline snapshot contracts, whitespace,
+release preflight, production asset build, Vite verification, `Full test suite`
+and `Tracked tree must remain unchanged` all completed successfully. CI157 is
+therefore retained as historical failed evidence but is not the operational
+baseline for new development.
+
+The next architectural boundary is **Catalog Semantic Foundation (CSF)**.
+This is a horizontal Catalog foundation inside the still-active P13.B program;
+it does not open P13.C and it does not cancel the later Storage / Cold Chain,
+Logistics Custody, Service or Storefront boundaries already required by the
+roadmap. Its purpose is to let Straleon represent product-specific semantics and
+capabilities without turning Catalog into a universal form or forcing advanced
+configuration on products that do not need it.
+
+Before CSF runtime work, repository documents `157` and `158` are reserved for:
+1. the canonical Catalog Semantic Foundation ADR; and
+2. the exact CSF-1 Semantic Registry Foundation implementation contract.
+
+That ADR must preserve the Knowledge boundary explicitly:
+`ProductDefinition` answers what semantic kind of product something is; it is not
+a second Object Master, `TechnicalModel`, `CatalogProduct`, category taxonomy or
+inventory identity. CSF-1 remains registry-only and must not advance attribute
+bindings/values, product assignment, capabilities, variants, Storefront, Network,
+contextual UI or AI extraction.
 
 Next exact boundary:
 
-`P13_B_TRANSFORMATION_YIELD_TRACEABILITY_RECON_V1`.
+`P13_B_CATALOG_SEMANTIC_FOUNDATION_CANONICALIZATION_V1`.
 
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 checkpoint — P12.2 Snapshot Reference Panel Foundation GREEN
