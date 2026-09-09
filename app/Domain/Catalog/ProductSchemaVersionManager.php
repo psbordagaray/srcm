@@ -214,6 +214,30 @@ class ProductSchemaVersionManager
             $now = now();
 
             if ($published->isNotEmpty()) {
+                $semanticValue = DB::table(
+                    'catalog_product_semantic_values as semantic_values'
+                )
+                    ->join(
+                        'catalog_products as products',
+                        'products.id',
+                        '=',
+                        'semantic_values.catalog_product_id'
+                    )
+                    ->where(
+                        'products.product_definition_id',
+                        $definition->id
+                    )
+                    ->select('semantic_values.id')
+                    ->first();
+
+                if ($semanticValue !== null) {
+                    throw new DomainException(
+                        'La definición posee productos con valores semánticos. '
+                        .'Revise y descarte esos valores antes de publicar '
+                        .'un schema sucesor.'
+                    );
+                }
+
                 $current = $published->first();
                 $current->status = ProductSchemaStatus::Deprecated;
                 $current->deprecated_at = $now;

@@ -108,6 +108,14 @@ class CatalogProduct extends Model
         return $this->hasMany(SupplierOffer::class, 'catalog_product_id');
     }
 
+    public function semanticValues(): HasMany
+    {
+        return $this->hasMany(
+            CatalogProductSemanticValue::class,
+            'catalog_product_id'
+        );
+    }
+
     public function inventoryMovementLines(): HasMany
     {
         return $this->hasMany(

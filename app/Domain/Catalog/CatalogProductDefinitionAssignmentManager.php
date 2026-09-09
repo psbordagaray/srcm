@@ -7,6 +7,7 @@ use App\Enums\InventoryReservationStatus;
 use App\Enums\ProductDefinitionStatus;
 use App\Enums\ProductSchemaStatus;
 use App\Models\CatalogProduct;
+use App\Models\CatalogProductSemanticValue;
 use App\Models\FractionalContainer;
 use App\Models\FulfillmentPreference;
 use App\Models\InventoryReservation;
@@ -239,6 +240,20 @@ class CatalogProductDefinitionAssignmentManager
     private function assertReclassificationAllowed(
         CatalogProduct $product
     ): void {
+        if (
+            CatalogProductSemanticValue::query()
+                ->where(
+                    'catalog_product_id',
+                    $product->id
+                )
+                ->exists()
+        ) {
+            throw new DomainException(
+                'El producto posee valores semánticos y no puede '
+                .'reclasificarse hasta revisarlos y descartarlos explícitamente.'
+            );
+        }
+
         if (
             InventoryReservation::query()
                 ->where(
