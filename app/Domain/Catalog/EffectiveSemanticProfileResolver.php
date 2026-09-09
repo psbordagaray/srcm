@@ -6,6 +6,8 @@ use App\Enums\AttributeValueScope;
 use App\Enums\AttributeValueType;
 use App\Enums\ProductDefinitionStatus;
 use App\Enums\ProductSchemaStatus;
+use App\Enums\SemanticCapabilityActivationMode;
+use App\Enums\SemanticCapabilityStatus;
 use App\Enums\SemanticProfileResolutionMode;
 use App\Models\ProductDefinition;
 use App\Models\ProductSchemaVersion;
@@ -225,6 +227,8 @@ final class EffectiveSemanticProfileResolver
             }
         );
 
+        $capabilities = $this->resolveCapabilities($schemaId);
+
         $provenance = new EffectiveSemanticProfileProvenance(
             resolutionMode: $mode,
             requestedAuthorityType: $requestedAuthorityType,
@@ -244,6 +248,7 @@ final class EffectiveSemanticProfileResolver
             schemaStatus: $schemaStatus,
             publishedAt: $publishedAt,
             attributes: $attributes,
+            capabilities: $capabilities,
             provenance: $provenance,
         );
     }
@@ -375,6 +380,179 @@ final class EffectiveSemanticProfileResolver
             measurementDimensionKey: $dimensionKey,
             provenance: $provenance,
         );
+    }
+
+    /**
+     * @return list<EffectiveSemanticCapability>
+     */
+    private function resolveCapabilities(int $schemaId): array
+    {
+        $capabilities = [];
+        $definitionIds = [];
+        $definitionKeys = [];
+
+        $declarations = DB::table(
+            'catalog_product_schema_capability_declarations'
+        )
+            ->where('product_schema_version_id', $schemaId)
+            ->get();
+
+        foreach ($declarations as $declarationRow) {
+            if (! $declarationRow instanceof stdClass) {
+                throw new DomainException(
+                    'La capability declaration no pudo resolverse.'
+                );
+            }
+
+            $capability = $this->resolveCapability(
+                $schemaId,
+                $declarationRow
+            );
+
+            if (
+                isset(
+                    $definitionIds[
+                        $capability->semanticCapabilityDefinitionId
+                    ]
+                )
+                || isset(
+                    $definitionKeys[
+                        $capability->semanticCapabilityKey
+                    ]
+                )
+            ) {
+                throw new DomainException(
+                    'El schema contiene identidad efectiva de capability duplicada.'
+                );
+            }
+
+            $definitionIds[
+                $capability->semanticCapabilityDefinitionId
+            ] = true;
+            $definitionKeys[
+                $capability->semanticCapabilityKey
+            ] = true;
+            $capabilities[] = $capability;
+        }
+
+        usort(
+            $capabilities,
+            static function (
+                EffectiveSemanticCapability $left,
+                EffectiveSemanticCapability $right
+            ): int {
+                $keyOrder = strcmp(
+                    $left->semanticCapabilityKey,
+                    $right->semanticCapabilityKey
+                );
+
+                return $keyOrder !== 0
+                    ? $keyOrder
+                    : $left->semanticCapabilityDefinitionId
+                        <=> $right->semanticCapabilityDefinitionId;
+            }
+        );
+
+        return $capabilities;
+    }
+
+    private function resolveCapability(
+        int $schemaId,
+        stdClass $declarationRow
+    ): EffectiveSemanticCapability {
+        $declarationId = (int) $declarationRow->id;
+        $definitionId =
+            (int) $declarationRow->semantic_capability_definition_id;
+
+        if (
+            $declarationId <= 0
+            || $definitionId <= 0
+            || (int) $declarationRow->product_schema_version_id
+                !== $schemaId
+        ) {
+            throw new DomainException(
+                'La capability declaration posee una identidad inválida.'
+            );
+        }
+
+        $definitionRow = DB::table(
+            'catalog_semantic_capability_definitions'
+        )
+            ->where('id', $definitionId)
+            ->first();
+
+        if (! $definitionRow instanceof stdClass) {
+            throw new DomainException(
+                'La capability declaration referencia una definición inexistente.'
+            );
+        }
+
+        $key = (string) $definitionRow->key;
+        SemanticKey::assertValid($key);
+
+        if (
+            ! SemanticCapabilityStatus::tryFrom(
+                (string) $definitionRow->status
+            )
+        ) {
+            throw new DomainException(
+                'La capability posee un lifecycle inválido.'
+            );
+        }
+
+        $mode = SemanticCapabilityActivationMode::tryFrom(
+            (string) $declarationRow->activation_mode
+        );
+
+        if (! $mode) {
+            throw new DomainException(
+                'La capability declaration posee un activation mode inválido.'
+            );
+        }
+
+        $defaultEnabled = $this->storedBoolean(
+            $declarationRow->default_enabled,
+            'La capability declaration no posee un default boolean válido.'
+        );
+
+        if (
+            $mode === SemanticCapabilityActivationMode::FixedEnabled
+            && ! $defaultEnabled
+        ) {
+            throw new DomainException(
+                'FIXED_ENABLED requiere default_enabled=true.'
+            );
+        }
+
+        $provenance = new EffectiveSemanticCapabilityProvenance(
+            productSchemaVersionId: $schemaId,
+            productSchemaCapabilityDeclarationId: $declarationId,
+            semanticCapabilityDefinitionId: $definitionId,
+            semanticCapabilityKey: $key,
+        );
+
+        return new EffectiveSemanticCapability(
+            declarationId: $declarationId,
+            semanticCapabilityDefinitionId: $definitionId,
+            semanticCapabilityKey: $key,
+            activationMode: $mode,
+            provenance: $provenance,
+        );
+    }
+
+    private function storedBoolean(
+        mixed $value,
+        string $message
+    ): bool {
+        return match (true) {
+            $value === true,
+            $value === 1,
+            $value === '1' => true,
+            $value === false,
+            $value === 0,
+            $value === '0' => false,
+            default => throw new DomainException($message),
+        };
     }
 
     private function definitionRow(int $definitionId): stdClass

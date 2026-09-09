@@ -10,6 +10,7 @@ final readonly class EffectiveSemanticProfile
 {
     /**
      * @param list<EffectiveSemanticAttribute> $attributes
+     * @param list<EffectiveSemanticCapability> $capabilities
      */
     public function __construct(
         public SemanticProfileResolutionMode $resolutionMode,
@@ -21,6 +22,7 @@ final readonly class EffectiveSemanticProfile
         public string $publishedAt,
         public array $attributes,
         public EffectiveSemanticProfileProvenance $provenance,
+        public array $capabilities = [],
     ) {
         if (
             $this->productDefinitionId <= 0
@@ -112,6 +114,77 @@ final readonly class EffectiveSemanticProfile
             $lastKey = $attribute->attributeDefinitionKey;
             $lastId = $attribute->attributeDefinitionId;
         }
+
+        $capabilityIds = [];
+        $capabilityKeys = [];
+        $lastCapabilityKey = null;
+        $lastCapabilityId = null;
+
+        foreach ($this->capabilities as $capability) {
+            if (! $capability instanceof EffectiveSemanticCapability) {
+                throw new InvalidArgumentException(
+                    'Effective semantic profile capabilities must use the canonical capability projection.'
+                );
+            }
+
+            if (
+                $capability->provenance->productSchemaVersionId
+                    !== $this->productSchemaVersionId
+            ) {
+                throw new InvalidArgumentException(
+                    'Effective semantic profile contains a capability from another schema.'
+                );
+            }
+
+            if (
+                isset(
+                    $capabilityIds[
+                        $capability->semanticCapabilityDefinitionId
+                    ]
+                )
+                || isset(
+                    $capabilityKeys[
+                        $capability->semanticCapabilityKey
+                    ]
+                )
+            ) {
+                throw new InvalidArgumentException(
+                    'Effective semantic profile contains duplicate capability identity.'
+                );
+            }
+
+            if (
+                $lastCapabilityKey !== null
+                && (
+                    strcmp(
+                        $capability->semanticCapabilityKey,
+                        $lastCapabilityKey
+                    ) < 0
+                    || (
+                        $capability->semanticCapabilityKey
+                            === $lastCapabilityKey
+                        && $capability
+                            ->semanticCapabilityDefinitionId
+                            <= $lastCapabilityId
+                    )
+                )
+            ) {
+                throw new InvalidArgumentException(
+                    'Effective semantic profile capabilities are not deterministically ordered.'
+                );
+            }
+
+            $capabilityIds[
+                $capability->semanticCapabilityDefinitionId
+            ] = true;
+            $capabilityKeys[
+                $capability->semanticCapabilityKey
+            ] = true;
+            $lastCapabilityKey =
+                $capability->semanticCapabilityKey;
+            $lastCapabilityId =
+                $capability->semanticCapabilityDefinitionId;
+        }
     }
 
     /** @return array<string, mixed> */
@@ -131,6 +204,12 @@ final readonly class EffectiveSemanticProfile
                     EffectiveSemanticAttribute $attribute
                 ): array => $attribute->toArray(),
                 $this->attributes
+            ),
+            'capabilities' => array_map(
+                static fn (
+                    EffectiveSemanticCapability $capability
+                ): array => $capability->toArray(),
+                $this->capabilities
             ),
             'provenance' => $this->provenance->toArray(),
         ];

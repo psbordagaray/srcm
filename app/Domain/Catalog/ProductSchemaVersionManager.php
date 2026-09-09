@@ -9,6 +9,8 @@ use App\Enums\MeasurementDimensionStatus;
 use App\Enums\MeasurementUnitStatus;
 use App\Enums\ProductDefinitionStatus;
 use App\Enums\ProductSchemaStatus;
+use App\Enums\SemanticCapabilityActivationMode;
+use App\Enums\SemanticCapabilityStatus;
 use App\Models\AttributeDefinition;
 use App\Models\MeasurementDimension;
 use App\Models\MeasurementUnit;
@@ -107,6 +109,30 @@ class ProductSchemaVersionManager
                 ]);
             }
 
+            $declarations = DB::table(
+                'catalog_product_schema_capability_declarations'
+            )
+                ->where(
+                    'product_schema_version_id',
+                    $source->id
+                )
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($declarations as $declaration) {
+                DB::table(
+                    'catalog_product_schema_capability_declarations'
+                )->insert([
+                    'product_schema_version_id' => $draft->id,
+                    'semantic_capability_definition_id' =>
+                        $declaration->semantic_capability_definition_id,
+                    'activation_mode' => $declaration->activation_mode,
+                    'default_enabled' => $declaration->default_enabled,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+
             return $draft->fresh();
         });
     }
@@ -163,6 +189,9 @@ class ProductSchemaVersionManager
             }
 
             $this->validateBindingsForPublication($locked);
+            $this->validateCapabilityDeclarationsForPublication(
+                $locked
+            );
 
             $published = ProductSchemaVersion::query()
                 ->where(
@@ -338,6 +367,103 @@ class ProductSchemaVersionManager
                 );
             }
         }
+    }
+
+    private function validateCapabilityDeclarationsForPublication(
+        ProductSchemaVersion $schema
+    ): void {
+        $declarations = DB::table(
+            'catalog_product_schema_capability_declarations'
+        )
+            ->where(
+                'product_schema_version_id',
+                $schema->id
+            )
+            ->lockForUpdate()
+            ->get();
+
+        $seenCapabilityIds = [];
+
+        foreach ($declarations as $declaration) {
+            $capabilityId =
+                (int) $declaration->semantic_capability_definition_id;
+
+            if (
+                $capabilityId <= 0
+                || isset($seenCapabilityIds[$capabilityId])
+            ) {
+                throw new DomainException(
+                    'El schema contiene identidad de capability duplicada o inválida.'
+                );
+            }
+
+            $seenCapabilityIds[$capabilityId] = true;
+
+            $capability = DB::table(
+                'catalog_semantic_capability_definitions'
+            )
+                ->where('id', $capabilityId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $capability) {
+                throw new DomainException(
+                    'Publicar el schema requiere capability definitions existentes.'
+                );
+            }
+
+            SemanticKey::assertValid((string) $capability->key);
+
+            $status = SemanticCapabilityStatus::tryFrom(
+                (string) $capability->status
+            );
+
+            if ($status !== SemanticCapabilityStatus::Active) {
+                throw new DomainException(
+                    'Publicar el schema requiere capability definitions activas.'
+                );
+            }
+
+            $mode = SemanticCapabilityActivationMode::tryFrom(
+                (string) $declaration->activation_mode
+            );
+
+            if (! $mode) {
+                throw new DomainException(
+                    'El schema contiene una capability declaration con activation mode inválido.'
+                );
+            }
+
+            $defaultEnabled = $this->storedBoolean(
+                $declaration->default_enabled,
+                'El schema contiene una capability declaration sin default boolean válido.'
+            );
+
+            if (
+                $mode
+                    === SemanticCapabilityActivationMode::FixedEnabled
+                && ! $defaultEnabled
+            ) {
+                throw new DomainException(
+                    'FIXED_ENABLED requiere default_enabled=true.'
+                );
+            }
+        }
+    }
+
+    private function storedBoolean(
+        mixed $value,
+        string $message
+    ): bool {
+        return match (true) {
+            $value === true,
+            $value === 1,
+            $value === '1' => true,
+            $value === false,
+            $value === 0,
+            $value === '0' => false,
+            default => throw new DomainException($message),
+        };
     }
 
     private function lockDefinition(
