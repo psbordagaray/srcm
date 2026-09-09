@@ -4,16 +4,16 @@ Estado: **North Star / contrato de dirección y continuidad**
 Fecha: **2026-09-08**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 
-<!-- P13_CURRENT_CONTINUITY_V6 -->
-## Current P13 checkpoint — P13.B Catalog Semantic Foundation CSF-3 published; CI167 GREEN
+<!-- P13_CURRENT_CONTINUITY_V7 -->
+## Current P13 checkpoint — P13.B Catalog Semantic Foundation CSF-4 published; CI170 GREEN
 
 <!--
 STRALEON_CANONICAL_PRODUCT_NAME=Straleon
 P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
 P13_CURRENT_SUBPHASE=P13_B_NUMERICAL_INTEGRITY_AND_HUMAN_ERROR_PREVENTION
 P13_B_STATUS=ACTIVE_CURRENT
-P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=78d3a1db94ed6d509e700d2abb815558ffcbcf3d
-P13_B_BASELINE_TREE=d8f121699e63216c7d81badd58b8b1a66a876174
+P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=82e80ba08d86730a49445b51708d1db9e0140706
+P13_B_BASELINE_TREE=da23e7d60e982a3b8d307b5c2202c982c848979f
 P13_B_ENGINEERING_EXECUTION_CONTRACT=V1_PUBLISHED_AND_BINDING
 P13_B_ARCHITECTURE_CONVERGENCE=V1_PUBLISHED_AND_BINDING
 P13_B_ARCHITECTURE_CONVERGENCE_HEAD=74d3258f9af752635e39cf351753368cdfaeab9d
@@ -81,97 +81,137 @@ P13_B_CSF3_PARENT=1c0db8c745c44cfdb1beeafe1d6d6820277f2c4e
 P13_B_CSF3_IMPLEMENTATION_SCOPE=7_PHP_FILES_7_NEW
 P13_B_CSF3_LOCAL_FOCAL_EVIDENCE=15_TESTS_51_ASSERTIONS_GREEN
 P13_B_CSF3_LOCAL_FULL_SUITE_EVIDENCE=1509_TESTS_11231_ASSERTIONS_GREEN
-P13_B_CSF3_RESOLUTION_MODES=CURRENT_PUBLISHED_EXACT_HISTORICAL
-P13_B_CSF3_CURRENT_PUBLISHED_RULE=EXACTLY_ONE_PUBLISHED_SCHEMA_FAIL_CLOSED
-P13_B_CSF3_HISTORICAL_RULE=PUBLISHED_DEPRECATED_RETIRED_REQUIRE_PUBLISHED_AT
-P13_B_CSF3_SCHEMA_COMPOSITION=EXACT_SELECTED_SCHEMA_OWN_BINDINGS_ONLY
-P13_B_CSF3_DYNAMIC_VERSION_INHERITANCE=NO
-P13_B_CSF3_DETERMINISTIC_ATTRIBUTE_ORDER=ATTRIBUTE_KEY_THEN_ID
-P13_B_CSF3_PROVENANCE=PROFILE_AND_ATTRIBUTE_EXPLICIT
-P13_B_CSF3_MUTABLE_DISPLAY_METADATA=NOT_HISTORICAL_SEMANTIC_TRUTH
-P13_B_CSF3_EFFECTIVE_PROFILE_PERSISTENCE=NO_DERIVED_IN_MEMORY_READ_MODEL
-P13_B_CSF3_RESOLVER_WRITES=NO
-P13_B_CSF3_CATALOGPRODUCT_ASSIGNMENT=NO
-P13_B_CSF3_ATTRIBUTE_VALUE_STORAGE=NO
-P13_B_CSF3_CAPABILITIES_RUNTIME=NO
-P13_B_CSF3_VARIANT_RUNTIME=NO
-P13_B_CSF3_CONTEXTUAL_INTERACTION_PROFILE=NO
-P13_B_CSF3_STOREFRONT_NETWORK_RUNTIME=NO
 P13_B_CI167_RUN_ID=34298007509
 P13_B_CI167_JOB_ID=102298736494
 P13_B_CI167_STATUS=GREEN_COMPLETED_SUCCESS
 P13_B_CI167_FULL_TEST_SUITE=GREEN
 P13_B_CI167_TRACKED_TREE_UNCHANGED=GREEN
+P13_B_MASTER_CONTINUITY_CSF3_CHECKPOINT=76164bf3da6eee32ad80e3e3c080edc8318e28ed
+P13_B_CI168_RUN_ID=34298759853
+P13_B_CI168_JOB_ID=102300987226
+P13_B_CI168_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CSF4_RECON=GREEN_READ_ONLY_EVIDENCE_CAPTURED
+P13_B_CSF4_CONTRACT=161_PUBLISHED_AND_BINDING
+P13_B_CSF4_CONTRACT_SHA256=b3742e6e9346b2a27646b2fdfa6c127f3df7f873fbf97b470cecd2560b1ad813
+P13_B_CSF4_CONTRACT_HEAD=affeee035bb358b2f770e76656ccdf723f8612de
+P13_B_CI169_RUN_ID=34300567990
+P13_B_CI169_JOB_ID=102306385198
+P13_B_CI169_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CSF4_CAPABILITY_DECLARATION_PROGRESSIVE_POLICY_BINDING_FOUNDATION=GREEN_PUBLISHED
+P13_B_CSF4_HEAD=82e80ba08d86730a49445b51708d1db9e0140706
+P13_B_CSF4_PARENT=affeee035bb358b2f770e76656ccdf723f8612de
+P13_B_CSF4_TREE=da23e7d60e982a3b8d307b5c2202c982c848979f
+P13_B_CSF4_IMPLEMENTATION_SCOPE=23_FILES_20_NEW_3_MODIFIED
+P13_B_CSF4_LOCAL_NEW_FOCAL_SUITES=4_GREEN
+P13_B_CSF4_LOCAL_DIRECT_REGRESSIONS=GREEN
+P13_B_CSF4_CONSTRUCTOR_COMPATIBILITY_FIX1=GREEN
+P13_B_CSF4_TARGETED_REVALIDATION_AFTER_FIX1=GREEN
+P13_B_CSF4_LOCAL_FULL_SUITE=GREEN_EXIT_0
+P13_B_CSF4_SEMANTIC_CAPABILITY_AUTH_CAPABILITY_SEPARATION=MANDATORY
+P13_B_CSF4_DECLARATION_AUTHORITY=EXACT_PRODUCT_SCHEMA_VERSION
+P13_B_CSF4_ABSENT_DECLARATION=NOT_APPLICABLE
+P13_B_CSF4_ACTIVATION_MODES=FIXED_ENABLED_CONFIGURABLE_ONLY
+P13_B_CSF4_FIXED_ENABLED_ORG_DISABLE=FORBIDDEN
+P13_B_CSF4_CONFIGURABLE_RESOLUTION=SCHEMA_DEFAULT_THEN_OPTIONAL_ORGANIZATION_OVERRIDE
+P13_B_CSF4_UNSET_POLICY=ABSENCE_MEANS_INHERIT_SCHEMA_DEFAULT
+P13_B_CSF4_POLICY_CAN_MANUFACTURE_APPLICABILITY=NO
+P13_B_CSF4_DRAFT_CLONING=CAPABILITY_DECLARATIONS_ATOMIC_WITH_SCHEMA_DRAFT
+P13_B_CSF4_EFFECTIVE_PROFILE_CAPABILITIES=STRUCTURAL_ONLY
+P13_B_CSF4_HISTORICAL_CURRENT_ORG_POLICY_OVERLAY=NO
+P13_B_CSF4_PRODUCT_CATEGORY_SEMANTIC_PRECEDENCE=NO
+P13_B_CSF4_PRODUCT_PRODUCT_LOCATION_POLICY_SCOPES=NO_RESERVED_CSF5_PLUS
+P13_B_CSF4_INVENTORY_ROTATION_POLICY_OWNERSHIP=INVENTORY_DOMAIN
+P13_B_CSF4_GENERIC_POLICY_JSON=NO
+P13_B_CSF4_UX=PROGRESSIVE_HIDE_IRRELEVANT_CONTROLS
+P13_B_CI170_RUN_ID=34303899588
+P13_B_CI170_JOB_ID=102316463640
+P13_B_CI170_EVENT=PUSH
+P13_B_CI170_ATTEMPT=1
+P13_B_CI170_HEAD=82e80ba08d86730a49445b51708d1db9e0140706
+P13_B_CI170_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI170_FULL_TEST_SUITE=GREEN
+P13_B_CI170_TRACKED_TREE_UNCHANGED=GREEN
 P13_B_CSF_EXECUTION_LANE=HORIZONTAL_CATALOG_FOUNDATION_WITHOUT_OPENING_P13_C
 P13_B_CSF_PRODUCT_DEFINITION_BOUNDARY=SEMANTIC_TYPE_NOT_OBJECT_MASTER_NOT_TECHNICAL_MODEL_NOT_CATALOG_PRODUCT
-P13_B_CSF4_RUNTIME_AUTHORIZATION=NO_RECON_FIRST
+P13_B_CSF5_RUNTIME_AUTHORIZATION=NO_RECON_FIRST
 P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_MULTIRRUBRO_VALIDATION=MANDATORY
 P13_C_STATUS=NOT_OPENED
-P13_NEXT_BOUNDARY=P13_B_CSF4_CAPABILITY_DECLARATION_PROGRESSIVE_POLICY_BINDING_RECON_V1
+P13_NEXT_BOUNDARY=P13_B_CSF5_RECON_V1
 PRODUCTION_MUTATION_AUTHORIZATION=NO
 -->
 
 P13.B remains the active technical program. Catalog Semantic Foundation is now
-canonical through CSF-3 without opening P13.C or replacing the later Storage /
+canonical through CSF-4 without opening P13.C or replacing the later Storage /
 Cold Chain, Logistics Custody, Service, Storefront or Network boundaries already
 required by the roadmap.
 
-CSF-1 established the global semantic registries and schema history.
-CSF-2 added typed attribute bindings, exact future value-owner scopes and
-measurement registries without duplicating numeric or inventory-unit authority.
-The three continuity masters were synchronized through CSF-2 at
-`d458deeb6868cbeddbc81c8ccaf85ba989a4edac`; natural CI165 completed GREEN.
+CSF-3 remains the immutable semantic-composition base: exact published schema
+selection, self-contained version history, deterministic attributes and explicit
+provenance. Its three continuity masters were synchronized at
+`76164bf3da6eee32ad80e3e3c080edc8318e28ed`; natural CI168 completed GREEN.
 
-CSF-3 was then designed through a read-only RECON and fixed in the binding
-contract `docs/160_CSF_3_EFFECTIVE_SEMANTIC_RESOLUTION_COMPOSITION_CONTRACT.md`.
-That contract was published at
-`1c0db8c745c44cfdb1beeafe1d6d6820277f2c4e`; natural CI166 completed GREEN.
+CSF-4 was designed read-only first and fixed in the binding contract
+`docs/161_CSF_4_CAPABILITY_DECLARATION_PROGRESSIVE_POLICY_BINDING_CONTRACT.md`.
+The contract was published at
+`affeee035bb358b2f770e76656ccdf723f8612de`; natural CI169
+(`34300567990`, job `102306385198`) completed GREEN.
 
-CSF-3 Effective Semantic Resolution / Composition Foundation was implemented
-and published at `78d3a1db94ed6d509e700d2abb815558ffcbcf3d`
-(`feat(catalog): add CSF-3 effective semantic resolution composition foundation`).
+CSF-4 Capability Declaration / Progressive Policy Binding Foundation was then
+implemented and published at
+`82e80ba08d86730a49445b51708d1db9e0140706`
+(`feat(catalog): add CSF-4 capability declaration progressive policy binding foundation`),
+tree `da23e7d60e982a3b8d307b5c2202c982c848979f`, with exact scope of 23
+files: 20 new and 3 modified.
 
-The runtime is intentionally narrow and deterministic:
+The architecture is intentionally narrow:
 
-1. `CURRENT_PUBLISHED` resolves exactly one Published schema for a non-retired
-   ProductDefinition and fails closed on zero or multiple candidates;
-2. `EXACT_HISTORICAL` resolves an exact previously published schema version,
-   including Deprecated or Retired history when `published_at` proves that
-   publication occurred;
-3. composition uses only bindings owned by the exact selected schema version;
-4. published schema history is self-contained and the resolver never traverses
-   previous versions dynamically;
-5. effective attributes are ordered deterministically by immutable attribute
-   semantic key with id as tie-breaker;
-6. profile-level and attribute-level provenance retain exact semantic authority;
-7. measurement topology resolves through `MeasurementUnit → MeasurementDimension`;
-8. mutable names, descriptions and symbols are not treated as historical
-   semantic truth;
-9. `EffectiveSemanticProfile` remains a derived in-memory read model and the
-   resolver performs no database writes.
+1. semantic product capabilities are distinct from authorization capabilities;
+2. applicability is declared only on the exact `ProductSchemaVersion`; absence
+   means not applicable and no category/attribute/name fallback may invent it;
+3. activation modes are only `FIXED_ENABLED` and `CONFIGURABLE`;
+4. `FIXED_ENABLED` is always enabled and cannot be disabled by organization
+   policy;
+5. `CONFIGURABLE` resolves from the exact schema default, then an optional
+   explicit organization override; absent policy means inherit the schema
+   default;
+6. policy can configure declared applicability but can never manufacture
+   applicability;
+7. `createDraft()` clones capability declarations atomically so every published
+   schema remains self-contained;
+8. `EffectiveSemanticProfile` carries structural capability facts only, while
+   current organization policy resolves separately into
+   `EffectiveCapabilityPolicy`;
+9. current organization policy is never applied backward to an
+   `EXACT_HISTORICAL` semantic profile;
+10. `ProductCategory` has no semantic inheritance or precedence role;
+11. product and product-location policy scopes remain reserved for CSF-5+;
+12. FIFO / FEFO / LIFO / manual / specific selection remain Inventory-owned
+    operational policies rather than generic semantic policy JSON;
+13. operator UX remains progressive: irrelevant controls are hidden and
+    configurable capability policy is presented as default / enabled / disabled,
+    not as internal precedence machinery.
 
-The implementation scope is exactly seven new PHP files. Local gates were GREEN
-at 7/7 PHP lint, focal 15 tests / 51 assertions, and full suite
-1509 tests / 11231 assertions. Natural CI167 (`34298007509`, job
-`102298736494`) completed GREEN on the exact `78d3a1db...` SHA; `Full test
-suite` and `Tracked tree must remain unchanged` both completed successfully.
+Local validation closed GREEN across the four new focal suites, directly
+affected CSF-3/versioning regressions, the constructor compatibility FIX1
+targeted revalidation and the final full suite (`EXIT=0`). No test/assertion
+totals are asserted here beyond evidence actually captured by the validation
+results.
 
-The semantic authority boundaries remain binding. CSF-3 did **not** introduce
-CatalogProduct assignment/reclassification, dynamic semantic values,
-capabilities runtime, Variant runtime, ContextualInteractionProfile,
-measurement conversion, Storefront/Network semantic runtime or P13.C.
+Natural CI170 (`34303899588`, job `102316463640`) ran from the exact
+`82e80ba0...` push, attempt 1, and completed `success`. `Full test suite` and
+`Tracked tree must remain unchanged` both completed successfully.
 
-The next boundary follows ADR 157 and remains a design/recon cut:
+CSF-4 did **not** introduce CatalogProduct assignment/reclassification, dynamic
+semantic values, Variant runtime, ContextualInteractionProfile,
+Storefront/Network semantic runtime, measurement conversion, product-location
+capability precedence or P13.C.
 
-`P13_B_CSF4_CAPABILITY_DECLARATION_PROGRESSIVE_POLICY_BINDING_RECON_V1`.
-
-That RECON must determine how semantic capabilities are declared, how
-capability-relevant policy can bind progressively without becoming a generic
-override engine, how safe defaults and `unset = inherit` are represented where
-the contract explicitly allows inheritance, how provenance is retained, and
-how irrelevant advanced controls remain hidden from simple product contexts.
+The next boundary remains closed until this three-master continuity sync is
+published and its natural CI is GREEN. After that evidence is consumed, the
+next authorized design cut is CSF-5 RECON for
+`CatalogProduct → ProductDefinition` assignment and controlled reclassification.
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 continuity — P12.2 Snapshot Reference Panel Foundation published
 
