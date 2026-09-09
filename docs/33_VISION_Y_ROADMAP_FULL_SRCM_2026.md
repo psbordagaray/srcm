@@ -4,16 +4,16 @@ Estado: **North Star / contrato de dirección y continuidad**
 Fecha: **2026-09-09**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 
-<!-- P13_CURRENT_CONTINUITY_V9 -->
-## Current P13 checkpoint — P13.B Catalog Semantic Foundation CSF-6 published; CI176 GREEN
+<!-- P13_CURRENT_CONTINUITY_V10 -->
+## Current P13 checkpoint — P13.B Catalog Semantic Foundation CSF-7 published; CI179 GREEN
 
 <!--
 STRALEON_CANONICAL_PRODUCT_NAME=Straleon
 P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
 P13_CURRENT_SUBPHASE=P13_B_NUMERICAL_INTEGRITY_AND_HUMAN_ERROR_PREVENTION
 P13_B_STATUS=ACTIVE_CURRENT
-P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=9dcd9b710f63a644bfa9eb886fdea3c69768292f
-P13_B_BASELINE_TREE=03c6acc1a42946dbf9da7ee0a0e5adc97c14890a
+P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=333f3dcb0d0566bcf44e79c158aa4ac1a9f59209
+P13_B_BASELINE_TREE=f55953088c22b4dd808040b9c5bbe51498c5ae7e
 P13_B_ENGINEERING_EXECUTION_CONTRACT=V1_PUBLISHED_AND_BINDING
 P13_B_ARCHITECTURE_CONVERGENCE=V1_PUBLISHED_AND_BINDING
 P13_B_ARCHITECTURE_CONVERGENCE_HEAD=74d3258f9af752635e39cf351753368cdfaeab9d
@@ -247,17 +247,67 @@ P13_B_CI176_HEAD=9dcd9b710f63a644bfa9eb886fdea3c69768292f
 P13_B_CI176_STATUS=GREEN_COMPLETED_SUCCESS
 P13_B_CI176_FULL_TEST_SUITE=GREEN
 P13_B_CI176_TRACKED_TREE_UNCHANGED=GREEN
-P13_B_CSF7_RUNTIME_AUTHORIZATION=NO_RECON_FIRST
+P13_B_MASTER_CONTINUITY_CSF6_CHECKPOINT=f6458dadffc482c2b793edf92ebe1bd7b3acf2cb
+P13_B_CI177_RUN_ID=34400522072
+P13_B_CI177_JOB_ID=102630990530
+P13_B_CI177_EVENT=PUSH
+P13_B_CI177_ATTEMPT=1
+P13_B_CI177_HEAD=f6458dadffc482c2b793edf92ebe1bd7b3acf2cb
+P13_B_CI177_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI177_FULL_TEST_SUITE=GREEN
+P13_B_CI177_TRACKED_TREE_UNCHANGED=GREEN
+P13_B_CSF7_RECON=GREEN_READ_ONLY_EVIDENCE_CAPTURED
+P13_B_CSF7_CONTRACT=164_PUBLISHED_AND_BINDING
+P13_B_CSF7_CONTRACT_SHA256=59ae4eeee6bf243539941819296065998ddc337edc1074a9992fcffdad70b758
+P13_B_CSF7_CONTRACT_HEAD=30a541198ab88e76368a6cc62a589f7d8c4160b3
+P13_B_CSF7_CONTRACT_TREE=28fcdc74df921d4ed56d56cbf0d7b2f160d2ce6f
+P13_B_CI178_RUN_ID=34409068066
+P13_B_CI178_JOB_ID=102658963771
+P13_B_CI178_EVENT=PUSH
+P13_B_CI178_ATTEMPT=1
+P13_B_CI178_HEAD=30a541198ab88e76368a6cc62a589f7d8c4160b3
+P13_B_CI178_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI178_FULL_TEST_SUITE=GREEN
+P13_B_CI178_TRACKED_TREE_UNCHANGED=GREEN
+P13_B_CSF7_CONTEXTUAL_INTERACTION_RUNTIME_FOUNDATION=GREEN_PUBLISHED
+P13_B_CSF7_HEAD=333f3dcb0d0566bcf44e79c158aa4ac1a9f59209
+P13_B_CSF7_PARENT=30a541198ab88e76368a6cc62a589f7d8c4160b3
+P13_B_CSF7_TREE=f55953088c22b4dd808040b9c5bbe51498c5ae7e
+P13_B_CSF7_IMPLEMENTATION_SCOPE=7_FILES_6_NEW_DOMAIN_1_NEW_TEST
+P13_B_CSF7_LOCAL_FOCAL=GREEN_EXIT_0
+P13_B_CSF7_LOCAL_TARGETED_REGRESSION=4_SUITES_GREEN
+P13_B_CSF7_LOCAL_FULL_SUITE=GREEN_EXIT_0
+P13_B_CSF7_PERSISTENCE=NONE
+P13_B_CSF7_SUBJECT=CATALOG_PRODUCT_ONLY
+P13_B_CSF7_CONTEXTUAL_PROFILE=EPHEMERAL_FINAL_READONLY_DETERMINISTIC
+P13_B_CSF7_OPERATION_CONTEXT=EXPLICIT_SMALL_VALUE_OBJECT
+P13_B_CSF7_OPERATIONAL_FACTS=SUPPLIED_BY_OWNING_DOMAINS_NO_RAW_TABLE_RULE_RECONSTRUCTION
+P13_B_CSF7_AUTHORIZATION=CONSUME_EXISTING_DECISION_CONTRACT_NO_GRANT
+P13_B_CSF7_UI_VISIBILITY_SECURITY_BOUNDARY=NO
+P13_B_CSF7_UNCLASSIFIED=EXPLICIT_NO_INFERENCE
+P13_B_CSF7_DB_MIGRATION=NO
+P13_B_CSF7_VARIANT_RUNTIME=NO_RESERVED_CSF8
+P13_B_CSF7_STOREFRONT_RUNTIME=NO
+P13_B_CSF7_NETWORK_RUNTIME=NO
+P13_B_CI179_RUN_ID=34414600291
+P13_B_CI179_JOB_ID=102676542402
+P13_B_CI179_EVENT=PUSH
+P13_B_CI179_ATTEMPT=1
+P13_B_CI179_HEAD=333f3dcb0d0566bcf44e79c158aa4ac1a9f59209
+P13_B_CI179_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI179_FULL_TEST_SUITE=GREEN
+P13_B_CI179_TRACKED_TREE_UNCHANGED=GREEN
+P13_B_CSF8_RUNTIME_AUTHORIZATION=NO_RECON_FIRST
 P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_MULTIRRUBRO_VALIDATION=MANDATORY
 P13_C_STATUS=NOT_OPENED
-P13_NEXT_BOUNDARY=P13_B_CSF7_CONTEXTUAL_REQUIREMENT_INTERACTION_RESOLUTION_RECON_V1
+P13_NEXT_BOUNDARY=P13_B_CSF8_VARIANT_SEMANTIC_BOUNDARY_RECON_V1
 PRODUCTION_MUTATION_AUTHORIZATION=NO
 -->
 
 P13.B remains the active technical program. Catalog Semantic Foundation is now
-canonical through CSF-6 without opening P13.C or replacing later Storage / Cold
+canonical through CSF-7 without opening P13.C or replacing later Storage / Cold
 Chain, Logistics Custody, Service, Storefront or Network boundaries.
 
 The CSF-4 continuity masters were published at
@@ -354,19 +404,41 @@ It preserves explicit clear semantics, exact typed storage, fail-closed
 reclassification/schema-publication guards, and does not authorize Variant,
 InventoryUnit, Lot/Batch, SupplierOffer, Storefront publication or P13.C runtime.
 
+CSF-7 began read-only and froze its contextual interaction law in
+`docs/164_CSF_7_CONTEXTUAL_REQUIREMENT_INTERACTION_RESOLUTION_CONTRACT.md`.
+The contract was published at
+`30a541198ab88e76368a6cc62a589f7d8c4160b3`, tree
+`28fcdc74df921d4ed56d56cbf0d7b2f160d2ce6f`. Natural CI178
+(`34409068066`, job `102658963771`) completed GREEN.
+
+CSF-7 runtime was then published at
+`333f3dcb0d0566bcf44e79c158aa4ac1a9f59209`, tree
+`f55953088c22b4dd808040b9c5bbe51498c5ae7e`, with exact implementation
+scope of 7 files: 6 new Catalog domain classes and 1 new focal test. Local
+validation closed GREEN for the new focal, four targeted authority suites and the
+full suite. Natural CI179 (`34414600291`, job `102676542402`) completed GREEN,
+including `Full test suite` and `Tracked tree must remain unchanged`.
+
+CSF-7 V1 is a side-effect-free, persistence-free contextual projection for
+`CatalogProduct`. It composes current semantic profile/value/policy evidence with
+explicit operation context, authorization decisions and operational facts supplied
+by their owning domains. The profile is ephemeral, immutable and deterministic;
+visibility/enablement never grants authorization, unknown authority fails closed,
+UNCLASSIFIED remains explicit, and no Variant, Storefront, Network or P13.C runtime
+was opened.
+
 The next boundary remains closed until this three-master continuity sync is
 published and its natural CI is GREEN. After that evidence is consumed, the next
 authorized design cut is:
 
-`P13_B_CSF7_CONTEXTUAL_REQUIREMENT_INTERACTION_RESOLUTION_RECON_V1`.
+`P13_B_CSF8_VARIANT_SEMANTIC_BOUNDARY_RECON_V1`.
 
-CSF-7 must begin read-only. Per ADR 157, its purpose is to define how Straleon
-combines the effective semantic profile with operation context, actor permissions,
-current product state and known/missing evidence so the system can decide what is
-required now and what the operator should see or do. It must preserve the
-canonical UX law of powerful semantics behind the scenes and minimal,
-context-relevant interaction in front of the user. Variant runtime, Storefront
-public projection and P13.C remain closed.
+CSF-8 must begin read-only. Its purpose is to determine the semantic boundary
+between `CatalogProduct` and Variant without creating a generic polymorphic subject
+engine: what may inherit, what may vary, how identity/provenance must remain exact,
+and which runtime authorities would own Variant-scoped values later. This master
+sync does not authorize Variant implementation. Storefront, Network and P13.C
+remain closed.
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 continuity — P12.2 Snapshot Reference Panel Foundation published
 
