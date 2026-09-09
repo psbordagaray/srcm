@@ -4,16 +4,16 @@ Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-09-08**
 Rama de desarrollo: `feature/core-entity`
 
-<!-- P13_CURRENT_CONTINUITY_V5 -->
-## Current P13 checkpoint — P13.B Catalog Semantic Foundation CSF-2 published; CI164 GREEN
+<!-- P13_CURRENT_CONTINUITY_V6 -->
+## Current P13 checkpoint — P13.B Catalog Semantic Foundation CSF-3 published; CI167 GREEN
 
 <!--
 STRALEON_CANONICAL_PRODUCT_NAME=Straleon
 P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
 P13_CURRENT_SUBPHASE=P13_B_NUMERICAL_INTEGRITY_AND_HUMAN_ERROR_PREVENTION
 P13_B_STATUS=ACTIVE_CURRENT
-P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=5fee03acba72a2d088524106189ad3f34f544564
-P13_B_BASELINE_TREE=bae4cd0f564334d8a978aaa1dfd39fbd57eed1e0
+P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=78d3a1db94ed6d509e700d2abb815558ffcbcf3d
+P13_B_BASELINE_TREE=d8f121699e63216c7d81badd58b8b1a66a876174
 P13_B_ENGINEERING_EXECUTION_CONTRACT=V1_PUBLISHED_AND_BINDING
 P13_B_ARCHITECTURE_CONVERGENCE=V1_PUBLISHED_AND_BINDING
 P13_B_ARCHITECTURE_CONVERGENCE_HEAD=74d3258f9af752635e39cf351753368cdfaeab9d
@@ -39,7 +39,6 @@ P13_B_TRANSFORMATION_YIELD_TRACEABILITY_HEAD=63d8ed724995819a261ccca3a75087901a7
 P13_B_TRANSFORMATION_REDUNDANT_INDEX_FIX_HEAD=0baba18796e4ec82ca00822e94c937b3b4300b70
 P13_B_BASELINE_CONTRACT_REPAIR=TEST_ONLY_PUBLISHED
 P13_B_BASELINE_CONTRACT_REPAIR_HEAD=b34c3847608ab8e2db8e88ea81927af634441848
-P13_B_MASTER_CONTINUITY_SYNC_CSF1_HEAD=8171d5a48eb8824efb9b694d65582bd0414c0f5c
 P13_B_CATALOG_SEMANTIC_FOUNDATION_ADR=157_PUBLISHED_AND_BINDING
 P13_B_CSF1_IMPLEMENTATION_CONTRACT=158_PUBLISHED_AND_BINDING
 P13_B_CSF1_SEMANTIC_REGISTRY_FOUNDATION=GREEN_PUBLISHED
@@ -62,109 +61,117 @@ P13_B_CSF2_HEAD=5fee03acba72a2d088524106189ad3f34f544564
 P13_B_CSF2_PARENT=fbc8bc2887591895f88f4d1fe8452308e792d471
 P13_B_CSF2_IMPLEMENTATION_SCOPE=20_PHP_FILES_17_NEW_3_MODIFIED
 P13_B_CSF2_LOCAL_FULL_SUITE_EVIDENCE=1494_TESTS_11180_ASSERTIONS_GREEN
-P13_B_CSF2_ATTRIBUTE_VALUE_TYPES=TEXT_BOOLEAN_INTEGER_EXACT_DECIMAL_MEASUREMENT_DATE_DATETIME
-P13_B_CSF2_VALUE_SCOPES=PRODUCT_VARIANT_INVENTORY_UNIT_LOT_OR_BATCH_SUPPLIER_OFFER
-P13_B_CSF2_MEASUREMENT_REGISTRIES=MEASUREMENT_DIMENSION_MEASUREMENT_UNIT
-P13_B_CSF2_ATTRIBUTE_BINDING=FOUNDATION_PUBLISHED
-P13_B_CSF2_DRAFT_BINDING_INHERITANCE=ATOMIC_CLONE_FROM_CURRENT_PUBLISHED
-P13_B_CSF2_PUBLICATION_VALIDATION=ACTIVE_SEMANTIC_DEPENDENCIES_FAIL_CLOSED
-P13_B_CSF2_GENERIC_DECIMAL_AUTHORITY=EXACT_DECIMAL_REUSED
-P13_B_CSF2_INVENTORY_UNIT_AUTHORITY=NOT_DUPLICATED
-P13_B_CSF2_MEASUREMENT_CONVERSION_ENGINE=NOT_IMPLEMENTED
-P13_B_CSF2_CATALOGPRODUCT_ASSIGNMENT=NO
-P13_B_CSF2_ATTRIBUTE_VALUE_STORAGE=NO
-P13_B_CSF2_CAPABILITIES_RUNTIME=NO
-P13_B_CSF2_VARIANT_RUNTIME=NO
-P13_B_CSF2_REQUIREMENT_GATES=NO
-P13_B_CSF2_STOREFRONT_NETWORK_RUNTIME=NO
 P13_B_CI164_RUN_ID=34276773654
 P13_B_CI164_JOB_ID=102231612077
 P13_B_CI164_STATUS=GREEN_COMPLETED_SUCCESS
 P13_B_CI164_FULL_TEST_SUITE=GREEN
 P13_B_CI164_TRACKED_TREE_UNCHANGED=GREEN
+P13_B_MASTER_CONTINUITY_CSF2_CHECKPOINT=d458deeb6868cbeddbc81c8ccaf85ba989a4edac
+P13_B_CI165_RUN_ID=34278350736
+P13_B_CI165_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CSF3_RECON=GREEN_READ_ONLY_EVIDENCE_CAPTURED
+P13_B_CSF3_CONTRACT=160_PUBLISHED_AND_BINDING
+P13_B_CSF3_CONTRACT_HEAD=1c0db8c745c44cfdb1beeafe1d6d6820277f2c4e
+P13_B_CI166_RUN_ID=34289097323
+P13_B_CI166_JOB_ID=102271373877
+P13_B_CI166_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CSF3_EFFECTIVE_SEMANTIC_RESOLUTION_COMPOSITION_FOUNDATION=GREEN_PUBLISHED
+P13_B_CSF3_HEAD=78d3a1db94ed6d509e700d2abb815558ffcbcf3d
+P13_B_CSF3_PARENT=1c0db8c745c44cfdb1beeafe1d6d6820277f2c4e
+P13_B_CSF3_IMPLEMENTATION_SCOPE=7_PHP_FILES_7_NEW
+P13_B_CSF3_LOCAL_FOCAL_EVIDENCE=15_TESTS_51_ASSERTIONS_GREEN
+P13_B_CSF3_LOCAL_FULL_SUITE_EVIDENCE=1509_TESTS_11231_ASSERTIONS_GREEN
+P13_B_CSF3_RESOLUTION_MODES=CURRENT_PUBLISHED_EXACT_HISTORICAL
+P13_B_CSF3_CURRENT_PUBLISHED_RULE=EXACTLY_ONE_PUBLISHED_SCHEMA_FAIL_CLOSED
+P13_B_CSF3_HISTORICAL_RULE=PUBLISHED_DEPRECATED_RETIRED_REQUIRE_PUBLISHED_AT
+P13_B_CSF3_SCHEMA_COMPOSITION=EXACT_SELECTED_SCHEMA_OWN_BINDINGS_ONLY
+P13_B_CSF3_DYNAMIC_VERSION_INHERITANCE=NO
+P13_B_CSF3_DETERMINISTIC_ATTRIBUTE_ORDER=ATTRIBUTE_KEY_THEN_ID
+P13_B_CSF3_PROVENANCE=PROFILE_AND_ATTRIBUTE_EXPLICIT
+P13_B_CSF3_MUTABLE_DISPLAY_METADATA=NOT_HISTORICAL_SEMANTIC_TRUTH
+P13_B_CSF3_EFFECTIVE_PROFILE_PERSISTENCE=NO_DERIVED_IN_MEMORY_READ_MODEL
+P13_B_CSF3_RESOLVER_WRITES=NO
+P13_B_CSF3_CATALOGPRODUCT_ASSIGNMENT=NO
+P13_B_CSF3_ATTRIBUTE_VALUE_STORAGE=NO
+P13_B_CSF3_CAPABILITIES_RUNTIME=NO
+P13_B_CSF3_VARIANT_RUNTIME=NO
+P13_B_CSF3_CONTEXTUAL_INTERACTION_PROFILE=NO
+P13_B_CSF3_STOREFRONT_NETWORK_RUNTIME=NO
+P13_B_CI167_RUN_ID=34298007509
+P13_B_CI167_JOB_ID=102298736494
+P13_B_CI167_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI167_FULL_TEST_SUITE=GREEN
+P13_B_CI167_TRACKED_TREE_UNCHANGED=GREEN
 P13_B_CSF_EXECUTION_LANE=HORIZONTAL_CATALOG_FOUNDATION_WITHOUT_OPENING_P13_C
 P13_B_CSF_PRODUCT_DEFINITION_BOUNDARY=SEMANTIC_TYPE_NOT_OBJECT_MASTER_NOT_TECHNICAL_MODEL_NOT_CATALOG_PRODUCT
-P13_B_CSF3_RUNTIME_AUTHORIZATION=NO_RECON_FIRST
+P13_B_CSF4_RUNTIME_AUTHORIZATION=NO_RECON_FIRST
 P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_MULTIRRUBRO_VALIDATION=MANDATORY
 P13_C_STATUS=NOT_OPENED
-P13_NEXT_BOUNDARY=P13_B_CSF3_EFFECTIVE_SEMANTIC_RESOLUTION_COMPOSITION_RECON_V1
+P13_NEXT_BOUNDARY=P13_B_CSF4_CAPABILITY_DECLARATION_PROGRESSIVE_POLICY_BINDING_RECON_V1
 PRODUCTION_MUTATION_AUTHORIZATION=NO
 -->
 
 P13.B remains the active technical program. Catalog Semantic Foundation is now
-canonical through CSF-2 without opening P13.C or replacing the later Storage /
+canonical through CSF-3 without opening P13.C or replacing the later Storage /
 Cold Chain, Logistics Custody, Service, Storefront or Network boundaries already
 required by the roadmap.
 
-CSF-1 established the global semantic registries and schema history:
-`ProductDefinition`, `ProductSchemaVersion` and `AttributeDefinition`. Its
-implementation was published at
-`a7bc15f85e287bf42d0889b0346bd59fbf81720e`; natural CI161 completed GREEN.
+CSF-1 established the global semantic registries and schema history.
+CSF-2 added typed attribute bindings, exact future value-owner scopes and
+measurement registries without duplicating numeric or inventory-unit authority.
+The three continuity masters were synchronized through CSF-2 at
+`d458deeb6868cbeddbc81c8ccaf85ba989a4edac`; natural CI165 completed GREEN.
 
-The three continuity masters were synchronized to that state at
-`8171d5a48eb8824efb9b694d65582bd0414c0f5c`; natural CI162 completed GREEN.
+CSF-3 was then designed through a read-only RECON and fixed in the binding
+contract `docs/160_CSF_3_EFFECTIVE_SEMANTIC_RESOLUTION_COMPOSITION_CONTRACT.md`.
+That contract was published at
+`1c0db8c745c44cfdb1beeafe1d6d6820277f2c4e`; natural CI166 completed GREEN.
 
-CSF-2 was then designed against Straleon's existing exact-numeric and
-inventory-unit authorities. Its binding contract is canonical in
-`docs/159_CSF_2_ATTRIBUTE_TYPING_MEASUREMENT_BINDING_CONTRACT.md`, published at
-`fbc8bc2887591895f88f4d1fe8452308e792d471`; natural CI163 completed GREEN.
+CSF-3 Effective Semantic Resolution / Composition Foundation was implemented
+and published at `78d3a1db94ed6d509e700d2abb815558ffcbcf3d`
+(`feat(catalog): add CSF-3 effective semantic resolution composition foundation`).
 
-CSF-2 Attribute Typing / Measurement / Binding Foundation was implemented and
-published at `5fee03acba72a2d088524106189ad3f34f544564`
-(`feat(catalog): add CSF-2 typing measurement binding foundation`).
+The runtime is intentionally narrow and deterministic:
 
-Its runtime/source surface is intentionally limited to:
+1. `CURRENT_PUBLISHED` resolves exactly one Published schema for a non-retired
+   ProductDefinition and fails closed on zero or multiple candidates;
+2. `EXACT_HISTORICAL` resolves an exact previously published schema version,
+   including Deprecated or Retired history when `published_at` proves that
+   publication occurred;
+3. composition uses only bindings owned by the exact selected schema version;
+4. published schema history is self-contained and the resolver never traverses
+   previous versions dynamically;
+5. effective attributes are ordered deterministically by immutable attribute
+   semantic key with id as tie-breaker;
+6. profile-level and attribute-level provenance retain exact semantic authority;
+7. measurement topology resolves through `MeasurementUnit → MeasurementDimension`;
+8. mutable names, descriptions and symbols are not treated as historical
+   semantic truth;
+9. `EffectiveSemanticProfile` remains a derived in-memory read model and the
+   resolver performs no database writes.
 
-1. exact attribute value-family declarations;
-2. exact future value-owner scopes;
-3. global `MeasurementDimension` and `MeasurementUnit` semantic registries;
-4. `AttributeBinding` owned by an exact `ProductSchemaVersion`;
-5. draft-only binding mutation;
-6. atomic inheritance of current published bindings when opening a new draft;
-7. fail-closed publication validation of active semantic dependencies.
+The implementation scope is exactly seven new PHP files. Local gates were GREEN
+at 7/7 PHP lint, focal 15 tests / 51 assertions, and full suite
+1509 tests / 11231 assertions. Natural CI167 (`34298007509`, job
+`102298736494`) completed GREEN on the exact `78d3a1db...` SHA; `Full test
+suite` and `Tracked tree must remain unchanged` both completed successfully.
 
-The implementation added 20 PHP files in the checkpoint scope: 17 new files and
-3 controlled CSF-1 modifications. Local evidence was GREEN at
-1494 tests / 11180 assertions.
+The semantic authority boundaries remain binding. CSF-3 did **not** introduce
+CatalogProduct assignment/reclassification, dynamic semantic values,
+capabilities runtime, Variant runtime, ContextualInteractionProfile,
+measurement conversion, Storefront/Network semantic runtime or P13.C.
 
-Natural CI164 (`34276773654`, job `102231612077`) completed GREEN on the exact
-`5fee03ac...` SHA. `Full test suite` and `Tracked tree must remain unchanged`
-both completed successfully.
+The next boundary follows ADR 157 and remains a design/recon cut:
 
-The semantic authority boundaries remain binding:
+`P13_B_CSF4_CAPABILITY_DECLARATION_PROGRESSIVE_POLICY_BINDING_RECON_V1`.
 
-- `ProductDefinition` owns semantic-kind identity;
-- `ProductSchemaVersion` owns historical semantic schema contracts;
-- `AttributeDefinition` owns reusable attribute identity;
-- `AttributeBinding` owns type/scope/unit configuration for one schema version;
-- `MeasurementUnit → MeasurementDimension` is the single semantic-measurement
-  dimension authority;
-- `ExactDecimal` remains the generic exact-decimal authority;
-- inventory quantities, base units and presentations remain operational
-  Inventory/Catalog authorities and are not duplicated by CSF.
-
-CSF-2 intentionally did **not** introduce:
-
-- `CatalogProduct → ProductDefinition` assignment or reclassification;
-- dynamic semantic value storage;
-- requirement gates;
-- capabilities;
-- Variant runtime;
-- measurement conversion;
-- Storefront/Network semantic runtime;
-- AI-assisted semantic ingestion.
-
-The next boundary follows the canonical ADR 157 delivery sequence and remains a
-design/recon cut:
-
-`P13_B_CSF3_EFFECTIVE_SEMANTIC_RESOLUTION_COMPOSITION_RECON_V1`.
-
-That RECON must determine the exact deterministic resolution/composition model,
-authority precedence, explainability/provenance, ambiguity handling and
-historical-version behavior before any EffectiveSemanticProfile or composition
-runtime is authorized.
+That RECON must determine how semantic capabilities are declared, how
+capability-relevant policy can bind progressively without becoming a generic
+override engine, how safe defaults and `unset = inherit` are represented where
+the contract explicitly allows inheritance, how provenance is retained, and
+how irrelevant advanced controls remain hidden from simple product contexts.
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 checkpoint — P12.2 Snapshot Reference Panel Foundation GREEN
 
