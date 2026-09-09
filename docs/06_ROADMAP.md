@@ -4,16 +4,16 @@ Estado de continuidad: **documento ejecutivo de referencia obligatoria**
 Actualizado: **2026-09-08**
 Rama de desarrollo: `feature/core-entity`
 
-<!-- P13_CURRENT_CONTINUITY_V7 -->
-## Current P13 checkpoint — P13.B Catalog Semantic Foundation CSF-4 published; CI170 GREEN
+<!-- P13_CURRENT_CONTINUITY_V8 -->
+## Current P13 checkpoint — P13.B Catalog Semantic Foundation CSF-5 published; CI173 GREEN
 
 <!--
 STRALEON_CANONICAL_PRODUCT_NAME=Straleon
 P13_PHASE=FUTURE_FOUNDATIONS_FOR_INTEGRITY_ENVIRONMENT_AUTOMATION_AND_COMMERCIAL_INTENT
 P13_CURRENT_SUBPHASE=P13_B_NUMERICAL_INTEGRITY_AND_HUMAN_ERROR_PREVENTION
 P13_B_STATUS=ACTIVE_CURRENT
-P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=82e80ba08d86730a49445b51708d1db9e0140706
-P13_B_BASELINE_TREE=da23e7d60e982a3b8d307b5c2202c982c848979f
+P13_B_BRANCH_HEAD_BEFORE_MASTER_SYNC=55b5a1913fa46f167dc7391e24a30000f6f984b3
+P13_B_BASELINE_TREE=fad371bb82529dcf6f449e8117c72d67fa4d292b
 P13_B_ENGINEERING_EXECUTION_CONTRACT=V1_PUBLISHED_AND_BINDING
 P13_B_ARCHITECTURE_CONVERGENCE=V1_PUBLISHED_AND_BINDING
 P13_B_ARCHITECTURE_CONVERGENCE_HEAD=74d3258f9af752635e39cf351753368cdfaeab9d
@@ -131,87 +131,161 @@ P13_B_CI170_HEAD=82e80ba08d86730a49445b51708d1db9e0140706
 P13_B_CI170_STATUS=GREEN_COMPLETED_SUCCESS
 P13_B_CI170_FULL_TEST_SUITE=GREEN
 P13_B_CI170_TRACKED_TREE_UNCHANGED=GREEN
+P13_B_MASTER_CONTINUITY_CSF4_CHECKPOINT=7cb8e851ed30d5fc8c63483e4cd6b21e61e9f9b4
+P13_B_CI171_RUN_ID=34304891414
+P13_B_CI171_JOB_ID=102319420288
+P13_B_CI171_EVENT=PUSH
+P13_B_CI171_ATTEMPT=1
+P13_B_CI171_HEAD=7cb8e851ed30d5fc8c63483e4cd6b21e61e9f9b4
+P13_B_CI171_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI171_FULL_TEST_SUITE=GREEN
+P13_B_CI171_TRACKED_TREE_UNCHANGED=GREEN
+P13_B_CSF5_RECON=GREEN_READ_ONLY_EVIDENCE_CAPTURED
+P13_B_CSF5_CONTRACT=162_PUBLISHED_AND_BINDING
+P13_B_CSF5_CONTRACT_HEAD=fc2ed3f4aa3ec8e8170827d8212bea45c74c326e
+P13_B_CSF5_CONTRACT_TREE=9ce40519bd8c6991e5601d0c052fbffb565c17a6
+P13_B_CI172_RUN_ID=34344904292
+P13_B_CI172_JOB_ID=102444088616
+P13_B_CI172_EVENT=PUSH
+P13_B_CI172_ATTEMPT=1
+P13_B_CI172_HEAD=fc2ed3f4aa3ec8e8170827d8212bea45c74c326e
+P13_B_CI172_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI172_FULL_TEST_SUITE=GREEN
+P13_B_CI172_TRACKED_TREE_UNCHANGED=GREEN
+P13_B_CSF5_CATALOGPRODUCT_ASSIGNMENT_CONTROLLED_RECLASSIFICATION_FOUNDATION=GREEN_PUBLISHED
+P13_B_CSF5_HEAD=55b5a1913fa46f167dc7391e24a30000f6f984b3
+P13_B_CSF5_PARENT=fc2ed3f4aa3ec8e8170827d8212bea45c74c326e
+P13_B_CSF5_TREE=fad371bb82529dcf6f449e8117c72d67fa4d292b
+P13_B_CSF5_IMPLEMENTATION_SCOPE=11_FILES_7_NEW_4_MODIFIED
+P13_B_CSF5_LOCAL_FOCAL_EVIDENCE=10_TESTS_47_ASSERTIONS_GREEN
+P13_B_CSF5_LOCAL_REGRESSION_CATALOG_PRODUCT_MANAGEMENT=7_TESTS_57_ASSERTIONS_GREEN
+P13_B_CSF5_LOCAL_REGRESSION_PRODUCT_DEFINITION=10_TESTS_28_ASSERTIONS_GREEN
+P13_B_CSF5_LOCAL_REGRESSION_EFFECTIVE_SEMANTIC_PROFILE=15_TESTS_51_ASSERTIONS_GREEN
+P13_B_CSF5_LOCAL_FULL_SUITE=GREEN_EXIT_0
+P13_B_CSF5_LOCAL_FULL_SUITE_TOTALS=UNPARSED_OBSERVABILITY_ONLY_NOT_REPEATED
+P13_B_CSF5_CURRENT_ASSIGNMENT_AUTHORITY=CATALOG_PRODUCTS_PRODUCT_DEFINITION_ID_NULLABLE_FK
+P13_B_CSF5_UNCLASSIFIED=NULL_NO_INFERENCE_NO_BACKFILL
+P13_B_CSF5_ASSIGNMENT_TARGET=PRODUCT_DEFINITION_NOT_SCHEMA_VERSION
+P13_B_CSF5_VALID_NEW_TARGET=ACTIVE_WITH_EXACTLY_ONE_CURRENT_PUBLISHED_SCHEMA
+P13_B_CSF5_DEPRECATED_EXISTING_ASSIGNMENTS=READABLE_NEW_ASSIGNMENTS_FORBIDDEN
+P13_B_CSF5_RETIRE_WITH_CURRENT_ASSIGNMENTS=FAIL_CLOSED
+P13_B_CSF5_GENERIC_CATALOG_CRUD_SEMANTIC_ASSIGNMENT=FORBIDDEN
+P13_B_CSF5_CLASSIFY_RECLASSIFY=DEDICATED_CATALOG_DOMAIN_MANAGER_ONLY
+P13_B_CSF5_EXACT_RETRY=IDEMPOTENT_NO_DUPLICATE_AUDIT
+P13_B_CSF5_RECLASSIFICATION_REASON=NONBLANK_REQUIRED
+P13_B_CSF5_DOMAIN_HISTORY_REWRITE=NO
+P13_B_CSF5_RECLASSIFICATION_BLOCKERS=EFFECTIVE_RESERVATION_FRACTIONAL_CONTAINER_VARIABLE_QUANTITY_FULFILLMENT_FULFILLMENT_PREFERENCE
+P13_B_CSF5_AUDIT=CURRENT_TRUTH_FK_AUDITLOG_EVIDENCE_ONLY
+P13_B_CSF5_CATEGORY_SEMANTIC_PRECEDENCE=NO
+P13_B_CSF5_ORGANIZATION_SEMANTIC_OVERRIDE=NO
+P13_B_CSF5_PRODUCT_SEMANTIC_RESOLVER=THIN_CURRENT_PROFILE_BRIDGE
+P13_B_CSF5_SEMANTIC_VALUES=NO_RESERVED_CSF6
+P13_B_CSF5_VARIANT_RUNTIME=NO
+P13_B_CSF5_STOREFRONT_PUBLICATION_RUNTIME=NO
+P13_B_CSF5_CHECKPOINT_RECOVERY=GREEN_EXISTING_COMMIT_PUBLISHED_NO_RECOMMIT
+P13_B_CSF5_PARENT_VERIFICATION=HEAD_TILDE_1_CONFIRMED
+P13_B_CI173_RUN_ID=34366762920
+P13_B_CI173_JOB_ID=102517363410
+P13_B_CI173_EVENT=PUSH
+P13_B_CI173_ATTEMPT=1
+P13_B_CI173_HEAD=55b5a1913fa46f167dc7391e24a30000f6f984b3
+P13_B_CI173_STATUS=GREEN_COMPLETED_SUCCESS
+P13_B_CI173_FULL_TEST_SUITE=GREEN
+P13_B_CI173_TRACKED_TREE_UNCHANGED=GREEN
 P13_B_CSF_EXECUTION_LANE=HORIZONTAL_CATALOG_FOUNDATION_WITHOUT_OPENING_P13_C
 P13_B_CSF_PRODUCT_DEFINITION_BOUNDARY=SEMANTIC_TYPE_NOT_OBJECT_MASTER_NOT_TECHNICAL_MODEL_NOT_CATALOG_PRODUCT
-P13_B_CSF5_RUNTIME_AUTHORIZATION=NO_RECON_FIRST
+P13_B_CSF6_RUNTIME_AUTHORIZATION=NO_RECON_FIRST
 P13_B_STORAGE_COLD_CHAIN_LOGISTICS_CUSTODY=ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_SERVICE_SCOPE_EVOLUTION=CROSS_VERTICAL_ROADMAP_BINDING_REMAINS_FUTURE
 P13_B_MULTIRRUBRO_VALIDATION=MANDATORY
 P13_C_STATUS=NOT_OPENED
-P13_NEXT_BOUNDARY=P13_B_CSF5_RECON_V1
+P13_NEXT_BOUNDARY=P13_B_CSF6_SEMANTIC_VALUES_RECON_V1
 PRODUCTION_MUTATION_AUTHORIZATION=NO
 -->
 
 P13.B remains the active technical program. Catalog Semantic Foundation is now
-canonical through CSF-4 without opening P13.C or replacing the later Storage /
-Cold Chain, Logistics Custody, Service, Storefront or Network boundaries already
-required by the roadmap.
+canonical through CSF-5 without opening P13.C or replacing later Storage / Cold
+Chain, Logistics Custody, Service, Storefront or Network boundaries.
 
-CSF-3 remains the immutable semantic-composition base: exact published schema
-selection, self-contained version history, deterministic attributes and explicit
-provenance. Its three continuity masters were synchronized at
-`76164bf3da6eee32ad80e3e3c080edc8318e28ed`; natural CI168 completed GREEN.
+The CSF-4 continuity masters were published at
+`7cb8e851ed30d5fc8c63483e4cd6b21e61e9f9b4`. Natural CI171
+(`34304891414`, job `102319420288`) completed GREEN, including `Full test suite`
+and `Tracked tree must remain unchanged`.
 
-CSF-4 was designed read-only first and fixed in the binding contract
-`docs/161_CSF_4_CAPABILITY_DECLARATION_PROGRESSIVE_POLICY_BINDING_CONTRACT.md`.
+CSF-5 was designed read-only first and frozen in
+`docs/162_CSF_5_CATALOGPRODUCT_ASSIGNMENT_CONTROLLED_RECLASSIFICATION_CONTRACT.md`.
 The contract was published at
-`affeee035bb358b2f770e76656ccdf723f8612de`; natural CI169
-(`34300567990`, job `102306385198`) completed GREEN.
+`fc2ed3f4aa3ec8e8170827d8212bea45c74c326e`, tree
+`9ce40519bd8c6991e5601d0c052fbffb565c17a6`. Natural CI172
+(`34344904292`, job `102444088616`) completed GREEN.
 
-CSF-4 Capability Declaration / Progressive Policy Binding Foundation was then
-implemented and published at
-`82e80ba08d86730a49445b51708d1db9e0140706`
-(`feat(catalog): add CSF-4 capability declaration progressive policy binding foundation`),
-tree `da23e7d60e982a3b8d307b5c2202c982c848979f`, with exact scope of 23
-files: 20 new and 3 modified.
+CSF-5 CatalogProduct Assignment + Controlled Reclassification Foundation was
+then implemented and published at
+`55b5a1913fa46f167dc7391e24a30000f6f984b3`
+(`feat(catalog): add CSF-5 controlled semantic assignment foundation`), tree
+`fad371bb82529dcf6f449e8117c72d67fa4d292b`, with exact implementation scope
+of 11 files: 7 new and 4 modified.
 
-The architecture is intentionally narrow:
+The V1 semantic law is intentionally narrow:
 
-1. semantic product capabilities are distinct from authorization capabilities;
-2. applicability is declared only on the exact `ProductSchemaVersion`; absence
-   means not applicable and no category/attribute/name fallback may invent it;
-3. activation modes are only `FIXED_ENABLED` and `CONFIGURABLE`;
-4. `FIXED_ENABLED` is always enabled and cannot be disabled by organization
-   policy;
-5. `CONFIGURABLE` resolves from the exact schema default, then an optional
-   explicit organization override; absent policy means inherit the schema
-   default;
-6. policy can configure declared applicability but can never manufacture
-   applicability;
-7. `createDraft()` clones capability declarations atomically so every published
-   schema remains self-contained;
-8. `EffectiveSemanticProfile` carries structural capability facts only, while
-   current organization policy resolves separately into
-   `EffectiveCapabilityPolicy`;
-9. current organization policy is never applied backward to an
-   `EXACT_HISTORICAL` semantic profile;
-10. `ProductCategory` has no semantic inheritance or precedence role;
-11. product and product-location policy scopes remain reserved for CSF-5+;
-12. FIFO / FEFO / LIFO / manual / specific selection remain Inventory-owned
-    operational policies rather than generic semantic policy JSON;
-13. operator UX remains progressive: irrelevant controls are hidden and
-    configurable capability policy is presented as default / enabled / disabled,
-    not as internal precedence machinery.
+1. `catalog_products.product_definition_id` is the only current semantic
+   assignment truth; `NULL` means UNCLASSIFIED and triggers no inference or
+   automatic backfill;
+2. assignment binds a `CatalogProduct` to `ProductDefinition`, never directly to
+   `ProductSchemaVersion`;
+3. a new target must be ACTIVE and resolve to exactly one current PUBLISHED
+   schema; deprecated definitions may remain readable for existing assignments
+   but cannot receive new assignments;
+4. retirement fails closed while current CatalogProducts still reference the
+   definition;
+5. ordinary CatalogProduct CRUD, category changes, imports and Knowledge
+   synchronization cannot silently classify or reclassify products;
+6. classification/reclassification is explicit, transactional, row-locked and
+   owned by the dedicated Catalog domain assignment manager;
+7. exact retries are idempotent; changing an existing definition requires
+   explicit reclassification with a nonblank reason;
+8. reclassification never rewrites Inventory, Commerce, Service, Purchase,
+   pricing, supplier-offer or Knowledge history;
+9. current capability-specific commitments fail closed conservatively, including
+   effective reservations, fractional containers, variable-quantity fulfillment
+   and linked fulfillment preferences;
+10. immutable AuditLog records evidence but never becomes a second current-truth
+    authority;
+11. ProductCategory remains non-semantic and organization capability policy
+    cannot choose or replace ProductDefinition;
+12. the CatalogProduct semantic-profile resolver is a thin current-profile bridge
+    and does not persist profiles or infer definitions.
 
-Local validation closed GREEN across the four new focal suites, directly
-affected CSF-3/versioning regressions, the constructor compatibility FIX1
-targeted revalidation and the final full suite (`EXIT=0`). No test/assertion
-totals are asserted here beyond evidence actually captured by the validation
-results.
+Local validation closed GREEN at focal 10 tests / 47 assertions, plus direct
+regressions of 7 / 57, 10 / 28 and 15 / 51. The final full suite returned real
+exit code 0; its test/assertion totals were not parsed by the wrapper, so no
+numeric totals are asserted and the suite was not repeated.
 
-Natural CI170 (`34303899588`, job `102316463640`) ran from the exact
-`82e80ba0...` push, attempt 1, and completed `success`. `Full test suite` and
+The first checkpoint runner created the correct local implementation commit but
+reported a parent mismatch after commit creation. A read-only recovery proved
+the actual parent via `HEAD~1` was exactly `fc2ed3f4...`, with exact tree, scope,
+hashes, clean worktree and empty staging. The existing commit was then published
+without recommit, amend or test repetition.
+
+Natural CI173 (`34366762920`, job `102517363410`) ran from the exact
+`55b5a191...` push, attempt 1, and completed GREEN. `Full test suite` and
 `Tracked tree must remain unchanged` both completed successfully.
 
-CSF-4 did **not** introduce CatalogProduct assignment/reclassification, dynamic
-semantic values, Variant runtime, ContextualInteractionProfile,
-Storefront/Network semantic runtime, measurement conversion, product-location
-capability precedence or P13.C.
+CSF-5 did **not** introduce semantic attribute-value persistence, Variant runtime,
+Storefront publication semantics, organization-specific semantic assignment,
+category-derived semantic inference, historical operational-data rewriting or
+P13.C.
 
 The next boundary remains closed until this three-master continuity sync is
-published and its natural CI is GREEN. After that evidence is consumed, the
-next authorized design cut is CSF-5 RECON for
-`CatalogProduct → ProductDefinition` assignment and controlled reclassification.
+published and its natural CI is GREEN. After that evidence is consumed, the next
+authorized design cut is:
+
+`P13_B_CSF6_SEMANTIC_VALUES_RECON_V1`.
+
+CSF-6 must begin read-only and determine the canonical persistence / provenance /
+validation / compatibility law for semantic attribute values, including the
+reclassification guard required before persisted values can ever be silently
+reinterpreted.
 <!-- P12_CURRENT_CONTINUITY_V1 -->
 ## Current P12 checkpoint — P12.2 Snapshot Reference Panel Foundation GREEN
 
