@@ -105,6 +105,13 @@ class ProductDefinitionManager
                 );
             }
 
+            if ($locked->catalogProducts()->exists()) {
+                throw new DomainException(
+                    'Una definición de producto con productos actualmente '
+                    .'clasificados no puede retirarse.'
+                );
+            }
+
             $locked->status = ProductDefinitionStatus::Retired;
             $locked->save();
 

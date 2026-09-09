@@ -77,4 +77,12 @@ class ProductDefinition extends Model
             'product_definition_id'
         );
     }
+
+    public function catalogProducts(): HasMany
+    {
+        return $this->hasMany(
+            CatalogProduct::class,
+            'product_definition_id'
+        );
+    }
 }

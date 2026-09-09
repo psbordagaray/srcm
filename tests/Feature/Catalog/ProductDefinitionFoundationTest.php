@@ -171,7 +171,7 @@ class ProductDefinitionFoundationTest extends TestCase
         ]);
     }
 
-    public function test_definition_registry_has_no_organization_category_or_product_assignment_columns(): void
+    public function test_definition_registry_remains_separate_from_product_assignment_storage(): void
     {
         $columns = Schema::getColumnListing(
             'catalog_product_definitions'
@@ -181,12 +181,13 @@ class ProductDefinitionFoundationTest extends TestCase
             'organization_id',
             'product_category_id',
             'catalog_product_id',
+            'product_definition_id',
             'current_schema_version_id',
         ] as $forbidden) {
             $this->assertNotContains($forbidden, $columns);
         }
 
-        $this->assertFalse(
+        $this->assertTrue(
             Schema::hasColumn(
                 'catalog_products',
                 'product_definition_id'

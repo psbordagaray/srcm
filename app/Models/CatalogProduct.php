@@ -85,6 +85,14 @@ class CatalogProduct extends Model
         return $this->belongsTo(ProductCategory::class);
     }
 
+    public function productDefinition(): BelongsTo
+    {
+        return $this->belongsTo(
+            ProductDefinition::class,
+            'product_definition_id'
+        );
+    }
+
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);
