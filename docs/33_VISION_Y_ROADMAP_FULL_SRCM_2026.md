@@ -1,7 +1,7 @@
 # SRCM — Visión y Roadmap Full 2026
 
 Estado: **North Star / contrato de dirección y continuidad**
-Fecha: **2026-09-09**
+Fecha: **2026-09-10**
 Documento ejecutivo asociado: `docs/06_ROADMAP.md`
 
 <!-- P13_CURRENT_CONTINUITY_V10 -->
@@ -1208,3 +1208,46 @@ su `sale_number` es interno. P10.1 agrega `FiscalOrganizationProfile` y
 `FiscalPointOfSale` por ambiente, con identidad protegida, sin documento,
 secuencia, WSAA, WSFE, CAE, CAEA ni QR. El siguiente corte es P10.2 — Fiscal
 Document Core RECON.
+
+<!-- STRALEON_GPK_ACTING_CONTEXT_ROADMAP_BINDING_V1 -->
+## Canonical architecture binding — Global Product Knowledge + Acting Context — 2026-09-10
+
+Accepted and binding design documents:
+
+- `docs/165_ADR_STRALEON_GLOBAL_PRODUCT_KNOWLEDGE_V1.md`;
+- `docs/166_ADR_STRALEON_ACTING_CONTEXT_COMMERCIAL_RELATIONSHIP_CONTINUITY_V1.md`;
+- `docs/167_ROADMAP_AMENDMENT_GLOBAL_KNOWLEDGE_ACTING_CONTEXT_OMNICHANNEL_COMMERCE_V1.md`.
+
+Binding consequences:
+
+- Global Product Knowledge is a non-tenant platform substrate; merchant-facing
+  Knowledge UI remains optional and `CatalogProduct` may remain globally unresolved.
+- knowledge origin distinguishes Authoritative Imported, Community-Evolved and
+  Derived evidence; source/provenance/rights are first-class and precede bulk
+  external ingestion.
+- CSF ProductDefinition remains semantic-kind authority and never becomes a
+  second global object master.
+- CSF-10 AI-assisted ingestion must consume the Global Product Knowledge
+  source/provenance/rights contracts.
+- ActingContext separates authenticated person, personal/Organization context,
+  commercial/legal principal, membership/delegation and counterparty relationship.
+- relationship continuity may expose legitimate pre-existing business history in a
+  new Organization context without rewriting historical documents/facts or exposing
+  unrelated personal relationships.
+- `COUNTERPARTY_SHARED` is an explicit bilateral privacy class, not public Network.
+- future `CommercialIntentCase` is channel-neutral; Storefront/WhatsApp/Instagram/
+  marketplace transports must not create separate customer/order/conversation truths.
+- Operational Attention receives unresolved-case projections; P19 CRM consumes the
+  same merchant relationship/interaction truths.
+- P15 Omnichannel remains planned but its adapters are gated behind a common intent
+  contract; Merchant Exchange is gated by explicit acting principal/counterparty
+  semantics.
+- the current runtime checkpoint is unchanged by this docs-only architecture cut.
+
+Immediate technical continuation after publication + natural CI remains:
+
+`P13_B_CSF8_VARIANT_SEMANTIC_BOUNDARY_RECON_V1`
+
+After CSF-8, follow the dependency lanes and ordered gates in Roadmap Amendment 167.
+No P13.C, Storefront runtime, Network runtime, global ingestion or productive source
+mutation is authorized by these documents alone.

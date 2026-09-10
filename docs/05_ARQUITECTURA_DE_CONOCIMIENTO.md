@@ -353,3 +353,49 @@ Cada vendedor agregará solamente la información propia de su oferta.
 Una organización podrá comenzar utilizando únicamente los rubros que necesita, consultar todo el universo de SRCM y ampliar su actividad sin migrar a otro sistema ni reconstruir su catálogo.
 
 SRCM debe permitir crecer sin volver a empezar.
+
+---
+
+# Canonical refinement — 2026-09-10
+
+This document remains directionally valid and is refined by:
+
+- `docs/165_ADR_STRALEON_GLOBAL_PRODUCT_KNOWLEDGE_V1.md`;
+- `docs/166_ADR_STRALEON_ACTING_CONTEXT_COMMERCIAL_RELATIONSHIP_CONTINUITY_V1.md`;
+- `docs/167_ROADMAP_AMENDMENT_GLOBAL_KNOWLEDGE_ACTING_CONTEXT_OMNICHANNEL_COMMERCE_V1.md`.
+
+Terminology clarification:
+
+```text
+Global Product Knowledge
+= platform-global, non-tenant knowledge substrate
+
+Merchant Knowledge surface/capability
+= optional merchant-facing use of that substrate
+```
+
+Therefore the global knowledge substrate may grow even when a specific merchant has
+its advanced Knowledge UI disabled. `CatalogProduct` still operates without a
+global identity.
+
+Global Product Knowledge now distinguishes:
+
+- Authoritative Imported Knowledge;
+- Community-Evolved Knowledge;
+- Derived Knowledge;
+- source/evidence/provenance;
+- fact/relation-level rights;
+- candidate/corroborated/disputed/superseded lifecycle;
+- explicit merge/split/dedup;
+- general typed relation graph;
+- Source Preservation Envelope for legacy imports;
+- separate Knowledge, Search, Ingestion and Operational planes.
+
+No Organization directly overwrites global truth, and no supplier/merchant
+commercial fact becomes global knowledge by implication.
+
+For identity/commerce, Acting Context now distinguishes authenticated human,
+personal/business context, commercial principal, role/delegation and counterparty
+relationship. Omnichannel transports converge into a future channel-neutral
+`CommercialIntentCase`; CRM and Operational Attention consume that truth instead
+of creating parallel customer/conversation backends.

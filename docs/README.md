@@ -1,7 +1,7 @@
 # SRCM Full — Puerta de entrada y continuidad maestra
 
 Estado: **vinculante para recuperación de contexto**
-Actualizado: **2026-09-09**
+Actualizado: **2026-09-10**
 
 <!-- P13_CURRENT_CONTINUITY_V10 -->
 ## Current P13 checkpoint — P13.B Catalog Semantic Foundation CSF-7 published; CI179 GREEN
@@ -784,3 +784,26 @@ siguiente frontera`.
 La North Star no se reescribe innecesariamente, pero su sección dinámica de
 continuidad se actualiza en cada paso para conservar checkpoint, estado,
 invariantes, bloqueos y próximo paso exacto.
+
+<!-- STRALEON_GPK_ACTING_CONTEXT_ROADMAP_BINDING_V1 -->
+## Architecture additions accepted 2026-09-10
+
+Canonical companions:
+
+- `docs/165_ADR_STRALEON_GLOBAL_PRODUCT_KNOWLEDGE_V1.md` — global non-tenant
+  object/product knowledge, provenance, rights, community/derived knowledge,
+  identity resolution, relations, ingestion and scale.
+- `docs/166_ADR_STRALEON_ACTING_CONTEXT_COMMERCIAL_RELATIONSHIP_CONTINUITY_V1.md`
+  — personal/business ActingContext, commercial principal, selective historical
+  relationship continuity, self-service, `COUNTERPARTY_SHARED` and
+  channel-neutral `CommercialIntentCase`.
+- `docs/167_ROADMAP_AMENDMENT_GLOBAL_KNOWLEDGE_ACTING_CONTEXT_OMNICHANNEL_COMMERCE_V1.md`
+  — dependency lanes and implementation sequencing across CSF, Storefront,
+  migration, P15, P16, P18, P19 and later Network.
+
+These documents refine — without invalidating — the published convergence,
+Storefront/Network compatibility and Catalog Semantic Foundation contracts.
+
+Runtime remains at the published CSF-7 continuity checkpoint. After this docs-only
+checkpoint and its natural CI, the immediate next technical cut remains
+`P13_B_CSF8_VARIANT_SEMANTIC_BOUNDARY_RECON_V1`.
